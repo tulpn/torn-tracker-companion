@@ -12,6 +12,18 @@ after(closeAll);
 // A thin stand-in for a Torn page. Feature tests bring fixtures of the real markup.
 const PAGE = '<div id="mainContainer"><div class="content-wrapper"></div></div>';
 
+/** Opens the panel on one of its tabs, the way a player would. */
+function openOn(t, tab) {
+  if (t.panel().hidden) t.userClick(t.fab());
+  t.userClick(t.panel().querySelector(`button[data-tab="${tab}"]`));
+}
+
+/** A player ticking a box: the property changes, then the browser says so. */
+function userCheck(t, input, checked = true) {
+  input.checked = checked;
+  input.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+}
+
 describe('CMP-001 the built file boots on a Torn page', () => {
   test('it adds the settings button and a hidden panel', async () => {
     const t = await boot(PAGE);
@@ -39,6 +51,7 @@ describe('CMP-107 the panel tells the player where their settings live', () => {
     t.userClick(t.fab());
     assert.equal(t.panel().hidden, false);
     assert.match(t.panel().textContent, new RegExp(`Version ${version.replace(/\./g, '\\.')}\\b`));
+    openOn(t, 'keys');
     assert.match(t.panel().textContent, /localStorage/);
   });
 
@@ -59,8 +72,8 @@ describe('CMP-107 the panel tells the player where their settings live', () => {
 describe('CMP-008 settings are kept on the device and validated on the way in', () => {
   test('a change is saved to localStorage', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.fab());
-    t.panel().querySelector(`#${PREFIX}-debug`).checked = true;
+    openOn(t, 'keys');
+    userCheck(t, t.panel().querySelector(`#${PREFIX}-debug`));
     t.userClick(t.panel().querySelector('button[data-act="save"]'));
     await t.tick();
 
@@ -70,7 +83,7 @@ describe('CMP-008 settings are kept on the device and validated on the way in', 
 
   test('garbage in storage falls back to the defaults', async () => {
     const t = await boot(PAGE, { savedSettings: '{"debug":"yes","junk":true}' });
-    t.userClick(t.fab());
+    openOn(t, 'keys');
     assert.equal(t.panel().querySelector(`#${PREFIX}-debug`).checked, false);
   });
 
@@ -84,7 +97,7 @@ describe('CMP-008 settings are kept on the device and validated on the way in', 
     for (const key of ['ttc_settings', 'ttc_keys', 'ttc_queue', 'ttc_cache']) {
       t.window.localStorage.setItem(key, '{"x":1}');
     }
-    t.userClick(t.fab());
+    openOn(t, 'keys');
 
     const forget = () => t.panel().querySelector('button[data-act="forget"]');
     t.userClick(forget());
@@ -104,7 +117,7 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
   test('settings go to PDA_storage when PDA injects it', async () => {
     const pda = fakePdaStorage();
     const t = await boot(PAGE, { pdaStorage: pda });
-    t.userClick(t.fab());
+    openOn(t, 'keys');
     assert.match(t.panel().textContent, /PDA_storage/);
 
     t.userClick(t.panel().querySelector('button[data-act="save"]'));
@@ -118,5 +131,64 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
     assert.match(built, /min-height: 44px/);
     assert.match(built, /width: min\(360px, calc\(100vw - 24px\)\)/);
     assert.match(built, /width: 44px; height: 44px/);
+  });
+});
+
+describe('CMP-011 the script key is kept on the device and never logged', () => {
+  const KEY = `tt_feed_${'D'.repeat(43)}`;
+
+  test('a key typed in the panel is saved to ttc_keys', async () => {
+    const t = await boot(PAGE);
+    openOn(t, 'keys');
+    const field = t.panel().querySelector(`#${PREFIX}-key-script`);
+    field.value = KEY;
+    field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    await t.tick();
+    assert.equal(JSON.parse(t.window.localStorage.getItem(`${PREFIX}_keys`)).script, KEY);
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('with debug on, the key never reaches the console', async () => {
+    const seen = [];
+    const original = { log: console.log, warn: console.warn, error: console.error };
+    for (const level of Object.keys(original)) console[level] = (...args) => seen.push(args.map(String).join(' '));
+    try {
+      const t = await boot(PAGE, { savedSettings: '{"debug":true}' });
+      t.window.localStorage.setItem(`${PREFIX}_keys`, JSON.stringify({ script: KEY }));
+      openOn(t, 'keys');
+      const field = t.panel().querySelector(`#${PREFIX}-key-script`);
+      field.value = KEY;
+      field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+      t.userClick(t.panel().querySelector('button[data-act="save"]'));
+      await t.tick(10);
+    } finally {
+      Object.assign(console, original);
+    }
+    assert.ok(seen.length > 0, 'debug logging was on');
+    assert.equal(seen.some((line) => line.includes(KEY)), false);
+  });
+});
+
+describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
+  test('a page view with no key and nothing switched on makes no request at all', async () => {
+    const t = await boot(PAGE);
+    const calls = [];
+    const guarded = t.window.fetch;
+    t.window.fetch = (...args) => {
+      calls.push(String(args[0]));
+      return guarded(...args);
+    };
+    t.window.dispatchEvent(new t.window.Event('pagehide'));
+    await t.tick(10);
+    assert.deepEqual(calls, []);
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('this build offers no sharing switch until the owner has worded what is shared', async () => {
+    const t = await boot(PAGE);
+    openOn(t, 'sharing');
+    assert.equal(t.panel().querySelector('[data-share]'), null);
+    assert.match(t.panel().textContent, /Nothing is shared by this version/);
   });
 });

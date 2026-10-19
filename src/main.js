@@ -1,4 +1,5 @@
-// Boot: load the settings, start the router, put the panel on the page.
+// Boot: load the settings, keys and upload queue, start the router, put the panel on the
+// page.
 //
 // Torn Tracker Companion — https://github.com/tulpn/torn-tracker-companion
 // Copyright (C) 2026 tulpn. Licensed under the GNU GPL, version 3 or later.
@@ -7,6 +8,8 @@ import features from './features/index.js';
 import { createRegistry } from './core/registry.js';
 import { FeatureRunner } from './core/runner.js';
 import { createSharer } from './core/share.js';
+import { createUploader } from './core/upload.js';
+import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
 import { mountPanel } from './core/panel.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
@@ -17,20 +20,22 @@ import * as dom from './core/dom.js';
 import * as net from './core/net.js';
 import * as intercept from './core/intercept.js';
 
-/** Mirrors the queue's own limit (CMP-008) so nothing grows without bound before WP-CMP-4. */
-const MAX_PENDING = 200;
-
 export async function boot(win = globalThis) {
   const registry = createRegistry(features);
   let settings = await load(registry);
+  let keys = await loadKeys();
   setDebug(settings.debug);
 
-  // Observations wait here until the upload queue lands (WP-CMP-4). Nothing is sent yet.
-  const pending = [];
-  const sink = (observation) => {
-    pending.push(observation);
-    if (pending.length > MAX_PENDING) pending.shift();
-  };
+  let panel = null;
+  const uploader = createUploader({
+    getKey: () => keys.script,
+    timers: win,
+    onChange: () => panel?.updateQueue(),
+  });
+  await uploader.load();
+  // Leaving the page is the player's own action; whatever is waiting goes with it.
+  const onPageHide = () => uploader.flush({ keepalive: true });
+  win.addEventListener('pagehide', onPageHide);
 
   const runner = new FeatureRunner({
     registry,
@@ -43,7 +48,12 @@ export async function boot(win = globalThis) {
       net,
       intercept,
       log,
-      share: createSharer({ descriptor, getSettings: () => settings, sink }),
+      share: createSharer({
+        descriptor,
+        getSettings: () => settings,
+        sink: (observation) => uploader.add(observation),
+        now: uploader.serverNow,
+      }),
     }),
   });
 
@@ -60,18 +70,34 @@ export async function boot(win = globalThis) {
     return ok;
   };
 
+  const applyKeys = async (next) => {
+    const keyChanged = next.script !== keys.script;
+    keys = { ...next };
+    const ok = await saveKeys(keys);
+    if (keyChanged) uploader.keyChanged();
+    return ok;
+  };
+
   const stopRouter = startRouter((loc) => runner.update(loc), win);
 
-  const panel = mountPanel({
+  panel = mountPanel({
     doc: win.document,
     registry,
     version: VERSION,
     getSettings: () => settings,
-    onSave: apply,
+    getKeys: () => keys,
+    getQueue: () => uploader.status(),
+    onSave: async (nextSettings, nextKeys) => {
+      const savedKeys = await applyKeys(nextKeys);
+      const savedSettings = await apply(nextSettings);
+      return savedKeys && savedSettings;
+    },
     onReset: () => apply(defaults(registry)),
     onForget: async () => {
+      uploader.clear();
       const ok = await forget();
       settings = defaults(registry);
+      keys = emptyKeys();
       setDebug(false);
       restart();
       return ok;
@@ -84,12 +110,14 @@ export async function boot(win = globalThis) {
     registry,
     runner,
     panel,
-    pending,
+    uploader,
     get settings() {
       return settings;
     },
     stop() {
       stopRouter();
+      uploader.stop();
+      win.removeEventListener('pagehide', onPageHide);
       runner.reset();
       panel.destroy();
     },
