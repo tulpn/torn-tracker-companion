@@ -15,6 +15,29 @@ It is planned to run in the browser with Tampermonkey or Violentmonkey, and on t
 - It shares what it sees on those pages with torn-tracker.com, which publishes the combined data openly for every player and tool. You choose which kinds of data it shares, and the exact list will be in the Torn API terms table below before the first release.
 - It updates itself automatically from this repository.
 
+## Installing it
+
+There is no release yet, so these are the instructions that will apply from v1.0.0.
+
+**In a browser**, with [Tampermonkey](https://www.tampermonkey.net) or
+[Violentmonkey](https://violentmonkey.github.io) installed, open the install link on the
+[latest release](https://github.com/tulpn/torn-tracker-companion/releases/latest) and
+confirm. Your script manager then checks for updates by itself.
+
+**In [Torn PDA](https://github.com/Manuito83/torn-pda)**, add the script **from its URL**,
+not by pasting its text:
+
+```
+https://github.com/tulpn/torn-tracker-companion/releases/latest/download/torn-tracker-companion.user.js
+```
+
+Pasting the text gives you a copy PDA cannot update. Adding it from the URL lets PDA check
+the version and keep it current. (Whether PDA installs an update by itself or only tells
+you one is waiting is being confirmed on a device; this page will say which.)
+
+Either way the script updates itself from the newest release, and a beta is never installed
+over a stable one. How a release is made is in [RELEASING.md](RELEASING.md).
+
 ## API Terms of Service
 
 The table will be filled in before the first release, in Torn's five-column format (data storage, data sharing, purpose of use, key storage and sharing, key access level).

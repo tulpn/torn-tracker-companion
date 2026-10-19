@@ -9,6 +9,7 @@
     "build": "node tools/build.mjs",
     "check": "node --check dist/torn-tracker-companion.user.js",
     "lint:rules": "node tools/rules-lint.mjs",
+    "release": "node tools/release.mjs",
     "test": "npm run build && npm run check && node --test \"test/**/*.test.js\""
   },
   "devDependencies": {
