@@ -22,7 +22,7 @@ describe('CMP-014 the owner\'s words open the parts of the panel that need them'
   test('with them, each part opens', () => {
     assert.equal(sharingOffered(WORDED), true);
     assert.equal(kindOffered('loadout', WORDED), true);
-    assert.equal(kindOffered('npc_loot', WORDED), false, 'a kind without its own line stays closed');
+    assert.equal(kindOffered('foreign_shop', WORDED), false, 'a kind without its own line stays closed');
     assert.equal(hasTosTable(WORDED), true);
   });
 

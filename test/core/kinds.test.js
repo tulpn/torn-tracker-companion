@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { COUNTRIES, KINDS, LOOTABLE_NPCS, checkObservation, isKnownKind } from '../../src/core/kinds.js';
+import { COUNTRIES, KINDS, checkObservation, isKnownKind } from '../../src/core/kinds.js';
 import { loadoutData, observation } from '../fixtures.js';
 
 const ok = (o) => {
@@ -16,16 +16,15 @@ const refused = (o, pattern) => {
 };
 
 describe('CMP-008 the queue holds only observations the site will accept', () => {
-  test('wave 1 brings four kinds', () => {
-    assert.deepEqual(Object.keys(KINDS).sort(), ['foreign_shop', 'foreign_stock', 'loadout', 'npc_loot']);
+  test('wave 1 brings three kinds; NPC loot is not captured by the script (D-062)', () => {
+    assert.deepEqual(Object.keys(KINDS).sort(), ['foreign_shop', 'foreign_stock', 'loadout']);
     assert.equal(isKnownKind('crime_outcome'), false);
     assert.equal(isKnownKind('toString'), false);
   });
 
-  test('the closed lists match the site word for word', () => {
+  test('the country list matches the site word for word', () => {
     assert.deepEqual([...COUNTRIES], ['mexico', 'cayman', 'canada', 'hawaii', 'uk', 'argentina',
       'switzerland', 'japan', 'china', 'uae', 'south-africa']);
-    assert.deepEqual([...LOOTABLE_NPCS], [4, 10, 15, 17, 19, 20]);
   });
 
   test('a valid foreign stock sighting passes, normalised', () => {
@@ -75,22 +74,17 @@ describe('CMP-008 the queue holds only observations the site will accept', () =>
     refused(strip(shop([item], 'yes')), /complete/);
   });
 
-  test('NPC loot: a closed NPC list, levels 1 to 5, the timer optional', () => {
-    const loot = (over) => ({ kind: 'npc_loot', observed_at: new Date().toISOString(), script_version: '1.0.0', npc_id: 4, loot_level: 3, ...over });
-    assert.equal('level_since' in ok(loot({ level_since: null })), false, 'a null timer is left out');
-    assert.ok(ok(loot({ level_since: '2026-10-19T11:00:00Z' })).level_since);
-    refused(loot({ npc_id: 5 }), /npc_id/);
-    refused(loot({ loot_level: 6 }), /loot_level/);
-  });
-
   test('a loadout: closed slots, at most two bonuses, attack or war', () => {
     const loadout = (over) => ({ kind: 'loadout', observed_at: new Date().toISOString(), script_version: '1.0.0', ...loadoutData(over) });
     const value = ok(loadout());
-    assert.deepEqual(value.slots.primary.bonuses, [{ bonus_id: 7, value: 12 }]);
+    assert.deepEqual(value.slots.primary.bonuses, [{ name: 'Puncture', value: 12 }]);
     refused(loadout({ context: 'gym' }), /context/);
     refused(loadout({ slots: { cape: { item_id: 1 } } }), /cape/);
     refused(loadout({ slots: {} }), /at least one/);
-    refused(loadout({ slots: { primary: { item_id: 1, bonuses: [1, 2, 3].map((n) => ({ bonus_id: n, value: 1 })) } } }), /bonuses/);
+    refused(loadout({ slots: { primary: { item_id: 1, bonuses: ['A', 'B', 'C'].map((name) => ({ name, value: 1 })) } } }), /bonuses/);
+    refused(loadout({ slots: { primary: { item_id: 1, bonuses: [{ name: 'x'.repeat(41), value: 1 }] } } }), /name/);
+    refused(loadout({ slots: { primary: { item_id: 1, bonuses: [{ bonus_id: 7, value: 1 }] } } }), /bonus_id/);
+    refused(loadout({ slots: { primary: { item_id: 1, bonuses: [{ name: 'Puncture', value: '12' }] } } }), /value/);
     refused(loadout({ slots: { primary: { item_id: 1, strength: 9 } } }), /strength/);
     refused(loadout({ player_id: 0 }), /player_id/);
   });

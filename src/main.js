@@ -58,6 +58,7 @@ export async function boot(win = globalThis) {
         getSettings: () => settings,
         sink: (observation) => uploader.add(observation),
         now: uploader.serverNow,
+        getLocation: () => win.location,
       }),
     }),
   });

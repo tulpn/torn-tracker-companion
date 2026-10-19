@@ -32,6 +32,12 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   restock predictions. It reads what the shop page already loaded, at most once per
   country every 30 seconds and only while you are looking at the tab. It never buys
   anything. Like every kind of sharing, it is off until you switch it on.
+- **Attack loadouts** (wave 1). On the attack page, once Torn shows the defender's
+  weapons and armour, they can be shared with torn-tracker.com: each item, a weapon's
+  damage and accuracy, and its bonuses as Torn names them. One report per fight, read
+  from what the page already loaded; the script never clicks. Off until you switch it on.
+- Nothing is ever shared from Torn's company or faction application pages, whatever is
+  switched on.
 
 ### Notes
 

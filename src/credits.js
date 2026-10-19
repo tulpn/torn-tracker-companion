@@ -14,7 +14,15 @@ export const CREDITS = Object.freeze([
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',
     url: 'https://github.com/Mephiles/torntools_extension',
-    taken: 'where the foreign shop keeps its stock: the page response and its fields',
+    taken: 'where the foreign shop and the attack page keep their data: the page responses and their fields',
+    merged: false,
+  },
+  {
+    name: 'Torn Loadout Share',
+    author: 'Sigtran',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/570314',
+    taken: "reading the defender's loadout from the attack page's own attackData response, and the slot numbers",
     merged: false,
   },
 ]);
