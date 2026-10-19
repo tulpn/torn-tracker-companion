@@ -25,9 +25,12 @@ The script is written as modules under `src/` and bundled into one readable file
 
 ```bash
 npm ci
-npm run build   # writes dist/torn-tracker-companion.user.js and .meta.js
-npm test        # builds, then runs the tests against the built file
+npm run build        # writes dist/torn-tracker-companion.user.js and .meta.js
+npm test             # builds, then runs the tests against the built file
+npm run lint:rules   # scans the source for anything Torn's scripting rules forbid
 ```
+
+`lint:rules` is why the promises above are more than promises. It fails the build on a request to torn.com, a synthetic click, a form submit, `innerHTML`, a navigation, or a URL to a host that is not in `@connect`. The tests then boot the built script on a fake Torn page under a guard that fails on the same things actually happening.
 
 The build is never minified, so the file you install is the source you can read and change. `@version` comes from `package.json` and the `@connect` list from `src/hosts.js`, so the header can never promise something the code does not do.
 
@@ -40,7 +43,7 @@ The build is never minified, so the file you install is the source you can read 
 
 ## Credits
 
-This script brings together ideas and, where licences allow, code from many community scripts. Each one is credited here and in the source when it lands.
+This script brings together ideas and, where licences allow, code from many community scripts. Every one of them is named in [CREDITS.md](CREDITS.md), with its licence and what was taken, and in the header of the module that uses it. A script with no licence is reimplemented from the idea alone and credited as inspiration; its code is never copied.
 
 ## License
 
