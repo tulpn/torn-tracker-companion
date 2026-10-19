@@ -14,7 +14,7 @@ export const CREDITS = Object.freeze([
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',
     url: 'https://github.com/Mephiles/torntools_extension',
-    taken: 'where the foreign shop and the attack page keep their data: the page responses and their fields',
+    taken: 'where the foreign shop and the attack page keep their data, and how to set a React field so the form sees it',
     merged: false,
   },
   {
@@ -31,6 +31,22 @@ export const CREDITS = Object.freeze([
     licence: 'GPL-3.0',
     url: 'https://github.com/xentac/FFScouter',
     taken: 'fair-fight badges beside players, where the member rows are, and the colour scale',
+    merged: false,
+  },
+  {
+    name: 'Torn Bazaar Filler',
+    author: 'Ramin Quluzade and Silmaril',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/473470',
+    taken: "a fill button per row on the bazaar's add and manage pages, and where their fields are",
+    merged: false,
+  },
+  {
+    name: 'Torn Market Filler',
+    author: 'Silmaril',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/513920',
+    taken: "where the item market sell form's rows, price and quantity fields are",
     merged: false,
   },
 ]);

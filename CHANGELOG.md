@@ -43,6 +43,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   estimate, coloured on the scale FF Scouter players know: blue is easy, red is hard,
   and "?" means no estimate yet. All the players on a page are looked up together, and
   each answer is kept for an hour. Needs your script key.
+- **Price filler** (wave 1). On the bazaar's add and manage pages and the item market's
+  sell form, each item gets a "Fill" button showing the price it will put in: the
+  torn-tracker.com market value minus your undercut (set it in the panel; $1 by
+  default). One press fills that row's price and how many you own. You still press
+  Torn's own button: the script never submits anything. Needs your script key.
 
 ### Notes
 
