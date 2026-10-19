@@ -79,6 +79,16 @@ describe('CMP-022 the release notes come from the CHANGELOG', () => {
     assert.equal(sectionFor(next, '1.0.0'), '### Added\n- the first release');
   });
 
+  test('a checkout with Windows line endings reads the same', () => {
+    const crlf = sample.replace(/\n/g, '\r\n');
+    assert.equal(sectionFor(crlf, '1.0.0'), '### Added\n- the first release');
+    assert.equal(sectionFor(crlf, 'Unreleased'), '### Added\n- a new thing');
+
+    const next = promoteUnreleased(crlf, '1.1.0', '2026-11-02');
+    assert.equal(sectionFor(next, '1.1.0'), '### Added\n- a new thing');
+    assert.ok(!/[^\r]\n/.test(next), 'the file keeps the endings it came with');
+  });
+
   test('releasing nothing is refused', () => {
     assert.throws(() => promoteUnreleased('# Changelog\n\n## Unreleased\n\n## 1.0.0 — x\n\n- a\n', '1.1.0', 'd'),
       /nothing is listed/);
