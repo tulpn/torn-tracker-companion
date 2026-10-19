@@ -1,0 +1,51 @@
+# Pushing a vX.Y.Z tag publishes that release (CMP-022).
+#
+# The release assets are what every install points at: Tampermonkey, Violentmonkey and
+# Torn PDA all poll the small .meta.js under releases/latest/download, compare @version,
+# and fetch the .user.js when it is newer. So the assets must be built from the tagged
+# commit, and the tag, package.json and the built header must all say the same version.
+#
+# A prerelease (vX.Y.Z-beta.N) is published as a GitHub prerelease, which never becomes
+# "latest" — stable installs do not see it, and beta testers install by URL.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+
+      # Builds dist/ as a side effect, which the next steps check and publish.
+      - run: npm test
+      - run: npm run lint:rules
+
+      - name: The tag, package.json and the built header must agree
+        run: node tools/release.mjs --verify "${GITHUB_REF_NAME}"
+
+      - name: Release notes from the CHANGELOG
+        run: node tools/release.mjs --notes "${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/notes.md"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "${GITHUB_REF_NAME}" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "${GITHUB_REF_NAME}" \
+            dist/torn-tracker-companion.user.js \
+            dist/torn-tracker-companion.meta.js \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file "${RUNNER_TEMP}/notes.md" \
+            ${prerelease}
