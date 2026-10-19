@@ -1,0 +1,13 @@
+{
+  "name": "{{SCRIPT_SLUG}}",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tests for the {{SCRIPT_NAME}} userscript",
+  "scripts": {
+    "check": "node --check {{SCRIPT_SLUG}}.user.js",
+    "test": "npm run check && node --test \"test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}
