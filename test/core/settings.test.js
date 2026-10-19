@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, isEnabled, isShared, normalize } from '../../src/core/settings.js';
-import { descriptor } from '../fixtures.js';
+import { WORDED, descriptor } from '../fixtures.js';
 
 const registry = createRegistry([
   descriptor({ id: 'war-enhancer', shares: ['loadout'] }),
@@ -29,7 +29,22 @@ describe('CMP-014 every sharing switch starts off', () => {
     const settings = normalize({ shares: { loadout: 'yes', foreign_stock: true } }, registry);
     assert.equal(settings.shares.loadout, false);
     assert.equal(settings.shares.foreign_stock, true);
-    assert.equal(isShared(settings, 'foreign_stock'), true);
+    assert.equal(isShared({ ...settings, sharingConsent: WORDED.version }, 'foreign_stock', WORDED), true);
+  });
+
+  test('a switch that is on is not sharing until the current wording is agreed', () => {
+    const settings = normalize({ shares: { foreign_stock: true } }, registry);
+    assert.equal(settings.sharingConsent, 0);
+    assert.equal(isShared(settings, 'foreign_stock', WORDED), false);
+    assert.equal(isShared({ ...settings, sharingConsent: WORDED.version }, 'foreign_stock'), false,
+      'and with no wording in this build, never');
+  });
+
+  test('the agreed version is kept only when it is a positive whole number', () => {
+    for (const bad of [-1, 1.5, '2', null]) {
+      assert.equal(normalize({ sharingConsent: bad }, registry).sharingConsent, 0);
+    }
+    assert.equal(normalize({ sharingConsent: 3 }, registry).sharingConsent, 3);
   });
 
   test('a kind this build does not have is dropped', () => {
@@ -74,6 +89,24 @@ describe('CMP-008 settings from storage are validated field by field', () => {
   test('normalizing twice changes nothing', () => {
     const once = normalize({ features: { travel: { enabled: false } } }, registry);
     assert.deepEqual(normalize(once, registry), once);
+  });
+});
+
+describe('CMP-008 an option outside what its descriptor allows falls back to the default', () => {
+  const described = createRegistry([descriptor({
+    defaults: { enabled: true, sortBy: 'status', undercut: 1 },
+    options: { sortBy: { label: 'Sort by', choices: ['status', 'level'] }, undercut: { label: 'Undercut', min: 0, max: 100 } },
+  })]);
+
+  test('a choice that is not offered, or a number out of range, is not kept', () => {
+    const settings = normalize({ features: { 'war-enhancer': { sortBy: 'random', undercut: 500 } } }, described);
+    assert.deepEqual(settings.features['war-enhancer'], { enabled: true, sortBy: 'status', undercut: 1 });
+  });
+
+  test('values inside the bounds are kept', () => {
+    const settings = normalize({ features: { 'war-enhancer': { sortBy: 'level', undercut: 100 } } }, described);
+    assert.equal(settings.features['war-enhancer'].sortBy, 'level');
+    assert.equal(settings.features['war-enhancer'].undercut, 100);
   });
 });
 

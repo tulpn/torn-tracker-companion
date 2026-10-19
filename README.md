@@ -38,6 +38,21 @@ you one is waiting is being confirmed on a device; this page will say which.)
 Either way the script updates itself from the newest release, and a beta is never installed
 over a stable one. How a release is made is in [RELEASING.md](RELEASING.md).
 
+## Settings
+
+The ⚙ button in the bottom right corner opens the panel.
+
+- **Features**: switch each feature on or off, and set its options.
+- **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
+  starts off, switching a feature on never switches sharing on, and nothing is shared
+  until you press "Share the kinds I picked". If the wording of what is shared changes
+  in an update, you are asked again. This tab also shows what is waiting to be sent and,
+  if sharing has stopped, why.
+- **Keys**: your torn-tracker.com script key, which is not a Torn API key. An optional
+  Torn API key field will appear here, below Torn's terms table, for features that need
+  your own data. "Forget me" clears everything the script keeps on this device.
+- **Credits**: every script this one took code or an idea from.
+
 ## API Terms of Service
 
 The table will be filled in before the first release, in Torn's five-column format (data storage, data sharing, purpose of use, key storage and sharing, key access level).
@@ -59,7 +74,7 @@ The build is never minified, so the file you install is the source you can read 
 
 | Where | What is in it |
 |---|---|
-| `src/core/` | storage, settings, the page router, DOM reads, the read-only response reader, the network layer, the panel |
+| `src/core/` | storage, settings, keys, the page router, DOM reads, the read-only response reader, the network layer, the upload queue and the rules each kind of observation must meet, the panel |
 | `src/features/` | one folder per feature, each exporting a single descriptor |
 | `tools/` | the build and the Torn-rules lint |
 | `test/` | unit tests per module, plus the built script running on a fake Torn page |

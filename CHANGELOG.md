@@ -15,8 +15,24 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   the small `.meta.js` that update checks fetch.
 - A lint that fails the build on anything Torn's scripting rules forbid, and a runtime
   guard the tests boot every page under.
+- The settings panel has four tabs: Features (a switch per feature, with its options),
+  Sharing, Keys and Credits. Edits are kept until you press Save, even when you move
+  between tabs.
+- A field for your torn-tracker.com script key. It is kept only on this device and is
+  never written to the console, even with logging on.
+- The upload queue. Whatever you choose to share waits on your device and goes to
+  torn-tracker.com in small batches, at most once every 15 seconds and when you leave a
+  page. It never holds more than 200 and drops anything older than 10 minutes. If the
+  site asks it to slow down, refuses your key or needs a newer script, it stops and the
+  Sharing tab tells you why.
+- Every observation is checked against the site's rules for its kind before it is
+  queued, so one bad entry can never spoil a batch.
 
 ### Notes
+
+- Nothing can be shared yet. The sharing switches and the optional Torn API key field
+  stay closed until the notice saying exactly what is shared, and Torn's terms table,
+  are written. A release cannot be cut while a feature in it is missing that wording.
 
 - There is no public release yet. Wave 1 — fair-fight badges, the war page, foreign stock
   and the price filler — will be v1.0.0.

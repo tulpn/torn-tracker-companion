@@ -6,8 +6,10 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 
-import { isPrerelease, nextVersion, promoteUnreleased, sectionFor } from '../tools/release.mjs';
+import { isPrerelease, nextVersion, promoteUnreleased, sectionFor, wordingProblems } from '../tools/release.mjs';
+import { createRegistry } from '../src/core/registry.js';
 import { ROOT, readPackage } from './helpers.js';
+import { WORDED, descriptor } from './fixtures.js';
 
 const CHANGELOG = fs.readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8');
 
@@ -93,6 +95,19 @@ describe('CMP-022 the release notes come from the CHANGELOG', () => {
     assert.throws(() => promoteUnreleased('# Changelog\n\n## Unreleased\n\n## 1.0.0 — x\n\n- a\n', '1.1.0', 'd'),
       /nothing is listed/);
     assert.throws(() => promoteUnreleased('# Changelog\n', '1.1.0', 'd'), /no "## Unreleased"/);
+  });
+});
+
+describe("CMP-022 a release never ships a feature ahead of the owner's wording", () => {
+  test('a sharing feature without its wording blocks the release', () => {
+    const registry = createRegistry([descriptor({ shares: ['loadout'] })]);
+    const problems = wordingProblems(registry);
+    assert.equal(problems.length, 2);
+    assert.match(problems[0], /missing the owner's wording: the first-run notice/);
+  });
+
+  test('with the wording in place there is nothing to block', () => {
+    assert.deepEqual(wordingProblems(createRegistry([descriptor({ shares: ['loadout'] })]), WORDED), []);
   });
 });
 

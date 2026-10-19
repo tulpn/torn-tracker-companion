@@ -19,6 +19,14 @@ describe('CMP-002 every feature exports one descriptor', () => {
     ['defaults without enabled', { defaults: { sortBy: 'status' } }],
     ['an object in defaults', { defaults: { enabled: true, sort: { by: 'status' } } }],
     ['shares that is not an array', { shares: 'loadout' }],
+    ['a kind core/kinds.js does not define', { shares: ['battle_stats'] }],
+    ['an option with no default', { options: { colour: { label: 'Colour' } } }],
+    ['an option with no label', { options: { sortBy: {} } }],
+    ['the feature switch as an option', { options: { enabled: { label: 'On' } } }],
+    ['choices that do not include the default', { options: { sortBy: { label: 'Sort', choices: ['level'] } } }],
+    ['choices of another type', { options: { sortBy: { label: 'Sort', choices: ['status', 1] } } }],
+    ['a bound on a text option', { options: { sortBy: { label: 'Sort', min: 0 } } }],
+    ['a number default out of its range', { defaults: { enabled: true, n: 5 }, options: { n: { label: 'N', max: 3 } } }],
     ['needs without apiKey', { needs: { scriptKey: true } }],
     ['credits that are not strings', { credits: [{ name: 'x' }] }],
     ['no start', { start: undefined }],
@@ -28,6 +36,13 @@ describe('CMP-002 every feature exports one descriptor', () => {
       assert.throws(() => validateDescriptor(descriptor(over)));
     });
   }
+
+  test('described options pass', () => {
+    assert.doesNotThrow(() => validateDescriptor(descriptor({
+      defaults: { enabled: true, sortBy: 'status', undercut: 1 },
+      options: { sortBy: { label: 'Sort by', choices: ['status', 'level'] }, undercut: { label: 'Undercut', min: 0, max: 100 } },
+    })));
+  });
 
   test('two features cannot share an id', () => {
     assert.throws(() => createRegistry([descriptor(), descriptor()]), /duplicate/);

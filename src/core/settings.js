@@ -5,14 +5,18 @@
 // feature or observation kind this build does not have, is dropped.
 //
 // Sharing switches are the one place where the default is not negotiable: every kind
-// starts off and only the player turns it on (CMP-014).
+// starts off and only the player turns it on (CMP-014). A switch that is on still shares
+// nothing until the player has agreed to the current wording of what is shared:
+// `sharingConsent` holds the disclosure version they agreed to, 0 for none.
 
 import { KEYS, read, write } from './storage.js';
-import { shareKinds } from './registry.js';
+import { inRange, shareKinds } from './registry.js';
+import { DISCLOSURE, kindOffered } from './disclosure.js';
 
 export function defaults(registry) {
   return {
     debug: false,
+    sharingConsent: 0,
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
   };
@@ -23,7 +27,12 @@ export function normalize(raw, registry) {
   const base = defaults(registry);
   const given = raw && typeof raw === 'object' ? raw : {};
 
-  const out = { debug: typeof given.debug === 'boolean' ? given.debug : base.debug };
+  const out = {
+    debug: typeof given.debug === 'boolean' ? given.debug : base.debug,
+    sharingConsent: Number.isInteger(given.sharingConsent) && given.sharingConsent > 0
+      ? given.sharingConsent
+      : base.sharingConsent,
+  };
 
   const givenFeatures = given.features && typeof given.features === 'object' ? given.features : {};
   out.features = {};
@@ -33,8 +42,10 @@ export function normalize(raw, registry) {
     const feature = {};
     for (const [key, fallback] of Object.entries(d.defaults)) {
       const value = values[key];
+      const option = d.options?.[key];
       const usable = typeof value === typeof fallback
-        && (typeof value !== 'number' || Number.isFinite(value));
+        && (typeof value !== 'number' || (Number.isFinite(value) && inRange(value, option)))
+        && (!option?.choices || option.choices.includes(value));
       feature[key] = usable ? value : fallback;
     }
     out.features[d.id] = feature;
@@ -61,6 +72,12 @@ export function isEnabled(settings, id) {
   return settings?.features?.[id]?.enabled === true;
 }
 
-export function isShared(settings, kind) {
-  return settings?.shares?.[kind] === true;
+/**
+ * A kind is shared only when its switch is on, its wording exists, and the player agreed
+ * to the wording as it is now.
+ */
+export function isShared(settings, kind, disclosure = DISCLOSURE) {
+  return settings?.shares?.[kind] === true
+    && kindOffered(kind, disclosure)
+    && settings.sharingConsent === disclosure.version;
 }
