@@ -19,6 +19,25 @@ It is planned to run in the browser with Tampermonkey or Violentmonkey, and on t
 
 The table will be filled in before the first release, in Torn's five-column format (data storage, data sharing, purpose of use, key storage and sharing, key access level).
 
+## Building it yourself
+
+The script is written as modules under `src/` and bundled into one readable file. You need Node 22 or newer.
+
+```bash
+npm ci
+npm run build   # writes dist/torn-tracker-companion.user.js and .meta.js
+npm test        # builds, then runs the tests against the built file
+```
+
+The build is never minified, so the file you install is the source you can read and change. `@version` comes from `package.json` and the `@connect` list from `src/hosts.js`, so the header can never promise something the code does not do.
+
+| Where | What is in it |
+|---|---|
+| `src/core/` | storage, settings, the page router, DOM reads, the read-only response reader, the network layer, the panel |
+| `src/features/` | one folder per feature, each exporting a single descriptor |
+| `tools/` | the build and the Torn-rules lint |
+| `test/` | unit tests per module, plus the built script running on a fake Torn page |
+
 ## Credits
 
 This script brings together ideas and, where licences allow, code from many community scripts. Each one is credited here and in the source when it lands.
