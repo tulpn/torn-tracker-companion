@@ -9,7 +9,8 @@
 // files that installs point at.
 //
 // The workflow also calls this file:
-//   --verify v1.2.3   the tag, package.json and dist all agree
+//   --verify v1.2.3   the tag, package.json and dist all agree, and no feature in the
+//                     build is missing the owner's wording it needs (src/core/disclosure.js)
 //   --notes  v1.2.3   print that version's CHANGELOG section
 
 import { execFileSync } from 'node:child_process';
@@ -19,6 +20,9 @@ import { fileURLToPath } from 'node:url';
 
 import { parseHeader } from './header.mjs';
 import { buildScript } from './build.mjs';
+import features from '../src/features/index.js';
+import { createRegistry } from '../src/core/registry.js';
+import { disclosureGaps } from '../src/core/disclosure.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const PKG = join(ROOT, 'package.json');
@@ -102,6 +106,14 @@ export function promoteUnreleased(changelog, version, date) {
   return [...lines.slice(0, start), ...replacement, ...lines.slice(end)].join(eolOf(changelog));
 }
 
+/**
+ * The owner's words a release would ship without. A sharing switch, or the Torn API key
+ * field, is never published ahead of the text that explains it (hq RULES section 6).
+ */
+export function wordingProblems(registry = createRegistry(features), disclosure = undefined) {
+  return disclosureGaps(registry, disclosure).map((gap) => `missing the owner's wording: ${gap}`);
+}
+
 // ---------------------------------------------------------------- commands
 
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
@@ -126,6 +138,7 @@ async function verify(tag) {
   } catch (err) {
     problems.push(`could not read the built header: ${err.message}`);
   }
+  problems.push(...wordingProblems());
 
   if (problems.length) {
     console.error(`release ${tag} does not add up:`);
@@ -153,6 +166,9 @@ async function cut(kind, { allowBranch = false } = {}) {
   if (branch !== 'main' && !allowBranch) {
     throw new Error(`releases are cut from main, not ${branch} (pass --allow-branch if you mean it)`);
   }
+
+  const missing = wordingProblems();
+  if (missing.length) throw new Error(`not releasable yet:\n  - ${missing.join('\n  - ')}`);
 
   const pkg = await readJson(PKG);
   const version = nextVersion(pkg.version, kind);

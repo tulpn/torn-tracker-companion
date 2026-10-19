@@ -14,7 +14,8 @@ The rules we hold ourselves to:
   not require it; the community does.
 
 `npm run lint:rules` fails if a feature credits a script that is not listed below, or if
-the module itself carries no notice.
+the module itself carries no notice. The panel's Credits tab is built from
+`src/credits.js`, and a test fails if a feature credits a script missing there.
 
 ## Merged code
 

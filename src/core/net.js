@@ -62,30 +62,41 @@ function pdaTransport(method) {
 function normalizePda(res) {
   const status = Number(res?.status ?? res?.statusCode ?? 0) || 0;
   const text = res?.responseText ?? res?.body ?? res?.text ?? '';
-  return { status, text: typeof text === 'string' ? text : JSON.stringify(text) };
+  const headers = res?.headers && typeof res.headers === 'object' ? res.headers : {};
+  const retryAfter = headers['retry-after'] ?? headers['Retry-After'] ?? null;
+  return {
+    status,
+    text: typeof text === 'string' ? text : JSON.stringify(text),
+    retryAfter: retryAfter == null ? null : String(retryAfter),
+  };
 }
 
 /**
  * @param {string} url  absolute, on an allowed host
  * @param {object} [opts]
- * @returns {Promise<{ok: boolean, status: number, text: string, data: unknown, error: string|null}>}
+ * @param {boolean} [opts.keepalive]  let the request outlive the page (the pagehide flush);
+ *        browsers only, PDA's helpers have no such thing
+ * @returns {Promise<{ok: boolean, status: number, text: string, data: unknown,
+ *          retryAfter: string|null, error: string|null}>}
  *          Network trouble is a result, never a throw: a feature must keep working when
  *          the site is unreachable (CMP-023). A disallowed host is a bug and does throw.
  */
-export async function request(url, { method = 'GET', headers = {}, body = null, timeout = 15_000 } = {}) {
+export async function request(url, {
+  method = 'GET', headers = {}, body = null, timeout = 15_000, keepalive = false,
+} = {}) {
   if (!hostAllowed(url)) throw new HostNotAllowedError(url);
   const host = new URL(url).host;
 
   if (!take(host)) {
     warn('call budget spent for', host);
-    return { ok: false, status: 0, text: '', data: null, error: 'budget' };
+    return { ok: false, status: 0, text: '', data: null, retryAfter: null, error: 'budget' };
   }
 
   const verb = String(method).toUpperCase();
   try {
-    const { status, text } = pdaTransport(verb)
+    const { status, text, retryAfter } = pdaTransport(verb)
       ? normalizePda(await pdaTransport(verb)(url, headers, body))
-      : await viaFetch(url, { method: verb, headers, body, timeout });
+      : await viaFetch(url, { method: verb, headers, body, timeout, keepalive });
 
     let data = null;
     try {
@@ -93,14 +104,14 @@ export async function request(url, { method = 'GET', headers = {}, body = null, 
     } catch { /* not JSON; callers that wanted JSON see data === null */ }
 
     log(verb, url, status);
-    return { ok: status >= 200 && status < 300, status, text, data, error: null };
+    return { ok: status >= 200 && status < 300, status, text, data, retryAfter, error: null };
   } catch (err) {
     warn('request failed', url, err && err.name);
-    return { ok: false, status: 0, text: '', data: null, error: err?.name || 'error' };
+    return { ok: false, status: 0, text: '', data: null, retryAfter: null, error: err?.name || 'error' };
   }
 }
 
-async function viaFetch(url, { method, headers, body, timeout }) {
+async function viaFetch(url, { method, headers, body, timeout, keepalive }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
@@ -112,9 +123,14 @@ async function viaFetch(url, { method, headers, body, timeout }) {
       credentials: 'omit',
       mode: 'cors',
       cache: 'no-store',
+      keepalive,
       signal: controller.signal,
     });
-    return { status: response.status, text: await response.text() };
+    return {
+      status: response.status,
+      text: await response.text(),
+      retryAfter: response.headers?.get?.('Retry-After') ?? null,
+    };
   } finally {
     clearTimeout(timer);
   }

@@ -3,6 +3,8 @@
 // Every feature exports exactly one of these. The registry is validated when the script
 // boots, so a malformed descriptor is a test failure rather than a page that half works.
 
+import { isKnownKind } from './kinds.js';
+
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /** Option values a feature may keep in settings: scalars only, so they validate cleanly. */
@@ -30,6 +32,10 @@ export function validateDescriptor(d) {
   if (!Array.isArray(d.shares) || d.shares.some((k) => typeof k !== 'string')) {
     fail(id, 'shares must be an array of observation kinds');
   }
+  for (const kind of d.shares) {
+    if (!isKnownKind(kind)) fail(id, `shares "${kind}", which core/kinds.js does not define`);
+  }
+  validateOptions(d);
   if (!d.needs || typeof d.needs.apiKey !== 'boolean' || typeof d.needs.scriptKey !== 'boolean') {
     fail(id, 'needs must declare apiKey and scriptKey');
   }
@@ -40,6 +46,43 @@ export function validateDescriptor(d) {
     fail(id, 'start and stop must be functions');
   }
   return d;
+}
+
+/**
+ * The panel shows an option only when the descriptor describes it:
+ *   options: { sortBy: { label: 'Sort by', choices: ['status', 'level'] },
+ *              undercut: { label: 'Undercut by ($)', min: 0, max: 1000000 } }
+ * Every described option has a default, and `enabled` is the feature's own switch.
+ */
+function validateOptions(d) {
+  if (d.options === undefined) return;
+  const { id } = d;
+  if (!d.options || typeof d.options !== 'object') fail(id, 'options must be an object');
+  for (const [key, option] of Object.entries(d.options)) {
+    if (key === 'enabled') fail(id, 'options.enabled: the feature switch is not an option');
+    if (!Object.hasOwn(d.defaults, key)) fail(id, `options.${key} has no default`);
+    if (!option || typeof option.label !== 'string' || !option.label) fail(id, `options.${key}.label is required`);
+    const fallback = d.defaults[key];
+    if (option.choices !== undefined) {
+      if (!Array.isArray(option.choices) || option.choices.length === 0
+        || option.choices.some((c) => typeof c !== typeof fallback)) {
+        fail(id, `options.${key}.choices must be a list of values like its default`);
+      }
+      if (!option.choices.includes(fallback)) fail(id, `options.${key}: the default is not one of the choices`);
+    }
+    for (const bound of ['min', 'max']) {
+      if (option[bound] === undefined) continue;
+      if (typeof fallback !== 'number' || !Number.isFinite(option[bound])) {
+        fail(id, `options.${key}.${bound} needs a number option and a number`);
+      }
+    }
+    if (typeof fallback === 'number' && !inRange(fallback, option)) fail(id, `options.${key}: the default is out of range`);
+  }
+}
+
+/** True when a number option's value is within its min and max. */
+export function inRange(value, option = {}) {
+  return (option.min === undefined || value >= option.min) && (option.max === undefined || value <= option.max);
 }
 
 export function createRegistry(descriptors) {

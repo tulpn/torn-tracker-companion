@@ -40,3 +40,45 @@ export function locationOf(href) {
   const url = new URL(href, 'https://www.torn.com');
   return { pathname: url.pathname, search: url.search, hash: url.hash };
 }
+
+/**
+ * A disclosure with every text filled in, so the gated parts of the panel and the
+ * sharing gate can be tested. The words are placeholders for tests only; the real ones
+ * are the owner's (src/core/disclosure.js).
+ */
+export const WORDED = Object.freeze({
+  version: 2,
+  firstRun: 'TEST first-run notice.',
+  kinds: { loadout: 'TEST loadout line.', foreign_stock: 'TEST foreign stock line.' },
+  tosTable: {
+    dataStorage: 'TEST storage',
+    dataSharing: 'TEST sharing',
+    purposeOfUse: 'TEST purpose',
+    keyStorageSharing: 'TEST key storage',
+    keyAccessLevel: 'TEST access',
+  },
+});
+
+/** A loadout as a feature would hand it to share(). */
+export function loadoutData(over = {}) {
+  return {
+    player_id: 123,
+    context: 'attack',
+    slots: { primary: { item_id: 1, damage: 50.5, accuracy: 60, bonuses: [{ bonus_id: 7, value: 12 }] } },
+    ...over,
+  };
+}
+
+/** A complete, valid observation, as the sharing gate hands it to the queue. */
+export function observation(over = {}, at = Date.now()) {
+  return {
+    kind: 'foreign_stock',
+    observed_at: new Date(at).toISOString(),
+    script_version: '1.0.0',
+    country: 'mexico',
+    item_id: 206,
+    quantity: 1000,
+    price: 5000,
+    ...over,
+  };
+}
