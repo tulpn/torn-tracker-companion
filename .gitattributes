@@ -1,0 +1,9 @@
+# One line ending everywhere, so a checkout on Windows is byte for byte what CI builds
+# and what players install. Without this, git hands Windows CRLF and tools that read a
+# file line by line see a stray carriage return at the end of every line.
+* text=auto eol=lf
+
+# The built script is what players install; never let anything rewrite it.
+dist/** -text
+*.png binary
+*.jpg binary

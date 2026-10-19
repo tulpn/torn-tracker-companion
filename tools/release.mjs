@@ -63,6 +63,11 @@ export function isPrerelease(version) {
   return version.includes('-');
 }
 
+// A checkout on Windows can hand us CRLF, so the CHANGELOG is read line-wise rather
+// than split on '\n' alone, and written back with the endings it came with.
+const splitLines = (text) => text.split(/\r?\n/);
+const eolOf = (text) => (text.includes('\r\n') ? '\r\n' : '\n');
+
 /** Where one version's section starts and ends, by line. */
 function bounds(lines, version) {
   const heading = `## ${version}`;
@@ -80,7 +85,7 @@ function bounds(lines, version) {
 
 /** The CHANGELOG body for one version, without its heading. */
 export function sectionFor(changelog, version) {
-  const lines = changelog.split('\n');
+  const lines = splitLines(changelog);
   const found = bounds(lines, version);
   return found ? lines.slice(found.start + 1, found.end).join('\n').trim() : null;
 }
@@ -91,10 +96,10 @@ export function promoteUnreleased(changelog, version, date) {
   if (unreleased === null) throw new Error('CHANGELOG.md has no "## Unreleased" section');
   if (!unreleased) throw new Error('nothing is listed under "## Unreleased"');
 
-  const lines = changelog.split('\n');
+  const lines = splitLines(changelog);
   const { start, end } = bounds(lines, 'Unreleased');
-  const replacement = ['## Unreleased', '', `## ${version} — ${date}`, '', unreleased, ''];
-  return [...lines.slice(0, start), ...replacement, ...lines.slice(end)].join('\n');
+  const replacement = ['## Unreleased', '', `## ${version} — ${date}`, '', ...splitLines(unreleased), ''];
+  return [...lines.slice(0, start), ...replacement, ...lines.slice(end)].join(eolOf(changelog));
 }
 
 // ---------------------------------------------------------------- commands
