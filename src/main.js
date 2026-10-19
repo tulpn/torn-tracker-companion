@@ -9,6 +9,7 @@ import { createRegistry } from './core/registry.js';
 import { FeatureRunner } from './core/runner.js';
 import { createSharer } from './core/share.js';
 import { createUploader } from './core/upload.js';
+import { createSite } from './core/site.js';
 import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
 import { mountPanel } from './core/panel.js';
 import { startRouter } from './core/router.js';
@@ -33,6 +34,8 @@ export async function boot(win = globalThis) {
     onChange: () => panel?.updateQueue(),
   });
   await uploader.load();
+  const site = createSite({ getKey: () => keys.script });
+  await site.cache.load();
   // Leaving the page is the player's own action; whatever is waiting goes with it.
   const onPageHide = () => uploader.flush({ keepalive: true });
   win.addEventListener('pagehide', onPageHide);
@@ -49,6 +52,7 @@ export async function boot(win = globalThis) {
       win,
       doc: win.document,
       now: uploader.serverNow,
+      site,
       dom,
       net,
       intercept,
@@ -101,6 +105,7 @@ export async function boot(win = globalThis) {
     onReset: () => apply(defaults(registry)),
     onForget: async () => {
       uploader.clear();
+      site.cache.clear();
       const ok = await forget();
       settings = defaults(registry);
       keys = emptyKeys();

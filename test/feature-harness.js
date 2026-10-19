@@ -32,7 +32,9 @@ export function json(name) {
  * @param {() => number} [opts.now]
  * @param {string} [opts.visibility]  'visible' (default) or 'hidden'
  */
-export function runFeature(feature, { html = '', url, settings, now = Date.now, visibility = 'visible' } = {}) {
+export function runFeature(feature, {
+  html = '', url, settings, now = Date.now, visibility = 'visible', site = null,
+} = {}) {
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, {
     url, pretendToBeVisual: true,
   });
@@ -71,6 +73,7 @@ export function runFeature(feature, { html = '', url, settings, now = Date.now, 
     dom,
     intercept,
     net: null,
+    site,
     log: () => {},
     now,
     share(kind, data) {
