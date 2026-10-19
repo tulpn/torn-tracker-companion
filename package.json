@@ -1,10 +1,10 @@
 {
-  "name": "{{SCRIPT_SLUG}}",
+  "name": "torn-tracker-companion",
   "version": "0.1.0",
   "private": true,
-  "description": "Tests for the {{SCRIPT_NAME}} userscript",
+  "description": "Tests for the Torn Tracker Companion userscript",
   "scripts": {
-    "check": "node --check {{SCRIPT_SLUG}}.user.js",
+    "check": "node --check torn-tracker-companion.user.js",
     "test": "npm run check && node --test \"test/**/*.test.js\""
   },
   "devDependencies": {

@@ -13,18 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # The unfilled template repo has no script file and the placeholder as package name.
-      # Gate on the exact "name" field, not on a substring anywhere in the file.
-      - id: tpl
-        run: |
-          if node -e "process.exit(require('./package.json').name === '{{SCRIPT_SLUG}}' ? 0 : 1)"; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "template not set up yet, skipping tests"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
       # Deterministic install from the committed lock file; plain install only before the first lock exists.
-      - if: steps.tpl.outputs.skip == 'false'
-        run: |
+      - run: |
           if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
-      - if: steps.tpl.outputs.skip == 'false'
-        run: npm test
+      - run: npm test
