@@ -17,3 +17,5 @@ jobs:
       - run: |
           if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
       - run: npm test
+      # Torn's scripting rules, scanned on the source (specs/companion.md section 6).
+      - run: npm run lint:rules
