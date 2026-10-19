@@ -2,12 +2,16 @@
   "name": "torn-tracker-companion",
   "version": "0.1.0",
   "private": true,
-  "description": "Tests for the Torn Tracker Companion userscript",
+  "type": "module",
+  "description": "The companion userscript of the torn-tracker.com suite",
+  "license": "GPL-3.0-or-later",
   "scripts": {
-    "check": "node --check torn-tracker-companion.user.js",
-    "test": "npm run check && node --test \"test/**/*.test.js\""
+    "build": "node tools/build.mjs",
+    "check": "node --check dist/torn-tracker-companion.user.js",
+    "test": "npm run build && npm run check && node --test \"test/**/*.test.js\""
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "jsdom": "^25.0.1"
   }
 }

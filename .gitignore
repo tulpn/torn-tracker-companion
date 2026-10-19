@@ -1,2 +1,4 @@
 .vscode/
 node_modules/
+# Built by `npm run build`; the release workflow attaches it to the GitHub release.
+dist/
