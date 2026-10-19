@@ -5,9 +5,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 
-const SCRIPT_PATH = path.join(__dirname, '..', '{{SCRIPT_SLUG}}.user.js');
+const SCRIPT_PATH = path.join(__dirname, '..', 'torn-tracker-companion.user.js');
 const SCRIPT = fs.readFileSync(SCRIPT_PATH, 'utf8');
-const PREFIX = '{{PREFIX}}';
+const PREFIX = 'ttc';
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,7 +37,7 @@ function fakePdaStorage() {
  */
 async function boot(bodyHtml, opts = {}) {
   const dom = new JSDOM(`<!doctype html><html><head></head><body>${bodyHtml}</body></html>`, {
-    url: '{{TEST_URL}}',
+    url: 'https://www.torn.com/',
     runScripts: 'outside-only',
     beforeParse(window) {
       if (opts.savedSettings) window.localStorage.setItem(`${PREFIX}_settings`, opts.savedSettings);

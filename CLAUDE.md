@@ -1,22 +1,41 @@
-# {{SCRIPT_NAME}}
+# Torn Tracker Companion
 
-Torn userscript built from the `torn-script-template`. Follow the `torn-script` skill for conventions and the publish checklist.
+The open-source (GPLv3) companion userscript of the torn-tracker.com suite. **This
+repository is public**: nothing private goes in it (no internal hosts, tokens, faction
+names, owner notes or links to private repos' content).
+
+Read first, in this order:
+
+1. `E:\Development\torn-tracker-hq\RULES.md`, the rules every lane follows.
+2. `E:\Development\torn-tracker-hq\lanes\companion.md`, this lane's brief.
+3. `E:\Development\torn-tracker-hq\specs\companion.md` and `specs\companion-api.md`.
 
 ## Facts for this project
 
-- Script file: `{{SCRIPT_SLUG}}.user.js`, match: `{{MATCH}}`, prefix: `{{PREFIX}}`
+- Script file: `torn-tracker-companion.user.js`, match: `https://www.torn.com/*`, prefix: `ttc`
 - Forum thread: t={{THREAD_ID}} (fill after posting; also sets `@supportURL`)
 - Greasy Fork: id {{GREASYFORK_ID}}, slug {{GREASYFORK_SLUG}} (fill after import)
-- Embedded data: <!-- what build-data.ps1 fetches, or "none" -->
 
-## Rules
+## Rules that differ from the torn-script template
 
-- Commit as `tulpn <1031452+tulpn@users.noreply.github.com>` (repo-local config, set by setup.ps1). Never the global identity.
-- Bump `@version` on every change once the script is on Greasy Fork.
-- No runtime network requests, no API key, no innerHTML, no GM_* functions.
-- `forum-post.html` is the live forum text; keep it in sync with README changes.
-- Run `npm test` before every push.
+The template's "no network requests, no API key, no-modification licence" rules do not
+apply here (decisions D-039 to D-041 in the hq repo). These do:
+
+- **Torn's scripting rules bind.** Read only the DOM or network responses of the page the
+  player opened. Never request torn.com pages in the background. One click is at most one
+  game action; fill fields, never submit. No timers, observers or loops that make
+  non-API requests to torn.com.
+- **Network:** only to `api.torn.com` (with the player's own key, if a feature needs it)
+  and to torn-tracker.com, each named in `@connect` and in the README's terms table.
+- **Uploads** go only to torn-tracker.com's companion API with the player's script key
+  (`tt_feed_…`), only for data types the player has switched on.
+- **Licence:** GPLv3. Code merged from another script needs a compatible licence (MIT,
+  BSD, GPLv3) and a credit in the README and at the top of the module. Scripts with no
+  licence are reimplemented from the idea, never copied.
+- No `innerHTML`; everything read from storage or the network is validated field by field.
+- Commit as `tulpn <1031452+tulpn@users.noreply.github.com>` (repo-local). Never the global identity.
+- Bump `@version` on every release; run `npm test` before every push.
 
 ## Decisions log
 
-- <!-- date: decision and why -->
+- 2026-10-19: created from the template; licence changed to GPLv3 (hq D-039).

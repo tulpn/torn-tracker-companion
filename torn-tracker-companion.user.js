@@ -1,19 +1,19 @@
 // ==UserScript==
-// @name         {{SCRIPT_NAME}}
-// @namespace    https://github.com/tulpn/{{SCRIPT_SLUG}}
+// @name         Torn Tracker Companion
+// @namespace    https://github.com/tulpn/torn-tracker-companion
 // @version      0.1.0
-// @description  {{DESCRIPTION}}
+// @description  Brings torn-tracker.com and the best community tools onto the Torn pages you use: estimates, war, travel, trading, crimes and more.
 // @author       ares313377
 // @homepageURL  https://www.torn-tracker.com/scripts
 // @supportURL   https://www.torn.com/forums.php#/p=threads&f=67&t={{THREAD_ID}}&b=0&a=0
-// @license      Torn Scripts No-Modification License - https://github.com/tulpn/{{SCRIPT_SLUG}}/blob/main/LICENSE
-// @match        {{MATCH}}
+// @license      GPL-3.0-or-later
+// @match        https://www.torn.com/*
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
 
 /*
- * {{SCRIPT_NAME}}
+ * Torn Tracker Companion
  *
  * Skeleton conventions (see the torn-script skill):
  *  - No network requests at runtime, no API key. Static data is embedded between the
@@ -42,8 +42,8 @@
   const DATA = {};
   // @@DATA_END
 
-  const PREFIX = '{{PREFIX}}';            // css class / id / storage prefix, e.g. "tmsh"
-  const TAG = '[{{SCRIPT_SLUG}}]';
+  const PREFIX = 'ttc';            // css class / id / storage prefix, e.g. "tmsh"
+  const TAG = '[torn-tracker-companion]';
   const STORE_KEY = `${PREFIX}_settings`;
 
   const log = (...a) => CONFIG.debug && console.log(TAG, ...a);
@@ -217,7 +217,7 @@
   };
 
   function buildUI() {
-    const fab = el('button', { id: `${PREFIX}-fab`, type: 'button', title: '{{SCRIPT_NAME}} - settings' },
+    const fab = el('button', { id: `${PREFIX}-fab`, type: 'button', title: 'Torn Tracker Companion - settings' },
       '⚙',
       el('span', { class: `${PREFIX}-count`, hidden: true }, '0'),
     );
@@ -233,7 +233,7 @@
 
   function renderPanel(status) {
     panel.replaceChildren(
-      el('h3', null, '{{SCRIPT_NAME}}'),
+      el('h3', null, 'Torn Tracker Companion'),
       ...PANEL_KEYS.filter((k) => typeof CONFIG[k] === 'boolean').map((k) =>
         el('label', { class: `${PREFIX}-check` },
           el('input', { type: 'checkbox', id: `${PREFIX}-${k}`, checked: S[k] }),
