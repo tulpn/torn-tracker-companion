@@ -1,0 +1,40 @@
+# Copy to .github/workflows/author-check.yml in every repo of the suite (RULES.md section 1).
+# Fails when any new commit is authored or committed by anyone but tulpn's noreply address.
+# GitHub's own web-flow committer (merges made on github.com) is allowed as committer only.
+name: author-check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  author-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every new commit is tulpn
+        env:
+          ALLOWED: 1031452+tulpn@users.noreply.github.com
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            range="$BASE..$HEAD"
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            range="$AFTER^!"
+          else
+            range="$BEFORE..$AFTER"
+          fi
+          bad=$(git log --format='%h %ae %ce' "$range" | awk -v ok="$ALLOWED" '$2 != ok || ($3 != ok && $3 != "noreply@github.com") {print}')
+          if [ -n "$bad" ]; then
+            echo "Commits not authored and committed as tulpn ($ALLOWED):"
+            echo "$bad"
+            echo "Fix: git commit --amend --reset-author (or rebase) with the repo-local identity; see torn-tracker-hq RULES.md section 1."
+            exit 1
+          fi
+          echo "All commits in $range are tulpn."
