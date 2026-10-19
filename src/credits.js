@@ -8,6 +8,15 @@
 //   merged: true when code was merged (MIT, BSD or GPLv3 only); false for an idea that
 //   was reimplemented, which is the only way a script with no licence is ever used.
 
-export const CREDITS = Object.freeze([]);
+export const CREDITS = Object.freeze([
+  {
+    name: 'TornTools',
+    author: 'Mephiles and contributors',
+    licence: 'GPL-3.0',
+    url: 'https://github.com/Mephiles/torntools_extension',
+    taken: 'where the foreign shop keeps its stock: the page response and its fields',
+    merged: false,
+  },
+]);
 
 export const CREDITS_URL = 'https://github.com/tulpn/torn-tracker-companion/blob/main/CREDITS.md';

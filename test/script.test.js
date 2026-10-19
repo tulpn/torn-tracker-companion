@@ -55,10 +55,11 @@ describe('CMP-107 the panel tells the player where their settings live', () => {
     assert.match(t.panel().textContent, /localStorage/);
   });
 
-  test('a build with no features says so rather than showing an empty list', async () => {
+  test('the features in this build are listed by wave, each with its switch', async () => {
     const t = await boot(PAGE);
     t.userClick(t.fab());
-    assert.match(t.panel().textContent, /No features in this build yet/);
+    assert.match(t.panel().textContent, /Wave 1/);
+    assert.equal(t.panel().querySelector(`#${PREFIX}-feature-foreign-stock`).checked, true);
   });
 
   test('the button closes the panel again', async () => {

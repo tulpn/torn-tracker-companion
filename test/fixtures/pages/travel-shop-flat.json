@@ -1,0 +1,7 @@
+{
+  "country": "united-kingdom",
+  "stock": [
+    { "ID": 268, "name": "Red Fox Plushie", "type2": "Plushie", "price": 1000, "stock": 52 },
+    { "ID": 267, "name": "Heather", "type2": "Flower", "price": 5000, "stock": 0 }
+  ]
+}

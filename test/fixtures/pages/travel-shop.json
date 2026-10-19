@@ -1,0 +1,13 @@
+{
+  "country": "Mexico",
+  "travelDuration": 0,
+  "shops": [
+    { "name": "General Store", "stock": [
+      { "ID": 258, "name": "Jaguar Plushie", "type2": "Plushie", "price": 10000, "stock": 1234 },
+      { "ID": 260, "name": "Dahlia", "type2": "Flower", "price": 300, "stock": 0 }
+    ] },
+    { "name": "Arms Dealer", "stock": [
+      { "ID": 399, "name": "ArmaLite M-15A4", "type2": "Rifle", "price": 2500000, "stock": 7 }
+    ] }
+  ]
+}
