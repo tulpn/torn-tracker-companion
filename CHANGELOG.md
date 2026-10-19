@@ -27,6 +27,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   Sharing tab tells you why.
 - Every observation is checked against the site's rules for its kind before it is
   queued, so one bad entry can never spoil a batch.
+- **Foreign shop stock** (wave 1). When you land abroad, the stock and price of every
+  item in the shop, empty shelves included, can be shared with torn-tracker.com for its
+  restock predictions. It reads what the shop page already loaded, at most once per
+  country every 30 seconds and only while you are looking at the tab. It never buys
+  anything. Like every kind of sharing, it is off until you switch it on.
 
 ### Notes
 

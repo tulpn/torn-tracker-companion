@@ -4,4 +4,6 @@
 // WP-CMP-6 (fair-fight badges, the war page, the price filler). Each one is a folder
 // under this one exporting a single descriptor, which registry.js validates at boot.
 
-export default [];
+import foreignStock from './foreign-stock/index.js';
+
+export default [foreignStock];

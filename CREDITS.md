@@ -27,7 +27,7 @@ the module itself carries no notice. The panel's Credits tab is built from
 
 | Script | Author | What the idea was | Where |
 |---|---|---|---|
-| _none yet_ | | | |
+| [TornTools](https://github.com/Mephiles/torntools_extension) (GPLv3) | Mephiles and contributors | Reading the foreign shop's stock from the page's own `travelData` response, and where the shelves sit on the page | `src/features/foreign-stock/` |
 
 ## This script
 

@@ -44,6 +44,11 @@ export async function boot(win = globalThis) {
       id: descriptor.id,
       version: VERSION,
       settings: settings.features[descriptor.id],
+      // Features read the page through these rather than globals, so a test can hand
+      // them a saved page.
+      win,
+      doc: win.document,
+      now: uploader.serverNow,
       dom,
       net,
       intercept,
