@@ -1,0 +1,8 @@
+{
+  "viewStyle": "nonAttack",
+  "DB": {
+    "defenderUser": { "userID": 2000001, "playername": "Defender" },
+    "defenderItems": {},
+    "attackerItems": { "1": { "item": [{ "ID": 1, "dmg": 99, "acc": 99 }] } }
+  }
+}

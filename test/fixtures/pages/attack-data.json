@@ -1,0 +1,25 @@
+{
+  "viewStyle": "attack",
+  "DB": {
+    "attackStatus": "started",
+    "enablePoll": true,
+    "pollDelay": 2000,
+    "defenderUser": { "userID": 2000001, "playername": "Defender", "level": 42, "factionID": 900 },
+    "attackerUser": { "userID": 1000001, "playername": "Attacker" },
+    "attackerItems": {
+      "1": { "item": [{ "ID": 1, "name": "Attacker's own gun", "dmg": 99, "acc": 99 }] }
+    },
+    "defenderItems": {
+      "1": { "item": [{ "ID": 399, "name": "ArmaLite M-15A4", "dmg": 52.34, "acc": "61.2", "glowClass": "glow-yellow",
+        "currentBonuses": [{ "icon": "puncture", "name": "Puncture", "value": 12 }, { "title": "Deadeye", "value": "25" }, { "name": "Third", "value": 1 }] }] },
+      "2": { "item": [{ "ID": 177, "name": "S&W M29", "dmg": 40, "acc": 50, "currentBonuses": [] }] },
+      "3": { "item": { "ID": 4, "name": "Kitchen Knife", "dmg": 20, "acc": 55 } },
+      "4": { "item": [{ "ID": 1035, "name": "Combat Vest", "dmg": 0, "acc": 0, "currentBonuses": [{ "name": "Impenetrable", "value": 20 }] }] },
+      "5": { "item": [{ "ID": 0 }] },
+      "6": { "item": [{ "ID": 1040, "name": "Combat Helmet" }] },
+      "10": { "item": [{ "ID": 555, "name": "not a slot" }] },
+      "999": { "item": [] }
+    },
+    "usersLife": { "defender": { "currentLife": 1000, "maxLife": 1500 } }
+  }
+}

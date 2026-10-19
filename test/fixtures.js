@@ -64,7 +64,7 @@ export function loadoutData(over = {}) {
   return {
     player_id: 123,
     context: 'attack',
-    slots: { primary: { item_id: 1, damage: 50.5, accuracy: 60, bonuses: [{ bonus_id: 7, value: 12 }] } },
+    slots: { primary: { item_id: 1, damage: 50.5, accuracy: 60, bonuses: [{ name: 'Puncture', value: 12 }] } },
     ...over,
   };
 }

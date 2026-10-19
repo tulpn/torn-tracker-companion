@@ -64,10 +64,10 @@ describe('CMP-014 the panel knows every kind a build can share', () => {
   test('shareKinds is the sorted union across features', () => {
     const registry = createRegistry([
       descriptor({ id: 'a', shares: ['loadout', 'foreign_stock'] }),
-      descriptor({ id: 'b', shares: ['foreign_stock', 'npc_loot'] }),
+      descriptor({ id: 'b', shares: ['foreign_stock', 'foreign_shop'] }),
       descriptor({ id: 'c', shares: [] }),
     ]);
-    assert.deepEqual(shareKinds(registry), ['foreign_stock', 'loadout', 'npc_loot']);
+    assert.deepEqual(shareKinds(registry), ['foreign_shop', 'foreign_stock', 'loadout']);
   });
 
   test('a build with no features shares nothing', () => {

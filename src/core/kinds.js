@@ -5,17 +5,15 @@
 // did not ask for. So every observation is checked here, field by field, against the
 // same shapes and ranges, and one that does not fit is dropped with a warning rather
 // than queued to spoil a batch. A kind arrives here with the feature that produces it:
-// wave 1 brings foreign stock, foreign shop shelves, NPC loot levels and loadouts.
+// wave 1 brings foreign stock, foreign shop shelves and loadouts. NPC loot levels are
+// not captured by the script (D-062: the site takes them from a loot-timer service).
 //
-// The country and NPC lists are the site's closed lists, word for word.
+// The country list is the site's closed list, word for word.
 
 export const COUNTRIES = Object.freeze([
   'mexico', 'cayman', 'canada', 'hawaii', 'uk', 'argentina',
   'switzerland', 'japan', 'china', 'uae', 'south-africa',
 ]);
-
-/** The NPCs Torn runs loot timers for. */
-export const LOOTABLE_NPCS = Object.freeze([4, 10, 15, 17, 19, 20]);
 
 export const LOADOUT_SLOTS = Object.freeze([
   'primary', 'secondary', 'melee', 'temporary', 'helmet', 'body', 'gloves', 'pants', 'boots',
@@ -89,10 +87,14 @@ function shelfItem(entry, field) {
   };
 }
 
+/** A bonus as the page names it; the site maps the name onto its bonus table (hq #91). */
 function bonus(entry, field) {
-  object(entry, field, ['bonus_id', 'value']);
+  object(entry, field, ['name', 'value']);
+  if (typeof entry.name !== 'string' || !entry.name.trim() || entry.name.length > 40) {
+    throw new Invalid(`${field}.name must be text of 1 to 40 characters`);
+  }
   return {
-    bonus_id: int(entry.bonus_id, `${field}.bonus_id`, 1, 10_000),
+    name: entry.name.trim(),
     value: num(entry.value, `${field}.value`, -MAX_STAT, MAX_STAT),
   };
 }
@@ -140,14 +142,6 @@ export const KINDS = Object.freeze({
       items: list(d.items, 'items', 100, shelfItem),
       complete: bool(d.complete, 'complete'),
     }),
-  },
-  npc_loot: {
-    title: 'NPC loot levels',
-    fields: ['npc_id', 'loot_level', 'level_since'],
-    check: (d) => optional(d, {
-      npc_id: oneOf(d.npc_id, 'npc_id', LOOTABLE_NPCS),
-      loot_level: int(d.loot_level, 'loot_level', 1, 5),
-    }, { level_since: isoTime }),
   },
   loadout: {
     title: 'Loadouts',

@@ -27,7 +27,8 @@ the module itself carries no notice. The panel's Credits tab is built from
 
 | Script | Author | What the idea was | Where |
 |---|---|---|---|
-| [TornTools](https://github.com/Mephiles/torntools_extension) (GPLv3) | Mephiles and contributors | Reading the foreign shop's stock from the page's own `travelData` response, and where the shelves sit on the page | `src/features/foreign-stock/` |
+| [TornTools](https://github.com/Mephiles/torntools_extension) (GPLv3) | Mephiles and contributors | Reading the foreign shop's stock from the page's own `travelData` response, and where the shelves sit on the page; where the attack page keeps its state | `src/features/foreign-stock/`, `src/features/attack-loadout/` |
+| [Torn Loadout Share](https://greasyfork.org/scripts/570314) (MIT) | Sigtran | Reading the defender's loadout from the attack page's own `attackData` response, and which slot number is which | `src/features/attack-loadout/` |
 
 ## This script
 
