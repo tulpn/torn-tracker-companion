@@ -91,8 +91,8 @@ export function runFeature(feature, {
     shared,
     violations,
     /** The page receiving one of its own JSON responses. */
-    respond(url, data, method = 'GET') {
-      for (const sub of [...subscribers]) if (sub.test(url)) sub.handler({ url, method, data });
+    respond(url, data, method = 'GET', form = null) {
+      for (const sub of [...subscribers]) if (sub.test(url)) sub.handler({ url, method, data, form });
     },
     /** Lets MutationObserver callbacks and promises run. */
     settle: () => new Promise((resolve) => setTimeout(resolve, 0)),

@@ -15,5 +15,6 @@ import bazaarCapture from './bazaar-capture/index.js';
 import ocHelper from './oc-helper/index.js';
 import auctionCapture from './auction-capture/index.js';
 import crimeHelper from './crime-helper/index.js';
+import crimeOutcome from './crime-outcome/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome];
