@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { DIBS_URL, FF_URL, MAX_IDS, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
+import { DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
 
@@ -305,6 +305,26 @@ describe('CMP-204 an OC read (CAPI-035, as accepted in hq #110)', () => {
     const r = rig({ key: '' });
     await r.site.oc('X');
     await rig().site.oc('');
+    assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('CMP-206 the own gym read (CAPI-035, D-073)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('the gym in progress, its percent and the estimate, each checked', async () => {
+    const r = rig({ reply: reply({ gym_id: 2, percent: 62, next_gym_energy_estimate: 190, energy_by_gym: [] }) });
+    assert.deepEqual(await r.site.meGym(), { gym_id: 2, percent: 62, next_gym_energy_estimate: 190 });
+    assert.equal(r.calls[0].url, ME_GYM_URL);
+    const odd = rig({ reply: reply({ gym_id: 2, percent: 140, next_gym_energy_estimate: -5 }) });
+    assert.deepEqual(await odd.site.meGym(), { gym_id: 2, percent: null, next_gym_energy_estimate: null });
+  });
+
+  test('no gym, a failure or no key: nothing', async () => {
+    assert.equal(await rig({ reply: reply({}) }).site.meGym(), null);
+    assert.equal(await rig({ reply: reply(null, 503) }).site.meGym(), null);
+    const r = rig({ key: '' });
+    assert.equal(await r.site.meGym(), null);
     assert.equal(r.calls.length, 0);
   });
 });

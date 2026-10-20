@@ -16,7 +16,7 @@
 // I picked" again.
 
 export const DISCLOSURE = Object.freeze({
-  version: 5,
+  version: 6,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -31,6 +31,16 @@ export const DISCLOSURE = Object.freeze({
   ].join(' '),
   /** kind -> one line saying what that kind shares, shown beside its switch. */
   kinds: Object.freeze({
+    gym_progress: [
+      'On the gym page: which gym you are working towards and how far in you are, as the page',
+      'shows it. Only for your own gym view on torn-tracker.com and in the bot: never shown to',
+      'anyone else, never published, not even in totals, and kept for 30 days.',
+    ].join(' '),
+    gym_train: [
+      'When you train: the gym, the stat, and how much it went up (the new value the page gives',
+      'less the one before). Only for your own gym view on torn-tracker.com and in the bot: never',
+      'shown to anyone else, never published, not even in totals, and kept for 30 days.',
+    ].join(' '),
     crime_outcome: [
       'When you commit a crime: which crime it was (the page\'s own numbers for it), whether it',
       'succeeded, failed or critically failed, and the money and items you got. Only your own',
