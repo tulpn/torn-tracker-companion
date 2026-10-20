@@ -13,5 +13,6 @@ import warPage from './war-page/index.js';
 import tradeValue from './trade-value/index.js';
 import bazaarCapture from './bazaar-capture/index.js';
 import ocHelper from './oc-helper/index.js';
+import auctionCapture from './auction-capture/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, ocHelper];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper];
