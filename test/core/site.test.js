@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { FF_URL, MAX_IDS, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
+import { DIBS_URL, FF_URL, MAX_IDS, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
 
@@ -21,7 +21,7 @@ afterEach(() => {
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-function rig({ key = KEY, reply = () => ({ ok: true, status: 200, data: {} }), now = () => 0 } = {}) {
+function rig({ key = KEY, reply = () => ({ ok: true, status: 200, data: {} }), now = () => 0, clock } = {}) {
   const calls = [];
   let currentKey = key;
   const site = createSite({
@@ -31,6 +31,7 @@ function rig({ key = KEY, reply = () => ({ ok: true, status: 200, data: {} }), n
       return reply(url, opts);
     },
     cache: createCache(SPACES, { now }),
+    now: clock,
   });
   return { site, calls, setKey: (k) => { currentKey = k; } };
 }
@@ -163,5 +164,82 @@ describe('CMP-008 the cache keeps to its key, its lifetime and its shapes', () =
 
   test('an unknown space is a bug', () => {
     assert.throws(() => createCache(SPACES).get('battle', 1), /no space/);
+  });
+});
+
+describe('CMP-102 dibs (CAPI-034, as proposed in hq #104)', () => {
+  const T0 = Date.parse('2026-10-20T12:00:00Z');
+  const row = (over = {}) => ({
+    target_id: 111, holder: { torn_id: 222, name: 'Ares' }, expires_at: '2026-10-20T12:05:00Z', mine: false, ...over,
+  });
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('reads the claims, turned to our clock by the reply\'s server_time', async () => {
+    // Our clock is 10 s behind the site's.
+    const r = rig({
+      clock: () => T0 - 10_000,
+      reply: reply({ war: { id: 1, opponent_faction_id: 2 }, dibs: [row()], server_time: '2026-10-20T12:00:00Z' }),
+    });
+    const answer = await r.site.dibs();
+    assert.equal(r.calls[0].url, DIBS_URL);
+    assert.equal(r.calls[0].method, 'GET');
+    assert.equal(answer.war, true);
+    assert.deepEqual(answer.dibs.get(111), {
+      target: 111, holder: { id: 222, name: 'Ares' }, expiresAt: T0 + 300_000 - 10_000, mine: false,
+    });
+  });
+
+  test('a claim that does not fit is dropped; the rest are kept', async () => {
+    const bad = [row({ target_id: 0 }), row({ target_id: 2, holder: { torn_id: 3, name: '' } }),
+      row({ target_id: 4, expires_at: 'soon' }), row({ target_id: 5, mine: 'yes' }), row({ target_id: 6, extra: 1 })];
+    const r = rig({ reply: reply({ war: {}, dibs: bad }) });
+    assert.deepEqual([...(await r.site.dibs()).dibs.keys()], [6]);
+  });
+
+  test('no ranked war is an answer; an odd reply or a failure is none', async () => {
+    assert.deepEqual(await rig({ reply: reply({ war: null, dibs: [row()] }) }).site.dibs(), { war: false, dibs: new Map() });
+    assert.equal(await rig({ reply: reply({ dibs: [] }) }).site.dibs(), null);
+    assert.equal(await rig({ reply: reply(null, 503) }).site.dibs(), null);
+    const r = rig({ key: '' });
+    assert.equal(await r.site.dibs(), null);
+    assert.equal(r.calls.length, 0, 'no key, no call');
+  });
+
+  test('a claim posts the action for that one target', async () => {
+    const r = rig({ clock: () => T0, reply: reply({ target_id: 111, dibs: row({ mine: true }), server_time: '2026-10-20T12:00:00Z' }) });
+    const result = await r.site.callDibs(111, 'claim');
+    assert.equal(r.calls[0].url, `${DIBS_URL}/111`);
+    assert.equal(r.calls[0].method, 'POST');
+    assert.deepEqual(JSON.parse(r.calls[0].body), { action: 'claim' });
+    assert.equal(result.ok, true);
+    assert.equal(result.dibs.mine, true);
+  });
+
+  test('a release answers null dibs', async () => {
+    const r = rig({ reply: reply({ target_id: 111, dibs: null }) });
+    assert.deepEqual(await r.site.callDibs(111, 'release'), { ok: true, dibs: null, error: null });
+  });
+
+  test('taken comes back with the holder; other refusals are named, never thrown', async () => {
+    const taken = await rig({ reply: reply({ error: 'dibs_taken', dibs: row() }, 409) }).site.callDibs(111, 'claim');
+    assert.equal(taken.error, 'dibs_taken');
+    assert.equal(taken.dibs.holder.name, 'Ares');
+    assert.equal((await rig({ reply: reply({ error: 'no_war' }, 404) }).site.callDibs(1, 'claim')).error, 'no_war');
+    assert.equal((await rig({ reply: reply({ error: 'whatever' }, 429) }).site.callDibs(1, 'claim')).error, 'busy');
+    assert.equal((await rig({ reply: reply(null, 500) }).site.callDibs(1, 'claim')).error, 'failed');
+  });
+
+  test('a bad target or action never leaves the script', async () => {
+    const r = rig();
+    assert.equal((await r.site.callDibs(-1, 'claim')).error, 'invalid');
+    assert.equal((await r.site.callDibs(1, 'steal')).error, 'invalid');
+    assert.equal(r.calls.length, 0);
+  });
+
+  test('a refused key stops dibs too', async () => {
+    const r = rig({ reply: reply(null, 401) });
+    await r.site.dibs();
+    assert.equal(await r.site.dibs(), null);
+    assert.equal(r.calls.length, 1);
   });
 });
