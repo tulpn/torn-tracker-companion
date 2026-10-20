@@ -74,10 +74,14 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   planning shows torn-tracker.com's success estimate. Both come from torn-tracker.com,
   never a third party. The estimate needs your faction's key with faction API access on
   torn-tracker.com. Needs your script key.
+- **Auction listings** (wave 2). The listings the auction house shows you can be shared
+  with torn-tracker.com, which publishes price history per item and bonus. Torn's API has
+  only completed sales. Never the high bidder. Off until you switch it on.
 
 ### Notes
 
-- Sharing can be switched on for foreign shop stock, loadouts and bazaar listings. The Sharing tab says
+- Sharing can be switched on for foreign shop stock, loadouts, bazaar listings and auction
+  listings. The Sharing tab says
   exactly what each one sends, and what torn-tracker.com keeps and publishes; the README
   has the same table. Everything starts off.
 - This version asks for no Torn API key.

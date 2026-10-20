@@ -12,6 +12,7 @@ Saved Torn pages and the JSON responses Torn's own pages request, for feature te
 | `market-add.html` | the item market's sell form | **Synthetic**, classes as Torn Market Filler (MIT) matches them |
 | `trade-view.html` | a trade's two sides, `trade.php#step=view` | **Synthetic**, classes and texts as TornTools and Torn PDA (both GPLv3) match them |
 | `faction-crimes.html` | two OC 2.0 crime cards on the faction's crimes tab | **Synthetic**, classes as TornTools and OC2.0 Helper (both GPLv3) match them; `data-oc-id` as the crime id is inferred |
+| `auction-house.html` | `amarket.php`, weapons tab: three listings | **Captured** by the owner on 2026-10-20, names, player ids and item uids replaced. A fourth, anonymous-seller row is synthetic |
 | `attack-data.json` | `page.php?sid=attackData` during a fight | **Synthetic**, fields as TornTools types them and Torn Loadout Share (MIT) reads them. Replace with a capture. |
 | `attack-data-before.json` | the same before the fight starts, defender's items not shown | **Synthetic**, as above |
 

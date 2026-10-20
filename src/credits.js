@@ -58,6 +58,22 @@ export const CREDITS = Object.freeze([
     merged: false,
   },
   {
+    name: 'Cortex RW Auction Insights',
+    author: 'its Greasy Fork author',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/587466',
+    taken: "where the auction house rows keep the item's own id, the bids and the bonuses",
+    merged: false,
+  },
+  {
+    name: 'OpenMarket',
+    author: 'its Greasy Fork author',
+    licence: 'GPL-3.0',
+    url: 'https://greasyfork.org/scripts/571158',
+    taken: "reading each auction row's damage, accuracy and armour",
+    merged: false,
+  },
+  {
     name: 'OC2.0 Helper',
     author: 'Strigwulf, with JohnNash and Seberus',
     licence: 'GPL-3.0',

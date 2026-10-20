@@ -5,7 +5,7 @@
 // did not ask for. So every observation is checked here, field by field, against the
 // same shapes and ranges, and one that does not fit is dropped with a warning rather
 // than queued to spoil a batch. A kind arrives here with the feature that produces it:
-// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars. NPC loot levels are
+// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars and auctions. NPC loot levels are
 // not captured by the script (D-062: the site takes them from a loot-timer service).
 //
 // The country list is the site's closed list, word for word.
@@ -77,6 +77,9 @@ function optional(source, target, checks) {
 }
 
 const itemId = (value, field) => int(value, field, 1, MAX_ITEM_ID);
+
+/** A field the site takes as null when the page did not show it. */
+const nullable = (value, check) => (value === null ? null : check(value));
 
 function shelfItem(entry, field) {
   object(entry, field, ['item_id', 'quantity', 'price']);
@@ -171,6 +174,28 @@ export const KINDS = Object.freeze({
         context: oneOf(d.context, 'context', ['attack', 'war']),
       };
     },
+  },
+  auction_listing: {
+    title: 'Auction listings',
+    fields: ['listing_id', 'item_id', 'item_uid', 'seller_id', 'current_bid', 'bid_count', 'ends_at',
+      'bonuses', 'quality', 'rarity', 'damage', 'accuracy', 'armor'],
+    // As proposed in hq #122: bonuses by name (the page shows no bonus id), quality
+    // nullable (it is only in the info panel), like loadouts after #91.
+    check: (d) => ({
+      listing_id: int(d.listing_id, 'listing_id', 1, Number.MAX_SAFE_INTEGER),
+      item_id: itemId(d.item_id, 'item_id'),
+      item_uid: nullable(d.item_uid, (v) => int(v, 'item_uid', 1, Number.MAX_SAFE_INTEGER)),
+      seller_id: nullable(d.seller_id, (v) => int(v, 'seller_id', 1, Number.MAX_SAFE_INTEGER)),
+      current_bid: int(d.current_bid, 'current_bid', 0, MAX_PRICE),
+      bid_count: int(d.bid_count, 'bid_count', 0, MAX_QUANTITY),
+      ends_at: isoTime(d.ends_at, 'ends_at'),
+      bonuses: list(d.bonuses, 'bonuses', 2, bonus),
+      quality: nullable(d.quality, (v) => num(v, 'quality', 0, 1_000)),
+      rarity: oneOf(d.rarity, 'rarity', ['yellow', 'orange', 'red', 'none']),
+      damage: nullable(d.damage, (v) => num(v, 'damage', 0, MAX_STAT)),
+      accuracy: nullable(d.accuracy, (v) => num(v, 'accuracy', 0, MAX_STAT)),
+      armor: nullable(d.armor, (v) => num(v, 'armor', 0, MAX_STAT)),
+    }),
   },
   bazaar_listing: {
     title: 'Bazaar listings',
