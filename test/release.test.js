@@ -11,7 +11,7 @@ import {
 } from '../tools/release.mjs';
 import { createRegistry } from '../src/core/registry.js';
 import { ROOT, readPackage } from './helpers.js';
-import { WORDED, descriptor } from './fixtures.js';
+import { UNWORDED, WORDED, descriptor } from './fixtures.js';
 
 const CHANGELOG = fs.readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8');
 
@@ -103,7 +103,7 @@ describe('CMP-022 the release notes come from the CHANGELOG', () => {
 describe("CMP-022 a release never ships a feature ahead of the owner's wording", () => {
   test('a sharing feature without its wording blocks the release', () => {
     const registry = createRegistry([descriptor({ shares: ['loadout'] })]);
-    const problems = wordingProblems(registry);
+    const problems = wordingProblems(registry, UNWORDED);
     assert.equal(problems.length, 2);
     assert.match(problems[0], /missing the owner's wording: the first-run notice/);
   });
@@ -111,13 +111,13 @@ describe("CMP-022 a release never ships a feature ahead of the owner's wording",
   test('a 0.x testing release ships with the unworded switches hidden (hq D-068)', () => {
     const registry = createRegistry([descriptor({ shares: ['loadout'] })]);
     for (const version of ['0.9.0', '0.9.1-beta.1']) {
-      const testing = wordingCheck(version, registry);
+      const testing = wordingCheck(version, registry, UNWORDED);
       assert.deepEqual(testing.problems, [], version);
       assert.equal(testing.notices.length, 2);
       assert.match(testing.notices[0], /its switch stays hidden/);
     }
     for (const version of ['1.0.0', '1.1.0-beta.1']) {
-      assert.equal(wordingCheck(version, registry).problems.length, 2, `${version} needs every word`);
+      assert.equal(wordingCheck(version, registry, UNWORDED).problems.length, 2, `${version} needs every word`);
     }
   });
 

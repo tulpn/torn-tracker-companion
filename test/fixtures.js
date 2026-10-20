@@ -46,6 +46,9 @@ export function locationOf(href) {
  * sharing gate can be tested. The words are placeholders for tests only; the real ones
  * are the owner's (src/core/disclosure.js).
  */
+/** A build with no wording at all: every part that needs words stays closed. */
+export const UNWORDED = Object.freeze({ version: 0, firstRun: null, kinds: Object.freeze({}), tosTable: null });
+
 export const WORDED = Object.freeze({
   version: 2,
   firstRun: 'TEST first-run notice.',
