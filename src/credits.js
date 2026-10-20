@@ -14,7 +14,7 @@ export const CREDITS = Object.freeze([
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',
     url: 'https://github.com/Mephiles/torntools_extension',
-    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, and how to set a React field so the form sees it',
+    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, how to set a React field so the form sees it, and totalling each side of a trade',
     merged: false,
   },
   {
@@ -55,6 +55,14 @@ export const CREDITS = Object.freeze([
     licence: 'MIT',
     url: 'https://greasyfork.org/scripts/529238',
     taken: "sorting the ranked war's opponents, where the member lists and status cells are, and moving Torn's rows rather than copying them",
+    merged: false,
+  },
+  {
+    name: 'Torn PDA',
+    author: 'Manuito and contributors',
+    licence: 'GPL-3.0',
+    url: 'https://github.com/Manuito83/torn-pda',
+    taken: "where the trade page's sides, money and items are, and copying the other side's total",
     merged: false,
   },
 ]);

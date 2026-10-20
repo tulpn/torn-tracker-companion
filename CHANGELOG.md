@@ -59,6 +59,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   for what you can still carry and afford is outlined, with how many to buy and the
   profit at torn-tracker.com's market value. It updates as you buy. It only shows: you
   type the amount and press Buy. Needs your script key.
+- **Trade value** (wave 2). On a trade, under the other trader's side, their money and
+  items are totalled at torn-tracker.com's market value, with a Copy button for a receipt
+  to paste in the chat. An item without a price is counted and named, never guessed. It
+  only shows: the script never accepts or changes a trade. Needs your script key.
 
 ### Notes
 
