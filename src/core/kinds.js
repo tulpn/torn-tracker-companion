@@ -5,7 +5,8 @@
 // did not ask for. So every observation is checked here, field by field, against the
 // same shapes and ranges, and one that does not fit is dropped with a warning rather
 // than queued to spoil a batch. A kind arrives here with the feature that produces it:
-// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars, auctions and your own crime outcomes. NPC loot levels are
+// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars, auctions, your own crime outcomes and your own gym progress
+// (D-073: own view only, never published). NPC loot levels are
 // not captured by the script (D-062: the site takes them from a loot-timer service).
 //
 // The country list is the site's closed list, word for word.
@@ -217,6 +218,25 @@ export const KINDS = Object.freeze({
       outcome: oneOf(d.outcome, 'outcome', ['success', 'failure', 'critical_failure']),
       money_gained: int(d.money_gained, 'money_gained', 0, MAX_PRICE),
       items: list(d.items, 'items', 20, crimeItem),
+    }),
+  },
+  gym_progress: {
+    title: 'Your gym progress',
+    fields: ['gym_id', 'percent'],
+    check: (d) => ({
+      gym_id: int(d.gym_id, 'gym_id', 1, 1_000),
+      percent: num(d.percent, 'percent', 0, 100),
+    }),
+  },
+  gym_train: {
+    title: 'Your gym trains',
+    fields: ['gym_id', 'stat', 'gained', 'trains', 'energy'],
+    check: (d) => ({
+      gym_id: int(d.gym_id, 'gym_id', 1, 1_000),
+      stat: oneOf(d.stat, 'stat', ['strength', 'defense', 'speed', 'dexterity']),
+      gained: num(d.gained, 'gained', 0, 1e12),
+      trains: nullable(d.trains, (v) => int(v, 'trains', 1, 10_000)),
+      energy: nullable(d.energy, (v) => int(v, 'energy', 1, 1_000_000)),
     }),
   },
   bazaar_listing: {

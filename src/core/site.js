@@ -19,6 +19,7 @@ export const FF_URL = `${SITE}/api/feeds/ff`;
 export const PRICES_URL = `${SITE}/api/feeds/prices`;
 export const DIBS_URL = `${SITE}/api/feeds/war/dibs`;
 export const OC_URL = `${SITE}/api/feeds/oc`;
+export const ME_GYM_URL = `${SITE}/api/feeds/me/gym`;
 
 /** CMP-101: one batched lookup per page view, at most 100 ids. */
 export const MAX_IDS = 100;
@@ -85,6 +86,7 @@ export const POSITIONS = Object.freeze(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
 const LABEL = 40;
 const OC_NAME = 100;
 
+const percent_ = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100;
 const percent = (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100);
 
 /** An OC's roles as CAPI-035 gives them: up to six slots, each P1..P6 with a label. */
@@ -277,6 +279,25 @@ export function createSite({
         if (positiveInt(row?.crime_id) && percent(row.success ?? null)) crimes.set(row.crime_id, row.success ?? null);
       }
       return { roles: roles ?? cached, crimes };
+    },
+
+    /**
+     * The player's own gym view (CAPI-035 own gym, D-073): the gym in progress, how far,
+     * and the site's labelled estimate of the energy to the next gym. Never cached: it
+     * changes with every train, and the gym page asks once per view.
+     * @returns {Promise<{gym_id: number, percent: number|null, next_gym_energy_estimate: number|null}|null>}
+     */
+    async meGym() {
+      if (!usable()) return null;
+      const data = await call(ME_GYM_URL, { method: 'GET' });
+      if (!positiveInt(data?.gym_id)) return null;
+      const percent = percent_(data.percent) ? data.percent : null;
+      const estimate = data.next_gym_energy_estimate;
+      return {
+        gym_id: data.gym_id,
+        percent,
+        next_gym_energy_estimate: Number.isInteger(estimate) && estimate >= 0 && estimate <= 1e7 ? estimate : null,
+      };
     },
 
     /** The site refused the current key (the panel says so). */

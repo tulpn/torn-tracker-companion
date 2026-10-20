@@ -58,6 +58,14 @@ export const CREDITS = Object.freeze([
     merged: false,
   },
   {
+    name: 'Auto gym switch',
+    author: 'Stephen Lynx',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/480060',
+    taken: "the gym page's own answers, and the gym id class on each gym's button",
+    merged: false,
+  },
+  {
     name: 'Cortex RW Auction Insights',
     author: 'its Greasy Fork author',
     licence: 'MIT',
