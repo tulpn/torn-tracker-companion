@@ -57,7 +57,7 @@ export function countryFromBody(doc) {
   return countryKey(doc.body?.dataset?.[BODY_COUNTRY]);
 }
 
-function itemIdOf(img) {
+export function itemIdOf(img) {
   const source = `${img?.getAttribute('srcset') || ''} ${img?.getAttribute('src') || ''}`;
   const m = /\/items\/(\d+)\//.exec(source);
   return m ? Number(m[1]) : null;

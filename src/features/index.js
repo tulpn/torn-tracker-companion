@@ -5,9 +5,10 @@
 // under this one exporting a single descriptor, which registry.js validates at boot.
 
 import foreignStock from './foreign-stock/index.js';
+import bestBuy from './best-buy/index.js';
 import attackLoadout from './attack-loadout/index.js';
 import ffBadges from './ff-badges/index.js';
 import priceFiller from './price-filler/index.js';
 import warPage from './war-page/index.js';
 
-export default [ffBadges, warPage, foreignStock, attackLoadout, priceFiller];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller];

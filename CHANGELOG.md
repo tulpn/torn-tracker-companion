@@ -55,6 +55,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   dibs releases them. It does nothing in the game. Dibs refresh every 15 seconds while
   the page is on screen. Hospital timers and travel destinations are not on Torn's page
   and come in a later version. Needs your script key.
+- **Best buy abroad** (wave 1). On a foreign shop, the item that makes you the most money
+  for what you can still carry and afford is outlined, with how many to buy and the
+  profit at torn-tracker.com's market value. It updates as you buy. It only shows: you
+  type the amount and press Buy. Needs your script key.
 
 ### Notes
 
