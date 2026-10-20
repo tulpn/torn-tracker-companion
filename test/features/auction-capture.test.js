@@ -55,7 +55,7 @@ describe('CMP-202 reading a listing', () => {
       seller_id: 1000,
       current_bid: 27_374_758,
       bid_count: 7,
-      ends_at: '2026-10-20T14:23:11.000Z',
+      time_left_s: 491,
       bonuses: [{ name: 'Quicken', value: 61 }],
       quality: null,
       rarity: 'yellow',
@@ -68,6 +68,14 @@ describe('CMP-202 reading a listing', () => {
   test('an anonymous seller is null, not left out', () => {
     const r = run({ settings: { enabled: false } });
     assert.equal(readRow(r.doc.querySelector('li[id="579999"]'), NOW).seller_id, null);
+  });
+
+  test('time left comes from the exact end, not the stale timer; the timer only when there is no end', () => {
+    const r = run({ settings: { enabled: false } });
+    const row = r.doc.querySelector('li[id="579754"]');
+    assert.equal(readRow(row, NOW + 60_000).time_left_s, 431);
+    row.querySelector('.time-wrap span[title]').removeAttribute('title');
+    assert.equal(readRow(row, NOW).time_left_s, 500, 'the timer attribute as Torn drew it');
   });
 
   test('a row without what the site needs is left out', () => {

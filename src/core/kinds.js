@@ -177,10 +177,11 @@ export const KINDS = Object.freeze({
   },
   auction_listing: {
     title: 'Auction listings',
-    fields: ['listing_id', 'item_id', 'item_uid', 'seller_id', 'current_bid', 'bid_count', 'ends_at',
+    fields: ['listing_id', 'item_id', 'item_uid', 'seller_id', 'current_bid', 'bid_count', 'time_left_s',
       'bonuses', 'quality', 'rarity', 'damage', 'accuracy', 'armor'],
-    // As proposed in hq #122: bonuses by name (the page shows no bonus id), quality
-    // nullable (it is only in the info panel), like loadouts after #91.
+    // As pinned after hq #122: bonuses by name (the page shows no bonus id), quality
+    // nullable (it is only in the info panel), like loadouts after #91; time left in
+    // seconds, from which the site derives the end.
     check: (d) => ({
       listing_id: int(d.listing_id, 'listing_id', 1, Number.MAX_SAFE_INTEGER),
       item_id: itemId(d.item_id, 'item_id'),
@@ -188,7 +189,7 @@ export const KINDS = Object.freeze({
       seller_id: nullable(d.seller_id, (v) => int(v, 'seller_id', 1, Number.MAX_SAFE_INTEGER)),
       current_bid: int(d.current_bid, 'current_bid', 0, MAX_PRICE),
       bid_count: int(d.bid_count, 'bid_count', 0, MAX_QUANTITY),
-      ends_at: isoTime(d.ends_at, 'ends_at'),
+      time_left_s: int(d.time_left_s, 'time_left_s', 0, 30 * 86_400),
       bonuses: list(d.bonuses, 'bonuses', 2, bonus),
       quality: nullable(d.quality, (v) => num(v, 'quality', 0, 1_000)),
       rarity: oneOf(d.rarity, 'rarity', ['yellow', 'orange', 'red', 'none']),

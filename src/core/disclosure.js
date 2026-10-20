@@ -16,7 +16,7 @@
 // I picked" again.
 
 export const DISCLOSURE = Object.freeze({
-  version: 3,
+  version: 4,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -24,7 +24,8 @@ export const DISCLOSURE = Object.freeze({
     'you switch it on here and press "Share the kinds I picked". Each one sends only what its',
     'line below says, with the time you saw it, and never anything from company or faction',
     'application pages. It goes with your script key, so the site knows who sent each report and',
-    'can catch false ones; it never publishes who sent anything. The site combines what players',
+    'can catch false ones; it never publishes who sent anything, except that a player can see who',
+    'reported their own loadout. The site combines what players',
     'send and publishes the result openly, for every player and tool. Switch a kind off here at',
     'any time to stop sharing it.',
   ].join(' '),
@@ -32,7 +33,7 @@ export const DISCLOSURE = Object.freeze({
   kinds: Object.freeze({
     auction_listing: [
       'On the auction house: each listing the page shows you, with its id, the item and its own id,',
-      "the seller's id (none when anonymous), the current bid and number of bids, when it ends, its",
+      "the seller's id (none when anonymous), the current bid and number of bids, the time left, its",
       'rarity, damage, accuracy or armour, and its bonuses. Never the high bidder. Again only when a',
       'bid changed, at most once every ten minutes, and only while the tab is on screen. The site',
       'keeps reports for 90 days and publishes price history per item and bonus.',
@@ -54,7 +55,8 @@ export const DISCLOSURE = Object.freeze({
       "On an attack: the other player's id, and the weapons and armour the attack page shows them",
       'wearing, with their damage, accuracy and bonuses, once per attack. The site keeps reports for',
       "90 days and publishes each player's latest loadout openly, replacing it on every new report",
-      'and removing it once nobody has seen it for 180 days.',
+      'and removing it once nobody has seen it for 180 days. The player it describes can see that',
+      'you reported it.',
     ].join(' '),
   }),
   /**
