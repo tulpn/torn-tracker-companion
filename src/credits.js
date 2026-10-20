@@ -14,7 +14,7 @@ export const CREDITS = Object.freeze([
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',
     url: 'https://github.com/Mephiles/torntools_extension',
-    taken: 'where the foreign shop and the attack page keep their data, and how to set a React field so the form sees it',
+    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, and how to set a React field so the form sees it',
     merged: false,
   },
   {

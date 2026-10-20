@@ -20,3 +20,10 @@ export const BODY_COUNTRY = 'country';
 export const ROWS = "[class*='stockTableWrapper___'] [class*='row___']";
 export const ITEM_IMAGE = 'img';
 export const PRICE = "[class*='displayPrice__']";
+export const ITEM_NAME = "[class*='itemName___']";
+
+// The message above the shelves: "You have $1,234,567 ... purchased 5 / 29 items". Facts
+// from TornTools' travel fill max (src/common/features/fill-max/travel-fill-max.ts): the
+// money is the second <strong>, the items bought and the capacity the third.
+export const INFO_MONEY = '.info-msg-cont .msg strong:nth-of-type(2)';
+export const INFO_CAPACITY = '.info-msg-cont .msg strong:nth-of-type(3)';

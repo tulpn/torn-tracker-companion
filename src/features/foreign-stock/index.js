@@ -12,8 +12,8 @@
 // the same response for its travel table and YATA uploads. No code was taken; the
 // response and selector names are recorded in selectors.js with their source.
 //
-// The best-buy table (CMP-104's display half, TRV-052) needs the site's prices
-// (CAPI-035) and arrives with WP-TRV-8.
+// The best-buy label (CMP-104's display half, TRV-052) is its own feature, best-buy/,
+// reading the same shelves.
 
 import { createGate, isVisible } from '../../core/capture.js';
 import { countryFromBody, fromPage, fromResponse, onTheGround } from './read.js';
