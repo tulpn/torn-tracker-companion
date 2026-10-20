@@ -8,5 +8,6 @@ import foreignStock from './foreign-stock/index.js';
 import attackLoadout from './attack-loadout/index.js';
 import ffBadges from './ff-badges/index.js';
 import priceFiller from './price-filler/index.js';
+import warPage from './war-page/index.js';
 
-export default [ffBadges, foreignStock, attackLoadout, priceFiller];
+export default [ffBadges, warPage, foreignStock, attackLoadout, priceFiller];

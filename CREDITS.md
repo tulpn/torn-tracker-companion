@@ -31,6 +31,7 @@ the module itself carries no notice. The panel's Credits tab is built from
 | [FF Scouter V2](https://github.com/xentac/FFScouter) (GPLv3 per its header) | xentac and contributors | Fair-fight badges beside each player, where the member rows sit on faction and war pages, and the colour scale players already know | `src/features/ff-badges/` |
 | [Torn Bazaar Filler](https://greasyfork.org/scripts/473470) (MIT) | Ramin Quluzade and Silmaril | A fill button per row on the bazaar's add and manage pages, and where their fields are | `src/features/price-filler/` |
 | [Torn Market Filler](https://greasyfork.org/scripts/513920) (MIT) | Silmaril | Where the item market sell form's rows, price and quantity fields are | `src/features/price-filler/` |
+| [Torn War Stuff Enhanced](https://greasyfork.org/scripts/529238) (MIT), after [Torn War Stuff](https://greasyfork.org/scripts/448681) (MIT) | xentac; tos | Sorting the ranked war's opponents, where the member lists and status cells are, and moving Torn's own rows rather than copying them | `src/features/war-page/` |
 | [Torn Loadout Share](https://greasyfork.org/scripts/570314) (MIT) | Sigtran | Reading the defender's loadout from the attack page's own `attackData` response, and which slot number is which | `src/features/attack-loadout/` |
 
 ## This script

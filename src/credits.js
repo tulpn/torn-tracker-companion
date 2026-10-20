@@ -49,6 +49,14 @@ export const CREDITS = Object.freeze([
     taken: "where the item market sell form's rows, price and quantity fields are",
     merged: false,
   },
+  {
+    name: 'Torn War Stuff Enhanced',
+    author: 'xentac, after Torn War Stuff by tos',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/529238',
+    taken: "sorting the ranked war's opponents, where the member lists and status cells are, and moving Torn's rows rather than copying them",
+    merged: false,
+  },
 ]);
 
 export const CREDITS_URL = 'https://github.com/tulpn/torn-tracker-companion/blob/main/CREDITS.md';

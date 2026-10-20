@@ -48,6 +48,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   torn-tracker.com market value minus your undercut (set it in the panel; $1 by
   default). One press fills that row's price and how many you own. You still press
   Torn's own button: the script never submits anything. Needs your script key.
+- **War page: sorting and dibs** (wave 1). Above the opponents in a ranked war, sort them
+  by status (hittable first), level or fair-fight estimate, or put Torn's order back.
+  Beside each opponent, a dibs button shows who in your faction has called them, with a
+  countdown. Pressing it claims the target on torn-tracker.com, and pressing your own
+  dibs releases them. It does nothing in the game. Dibs refresh every 15 seconds while
+  the page is on screen. Hospital timers and travel destinations are not on Torn's page
+  and come in a later version. Needs your script key.
 
 ### Notes
 
