@@ -12,9 +12,12 @@
 # Setup, once per repo (the owner):
 #   1. This file must be on the repo's DEFAULT branch: GitHub always runs the default
 #      branch's copy of a workflow_run workflow.
-#   2. Secret AUTOMERGE_TOKEN: a fine-grained token of tulpn, this repo only, with
-#      Contents and Pull requests set to read and write. A merge made with it runs CI on
-#      the target branch (GITHUB_TOKEN merges would not).
+#   2. Secret AUTOMERGE_TOKEN: a fine-grained token of tulpn for this repo, with
+#      Contents and Pull requests set to read and write. It is used ONLY for the merge, so
+#      the merge runs CI on the target branch (GITHUB_TOKEN merges would not). All reads
+#      (PRs, check runs, commit statuses) use the workflow's own GITHUB_TOKEN. Fine-grained
+#      tokens can't be given the Checks permission, and on a private repo the check-runs
+#      read answers 403 without it.
 #   3. Variable AUTOMERGE_BASES: `development` for the site, `main` for the companion.
 #
 # The merge commit is authored as tulpn's noreply address and committed by GitHub, which
@@ -36,10 +39,16 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      checks: read
+      statuses: read
+      pull-requests: read
+      contents: read
     concurrency:
       group: automerge-${{ github.event.workflow_run.head_sha }}
     env:
-      GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      MERGE_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
       GH_REPO: ${{ github.repository }}
       SHA: ${{ github.event.workflow_run.head_sha }}
       BASES: ${{ vars.AUTOMERGE_BASES }}
@@ -49,7 +58,7 @@ jobs:
       - name: Merge the PR when everything is green
         run: |
           set -euo pipefail
-          if [ -z "$GH_TOKEN" ] || [ -z "$BASES" ]; then
+          if [ -z "$MERGE_TOKEN" ] || [ -z "$BASES" ]; then
             echo "AUTOMERGE_TOKEN or AUTOMERGE_BASES is not set; nothing to do."; exit 0
           fi
 
@@ -84,5 +93,6 @@ jobs:
             echo "Commit status is $status."; exit 0
           fi
 
-          gh pr merge "$num" --merge --match-head-commit "$SHA" --author-email "$NOREPLY"
+          # Only the merge uses the owner's token, so it triggers CI on the target branch.
+          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$num" --merge --match-head-commit "$SHA" --author-email "$NOREPLY"
           echo "Merged PR #$num into $base."
