@@ -8,7 +8,7 @@
 // empty result and shows "no data" (CMP-023).
 //
 // The reply shapes are the ones specs/companion-api.md section 6.4 pins (FF and prices
-// accepted in hq #97, dibs in #104). The roster's key and shape are the companion's
+// accepted in hq #97, dibs in #104, the OC read in #110). The roster's key and shape are the companion's
 // proposal on #104, mirroring Torn's UserStatus, until the spec names them.
 
 import { SITE } from '../hosts.js';
@@ -18,6 +18,7 @@ import { request } from './net.js';
 export const FF_URL = `${SITE}/api/feeds/ff`;
 export const PRICES_URL = `${SITE}/api/feeds/prices`;
 export const DIBS_URL = `${SITE}/api/feeds/war/dibs`;
+export const OC_URL = `${SITE}/api/feeds/oc`;
 
 /** CMP-101: one batched lookup per page view, at most 100 ids. */
 export const MAX_IDS = 100;
@@ -80,9 +81,24 @@ export function readRosterRow(row, skew) {
   };
 }
 
+export const POSITIONS = Object.freeze(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
+const LABEL = 40;
+const OC_NAME = 100;
+
+const percent = (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100);
+
+/** An OC's roles as CAPI-035 gives them: up to six slots, each P1..P6 with a label. */
+export function validRoles(v) {
+  return Array.isArray(v) && v.length > 0 && v.length <= POSITIONS.length && v.every((r) => r
+    && typeof r === 'object' && POSITIONS.includes(r.position_id)
+    && typeof r.label === 'string' && r.label.length > 0 && r.label.length <= LABEL
+    && percent(r.weight));
+}
+
 export const SPACES = Object.freeze({
   ff: { ttlMs: HOUR, max: 2_000, valid: validFf },
   prices: { ttlMs: 10 * 60_000, max: 2_000, valid: validPrice },
+  ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
 });
 
 /**
@@ -237,6 +253,30 @@ export function createSite({
       const known = ['dibs_taken', 'no_war', 'not_in_war'];
       const error = known.includes(data.error) ? data.error : (result.status === 429 ? 'busy' : 'failed');
       return { ok: false, dibs: error === 'dibs_taken' ? claim : null, error };
+    },
+
+    /**
+     * An OC's role weights and the faction's success estimates for it (CAPI-035, #110).
+     * Roles are kept for an hour; the estimates are fresh each call, so a page view asks
+     * once per OC name and keeps the answer itself.
+     * @param {string} name  the OC's name as Torn shows it
+     * @param {{crimes?: boolean}} [opts]  crimes false: roles from the cache will do
+     * @returns {Promise<{roles: object[]|null, crimes: Map<number, number|null>}>}
+     */
+    async oc(name, { crimes: wantCrimes = true } = {}) {
+      const empty = { roles: null, crimes: new Map() };
+      if (typeof name !== 'string' || !name.trim() || name.length > OC_NAME) return empty;
+      const cached = cache.get('ocRoles', name) ?? null;
+      if ((cached && !wantCrimes) || !usable()) return { ...empty, roles: cached };
+
+      const data = await call(`${OC_URL}/${encodeURIComponent(name)}`, { method: 'GET' });
+      const roles = validRoles(data?.roles) ? data.roles.map(({ position_id, label, weight }) => ({ position_id, label, weight })) : null;
+      if (roles) cache.set('ocRoles', name, roles);
+      const crimes = new Map();
+      for (const row of Array.isArray(data?.crimes) ? data.crimes : []) {
+        if (positiveInt(row?.crime_id) && percent(row.success ?? null)) crimes.set(row.crime_id, row.success ?? null);
+      }
+      return { roles: roles ?? cached, crimes };
     },
 
     /** The site refused the current key (the panel says so). */
