@@ -71,9 +71,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   until you switch it on; never your own bazaar.
 - **Organized crimes** (wave 2). On your faction's crimes tab, each role shows how much it
   counts towards the crime's success, and each crime your faction is recruiting or
-  planning shows torn-tracker.com's success estimate. Both come from torn-tracker.com,
-  never a third party. The estimate needs your faction's key with faction API access on
-  torn-tracker.com. Needs your script key.
+  planning shows torn-tracker.com's success estimate. The role weights come from
+  tornprobability.com through torn-tracker.com, and are credited on the page; the script
+  never calls them itself. The estimate needs your faction's key with faction API access
+  on torn-tracker.com. Needs your script key.
 - **Auction listings** (wave 2). The listings the auction house shows you can be shared
   with torn-tracker.com, which publishes price history per item and bonus. Torn's API has
   only completed sales. Never the high bidder. Off until you switch it on.

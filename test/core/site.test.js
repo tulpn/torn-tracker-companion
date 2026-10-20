@@ -275,6 +275,11 @@ describe('CMP-204 an OC read (CAPI-035, as accepted in hq #110)', () => {
     assert.equal(r.calls[0].url, `${OC_URL}/Blast%20from%20the%20Past`);
     assert.deepEqual(answer.roles, roles);
     assert.deepEqual([...answer.crimes], [[9, 72.5], [10, null]]);
+    assert.equal(answer.weightsSource, 'tornprobability.com', 'D-074, when the reply does not say');
+    const named = rig({ reply: reply({ roles, crimes: [], weights_source: 'example.org' }) });
+    assert.equal((await named.site.oc('X')).weightsSource, 'example.org');
+    const odd = rig({ reply: reply({ roles, crimes: [], weights_source: '<b>x</b>' }) });
+    assert.equal((await odd.site.oc('X')).weightsSource, 'tornprobability.com');
   });
 
   test('roles are kept for the hour; estimates are asked for afresh', async () => {
