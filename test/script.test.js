@@ -190,7 +190,7 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
     const t = await boot(PAGE);
     openOn(t, 'sharing');
     const switches = [...t.panel().querySelectorAll('[data-share]')];
-    assert.deepEqual(switches.map((s) => s.dataset.share).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_stock', 'gym_progress', 'gym_train', 'loadout']);
+    assert.deepEqual(switches.map((s) => s.dataset.share).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_stock', 'gym_progress', 'gym_train', 'item_market_snapshot', 'loadout']);
     assert.ok(switches.every((s) => !s.checked && !s.disabled));
     assert.match(t.panel().textContent, /Share the kinds I picked/);
   });

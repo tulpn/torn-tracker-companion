@@ -17,5 +17,6 @@ import auctionCapture from './auction-capture/index.js';
 import crimeHelper from './crime-helper/index.js';
 import crimeOutcome from './crime-outcome/index.js';
 import gymProgress from './gym-progress/index.js';
+import marketSnapshot from './market-snapshot/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot];

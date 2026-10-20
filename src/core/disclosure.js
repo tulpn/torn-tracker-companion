@@ -16,7 +16,7 @@
 // I picked" again.
 
 export const DISCLOSURE = Object.freeze({
-  version: 6,
+  version: 7,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -31,6 +31,12 @@ export const DISCLOSURE = Object.freeze({
   ].join(' '),
   /** kind -> one line saying what that kind shares, shown beside its switch. */
   kinds: Object.freeze({
+    item_market_snapshot: [
+      "On the item market: the prices and quantities of up to 50 listings of the item you opened,",
+      'never who is selling. Only for items torn-tracker.com asks for at that moment (Torn\'s API',
+      'already has most listings), at most once per item every five minutes and only while the tab',
+      'is on screen. The site keeps reports for 7 days and publishes a price index per item.',
+    ].join(' '),
     gym_progress: [
       'On the gym page: which gym you are working towards and how far in you are, as the page',
       'shows it. Only for your own gym view on torn-tracker.com and in the bot: never shown to',

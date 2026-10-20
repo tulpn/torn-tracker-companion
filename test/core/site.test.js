@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
+import { DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
 
@@ -330,6 +330,32 @@ describe('CMP-206 the own gym read (CAPI-035, D-073)', () => {
     assert.equal(await rig({ reply: reply(null, 503) }).site.meGym(), null);
     const r = rig({ key: '' });
     assert.equal(await r.site.meGym(), null);
+    assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('CMP-203 the demand feed (CAPI-013, accepted in hq #123)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('kinds and the ids wanted, checked; kept for 60 s', async () => {
+    let clock = 0;
+    const r = rig({ clock: () => clock, reply: reply({ demand: { item_market_snapshot: [206, 367, -1, 'x'], 'Bad Kind': [1] } }) });
+    const wanted = await r.site.demand();
+    assert.equal(r.calls[0].url, DEMAND_URL);
+    assert.deepEqual([...wanted.get('item_market_snapshot')], [206, 367]);
+    assert.equal(wanted.has('Bad Kind'), false);
+    clock = 59_000;
+    await r.site.demand();
+    assert.equal(r.calls.length, 1);
+    clock = 60_000;
+    await r.site.demand();
+    assert.equal(r.calls.length, 2);
+  });
+
+  test('a failure or no key means nothing is wanted', async () => {
+    assert.equal((await rig({ reply: reply(null, 503) }).site.demand()).size, 0);
+    const r = rig({ key: '' });
+    assert.equal((await r.site.demand()).size, 0);
     assert.equal(r.calls.length, 0);
   });
 });
