@@ -65,10 +65,14 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   items are totalled at torn-tracker.com's market value, with a Copy button for a receipt
   to paste in the chat. An item without a price is counted and named, never guessed. It
   only shows: the script never accepts or changes a trade. Needs your script key.
+- **Bazaar listings** (wave 2). On another player's bazaar, the items, quantities and
+  prices the page loads for you can be shared with torn-tracker.com, which publishes each
+  player's latest listings and a price index. Torn's API has no player's listings. Off
+  until you switch it on; never your own bazaar.
 
 ### Notes
 
-- Sharing can be switched on for foreign shop stock and loadouts. The Sharing tab says
+- Sharing can be switched on for foreign shop stock, loadouts and bazaar listings. The Sharing tab says
   exactly what each one sends, and what torn-tracker.com keeps and publishes; the README
   has the same table. Everything starts off.
 - This version asks for no Torn API key.

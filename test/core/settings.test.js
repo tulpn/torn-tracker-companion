@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, isEnabled, isShared, normalize } from '../../src/core/settings.js';
-import { WORDED, descriptor } from '../fixtures.js';
+import { UNWORDED, WORDED, descriptor } from '../fixtures.js';
 
 const registry = createRegistry([
   descriptor({ id: 'war-enhancer', shares: ['loadout'] }),
@@ -36,8 +36,8 @@ describe('CMP-014 every sharing switch starts off', () => {
     const settings = normalize({ shares: { foreign_stock: true } }, registry);
     assert.equal(settings.sharingConsent, 0);
     assert.equal(isShared(settings, 'foreign_stock', WORDED), false);
-    assert.equal(isShared({ ...settings, sharingConsent: WORDED.version }, 'foreign_stock'), false,
-      'and with no wording in this build, never');
+    assert.equal(isShared({ ...settings, sharingConsent: WORDED.version }, 'foreign_stock', UNWORDED), false,
+      'and with no wording at all, never');
   });
 
   test('the agreed version is kept only when it is a positive whole number', () => {

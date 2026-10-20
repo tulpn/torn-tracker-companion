@@ -11,5 +11,6 @@ import ffBadges from './ff-badges/index.js';
 import priceFiller from './price-filler/index.js';
 import warPage from './war-page/index.js';
 import tradeValue from './trade-value/index.js';
+import bazaarCapture from './bazaar-capture/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture];

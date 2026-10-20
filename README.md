@@ -65,6 +65,7 @@ is switched on.
 | Kind | What it sends | What torn-tracker.com keeps and publishes |
 |---|---|---|
 | Foreign stock | On a foreign shop while you are abroad: the country, and each item with its stock and price, empty shelves included. At most once every 30 seconds per country, and only while the tab is on screen. | Each report with who sent it for 30 days, so the site knows you were in that country then. It publishes stock and restock times as "seen at", never by whom. |
+| Bazaar listings | On another player's bazaar: their id, and each item they list with its quantity and price (and the item's own id where the page shows one), as far as you scroll. At most once per bazaar every five minutes, only while the tab is on screen. Never your own bazaar. | Reports for 7 days. Each player's latest listings are published openly, and prices per item. |
 | Loadouts | On an attack: the other player's id, and the weapons and armour the attack page shows them wearing, with their damage, accuracy and bonuses. Once per attack. | Reports for 90 days. Each player's latest loadout is published openly, replaced on every new report, and removed once nobody has seen it for 180 days. |
 
 The panel shows the same lines beside each switch. If they change in an update, sharing

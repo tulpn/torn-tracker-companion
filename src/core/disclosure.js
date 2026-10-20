@@ -16,7 +16,7 @@
 // I picked" again.
 
 export const DISCLOSURE = Object.freeze({
-  version: 1,
+  version: 2,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -30,6 +30,13 @@ export const DISCLOSURE = Object.freeze({
   ].join(' '),
   /** kind -> one line saying what that kind shares, shown beside its switch. */
   kinds: Object.freeze({
+    bazaar_listing: [
+      "On another player's bazaar: their id, and each item they list with its quantity and price",
+      "(and the item's own id where the page shows one), as far as you scroll, at most once per",
+      'bazaar every five minutes and only while the tab is on screen. Never your own bazaar. The',
+      "site keeps reports for 7 days and publishes each player's latest listings openly, and prices",
+      'per item.',
+    ].join(' '),
     foreign_stock: [
       'On a foreign shop while you are abroad: the country, and each item with its stock and price,',
       'empty shelves included, at most once every 30 seconds per country and only while the tab is',
