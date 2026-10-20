@@ -16,8 +16,8 @@ const refused = (o, pattern) => {
 };
 
 describe('CMP-008 the queue holds only observations the site will accept', () => {
-  test('wave 1 brings three kinds and wave 2 bazaars, auctions, crime outcomes and gym progress; NPC loot is not captured by the script (D-062)', () => {
-    assert.deepEqual(Object.keys(KINDS).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_shop', 'foreign_stock', 'gym_progress', 'gym_train', 'loadout']);
+  test('wave 1 brings three kinds and wave 2 bazaars, auctions, crime outcomes, gym progress and item market prices; NPC loot is not captured by the script (D-062)', () => {
+    assert.deepEqual(Object.keys(KINDS).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_shop', 'foreign_stock', 'gym_progress', 'gym_train', 'item_market_snapshot', 'loadout']);
     assert.equal(isKnownKind('npc_loot'), false, 'retired, D-062');
     assert.equal(isKnownKind('oc_role_weight'), false, 'retired, D-074');
     assert.equal(isKnownKind('toString'), false);

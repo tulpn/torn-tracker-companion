@@ -90,11 +90,15 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   how much energy is left to unlock the next one, an estimate from torn-tracker.com. It
   works from your gym progress and trains, which you can share for your own view only:
   never shown to anyone else, never published. Off until you switch them on.
+- **Item market prices** (wave 2). When torn-tracker.com needs fresh prices for an item
+  you open on the item market, the listings' prices and quantities can be shared, never
+  the sellers. Off until you switch it on.
 
 ### Notes
 
 - Sharing can be switched on for foreign shop stock, loadouts, bazaar listings, auction
-  listings, your own crime outcomes, and your own gym progress and trains. The Sharing tab says
+  listings, your own crime outcomes, your own gym progress and trains, and item market prices when torn-tracker.com asks for
+  them. The Sharing tab says
   exactly what each one sends, and what torn-tracker.com keeps and publishes; the README
   has the same table. Everything starts off.
 - This version asks for no Torn API key.

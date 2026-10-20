@@ -14,7 +14,7 @@ import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
 import { mountPanel } from './core/panel.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
-import { defaults, load, normalize, save } from './core/settings.js';
+import { defaults, isShared, load, normalize, save } from './core/settings.js';
 import { forget } from './core/storage.js';
 import { error, log, setDebug } from './core/log.js';
 import * as dom from './core/dom.js';
@@ -64,6 +64,8 @@ export async function boot(win = globalThis) {
         now: uploader.serverNow,
         getLocation: () => win.location,
       }),
+      /** Whether the player shares this kind now; features ask before costly work for it. */
+      sharing: (kind) => descriptor.shares.includes(kind) && isShared(settings, kind),
     }),
   });
 

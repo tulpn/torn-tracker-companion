@@ -20,6 +20,11 @@ export const PRICES_URL = `${SITE}/api/feeds/prices`;
 export const DIBS_URL = `${SITE}/api/feeds/war/dibs`;
 export const OC_URL = `${SITE}/api/feeds/oc`;
 export const ME_GYM_URL = `${SITE}/api/feeds/me/gym`;
+export const DEMAND_URL = `${SITE}/api/feeds/demand`;
+
+/** CAPI-013: the demand feed is kept 60 s; at most 500 ids per kind. */
+const DEMAND_TTL = 60_000;
+const DEMAND_MAX = 500;
 
 /** CMP-101: one batched lookup per page view, at most 100 ids. */
 export const MAX_IDS = 100;
@@ -116,6 +121,8 @@ export function createSite({
 }) {
   /** Set when the site refuses the key; reads stop until the key changes. */
   let refusedKey = null;
+  /** The last demand answer and when it came. */
+  let demandMemo = null;
 
   const headers = () => ({ Authorization: `Bearer ${getKey()}`, Accept: 'application/json' });
   const usable = () => Boolean(getKey()) && getKey() !== refusedKey;
@@ -304,6 +311,25 @@ export function createSite({
         percent,
         next_gym_energy_estimate: Number.isInteger(estimate) && estimate >= 0 && estimate <= 1e7 ? estimate : null,
       };
+    },
+
+    /**
+     * The ids the site wants now for each demand-gated kind (CAPI-013, accepted in #123),
+     * kept for 60 s. Any failure means nothing is wanted, so nothing is sent.
+     * @returns {Promise<Map<string, Set<number>>>}
+     */
+    async demand() {
+      if (demandMemo && now() - demandMemo.at < DEMAND_TTL) return demandMemo.value;
+      const value = new Map();
+      if (!usable()) return value;
+      const data = await call(DEMAND_URL, { method: 'GET' });
+      const wanted = data?.demand && typeof data.demand === 'object' ? data.demand : {};
+      for (const [kind, ids] of Object.entries(wanted)) {
+        if (!/^[a-z_]{1,40}$/.test(kind) || !Array.isArray(ids)) continue;
+        value.set(kind, new Set(ids.filter(positiveInt).slice(0, DEMAND_MAX)));
+      }
+      demandMemo = { at: now(), value };
+      return value;
     },
 
     /** The site refused the current key (the panel says so). */

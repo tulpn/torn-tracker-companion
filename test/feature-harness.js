@@ -33,7 +33,7 @@ export function json(name) {
  * @param {string} [opts.visibility]  'visible' (default) or 'hidden'
  */
 export function runFeature(feature, {
-  html = '', url, settings, now = Date.now, visibility = 'visible', site = null,
+  html = '', url, settings, now = Date.now, visibility = 'visible', site = null, sharing = () => true,
 } = {}) {
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, {
     url, pretendToBeVisual: true,
@@ -76,6 +76,7 @@ export function runFeature(feature, {
     site,
     log: () => {},
     now,
+    sharing: (kind) => feature.shares.includes(kind) && sharing(kind),
     share(kind, data) {
       if (!feature.shares.includes(kind)) throw new Error(`${feature.id} shared ${kind}, which it does not declare`);
       shared.push({ kind, ...data });

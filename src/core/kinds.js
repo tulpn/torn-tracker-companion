@@ -100,6 +100,15 @@ function crimeItem(entry, field) {
   };
 }
 
+/** One item market listing: its price and quantity, never its seller. */
+function marketListing(entry, field) {
+  object(entry, field, ['price', 'quantity']);
+  return {
+    price: int(entry.price, `${field}.price`, 0, MAX_PRICE),
+    quantity: int(entry.quantity, `${field}.quantity`, 1, MAX_QUANTITY),
+  };
+}
+
 /** One bazaar listing; item_uid only when the page gave the item's own id. */
 function listing(entry, field) {
   object(entry, field, ['item_id', 'item_uid', 'quantity', 'price']);
@@ -237,6 +246,15 @@ export const KINDS = Object.freeze({
       gained: num(d.gained, 'gained', 0, 1e12),
       trains: nullable(d.trains, (v) => int(v, 'trains', 1, 10_000)),
       energy: nullable(d.energy, (v) => int(v, 'energy', 1, 1_000_000)),
+    }),
+  },
+  item_market_snapshot: {
+    title: 'Item market prices',
+    fields: ['item_id', 'listings'],
+    // Demand-gated (CAPI-013): sent only for items the site asks for. No seller ids.
+    check: (d) => ({
+      item_id: itemId(d.item_id, 'item_id'),
+      listings: list(d.listings, 'listings', 50, marketListing),
     }),
   },
   bazaar_listing: {
