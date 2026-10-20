@@ -37,6 +37,9 @@ and tags it. Nothing is published yet.
       different network path, and it is where the script is hardest to fix after the fact.
 - [ ] The README's Torn API terms table matches the observation kinds this version can
       actually share. A new kind means a new row, and the owner words it.
+- [ ] `src/data/items.js` is generated, not the placeholder (`TORN_API_KEY=… npm run
+  data:items`, then commit). The release tool refuses the placeholder. Re-run it when
+  Torn adds items.
 - [ ] The CHANGELOG section reads like something a player would want to know.
 - [ ] The forum post is updated for anything that changed in what the script does.
 

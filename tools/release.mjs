@@ -114,6 +114,19 @@ export function wordingProblems(registry = createRegistry(features), disclosure 
   return disclosureGaps(registry, disclosure).map((gap) => `missing the owner's wording: ${gap}`);
 }
 
+/**
+ * Generated tables a release would ship unfilled. src/data/items.js starts as a
+ * placeholder with only the items the tests use, until tools/build-items.mjs runs with a
+ * key; a release with it would price almost nothing on the trade page.
+ */
+export function dataProblems(itemsSource) {
+  return /PLACEHOLDER/.test(itemsSource)
+    ? ['src/data/items.js is the placeholder; run `TORN_API_KEY=… npm run data:items` and commit it']
+    : [];
+}
+
+const ITEMS_FILE = join(ROOT, 'src', 'data', 'items.js');
+
 // ---------------------------------------------------------------- commands
 
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
@@ -139,6 +152,7 @@ async function verify(tag) {
     problems.push(`could not read the built header: ${err.message}`);
   }
   problems.push(...wordingProblems());
+  problems.push(...dataProblems(await readFile(ITEMS_FILE, 'utf8')));
 
   if (problems.length) {
     console.error(`release ${tag} does not add up:`);
@@ -167,7 +181,7 @@ async function cut(kind, { allowBranch = false } = {}) {
     throw new Error(`releases are cut from main, not ${branch} (pass --allow-branch if you mean it)`);
   }
 
-  const missing = wordingProblems();
+  const missing = [...wordingProblems(), ...dataProblems(await readFile(ITEMS_FILE, 'utf8'))];
   if (missing.length) throw new Error(`not releasable yet:\n  - ${missing.join('\n  - ')}`);
 
   const pkg = await readJson(PKG);

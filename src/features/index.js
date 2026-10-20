@@ -10,5 +10,6 @@ import attackLoadout from './attack-loadout/index.js';
 import ffBadges from './ff-badges/index.js';
 import priceFiller from './price-filler/index.js';
 import warPage from './war-page/index.js';
+import tradeValue from './trade-value/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue];
