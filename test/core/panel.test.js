@@ -11,7 +11,7 @@ import { createRegistry } from '../../src/core/registry.js';
 import { defaults } from '../../src/core/settings.js';
 import { DISCLOSURE } from '../../src/core/disclosure.js';
 import { emptyKeys } from '../../src/core/keys.js';
-import { WORDED, descriptor } from '../fixtures.js';
+import { UNWORDED, WORDED, descriptor } from '../fixtures.js';
 
 const KEY = `tt_feed_${'C'.repeat(43)}`;
 const windows = [];
@@ -124,7 +124,7 @@ describe('CMP-107 the panel has a tab for each job', () => {
 
 describe('CMP-014 sharing opens only with the owner\'s wording, and starts off', () => {
   test('without the wording, no switch is offered and the panel says why', () => {
-    const t = mount({ disclosure: DISCLOSURE });
+    const t = mount({ disclosure: UNWORDED });
     t.open('sharing');
     assert.equal(t.panel.panel.querySelector('[data-share]'), null);
     assert.match(t.text(), /Nothing is shared by this version/);
@@ -206,7 +206,7 @@ describe('CMP-011 CMP-012 the keys', () => {
   });
 
   test('without the terms table there is no Torn API key field', () => {
-    const t = mount({ disclosure: DISCLOSURE });
+    const t = mount({ disclosure: UNWORDED });
     t.open('keys');
     assert.equal(t.$('#ttc-key-api'), null);
     assert.equal(t.$('#ttc-tos'), null);

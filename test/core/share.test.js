@@ -5,7 +5,7 @@ import { createRegistry } from '../../src/core/registry.js';
 import { createSharer, isApplicationPage } from '../../src/core/share.js';
 import { defaults } from '../../src/core/settings.js';
 import { DISCLOSURE } from '../../src/core/disclosure.js';
-import { WORDED, descriptor, loadoutData } from '../fixtures.js';
+import { UNWORDED, WORDED, descriptor, loadoutData } from '../fixtures.js';
 
 function sharerFor({
   shares = ['loadout'], on = [], consent = WORDED.version, disclosure = WORDED, now,
@@ -68,7 +68,7 @@ describe('CMP-014 a switch shares nothing until the player agreed to the current
   });
 
   test("while the owner's wording is missing, nothing can be shared at all", () => {
-    const { share, queued } = sharerFor({ on: ['loadout'], consent: 1, disclosure: DISCLOSURE });
+    const { share, queued } = sharerFor({ on: ['loadout'], consent: 1, disclosure: UNWORDED });
     assert.equal(share('loadout', loadoutData()), false);
     assert.deepEqual(queued, []);
   });

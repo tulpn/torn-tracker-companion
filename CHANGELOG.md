@@ -68,9 +68,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ### Notes
 
-- Nothing can be shared yet. The sharing switches and the optional Torn API key field
-  stay closed until the notice saying exactly what is shared, and Torn's terms table,
-  are written. A release cannot be cut while a feature in it is missing that wording.
+- Sharing can be switched on for foreign shop stock and loadouts. The Sharing tab says
+  exactly what each one sends, and what torn-tracker.com keeps and publishes; the README
+  has the same table. Everything starts off.
+- This version asks for no Torn API key.
 
 - There is no public release yet. Wave 1 — fair-fight badges, the war page, foreign stock
   and the price filler — will be v1.0.0.

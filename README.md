@@ -12,7 +12,7 @@ It is planned to run in the browser with Tampermonkey or Violentmonkey, and on t
 
 - It reads only the Torn pages you open yourself. It never loads torn.com pages in the background.
 - One click does at most one game action. It fills in fields for you but never submits them.
-- It shares what it sees on those pages with torn-tracker.com, which publishes the combined data openly for every player and tool. You choose which kinds of data it shares, and the exact list will be in the Torn API terms table below before the first release.
+- It can share what it sees on those pages with torn-tracker.com, which publishes the combined data openly for every player and tool. Every kind is off until you switch it on. [What is shared](#what-is-shared) lists each kind exactly.
 - It updates itself automatically from this repository.
 
 ## Installing it
@@ -53,9 +53,31 @@ The ⚙ button in the bottom right corner opens the panel.
   your own data. "Forget me" clears everything the script keeps on this device.
 - **Credits**: every script this one took code or an idea from.
 
+## What is shared
+
+Nothing, until you switch a kind on in the panel's Sharing tab and press "Share the kinds I
+picked". Each kind sends only what Torn showed you on a page you opened yourself, with the
+time you saw it, to torn-tracker.com with your script key. The script key tells the site
+who sent each report, so it can catch false ones. The site never publishes who sent
+anything. Nothing is ever sent from Torn's company or faction application pages, whatever
+is switched on.
+
+| Kind | What it sends | What torn-tracker.com keeps and publishes |
+|---|---|---|
+| Foreign stock | On a foreign shop while you are abroad: the country, and each item with its stock and price, empty shelves included. At most once every 30 seconds per country, and only while the tab is on screen. | Each report with who sent it for 30 days, so the site knows you were in that country then. It publishes stock and restock times as "seen at", never by whom. |
+| Loadouts | On an attack: the other player's id, and the weapons and armour the attack page shows them wearing, with their damage, accuracy and bonuses. Once per attack. | Reports for 90 days. Each player's latest loadout is published openly, replaced on every new report, and removed once nobody has seen it for 180 days. |
+
+The panel shows the same lines beside each switch. If they change in an update, sharing
+stops until you have read the new ones and agreed again.
+
 ## API Terms of Service
 
-The table will be filled in before the first release, in Torn's five-column format (data storage, data sharing, purpose of use, key storage and sharing, key access level).
+This version asks for **no Torn API key**: it reads only the pages you open, and talks only
+to torn-tracker.com with your torn-tracker.com script key. Torn's terms say that when a tool
+does not store or share a key, it is enough to say so. When a feature that uses your own
+Torn API key arrives, this section and the panel will show Torn's five-column table (data
+storage, data sharing, purpose of use, key storage and sharing, key access level) above
+the key field, for exactly the selections it calls.
 
 ## Building it yourself
 

@@ -186,10 +186,12 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
     assert.deepEqual(t.violations, []);
   });
 
-  test('this build offers no sharing switch until the owner has worded what is shared', async () => {
+  test('this build offers a switch for each kind it can share, every one off', async () => {
     const t = await boot(PAGE);
     openOn(t, 'sharing');
-    assert.equal(t.panel().querySelector('[data-share]'), null);
-    assert.match(t.panel().textContent, /Nothing is shared by this version/);
+    const switches = [...t.panel().querySelectorAll('[data-share]')];
+    assert.deepEqual(switches.map((s) => s.dataset.share).sort(), ['foreign_stock', 'loadout']);
+    assert.ok(switches.every((s) => !s.checked && !s.disabled));
+    assert.match(t.panel().textContent, /Share the kinds I picked/);
   });
 });
