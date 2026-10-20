@@ -1,0 +1,12 @@
+# The topics of the Companion section's Guides, in sidebar order. Every Guides page names
+# one with `group:` in its front matter.
+
+[settings]
+title = "Settings and sharing"
+icon = "adjustments-horizontal"
+summary = "The settings panel, choosing what to share, and clearing everything the script keeps."
+
+[features]
+title = "Features"
+icon = "puzzle-piece"
+summary = "What the companion adds to each Torn page, and what each one needs."

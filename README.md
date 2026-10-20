@@ -8,6 +8,13 @@ One userscript for [Torn](https://www.torn.com) that brings [torn-tracker.com](h
 
 It is planned to run in the browser with Tampermonkey or Violentmonkey, and on the phone in [Torn PDA](https://github.com/Manuito83/torn-pda).
 
+## How to use it
+
+The full guide is the Companion section of the torn-tracker.com knowledge base,
+<https://www.torn-tracker.com/guide/companion/>: installing it, the settings panel, what
+each kind of sharing sends, every feature, and troubleshooting. Its pages live in this
+repository's [`guide/`](guide/) folder, so you can read them here too.
+
 ## What it will and will not do
 
 - It reads only the Torn pages you open yourself. It never loads torn.com pages in the background.
