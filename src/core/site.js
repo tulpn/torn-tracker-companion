@@ -7,8 +7,8 @@
 // site is down, the key is missing or refused, or the reply is odd, a feature gets an
 // empty result and shows "no data" (CMP-023).
 //
-// The reply shapes below are the companion lane's proposal to the spec's owner (hq #97)
-// until CAPI-033..035 pin them.
+// The reply shapes below are the ones specs/companion-api.md section 6.4 pins (accepted in
+// hq #97).
 
 import { SITE } from '../hosts.js';
 import { createCache } from './cache.js';
@@ -25,10 +25,13 @@ const BAND = 40;
 
 const positiveInt = (v) => Number.isInteger(v) && v > 0;
 
-/** An FF result: a number from 1 to 10, or null when the site does not know the player. */
+/**
+ * An FF result: a number of at least 1, or null when the site does not know the player.
+ * The contract sets no upper bound (estimates above 10 exist); the badge clamps for display.
+ */
 export function validFf(v) {
   return Boolean(v) && typeof v === 'object'
-    && (v.ff === null || (typeof v.ff === 'number' && Number.isFinite(v.ff) && v.ff >= 1 && v.ff <= 10))
+    && (v.ff === null || (typeof v.ff === 'number' && Number.isFinite(v.ff) && v.ff >= 1))
     && (v.band === null || (typeof v.band === 'string' && v.band.length <= BAND));
 }
 

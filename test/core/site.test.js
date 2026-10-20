@@ -74,8 +74,15 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
     assert.equal(r.calls.length, 1);
   });
 
+  test('an estimate above 10 is kept: the contract has no upper bound (hq #97)', async () => {
+    const r = rig({ reply: ffReply([{ id: 1, ff: 14.2, band: null }, { id: 2, ff: Infinity, band: null }]) });
+    const found = await r.site.ff([1, 2]);
+    assert.deepEqual(found.get(1), { ff: 14.2, band: null });
+    assert.deepEqual(found.get(2), { ff: null, band: null });
+  });
+
   test('a reply that does not fit is no answer: nothing cached, nothing invented', async () => {
-    const r = rig({ reply: ffReply([{ id: 1, ff: 99 }, { id: 2, ff: '3' }, { id: 3, ff: 2, band: 'x'.repeat(41) }, { id: 4, ff: 2, band: null, extra: 'fine' }, { id: 5, ff: 2 }]) });
+    const r = rig({ reply: ffReply([{ id: 1, ff: 0.5 }, { id: 2, ff: '3' }, { id: 3, ff: 2, band: 'x'.repeat(41) }, { id: 4, ff: 2, band: null, extra: 'fine' }, { id: 5, ff: 2 }]) });
     const found = await r.site.ff([1, 2, 3, 4]);
     for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null }, `id ${id}`);
     assert.deepEqual(found.get(4), { ff: 2, band: null });
