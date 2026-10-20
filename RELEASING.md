@@ -52,6 +52,14 @@ tag, `package.json` and the built header all say the same version, runs the test
 rules lint, and attaches both files to a GitHub release with the CHANGELOG section as its
 notes.
 
+## Public testing (0.x)
+
+Until the public launch (hq D-068), releases are numbered 0.x: `npm run release -- 0.9.0`,
+then `patch` for 0.9.1 and so on. They are ordinary releases, so they become `latest` and
+testers' installs update themselves. A 0.x release may ship while some kinds have no
+"what is shared" line yet: the panel keeps those sharing switches hidden, and the release
+tool only notes them. From 1.0.0 the tool refuses any missing wording.
+
 ## Prereleases
 
 `npm run release -- beta` makes `vX.Y.Z-beta.N`, published as a GitHub prerelease. A
