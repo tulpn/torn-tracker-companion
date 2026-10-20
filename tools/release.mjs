@@ -127,6 +127,26 @@ export function dataProblems(itemsSource) {
 
 const ITEMS_FILE = join(ROOT, 'src', 'data', 'items.js');
 
+/** A 0.x release is for public testing (hq D-068); 1.0.0 is the public launch. */
+export function isTesting(version) {
+  return /^0\./.test(version);
+}
+
+/**
+ * What stops a release, and what it only reports. A testing release (0.x) may ship before
+ * every kind is worded: the panel keeps a kind's sharing switch hidden until its line
+ * exists, so nothing unworded can be switched on. 0.x releases are ordinary releases, so
+ * testers' installs update themselves (a GitHub prerelease never becomes `latest`).
+ * From 1.0.0, every word is needed.
+ * @returns {{problems: string[], notices: string[]}}
+ */
+export function wordingCheck(version, registry = undefined, disclosure = undefined) {
+  const gaps = wordingProblems(registry, disclosure);
+  return isTesting(version)
+    ? { problems: [], notices: gaps.map((gap) => `${gap} (testing release: its switch stays hidden)`) }
+    : { problems: gaps, notices: [] };
+}
+
 // ---------------------------------------------------------------- commands
 
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
@@ -151,8 +171,10 @@ async function verify(tag) {
   } catch (err) {
     problems.push(`could not read the built header: ${err.message}`);
   }
-  problems.push(...wordingProblems());
+  const wording = wordingCheck(version);
+  problems.push(...wording.problems);
   problems.push(...dataProblems(await readFile(ITEMS_FILE, 'utf8')));
+  for (const notice of wording.notices) console.log(`note: ${notice}`);
 
   if (problems.length) {
     console.error(`release ${tag} does not add up:`);
@@ -181,11 +203,12 @@ async function cut(kind, { allowBranch = false } = {}) {
     throw new Error(`releases are cut from main, not ${branch} (pass --allow-branch if you mean it)`);
   }
 
-  const missing = [...wordingProblems(), ...dataProblems(await readFile(ITEMS_FILE, 'utf8'))];
-  if (missing.length) throw new Error(`not releasable yet:\n  - ${missing.join('\n  - ')}`);
-
   const pkg = await readJson(PKG);
   const version = nextVersion(pkg.version, kind);
+  const wording = wordingCheck(version);
+  const missing = [...wording.problems, ...dataProblems(await readFile(ITEMS_FILE, 'utf8'))];
+  if (missing.length) throw new Error(`not releasable yet:\n  - ${missing.join('\n  - ')}`);
+  for (const notice of wording.notices) console.log(`note: ${notice}`);
   const tag = `v${version}`;
   if (git('tag', '--list', tag)) throw new Error(`${tag} already exists`);
 

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 
 import {
-  dataProblems, isPrerelease, nextVersion, promoteUnreleased, sectionFor, wordingProblems,
+  dataProblems, isPrerelease, nextVersion, promoteUnreleased, sectionFor, wordingCheck, wordingProblems,
 } from '../tools/release.mjs';
 import { createRegistry } from '../src/core/registry.js';
 import { ROOT, readPackage } from './helpers.js';
@@ -106,6 +106,19 @@ describe("CMP-022 a release never ships a feature ahead of the owner's wording",
     const problems = wordingProblems(registry);
     assert.equal(problems.length, 2);
     assert.match(problems[0], /missing the owner's wording: the first-run notice/);
+  });
+
+  test('a 0.x testing release ships with the unworded switches hidden (hq D-068)', () => {
+    const registry = createRegistry([descriptor({ shares: ['loadout'] })]);
+    for (const version of ['0.9.0', '0.9.1-beta.1']) {
+      const testing = wordingCheck(version, registry);
+      assert.deepEqual(testing.problems, [], version);
+      assert.equal(testing.notices.length, 2);
+      assert.match(testing.notices[0], /its switch stays hidden/);
+    }
+    for (const version of ['1.0.0', '1.1.0-beta.1']) {
+      assert.equal(wordingCheck(version, registry).problems.length, 2, `${version} needs every word`);
+    }
   });
 
   test('with the wording in place there is nothing to block', () => {
