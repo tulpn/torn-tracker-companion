@@ -6,8 +6,9 @@
 // come from torn-tracker.com (CAPI-035, accepted in hq #110), one call per crime name
 // per page view. It only shows; nothing is joined or clicked.
 //
-// Torn's page shows no weights, so there is nothing for the script to capture for
-// `oc_role_weight` (CMP-204's capture half); the site needs its own source (hq issue).
+// Torn's page shows no weights. The site takes them from tornprobability.com (D-074),
+// and they are credited wherever they show: a line above the crimes and each weight's
+// tooltip. The script itself never calls the provider.
 //
 // Slots are matched to roles by the title the page shows, which is the label Torn's API
 // gives each position. Positions P1..P6 are not on the page.
@@ -36,6 +37,8 @@ let state = null;
 export function roleKey(label) {
   return String(label || '').toLowerCase().replace(/[\s#]+/g, '');
 }
+
+const CREDIT = 'ttc-oc-credit';
 
 const pct = (n) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`;
 
@@ -74,6 +77,19 @@ export default {
       node.title = title;
     }
 
+    /** One visible credit line above the first crime card, once any weight shows. */
+    function credit(card, source) {
+      const text = `Role weights: ${source}, via torn-tracker.com`;
+      let node = doc.querySelector(`.${CREDIT}`);
+      if (!node) {
+        node = el('div', { class: `${MARK} ${CREDIT}`, 'data-kind': 'credit', ownerDocument: doc });
+        node.style.cssText = 'display: block; margin: 4px 0; background: none; color: inherit; font-weight: 400;';
+        const first = doc.querySelector(CARD);
+        (first || card).before(node);
+      }
+      if (node.textContent !== text) node.textContent = text;
+    }
+
     function paint(card, answer) {
       const id = Number(card.dataset[CARD_ID]);
       const success = answer.crimes.get(id);
@@ -86,7 +102,9 @@ export default {
         const title = slot.querySelector(SLOT_TITLE);
         const weight = weights.get(roleKey(title?.textContent));
         if (typeof weight !== 'number') continue;
-        label(slot.querySelector(SLOT_HEADER) || slot, `${pct(weight)}`, 'How much this role counts towards success (torn-tracker.com)', 'weight');
+        label(slot.querySelector(SLOT_HEADER) || slot, `${pct(weight)}`,
+          `How much this role counts towards success. Weights from ${answer.weightsSource}, via torn-tracker.com`, 'weight');
+        credit(card, answer.weightsSource);
       }
     }
 

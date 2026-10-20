@@ -83,6 +83,8 @@ export function readRosterRow(row, skew) {
 
 export const POSITIONS = Object.freeze(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
 const LABEL = 40;
+/** D-074: OC role weights come from this provider, fetched by the site; always credited. */
+export const WEIGHTS_SOURCE = 'tornprobability.com';
 const OC_NAME = 100;
 
 const percent = (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100);
@@ -261,10 +263,12 @@ export function createSite({
      * once per OC name and keeps the answer itself.
      * @param {string} name  the OC's name as Torn shows it
      * @param {{crimes?: boolean}} [opts]  crimes false: roles from the cache will do
-     * @returns {Promise<{roles: object[]|null, crimes: Map<number, number|null>}>}
+     * @returns {Promise<{roles: object[]|null, crimes: Map<number, number|null>, weightsSource: string}>}
+     *          weightsSource is who the weights come from, to credit wherever they show
+     *          (D-074: tornprobability.com, fetched by the site)
      */
     async oc(name, { crimes: wantCrimes = true } = {}) {
-      const empty = { roles: null, crimes: new Map() };
+      const empty = { roles: null, crimes: new Map(), weightsSource: WEIGHTS_SOURCE };
       if (typeof name !== 'string' || !name.trim() || name.length > OC_NAME) return empty;
       const cached = cache.get('ocRoles', name) ?? null;
       if ((cached && !wantCrimes) || !usable()) return { ...empty, roles: cached };
@@ -276,7 +280,9 @@ export function createSite({
       for (const row of Array.isArray(data?.crimes) ? data.crimes : []) {
         if (positiveInt(row?.crime_id) && percent(row.success ?? null)) crimes.set(row.crime_id, row.success ?? null);
       }
-      return { roles: roles ?? cached, crimes };
+      const source = data?.weights_source;
+      const weightsSource = typeof source === 'string' && /^[a-z0-9.-]{3,60}$/i.test(source) ? source : WEIGHTS_SOURCE;
+      return { roles: roles ?? cached, crimes, weightsSource };
     },
 
     /** The site refused the current key (the panel says so). */

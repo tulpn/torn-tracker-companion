@@ -16,8 +16,9 @@ function fakeSite(answers = {
       { position_id: 'P3', label: 'Picklock', weight: null },
     ],
     crimes: new Map([[501, 72.5]]),
+    weightsSource: 'tornprobability.com',
   },
-  'Mob Mentality': { roles: [{ position_id: 'P1', label: 'Looter 1', weight: 34 }], crimes: new Map() },
+  'Mob Mentality': { roles: [{ position_id: 'P1', label: 'Looter 1', weight: 34 }], crimes: new Map(), weightsSource: 'tornprobability.com' },
 }) {
   const calls = [];
   return {
@@ -66,7 +67,17 @@ describe('CMP-204 weights and success from torn-tracker.com', () => {
     r.doc.querySelector('[data-oc-id="502"]').append(r.doc.createElement('i'));
     await wait();
     assert.equal(site.calls.length, 2);
-    assert.equal(r.doc.querySelectorAll('.ttc-oc').length, 4);
+    assert.equal(r.doc.querySelectorAll('.ttc-oc').length, 5, 'four labels and one credit line');
+  });
+
+  test('the weights are credited where they show (D-074): one line above the crimes, and each tooltip', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    const credits = r.doc.querySelectorAll('.ttc-oc-credit');
+    assert.equal(credits.length, 1);
+    assert.equal(credits[0].textContent, 'Role weights: tornprobability.com, via torn-tracker.com');
+    assert.equal(credits[0].nextElementSibling, r.doc.querySelector('[data-oc-id="501"]'));
+    assert.ok([...r.doc.querySelectorAll('.ttc-oc[data-kind="weight"]')].every((n) => n.title.includes('tornprobability.com')));
   });
 
   test('no answer: no labels, no guess', async () => {
