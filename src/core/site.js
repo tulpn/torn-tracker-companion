@@ -7,9 +7,9 @@
 // site is down, the key is missing or refused, or the reply is odd, a feature gets an
 // empty result and shows "no data" (CMP-023).
 //
-// The FF and price shapes are the ones specs/companion-api.md section 6.4 pins (accepted
-// in hq #97). The dibs shapes (CAPI-034) are the companion lane's proposal, hq #104, until
-// the spec pins them.
+// The reply shapes are the ones specs/companion-api.md section 6.4 pins (FF and prices
+// accepted in hq #97, dibs in #104). The roster's key and shape are the companion's
+// proposal on #104, mirroring Torn's UserStatus, until the spec names them.
 
 import { SITE } from '../hosts.js';
 import { createCache } from './cache.js';
@@ -57,6 +57,27 @@ export function readDibs(row, skew) {
   const expires = typeof row.expires_at === 'string' ? Date.parse(row.expires_at) : NaN;
   if (!Number.isFinite(expires) || typeof row.mine !== 'boolean') return null;
   return { target: row.target_id, holder: { id: holder.torn_id, name: holder.name }, expiresAt: expires - skew, mine: row.mine };
+}
+
+const STATE = 20;
+const DESCRIPTION = 100;
+
+/**
+ * One opponent's status from the dibs feed's roster (CAPI-034, the #98 fallback), with
+ * `until` (Unix seconds, as Torn gives it) turned to a local-clock time in ms.
+ * @returns {{id: number, state: string, until: number|null, description: string}|null}
+ */
+export function readRosterRow(row, skew) {
+  if (!row || typeof row !== 'object' || !positiveInt(row.id)) return null;
+  const status = row.status;
+  if (!status || typeof status !== 'object') return null;
+  const { state, until, description } = status;
+  if (typeof state !== 'string' || !state || state.length > STATE) return null;
+  if (until !== null && until !== undefined && !(Number.isInteger(until) && until >= 0)) return null;
+  if (typeof description !== 'string' || description.length > DESCRIPTION) return null;
+  return {
+    id: row.id, state, until: Number.isInteger(until) && until > 0 ? until * 1000 - skew : null, description,
+  };
 }
 
 export const SPACES = Object.freeze({
@@ -171,8 +192,8 @@ export function createSite({
     /**
      * The faction's dibs in the current ranked war (CAPI-034). Never cached: the war page
      * asks at most every 15 s while it is visible (CMP-102).
-     * @returns {Promise<{war: boolean, dibs: Map<number, object>}|null>} null when there is
-     *          no answer; war false when there is no ranked war
+     * @returns {Promise<{war: boolean, dibs: Map<number, object>, roster: Map<number, object>}|null>}
+     *          null when there is no answer; war false when there is no ranked war
      */
     async dibs() {
       if (!usable()) return null;
@@ -185,7 +206,12 @@ export function createSite({
         const claim = readDibs(row, skew);
         if (claim) dibs.set(claim.target, claim);
       }
-      return { war, dibs };
+      const roster = new Map();
+      for (const row of war && Array.isArray(data.roster) ? data.roster : []) {
+        const status = readRosterRow(row, skew);
+        if (status) roster.set(status.id, status);
+      }
+      return { war, dibs, roster };
     },
 
     /**

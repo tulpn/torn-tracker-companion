@@ -197,7 +197,7 @@ describe('CMP-102 dibs (CAPI-034, as proposed in hq #104)', () => {
   });
 
   test('no ranked war is an answer; an odd reply or a failure is none', async () => {
-    assert.deepEqual(await rig({ reply: reply({ war: null, dibs: [row()] }) }).site.dibs(), { war: false, dibs: new Map() });
+    assert.deepEqual(await rig({ reply: reply({ war: null, dibs: [row()] }) }).site.dibs(), { war: false, dibs: new Map(), roster: new Map() });
     assert.equal(await rig({ reply: reply({ dibs: [] }) }).site.dibs(), null);
     assert.equal(await rig({ reply: reply(null, 503) }).site.dibs(), null);
     const r = rig({ key: '' });
@@ -234,6 +234,24 @@ describe('CMP-102 dibs (CAPI-034, as proposed in hq #104)', () => {
     assert.equal((await r.site.callDibs(-1, 'claim')).error, 'invalid');
     assert.equal((await r.site.callDibs(1, 'steal')).error, 'invalid');
     assert.equal(r.calls.length, 0);
+  });
+
+  test('the roster: the status of each opponent, until turned to our clock; odd rows dropped', async () => {
+    const until = Math.floor(T0 / 1000) + 245;
+    const roster = [
+      { id: 111, status: { state: 'Hospital', until, description: 'In hospital for 4 mins' } },
+      { id: 112, status: { state: 'Traveling', until: 0, description: 'Traveling to Mexico' } },
+      { id: 113, status: { state: 'Okay', until: null, description: 'Okay' } },
+      { id: 0, status: { state: 'Okay', until: null, description: '' } },
+      { id: 114, status: { state: 'Hospital', until: 'soon', description: '' } },
+      { id: 115, status: { state: 'x'.repeat(21), until: null, description: '' } },
+      { id: 116 },
+    ];
+    const r = rig({ clock: () => T0 - 10_000, reply: reply({ war: {}, dibs: [], roster, server_time: '2026-10-20T12:00:00Z' }) });
+    const answer = await r.site.dibs();
+    assert.deepEqual([...answer.roster.keys()], [111, 112, 113]);
+    assert.deepEqual(answer.roster.get(111), { id: 111, state: 'Hospital', until: until * 1000 - 10_000, description: 'In hospital for 4 mins' });
+    assert.equal(answer.roster.get(112).until, null);
   });
 
   test('a refused key stops dibs too', async () => {
