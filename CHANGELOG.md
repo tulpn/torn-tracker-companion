@@ -77,6 +77,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Auction listings** (wave 2). The listings the auction house shows you can be shared
   with torn-tracker.com, which publishes price history per item and bonus. Torn's API has
   only completed sales. Never the high bidder. Off until you switch it on.
+- **Crimes: morale and burglary targets** (wave 2). On Crimes 2.0, the header shows your
+  crime morale, which Torn doesn't display, and each burglary target shows how long it has
+  left before it disappears. Both come from what the page already loaded.
 
 ### Notes
 

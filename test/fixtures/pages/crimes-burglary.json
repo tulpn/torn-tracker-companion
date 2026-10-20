@@ -1,0 +1,13 @@
+{
+  "DB": {
+    "demMod": 13,
+    "crimesByType": {
+      "properties": [
+        { "subID": 1, "title": "Shack on Marshall Road", "mobileTitle": "Shack", "expire": 1792500000 },
+        { "subID": 2, "title": "Warehouse on Elm Street", "mobileTitle": "Warehouse", "expire": 1792800000 },
+        { "subID": 3, "title": "", "expire": 1792800000 },
+        { "subID": 4, "title": "Bad expiry", "expire": "soon" }
+      ]
+    }
+  }
+}
