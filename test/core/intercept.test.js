@@ -5,7 +5,7 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { install, onJson, uninstall } from '../../src/core/intercept.js';
+import { formOf, install, onJson, uninstall } from '../../src/core/intercept.js';
 
 const BODY = JSON.stringify({ items: [{ id: 1, quantity: 7, cost: 500 }] });
 
@@ -119,6 +119,41 @@ describe('CMP-006 responses are read, never altered', () => {
     assert.equal(seen.length, 1);
     assert.equal(seen[0].method, 'GET');
     assert.deepEqual(seen[0].data, JSON.parse(BODY));
+  });
+
+  test('the form fields of the request come along, read from its body without touching it', async () => {
+    const win = fakeWindow();
+    install(win);
+    const seen = [];
+    onJson(() => true, (event) => seen.push(event), win);
+
+    const body = new FormData();
+    body.append('typeID', '7');
+    body.append('crimeID', '42');
+    const init = { method: 'POST', body };
+    await win.fetch('https://www.torn.com/page.php?sid=crimesData&step=attempt', init);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(win.calls[0][1].body, body, 'the body object the page gave goes through');
+    assert.deepEqual([...body.entries()], [['typeID', '7'], ['crimeID', '42']], 'and is still whole');
+    assert.equal(seen[0].form.get('typeID'), '7');
+
+    const request = new win.XMLHttpRequest();
+    request.open('POST', 'https://www.torn.com/x.php');
+    request.send('a=1&b=2');
+    request.finish(BODY);
+    assert.deepEqual(request.sent, ['a=1&b=2']);
+    assert.equal(seen[1].form.get('b'), '2');
+  });
+
+  test('only a form is a form: JSON, streams and nothing are not', () => {
+    assert.equal(formOf('{"a":1}'), null);
+    assert.equal(formOf(undefined), null);
+    assert.equal(formOf(new Blob(['a=1'])), null);
+    assert.equal(formOf(new URLSearchParams('x=1')).get('x'), '1');
+    const data = new FormData();
+    data.append('file', new Blob(['x']), 'f.txt');
+    data.append('k', 'v');
+    assert.deepEqual([...formOf(data).entries()], [['k', 'v']]);
   });
 
   test('unsubscribing stops delivery', async () => {

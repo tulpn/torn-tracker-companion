@@ -16,7 +16,7 @@
 // I picked" again.
 
 export const DISCLOSURE = Object.freeze({
-  version: 4,
+  version: 5,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -31,6 +31,12 @@ export const DISCLOSURE = Object.freeze({
   ].join(' '),
   /** kind -> one line saying what that kind shares, shown beside its switch. */
   kinds: Object.freeze({
+    crime_outcome: [
+      'When you commit a crime: which crime it was (the page\'s own numbers for it), whether it',
+      'succeeded, failed or critically failed, and the money and items you got. Only your own',
+      'attempts, as the page answered them. The site keeps them for 30 days for your own view, and',
+      'publishes only totals per crime once at least 20 players have reported it, never by whom.',
+    ].join(' '),
     auction_listing: [
       'On the auction house: each listing the page shows you, with its id, the item and its own id,',
       "the seller's id (none when anonymous), the current bid and number of bids, the time left, its",

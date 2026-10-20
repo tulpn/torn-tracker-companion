@@ -15,7 +15,26 @@ let target = null;
 
 const MARK = '__ttcIntercept';
 
-function deliver(url, method, data) {
+/**
+ * The request's form fields, read from its body without touching it: a form-encoded
+ * string, URLSearchParams or FormData (text fields only). Anything else is no form.
+ * Some pages send their ids in the body rather than the address.
+ */
+export function formOf(body, win = globalThis) {
+  try {
+    if (typeof body === 'string') return body.trim().startsWith('{') ? null : new URLSearchParams(body);
+    if (body instanceof (win.URLSearchParams || URLSearchParams)) return new URLSearchParams(body);
+    const FormDataType = win.FormData || globalThis.FormData;
+    if (FormDataType && body instanceof FormDataType) {
+      const form = new URLSearchParams();
+      for (const [key, value] of body.entries()) if (typeof value === 'string') form.append(key, value);
+      return form;
+    }
+  } catch { /* an odd body is no form */ }
+  return null;
+}
+
+function deliver(url, method, data, form = null) {
   for (const sub of [...subscribers]) {
     let wanted = false;
     try {
@@ -23,7 +42,7 @@ function deliver(url, method, data) {
     } catch { /* a bad predicate is not the page's problem */ }
     if (!wanted) continue;
     try {
-      sub.handler({ url, method, data });
+      sub.handler({ url, method, data, form });
     } catch (err) {
       warn('interceptor threw', err);
     }
@@ -49,7 +68,7 @@ export function install(win = globalThis) {
     win.fetch = function ttcFetch(...args) {
       const promise = original.apply(this, args);
       try {
-        observeFetch(args, promise);
+        observeFetch(args, promise, win);
       } catch { /* never let observing break a page request */ }
       // The page gets the original promise, resolving to the original response.
       return promise;
@@ -61,7 +80,7 @@ export function install(win = globalThis) {
     const open = originals.open;
     xhr.open = function ttcOpen(method, url, ...rest) {
       try {
-        this[MARK] = { method: String(method || 'GET'), url: String(url) };
+        this[MARK] = { method: String(method || 'GET'), url: String(url), form: null };
       } catch { /* a frozen XHR is fine, we just see less */ }
       return open.call(this, method, url, ...rest);
     };
@@ -70,6 +89,7 @@ export function install(win = globalThis) {
     const send = originals.send;
     xhr.send = function ttcSend(body) {
       try {
+        if (this[MARK]) this[MARK].form = formOf(body, win);
         observeXhr(this);
       } catch { /* as above */ }
       return send.call(this, body);
@@ -77,10 +97,11 @@ export function install(win = globalThis) {
   }
 }
 
-function observeFetch(args, promise) {
+function observeFetch(args, promise, win) {
   const url = urlOf(args[0]);
   if (!url || !anyWants(url)) return;
   const method = String(args[1]?.method || args[0]?.method || 'GET');
+  const form = formOf(args[1]?.body, win);
   Promise.resolve(promise)
     .then((response) => {
       // clone() throws once the page has read the body. Observation is best-effort:
@@ -89,7 +110,7 @@ function observeFetch(args, promise) {
       return response.clone().json();
     })
     .then((data) => {
-      if (data != null) deliver(url, method, data);
+      if (data != null) deliver(url, method, data, form);
     })
     .catch(() => { /* not JSON, or already consumed */ });
 }
@@ -104,7 +125,7 @@ function observeXhr(request) {
       let data = null;
       if (type === 'json') data = request.response;
       else if (type === '' || type === 'text') data = JSON.parse(request.responseText);
-      if (data != null) deliver(info.url, info.method, data);
+      if (data != null) deliver(info.url, info.method, data, info.form);
     } catch { /* not JSON; nothing to read */ }
   });
 }
@@ -119,7 +140,7 @@ function urlOf(input) {
 /**
  * Watch the page's own JSON responses.
  * @param {(url: string) => boolean} test
- * @param {(event: {url: string, method: string, data: unknown}) => void} handler
+ * @param {(event: {url: string, method: string, data: unknown, form: URLSearchParams|null}) => void} handler
  * @returns {() => void} unsubscribe
  */
 export function onJson(test, handler, win = globalThis) {

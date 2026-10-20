@@ -5,7 +5,7 @@
 // did not ask for. So every observation is checked here, field by field, against the
 // same shapes and ranges, and one that does not fit is dropped with a warning rather
 // than queued to spoil a batch. A kind arrives here with the feature that produces it:
-// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars and auctions. NPC loot levels are
+// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars, auctions and your own crime outcomes. NPC loot levels are
 // not captured by the script (D-062: the site takes them from a loot-timer service).
 //
 // The country list is the site's closed list, word for word.
@@ -87,6 +87,15 @@ function shelfItem(entry, field) {
     item_id: itemId(entry.item_id, `${field}.item_id`),
     quantity: int(entry.quantity, `${field}.quantity`, 0, MAX_QUANTITY),
     price: int(entry.price, `${field}.price`, 0, MAX_PRICE),
+  };
+}
+
+/** An item a crime gave: its id and how many. */
+function crimeItem(entry, field) {
+  object(entry, field, ['item_id', 'amount']);
+  return {
+    item_id: itemId(entry.item_id, `${field}.item_id`),
+    amount: int(entry.amount, `${field}.amount`, 1, MAX_QUANTITY),
   };
 }
 
@@ -196,6 +205,18 @@ export const KINDS = Object.freeze({
       damage: nullable(d.damage, (v) => num(v, 'damage', 0, MAX_STAT)),
       accuracy: nullable(d.accuracy, (v) => num(v, 'accuracy', 0, MAX_STAT)),
       armor: nullable(d.armor, (v) => num(v, 'armor', 0, MAX_STAT)),
+    }),
+  },
+  crime_outcome: {
+    title: 'Your crime outcomes',
+    fields: ['type_id', 'page_crime_id', 'outcome', 'money_gained', 'items'],
+    // As pinned in hq #124: the page's own ids; the site maps them and adds the nerve.
+    check: (d) => ({
+      type_id: int(d.type_id, 'type_id', 1, 1_000),
+      page_crime_id: int(d.page_crime_id, 'page_crime_id', 1, 1_000_000),
+      outcome: oneOf(d.outcome, 'outcome', ['success', 'failure', 'critical_failure']),
+      money_gained: int(d.money_gained, 'money_gained', 0, MAX_PRICE),
+      items: list(d.items, 'items', 20, crimeItem),
     }),
   },
   bazaar_listing: {

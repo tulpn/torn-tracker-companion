@@ -82,11 +82,14 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   left before it disappears. Both come from what the page already loaded.
 - A player can see who reported their own loadout, and the loadout sharing line now says
   so; you are asked to agree again before sharing continues.
+- **Your crime outcomes** (wave 2). When you commit a crime, how it went and what you got
+  can be shared with torn-tracker.com, which keeps your own for your view and publishes only
+  totals per crime with at least 20 reporters. Off until you switch it on.
 
 ### Notes
 
-- Sharing can be switched on for foreign shop stock, loadouts, bazaar listings and auction
-  listings. The Sharing tab says
+- Sharing can be switched on for foreign shop stock, loadouts, bazaar listings, auction
+  listings and your own crime outcomes. The Sharing tab says
   exactly what each one sends, and what torn-tracker.com keeps and publishes; the README
   has the same table. Everything starts off.
 - This version asks for no Torn API key.
