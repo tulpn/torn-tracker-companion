@@ -1,4 +1,4 @@
-// Turns one auction row into an `auction_listing` (CMP-202, CAPI-010 as proposed in hq
+// Turns one auction row into an `auction_listing` (CMP-202, CAPI-010 as pinned after hq
 // #122). Pure: a row in, the observation's fields or null out. Nothing is guessed: a row
 // missing what the site needs is left out.
 
@@ -61,10 +61,12 @@ export function readRow(row, now = Date.now()) {
   const item_id = positive(Number(item?.getAttribute('item')));
   const current_bid = readMoney(row.querySelector(CURRENT_BID)?.textContent);
   const bid_count = readBids(row.querySelector(BIDS)?.textContent);
+  // The row's exact end time beats its `timer`, which is the seconds left when Torn drew
+  // the row and goes stale as the countdown runs.
+  const ends = readEnds(row.querySelector(ENDS)?.getAttribute('title'));
   const timer = positive(Number(row.querySelector(TIMER)?.getAttribute('timer')));
-  const ends_at = readEnds(row.querySelector(ENDS)?.getAttribute('title'))
-    ?? (timer ? new Date(now + timer * 1000).toISOString() : null);
-  if (!listing_id || !item_id || current_bid === null || bid_count === null || !ends_at) return null;
+  const time_left_s = ends ? Math.max(0, Math.round((Date.parse(ends) - now) / 1000)) : timer;
+  if (!listing_id || !item_id || current_bid === null || bid_count === null || time_left_s === null) return null;
 
   const sellerCell = row.querySelector(SELLER);
   const sellerLink = sellerCell?.querySelector(PROFILE_LINK);
@@ -85,7 +87,7 @@ export function readRow(row, now = Date.now()) {
     seller_id: seller ? Number(seller[1]) : null,
     current_bid,
     bid_count,
-    ends_at,
+    time_left_s,
     bonuses,
     // Quality is only in the listing's info panel, which the script never opens (hq #122).
     quality: null,

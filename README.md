@@ -59,15 +59,15 @@ Nothing, until you switch a kind on in the panel's Sharing tab and press "Share 
 picked". Each kind sends only what Torn showed you on a page you opened yourself, with the
 time you saw it, to torn-tracker.com with your script key. The script key tells the site
 who sent each report, so it can catch false ones. The site never publishes who sent
-anything. Nothing is ever sent from Torn's company or faction application pages, whatever
+anything, with one exception: a player can see who reported their own loadout. Nothing is ever sent from Torn's company or faction application pages, whatever
 is switched on.
 
 | Kind | What it sends | What torn-tracker.com keeps and publishes |
 |---|---|---|
 | Foreign stock | On a foreign shop while you are abroad: the country, and each item with its stock and price, empty shelves included. At most once every 30 seconds per country, and only while the tab is on screen. | Each report with who sent it for 30 days, so the site knows you were in that country then. It publishes stock and restock times as "seen at", never by whom. |
-| Auction listings | On the auction house: each listing the page shows you, with its id, the item and its own id, the seller's id (none when anonymous), the current bid and number of bids, when it ends, its rarity, damage, accuracy or armour, and its bonuses. Never the high bidder. Again only when a bid changed, at most once every ten minutes, only while the tab is on screen. | Reports for 90 days. Price history per item and bonus is published. |
+| Auction listings | On the auction house: each listing the page shows you, with its id, the item and its own id, the seller's id (none when anonymous), the current bid and number of bids, the time left, its rarity, damage, accuracy or armour, and its bonuses. Never the high bidder. Again only when a bid changed, at most once every ten minutes, only while the tab is on screen. | Reports for 90 days. Price history per item and bonus is published. |
 | Bazaar listings | On another player's bazaar: their id, and each item they list with its quantity and price (and the item's own id where the page shows one), as far as you scroll. At most once per bazaar every five minutes, only while the tab is on screen. Never your own bazaar. | Reports for 7 days. Each player's latest listings are published openly, and prices per item. |
-| Loadouts | On an attack: the other player's id, and the weapons and armour the attack page shows them wearing, with their damage, accuracy and bonuses. Once per attack. | Reports for 90 days. Each player's latest loadout is published openly, replaced on every new report, and removed once nobody has seen it for 180 days. |
+| Loadouts | On an attack: the other player's id, and the weapons and armour the attack page shows them wearing, with their damage, accuracy and bonuses. Once per attack. | Reports for 90 days. Each player's latest loadout is published openly, replaced on every new report, and removed once nobody has seen it for 180 days. **The player it describes can see that you reported it.** |
 
 The panel shows the same lines beside each switch. If they change in an update, sharing
 stops until you have read the new ones and agreed again.

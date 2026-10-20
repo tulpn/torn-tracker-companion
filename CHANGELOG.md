@@ -80,6 +80,8 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Crimes: morale and burglary targets** (wave 2). On Crimes 2.0, the header shows your
   crime morale, which Torn doesn't display, and each burglary target shows how long it has
   left before it disappears. Both come from what the page already loaded.
+- A player can see who reported their own loadout, and the loadout sharing line now says
+  so; you are asked to agree again before sharing continues.
 
 ### Notes
 
