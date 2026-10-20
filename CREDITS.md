@@ -27,8 +27,10 @@ the module itself carries no notice. The panel's Credits tab is built from
 
 | Script | Author | What the idea was | Where |
 |---|---|---|---|
-| [TornTools](https://github.com/Mephiles/torntools_extension) (GPLv3) | Mephiles and contributors | Reading the foreign shop's stock from the page's own `travelData` response, and where the shelves sit on the page; where the attack page keeps its state | `src/features/foreign-stock/`, `src/features/attack-loadout/` |
+| [TornTools](https://github.com/Mephiles/torntools_extension) (GPLv3) | Mephiles and contributors | Reading the foreign shop's stock from the page's own `travelData` response, and where the shelves sit on the page; where the attack page keeps its state; setting a React field so the form sees the value | `src/features/foreign-stock/`, `src/features/attack-loadout/`, `src/features/price-filler/` |
 | [FF Scouter V2](https://github.com/xentac/FFScouter) (GPLv3 per its header) | xentac and contributors | Fair-fight badges beside each player, where the member rows sit on faction and war pages, and the colour scale players already know | `src/features/ff-badges/` |
+| [Torn Bazaar Filler](https://greasyfork.org/scripts/473470) (MIT) | Ramin Quluzade and Silmaril | A fill button per row on the bazaar's add and manage pages, and where their fields are | `src/features/price-filler/` |
+| [Torn Market Filler](https://greasyfork.org/scripts/513920) (MIT) | Silmaril | Where the item market sell form's rows, price and quantity fields are | `src/features/price-filler/` |
 | [Torn Loadout Share](https://greasyfork.org/scripts/570314) (MIT) | Sigtran | Reading the defender's loadout from the attack page's own `attackData` response, and which slot number is which | `src/features/attack-loadout/` |
 
 ## This script
