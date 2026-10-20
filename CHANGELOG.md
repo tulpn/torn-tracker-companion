@@ -49,12 +49,14 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   default). One press fills that row's price and how many you own. You still press
   Torn's own button: the script never submits anything. Needs your script key.
 - **War page: sorting and dibs** (wave 1). Above the opponents in a ranked war, sort them
-  by status (hittable first), level or fair-fight estimate, or put Torn's order back.
+  by status (hittable first), who is out soonest, level or fair-fight estimate, or put
+  Torn's order back.
   Beside each opponent, a dibs button shows who in your faction has called them, with a
   countdown. Pressing it claims the target on torn-tracker.com, and pressing your own
   dibs releases them. It does nothing in the game. Dibs refresh every 15 seconds while
-  the page is on screen. Hospital timers and travel destinations are not on Torn's page
-  and come in a later version. Needs your script key.
+  the page is on screen. Beside each opponent's status, a countdown shows when they leave
+  hospital or jail, and travellers show where they are flying, from torn-tracker.com's
+  war room. "Out soonest" sorts by who can be hit next. Needs your script key.
 - **Best buy abroad** (wave 1). On a foreign shop, the item that makes you the most money
   for what you can still carry and afford is outlined, with how many to buy and the
   profit at torn-tracker.com's market value. It updates as you buy. It only shows: you

@@ -9,16 +9,17 @@
 // Dibs are asked for at most every 15 s, and only while the tab is visible (CMP-102 AC;
 // the site allows 4 a minute, CAPI-034). Countdowns tick locally between asks.
 //
-// Hospital timers and travel destinations are not on the page. Torn War Stuff Enhanced
-// gets them by polling the API about the enemy faction, which the lead ruled out (hq #98);
-// they come later, from the page's own responses or from the site.
+// Hospital and jail timers and travel destinations are not on the page. They come from
+// the site, on the same feed as the dibs: the war room's roster (CAPI-034, the hq #98
+// fallback, D-028). Torn War Stuff Enhanced polls the API about the enemy faction for
+// them, which #98 rules out; the script makes no Torn read.
 //
 // Inspiration: Torn War Stuff Enhanced by xentac (MIT, greasyfork.org/scripts/529238) and
 // its parent Torn War Stuff by tos (MIT): the idea, where the lists and status cells are,
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
 
 import { el } from '../../core/dom.js';
-import { ENEMY_ROW, LISTS, MEMBER } from './selectors.js';
+import { ENEMY_ROW, LISTS, MEMBER, STATUS } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
 const MARK = 'ttc-war';
@@ -33,8 +34,11 @@ const STYLE = `
   .${MARK}-dibs { margin: 0 4px; min-width: 44px; }
   .${MARK}-dibs[data-state="mine"] { background: #4a6; color: #000; }
   .${MARK}-dibs[data-state="taken"] { background: #a44; color: #fff; cursor: default; }
+  .${MARK}-time { margin-left: 4px; font: 700 11px sans-serif; }
 `;
-const LABELS = { torn: "Torn's order", status: 'Status', level: 'Level', ff: 'Fair fight' };
+const LABELS = {
+  torn: "Torn's order", status: 'Status', leave: 'Out soonest', level: 'Level', ff: 'Fair fight',
+};
 const SETTLE_MS = 250;
 const DIBS_EVERY_MS = 15_000;
 
@@ -44,6 +48,28 @@ let state = null;
 export function clock(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/**
+ * What goes beside Torn's status: a countdown for hospital and jail, where they are
+ * flying for travel. Empty when there is nothing to add.
+ */
+export function statusText(status, now) {
+  if (!status) return '';
+  const state = status.state.toLowerCase();
+  if ((state === 'hospital' || state === 'jail') && status.until) {
+    return status.until > now ? clock(status.until - now) : '';
+  }
+  if (state === 'traveling' || state === 'abroad') {
+    const d = status.description;
+    let m = /^Returning to Torn from (.+)$/.exec(d);
+    if (m) return `← ${m[1]}`;
+    m = /^Traveling to (.+)$/.exec(d);
+    if (m) return `→ ${m[1]}`;
+    m = /^In (.+)$/.exec(d);
+    if (m) return `in ${m[1]}`;
+  }
+  return '';
 }
 
 /** The lists holding opponents; our own faction's list is left as Torn has it. */
@@ -74,10 +100,13 @@ export default {
   wave: 1,
   title: 'War page: sorting and dibs',
   routes: ['factions.php#/war/'],
-  defaults: { enabled: true, sortBy: 'torn', dibs: true },
+  defaults: {
+    enabled: true, sortBy: 'torn', dibs: true, timers: true,
+  },
   options: {
     sortBy: { label: 'Sort opponents by', choices: [...ORDERS] },
     dibs: { label: "Show your faction's dibs" },
+    timers: { label: 'Show hospital timers and where opponents are flying' },
   },
   shares: [],
   needs: { apiKey: false, scriptKey: true },
@@ -96,6 +125,7 @@ export default {
       seenCount: 0,
       war: false,
       dibs: new Map(),
+      roster: new Map(),
       pending: new Set(),
       notes: new Map(),
       scanTimer: null,
@@ -106,6 +136,7 @@ export default {
     state = s;
     const alive = () => state === s;
     const showDibs = Boolean(ctx.settings.dibs && ctx.site);
+    const showTimers = Boolean(ctx.settings.timers && ctx.site);
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
 
     if (!doc.getElementById(STYLE_ID)) {
@@ -208,7 +239,27 @@ export default {
       }
     }
 
+    function times() {
+      if (!showTimers) return;
+      for (const row of doc.querySelectorAll(ENEMY_ROW)) {
+        const cell = row.querySelector(STATUS);
+        if (!cell) continue;
+        const text = statusText(s.roster.get(playerOf(row)), now());
+        let label = cell.querySelector(`.${MARK}-time`);
+        if (!text) {
+          label?.remove();
+          continue;
+        }
+        if (!label) {
+          label = el('span', { class: `${MARK}-time`, [`data-${MARK}`]: '', ownerDocument: doc });
+          cell.append(label);
+        }
+        if (label.textContent !== text) label.textContent = text;
+      }
+    }
+
     function paint() {
+      times();
       for (const button of doc.querySelectorAll(`.${MARK}-dibs`)) render(button, Number(button.dataset.player));
       for (const button of doc.querySelectorAll(`.${MARK}-bar button`)) {
         button.setAttribute('aria-pressed', String(button.dataset.order === s.order));
@@ -224,7 +275,7 @@ export default {
       }
       await loadFf(lists);
       if (!alive()) return;
-      const compare = comparator(s.order, s.ff)
+      const compare = comparator(s.order, s.ff, s.roster, now())
         || ((a, b) => (s.seen.get(a) ?? Infinity) - (s.seen.get(b) ?? Infinity));
       for (const list of lists) sortList(list, compare);
       placeDibs(lists);
@@ -244,11 +295,14 @@ export default {
       if (!alive() || !answer) return;
       s.war = answer.war;
       s.dibs = answer.dibs;
+      s.roster = answer.roster ?? new Map();
       // A fresh answer supersedes whatever the last press reported.
       s.notes.clear();
       if (!s.war) for (const node of doc.querySelectorAll(`.${MARK}-dibs`)) node.remove();
       placeDibs(enemyLists(doc));
       paint();
+      // New leave times can change the order.
+      if (s.order === 'leave') later();
     }
 
     // The one timer here that reaches the network, and a named exception in the rules
@@ -266,7 +320,7 @@ export default {
       if (!records.every(ours)) later();
     }, doc);
     later();
-    if (showDibs) {
+    if (showDibs || showTimers) {
       refreshDibs();
       s.tick = timers.setInterval(paint, 1000);
     }

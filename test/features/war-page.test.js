@@ -4,7 +4,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { clock, sortList } from '../../src/features/war-page/index.js';
+import feature, { clock, sortList, statusText } from '../../src/features/war-page/index.js';
 import { comparator, levelOf, statusOf } from '../../src/features/war-page/order.js';
 import { page, runFeature } from '../feature-harness.js';
 
@@ -18,7 +18,7 @@ const HTML = page('faction-war.html').replace(
 );
 
 /** A site with dibs and FF estimates, remembering every call. */
-function fakeSite({ war = true, dibs = [], ff = {}, answer } = {}) {
+function fakeSite({ war = true, dibs = [], ff = {}, answer, roster = [] } = {}) {
   const calls = [];
   const claims = new Map(dibs.map((d) => [d.target, d]));
   return {
@@ -30,7 +30,7 @@ function fakeSite({ war = true, dibs = [], ff = {}, answer } = {}) {
     },
     async dibs() {
       calls.push(['dibs']);
-      return { war, dibs: new Map(claims) };
+      return { war, dibs: new Map(claims), roster: new Map(roster.map((r) => [r.id, r])) };
     },
     async callDibs(target, action) {
       calls.push(['callDibs', target, action]);
@@ -45,6 +45,13 @@ function fakeSite({ war = true, dibs = [], ff = {}, answer } = {}) {
     },
   };
 }
+
+/** Roster rows as site.js hands them over: until already on our clock, in ms. */
+const ROSTER = [
+  { id: 101, state: 'Hospital', until: NOW + 245_000, description: 'In hospital for 4 mins' },
+  { id: 102, state: 'Okay', until: null, description: 'Okay' },
+  { id: 103, state: 'Traveling', until: null, description: 'Traveling to Mexico' },
+];
 
 const running = [];
 const run = (opts) => {
@@ -99,7 +106,7 @@ describe('CMP-102 the sort bar', () => {
     const bars = r.doc.querySelectorAll('.ttc-war-bar');
     assert.equal(bars.length, 1);
     assert.ok(bars[0].nextElementSibling.querySelector('li.enemy'));
-    assert.deepEqual([...bars[0].querySelectorAll('button')].map((b) => b.dataset.order), ['torn', 'status', 'level', 'ff']);
+    assert.deepEqual([...bars[0].querySelectorAll('button')].map((b) => b.dataset.order), ['torn', 'status', 'leave', 'level', 'ff']);
   });
 
   test('pressing Level, then Status, then Torn\'s order moves Torn\'s rows and puts them back', async () => {
@@ -194,5 +201,50 @@ describe('CMP-102 dibs: shown from the site, called with one press, one site act
     feature.stop();
     assert.equal(r.doc.querySelectorAll('[data-ttc-war]').length, 0);
     assert.equal(r.doc.querySelectorAll('li.enemy').length, 3);
+  });
+});
+
+describe('CMP-102 timers and destinations from the site roster (CAPI-034, hq #98)', () => {
+  test('what goes beside the status', () => {
+    assert.equal(statusText({ state: 'Hospital', until: NOW + 61_000, description: '' }, NOW), '1:01');
+    assert.equal(statusText({ state: 'Jail', until: NOW - 1, description: '' }, NOW), '');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to Mexico' }, NOW), '→ Mexico');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Returning to Torn from Japan' }, NOW), '← Japan');
+    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Cayman Islands' }, NOW), 'in Cayman Islands');
+    assert.equal(statusText({ state: 'Okay', until: null, description: 'Okay' }, NOW), '');
+    assert.equal(statusText(undefined, NOW), '');
+  });
+
+  test('a countdown in the status cell of the opponent in hospital, a destination for the traveller', async () => {
+    const r = run({ site: fakeSite({ roster: ROSTER }) });
+    await wait();
+    const label = (id) => r.doc.querySelector(`a[href$="XID=${id}"]`).closest('li').querySelector('.status .ttc-war-time')?.textContent;
+    assert.equal(label(101), '4:05');
+    assert.equal(label(102), undefined);
+    assert.equal(label(103), '→ Mexico');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('Out soonest: okay first, then by time left in hospital, then travellers', async () => {
+    const roster = [...ROSTER, { id: 104, state: 'Hospital', until: NOW + 30_000, description: '' }];
+    const html = HTML.replace('</ul>', '<li class="enemy"><div class="member"><a href="/profiles.php?XID=104">Enemy Four</a></div><div class="level">10</div><div class="status hospital">Hospital</div></li></ul>');
+    const r = run({ html, site: fakeSite({ roster }), settings: { enabled: true, sortBy: 'leave', dibs: false, timers: true } });
+    await wait();
+    assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy Four', 'Enemy One', 'Enemy Three']);
+  });
+
+  test('timers off and dibs off: the site is never asked', async () => {
+    const site = fakeSite({ roster: ROSTER });
+    const r = run({ site, settings: { enabled: true, sortBy: 'torn', dibs: false, timers: false } });
+    await wait();
+    assert.deepEqual(site.calls, []);
+    assert.equal(r.doc.querySelectorAll('.ttc-war-time').length, 0);
+  });
+
+  test('timers on, dibs off: timers show, no dibs buttons', async () => {
+    const r = run({ site: fakeSite({ roster: ROSTER }), settings: { enabled: true, sortBy: 'torn', dibs: false, timers: true } });
+    await wait();
+    assert.equal(r.doc.querySelectorAll('.ttc-war-time').length, 2);
+    assert.equal(r.doc.querySelectorAll('.ttc-war-dibs').length, 0);
   });
 });
