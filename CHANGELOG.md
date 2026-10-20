@@ -69,6 +69,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   prices the page loads for you can be shared with torn-tracker.com, which publishes each
   player's latest listings and a price index. Torn's API has no player's listings. Off
   until you switch it on; never your own bazaar.
+- **Organized crimes** (wave 2). On your faction's crimes tab, each role shows how much it
+  counts towards the crime's success, and each crime your faction is recruiting or
+  planning shows torn-tracker.com's success estimate. Both come from torn-tracker.com,
+  never a third party. The estimate needs your faction's key with faction API access on
+  torn-tracker.com. Needs your script key.
 
 ### Notes
 

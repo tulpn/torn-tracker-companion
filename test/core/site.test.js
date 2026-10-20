@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { DIBS_URL, FF_URL, MAX_IDS, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
+import { DIBS_URL, FF_URL, MAX_IDS, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
 
@@ -259,5 +259,52 @@ describe('CMP-102 dibs (CAPI-034, as proposed in hq #104)', () => {
     await r.site.dibs();
     assert.equal(await r.site.dibs(), null);
     assert.equal(r.calls.length, 1);
+  });
+});
+
+describe('CMP-204 an OC read (CAPI-035, as accepted in hq #110)', () => {
+  const roles = [
+    { position_id: 'P1', label: 'Picklock #1', weight: 34.5 },
+    { position_id: 'P2', label: 'Hacker', weight: null },
+  ];
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('one call per name, the name encoded; roles and estimates checked field by field', async () => {
+    const r = rig({ reply: reply({ oc_name: 'Blast from the Past', roles, crimes: [{ crime_id: 9, success: 72.5 }, { crime_id: 10, success: null }, { crime_id: 0, success: 1 }, { crime_id: 11, success: 101 }] }) });
+    const answer = await r.site.oc('Blast from the Past');
+    assert.equal(r.calls[0].url, `${OC_URL}/Blast%20from%20the%20Past`);
+    assert.deepEqual(answer.roles, roles);
+    assert.deepEqual([...answer.crimes], [[9, 72.5], [10, null]]);
+  });
+
+  test('roles are kept for the hour; estimates are asked for afresh', async () => {
+    let clock = 0;
+    const r = rig({ now: () => clock, reply: reply({ roles, crimes: [] }) });
+    await r.site.oc('Stage Fright');
+    assert.deepEqual((await r.site.oc('Stage Fright', { crimes: false })).roles, roles);
+    assert.equal(r.calls.length, 1, 'roles alone come from the cache');
+    await r.site.oc('Stage Fright');
+    assert.equal(r.calls.length, 2, 'estimates always ask');
+    clock = 60 * 60_000;
+    await r.site.oc('Stage Fright', { crimes: false });
+    assert.equal(r.calls.length, 3, 'after the hour, roles are asked for again');
+  });
+
+  test('roles that do not fit are no roles; a failure falls back to the cached ones', async () => {
+    for (const bad of [[], [{ position_id: 'P7', label: 'x', weight: 1 }], [{ position_id: 'P1', label: '', weight: 1 }], [{ position_id: 'P1', label: 'x', weight: 120 }]]) {
+      assert.equal((await rig({ reply: reply({ roles: bad, crimes: [] }) }).site.oc('X')).roles, null);
+    }
+    let fail = false;
+    const r = rig({ reply: () => (fail ? { ok: false, status: 503, data: null } : { ok: true, status: 200, data: { roles, crimes: [] } }) });
+    await r.site.oc('X');
+    fail = true;
+    assert.deepEqual((await r.site.oc('X')).roles, roles);
+  });
+
+  test('a bad name or no key: no call', async () => {
+    const r = rig({ key: '' });
+    await r.site.oc('X');
+    await rig().site.oc('');
+    assert.equal(r.calls.length, 0);
   });
 });

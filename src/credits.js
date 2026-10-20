@@ -58,6 +58,14 @@ export const CREDITS = Object.freeze([
     merged: false,
   },
   {
+    name: 'OC2.0 Helper',
+    author: 'Strigwulf, with JohnNash and Seberus',
+    licence: 'GPL-3.0',
+    url: 'https://greasyfork.org/scripts/577968',
+    taken: "role weights beside each slot of an organized crime, and where the crime cards and slots are",
+    merged: false,
+  },
+  {
     name: 'Torn PDA',
     author: 'Manuito and contributors',
     licence: 'GPL-3.0',
