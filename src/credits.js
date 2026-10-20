@@ -74,6 +74,14 @@ export const CREDITS = Object.freeze([
     merged: false,
   },
   {
+    name: 'Crime Morale',
+    author: 'tobytorn',
+    licence: 'MIT',
+    url: 'https://github.com/tobytorn/crime-morale',
+    taken: "that crime morale is 100 minus the crimes page's demoralisation, and that burglary targets carry when they expire",
+    merged: false,
+  },
+  {
     name: 'OC2.0 Helper',
     author: 'Strigwulf, with JohnNash and Seberus',
     licence: 'GPL-3.0',
