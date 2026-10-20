@@ -25,6 +25,14 @@ export const CREDITS = Object.freeze([
     taken: "reading the defender's loadout from the attack page's own attackData response, and the slot numbers",
     merged: false,
   },
+  {
+    name: 'FF Scouter V2',
+    author: 'xentac and contributors',
+    licence: 'GPL-3.0',
+    url: 'https://github.com/xentac/FFScouter',
+    taken: 'fair-fight badges beside players, where the member rows are, and the colour scale',
+    merged: false,
+  },
 ]);
 
 export const CREDITS_URL = 'https://github.com/tulpn/torn-tracker-companion/blob/main/CREDITS.md';

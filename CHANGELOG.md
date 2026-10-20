@@ -38,6 +38,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   from what the page already loaded; the script never clicks. Off until you switch it on.
 - Nothing is ever shared from Torn's company or faction application pages, whatever is
   switched on.
+- **Fair-fight badges** (wave 1). Beside each player on profiles, faction member lists,
+  the ranked-war page and the attack page, a badge shows torn-tracker.com's fair-fight
+  estimate, coloured on the scale FF Scouter players know: blue is easy, red is hard,
+  and "?" means no estimate yet. All the players on a page are looked up together, and
+  each answer is kept for an hour. Needs your script key.
 
 ### Notes
 
