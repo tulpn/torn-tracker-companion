@@ -22,5 +22,6 @@ import loadoutView from './loadout-view/index.js';
 import mugStrip from './mug-strip/index.js';
 import applicantBadges from './applicant-badges/index.js';
 import auctionValues from './auction-values/index.js';
+import warBrief from './war-brief/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot, loadoutView, mugStrip, auctionValues, applicantBadges];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot, loadoutView, mugStrip, auctionValues, applicantBadges, warBrief];
