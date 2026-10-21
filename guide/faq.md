@@ -44,5 +44,5 @@ Yes, in Torn PDA. See [Install in Torn PDA](install-pda.md).
 
 ## Where's the code?
 
-On GitHub, under the GPLv3. The [Credits](settings-panel.md#credits) tab lists every script
+On GitHub, under the GPLv3. The [Credits](settings-panel.md#the-sections) section of the settings lists every script
 it took an idea from.

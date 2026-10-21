@@ -47,22 +47,28 @@ over a stable one. How a release is made is in [RELEASING.md](RELEASING.md).
 
 ## Settings
 
-The ⚙ button in the bottom right corner opens the panel.
+Open the settings from the **Torn Tracker** link in Torn's sidebar (right under
+**TornTools Settings** if you have TornTools) or the green **TT** icon by your avatar. They
+open as a full page over the one you're on, with a menu of sections and a search box.
 
-- **Features**: switch each feature on or off, and set its options.
+- **General**: the version, a link to check for an update, and console logging.
+- **Features**: every feature, grouped by area, with its switch, one line on what it does,
+  its options and a link to its guide page.
 - **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
   starts off, switching a feature on never switches sharing on, and nothing is shared
   until you press "Share the kinds I picked". If the wording of what is shared changes
-  in an update, you are asked again. This tab also shows what is waiting to be sent and,
-  if sharing has stopped, why.
+  in an update, you are asked again. It also shows what is waiting to be sent and, if
+  sharing has stopped, why.
 - **Keys**: your torn-tracker.com script key, which is not a Torn API key. An optional
   Torn API key field will appear here, below Torn's terms table, for features that need
-  your own data. "Forget me" clears everything the script keeps on this device.
+  your own data.
+- **Data**: what the script keeps on this device, and "Forget me", which clears it all.
 - **Credits**: every script this one took code or an idea from.
+- **Help**: the companion guide and where to report a problem.
 
 ## What is shared
 
-Nothing, until you switch a kind on in the panel's Sharing tab and press "Share the kinds I
+Nothing, until you switch a kind on under Sharing in the settings and press "Share the kinds I
 picked". Each kind sends only what Torn showed you on a page you opened yourself, with the
 time you saw it, to torn-tracker.com with your script key. The script key tells the site
 who sent each report, so it can catch false ones. The site never publishes who sent

@@ -12,6 +12,7 @@ import { createUploader } from './core/upload.js';
 import { createSite } from './core/site.js';
 import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
 import { mountPanel } from './core/panel.js';
+import { mountEntry } from './core/entry.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
 import { defaults, isShared, load, normalize, save } from './core/settings.js';
@@ -126,12 +127,16 @@ export async function boot(win = globalThis) {
     },
   });
 
+  // The sidebar link, the header icon, or the edge tab where neither fits (CMP-107).
+  const entry = mountEntry({ doc: win.document, onOpen: () => panel.toggle(), onMutation: dom.onMutation });
+
   log('started', VERSION, `${registry.length} features`);
 
   return {
     registry,
     runner,
     panel,
+    entry,
     uploader,
     get settings() {
       return settings;
@@ -141,6 +146,7 @@ export async function boot(win = globalThis) {
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();
+      entry.destroy();
       panel.destroy();
     },
   };

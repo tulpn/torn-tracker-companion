@@ -17,7 +17,7 @@ keywords: companion forget me, clear userscript data, remove script key
 
 ## Clear this device
 
-1. Open the panel and go to **Keys**.
+1. Open the settings (the **Torn Tracker** link in the sidebar) and go to **Data**.
 2. Press **Forget me**. The button changes to **Really forget everything?**: press it
    again to confirm.
 

@@ -125,7 +125,8 @@ export async function boot(bodyHtml = '', opts = {}) {
     window,
     doc,
     violations,
-    fab: () => doc.getElementById(`${PREFIX}-fab`),
+    /** The first way into the settings page: the sidebar link, the header icon or the edge tab. */
+    entry: () => doc.querySelector('[data-ttc-open]'),
     panel: () => doc.getElementById(`${PREFIX}-panel`),
     /** A player's click: a trusted event, not the .click() the guard forbids. */
     userClick(node) {

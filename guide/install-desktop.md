@@ -31,12 +31,13 @@ Install [Tampermonkey](https://www.tampermonkey.net) or
 
 ## Check it works
 
-Open any page on torn.com. A round ⚙ button appears in the bottom right corner: that's
-the companion's [settings panel](settings-panel.md).
+Open any page on torn.com. A **Torn Tracker** link appears in the sidebar (right under
+**TornTools Settings** if you have TornTools), and a small green **TT** icon by your avatar
+in the top bar. Either opens the companion's [settings](settings-panel.md).
 
 ## Add your script key
 
-In the panel's **Keys** tab, paste your [script key](website:script-key.md) and press
+In the settings, under **Keys**, paste your [script key](website:script-key.md) and press
 **Save**. Without it, the features that show torn-tracker.com's data stay quiet; the
 helpers that only read the page still work.
 

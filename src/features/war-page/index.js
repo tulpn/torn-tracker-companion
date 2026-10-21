@@ -116,6 +116,9 @@ export default {
   id: 'war-page',
   wave: 1,
   title: 'War page: sorting and dibs',
+  area: 'war',
+  guide: 'war-page',
+  summary: 'Sort ranked-war opponents, see hospital timers and where they fly, and call dibs.',
   routes: ['factions.php#/war/'],
   defaults: {
     enabled: true, sortBy: 'torn', dibs: true, timers: true, loadouts: true,

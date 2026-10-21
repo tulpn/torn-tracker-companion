@@ -22,7 +22,7 @@ your script key.
 Above the opponents' list, choose an order: **Torn's order**, **Status** (hittable first),
 **Out soonest** (who leaves hospital next), **Level** or **Fair fight**. Torn's own rows
 are moved, never copied, and **Torn's order** puts them back. Pick the default in the
-panel's Features tab.
+settings, under **Features**.
 
 ## Timers and destinations
 
@@ -62,7 +62,7 @@ long ago it was seen, for example **Heavy · Temp · 3h**:
 
 Hover a label for the reason and how many players saw it. A loadout older than 14 days is
 dimmed; **hidden** means the player asked for theirs to be hidden. A Core faction sees a
-one-line note instead. Switch it off in the panel's Features tab.
+one-line note instead. Switch it off in the settings, under **Features**.
 
 > **What it reads and sends.** It reads the opponents already on the page. It asks
 > torn-tracker.com for your faction's dibs, the war room's timers and, once per page view,

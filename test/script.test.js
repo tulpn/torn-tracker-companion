@@ -14,7 +14,7 @@ const PAGE = '<div id="mainContainer"><div class="content-wrapper"></div></div>'
 
 /** Opens the panel on one of its tabs, the way a player would. */
 function openOn(t, tab) {
-  if (t.panel().hidden) t.userClick(t.fab());
+  if (t.panel().hidden) t.userClick(t.entry());
   t.userClick(t.panel().querySelector(`button[data-tab="${tab}"]`));
 }
 
@@ -25,9 +25,9 @@ function userCheck(t, input, checked = true) {
 }
 
 describe('CMP-001 the built file boots on a Torn page', () => {
-  test('it adds the settings button and a hidden panel', async () => {
+  test('it adds a way into the settings and a hidden settings page', async () => {
     const t = await boot(PAGE);
-    assert.ok(t.fab(), 'no settings button');
+    assert.ok(t.entry(), 'no way into the settings');
     assert.equal(t.panel().hidden, true);
   });
 
@@ -39,33 +39,35 @@ describe('CMP-001 the built file boots on a Torn page', () => {
 
   test('CMP-030 it makes no request to torn.com, clicks nothing and submits nothing', async () => {
     const t = await boot(PAGE, { url: 'https://www.torn.com/factions.php#/war/rank' });
-    t.userClick(t.fab());
+    t.userClick(t.entry());
     await t.tick();
     assert.deepEqual(t.violations, []);
   });
 });
 
 describe('CMP-107 the panel tells the player where their settings live', () => {
-  test('it opens on the button and shows the version and the backend', async () => {
+  test('it opens from its way in and shows the version and where things are kept', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.fab());
+    t.userClick(t.entry());
     assert.equal(t.panel().hidden, false);
-    assert.match(t.panel().textContent, new RegExp(`Version ${version.replace(/\./g, '\\.')}\\b`));
-    openOn(t, 'keys');
+    openOn(t, 'general');
+    assert.match(t.panel().textContent, new RegExp(`version ${version.replace(/\./g, '\\.')}\\b`));
+    openOn(t, 'data');
     assert.match(t.panel().textContent, /localStorage/);
   });
 
-  test('the features in this build are listed by wave, each with its switch', async () => {
+  test('the features in this build are listed by area, each with its switch', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.fab());
-    assert.match(t.panel().textContent, /Wave 1/);
+    t.userClick(t.entry());
+    openOn(t, 'features');
+    assert.match(t.panel().textContent, /Travel/);
     assert.equal(t.panel().querySelector(`#${PREFIX}-feature-foreign-stock`).checked, true);
   });
 
-  test('the button closes the panel again', async () => {
+  test('its way in closes the page again', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.fab());
-    t.userClick(t.fab());
+    t.userClick(t.entry());
+    t.userClick(t.entry());
     assert.equal(t.panel().hidden, true);
   });
 });
@@ -73,7 +75,7 @@ describe('CMP-107 the panel tells the player where their settings live', () => {
 describe('CMP-008 settings are kept on the device and validated on the way in', () => {
   test('a change is saved to localStorage', async () => {
     const t = await boot(PAGE);
-    openOn(t, 'keys');
+    openOn(t, 'general');
     userCheck(t, t.panel().querySelector(`#${PREFIX}-debug`));
     t.userClick(t.panel().querySelector('button[data-act="save"]'));
     await t.tick();
@@ -84,13 +86,13 @@ describe('CMP-008 settings are kept on the device and validated on the way in', 
 
   test('garbage in storage falls back to the defaults', async () => {
     const t = await boot(PAGE, { savedSettings: '{"debug":"yes","junk":true}' });
-    openOn(t, 'keys');
+    openOn(t, 'general');
     assert.equal(t.panel().querySelector(`#${PREFIX}-debug`).checked, false);
   });
 
   test('settings that are not JSON at all do not stop the script', async () => {
     const t = await boot(PAGE, { savedSettings: 'not json' });
-    assert.ok(t.fab());
+    assert.ok(t.entry());
   });
 
   test('"Forget me" asks once, then clears every key', async () => {
@@ -98,7 +100,7 @@ describe('CMP-008 settings are kept on the device and validated on the way in', 
     for (const key of ['ttc_settings', 'ttc_keys', 'ttc_queue', 'ttc_cache']) {
       t.window.localStorage.setItem(key, '{"x":1}');
     }
-    openOn(t, 'keys');
+    openOn(t, 'data');
 
     const forget = () => t.panel().querySelector('button[data-act="forget"]');
     t.userClick(forget());
@@ -118,7 +120,7 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
   test('settings go to PDA_storage when PDA injects it', async () => {
     const pda = fakePdaStorage();
     const t = await boot(PAGE, { pdaStorage: pda });
-    openOn(t, 'keys');
+    openOn(t, 'data');
     assert.match(t.panel().textContent, /PDA_storage/);
 
     t.userClick(t.panel().querySelector('button[data-act="save"]'));
@@ -127,11 +129,11 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
     assert.equal(t.window.localStorage.getItem(`${PREFIX}_settings`), null);
   });
 
-  test('the panel is built for a thumb on a 360 px screen', () => {
+  test('the settings page is built for a thumb, and folds its menu on a phone', () => {
     const built = readBuilt();
-    assert.match(built, /min-height: 44px/);
-    assert.match(built, /width: min\(360px, calc\(100vw - 24px\)\)/);
-    assert.match(built, /width: 44px; height: 44px/);
+    assert.match(built, /min-height: 44px; min-width: 44px/, 'every button is at least 44 px');
+    assert.match(built, /@media \(max-width: 700px\)/, 'the left menu becomes a top menu on a phone');
+    assert.doesNotMatch(built, /ttc-fab/, 'no floating button is left');
   });
 });
 
@@ -193,5 +195,56 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
     assert.deepEqual(switches.map((s) => s.dataset.share).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_stock', 'gym_progress', 'gym_train', 'item_market_snapshot', 'loadout']);
     assert.ok(switches.every((s) => !s.checked && !s.disabled));
     assert.match(t.panel().textContent, /Share the kinds I picked/);
+  });
+});
+
+describe('CMP-107 the ways into the settings, as the owner asked', () => {
+  const SIDEBAR = (tornTools) => `<div id="sidebar"><div class="areas___x1">
+    <div id="nav-home"><a href="/index.php">Home</a></div>
+    <div id="nav-items"><a href="/item.php">Items</a></div>
+    ${tornTools ? '<div class="settings___tt pill"><span>TornTools Settings</span></div>' : ''}
+    <div id="nav-city"><a href="/city.php">City</a></div>
+  </div></div>`;
+  const HEADER = '<div id="topHeaderBanner"><div class="header-wrapper-top"><div class="menu"><a class="avatar___h1" href="/profiles.php?XID=1"><img src="/avatar.png"></a></div></div></div>';
+
+  test('AC1: with TornTools, the link sits directly after "TornTools Settings"', async () => {
+    const t = await boot(SIDEBAR(true) + PAGE);
+    const link = t.doc.getElementById(`${PREFIX}-sidebar-link`);
+    assert.ok(link);
+    assert.equal(link.previousElementSibling.textContent, 'TornTools Settings');
+    assert.match(link.textContent, /Torn Tracker/);
+  });
+
+  test('AC1: without TornTools, it is in Areas', async () => {
+    const t = await boot(SIDEBAR(false) + PAGE);
+    const link = t.doc.getElementById(`${PREFIX}-sidebar-link`);
+    assert.equal(link.parentElement.className, 'areas___x1');
+  });
+
+  test('AC2: the icon by the avatar opens the same page', async () => {
+    const t = await boot(HEADER + PAGE);
+    const icon = t.doc.getElementById(`${PREFIX}-header-link`);
+    assert.ok(icon);
+    assert.equal(icon.nextElementSibling.className, 'avatar___h1');
+    t.userClick(icon);
+    assert.equal(t.panel().hidden, false);
+  });
+
+  test('AC3: no floating button anywhere; the edge tab only where neither place exists', async () => {
+    const both = await boot(SIDEBAR(true) + HEADER + PAGE);
+    assert.equal(both.doc.getElementById(`${PREFIX}-fab`), null);
+    assert.equal(both.doc.getElementById(`${PREFIX}-edge-tab`), null);
+    const bare = await boot(PAGE);
+    assert.equal(bare.doc.getElementById(`${PREFIX}-fab`), null);
+    assert.ok(bare.doc.getElementById(`${PREFIX}-edge-tab`));
+  });
+
+  test('when Torn redraws its sidebar, the link comes back', async () => {
+    const t = await boot(SIDEBAR(false) + PAGE);
+    const areas = t.doc.querySelector('.areas___x1');
+    areas.replaceChildren(t.doc.createElement('div'));
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    assert.ok(t.doc.getElementById(`${PREFIX}-sidebar-link`)?.isConnected);
+    assert.deepEqual(t.violations, []);
   });
 });
