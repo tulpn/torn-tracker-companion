@@ -23,6 +23,8 @@ export const ME_GYM_URL = `${SITE}/api/feeds/me/gym`;
 export const DEMAND_URL = `${SITE}/api/feeds/demand`;
 export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
 export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
+export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
+const ME_MUGS_TTL = 10 * 60_000;
 /** Open data (public-api.md): asked anonymously, never with the script key. */
 export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
 
@@ -179,6 +181,8 @@ export function createSite({
   let warLoadoutsMemo = null;
   /** Open loadout reads by player id. */
   const openLoadouts = new Map();
+  /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
+  const myMugs = new Map();
 
   const headers = () => ({ Authorization: `Bearer ${getKey()}`, Accept: 'application/json' });
   const usable = () => Boolean(getKey()) && getKey() !== refusedKey;
@@ -461,6 +465,31 @@ export function createSite({
         }
       }
       if (value) openLoadouts.set(playerId, { at: now(), value });
+      return value;
+    },
+
+    /**
+     * The token owner's own mugs of one player (MUG-031): how many, the last one and the
+     * average. Own data only. Kept 10 minutes.
+     * @param {number} playerId
+     * @returns {Promise<{count: number, last_at: number|null, last_amount: number|null, average: number|null}|null>}
+     */
+    async myMugs(playerId) {
+      if (!positiveInt(playerId)) return null;
+      const memo = myMugs.get(playerId);
+      if (memo && now() - memo.at < ME_MUGS_TTL) return memo.value;
+      if (!usable()) return null;
+      const data = await call(`${ME_MUGS_URL}/${playerId}`, { method: 'GET' });
+      if (!data || typeof data !== 'object') return null;
+      const money = (v) => (Number.isInteger(v) && v >= 0 && v <= 1e12 ? v : null);
+      const last = typeof data.last_at === 'string' ? Date.parse(data.last_at) : NaN;
+      const value = {
+        count: Number.isInteger(data.count) && data.count >= 0 ? data.count : 0,
+        last_at: Number.isFinite(last) ? last - skewOf(data) : null,
+        last_amount: money(data.last_amount),
+        average: money(typeof data.average === 'number' ? Math.round(data.average) : data.average),
+      };
+      myMugs.set(playerId, { at: now(), value });
       return value;
     },
 

@@ -99,6 +99,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   never by whom. For Pro factions in a ranked war, the war page shows each opponent's
   danger flags (heavy hitter, armoured, temp ready) and the loadout's age, and the attack
   page shows the flags of the opponent you're attacking. A Core faction sees a note.
+- **Your mugs of a player** (wave 2). On a profile or the attack page, a line says how often
+  you've mugged that player, when last and for how much, from your own records on
+  torn-tracker.com. Needs your script key.
 
 ### Notes
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -427,5 +427,31 @@ describe('LDT-032 the two loadout reads (shapes accepted in hq #142)', () => {
     assert.deepEqual(await rig({ reply: reply({ player_id: 5, hidden: true }) }).site.playerLoadout(5), { seen: true, hidden: true });
     assert.equal(await rig({ reply: reply({ player_id: 6, hidden: false, slots: {} }) }).site.playerLoadout(5), null);
     assert.equal(await rig({ reply: reply(null, 503) }).site.playerLoadout(5), null);
+  });
+});
+
+describe('MUG-031 your own mugs of a player', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('count, last and average; kept ten minutes', async () => {
+    let clock = Date.parse('2026-10-21T13:00:00Z');
+    const r = rig({
+      clock: () => clock,
+      reply: reply({ count: 3, last_at: '2026-10-19T13:00:00Z', last_amount: 1200000, average: 900000.4, server_time: '2026-10-21T13:00:00Z' }),
+    });
+    const mugs = await r.site.myMugs(111);
+    assert.equal(r.calls[0].url, `${ME_MUGS_URL}/111`);
+    assert.deepEqual(mugs, { count: 3, last_at: Date.parse('2026-10-19T13:00:00Z'), last_amount: 1200000, average: 900000 });
+    clock += 9 * 60_000;
+    await r.site.myMugs(111);
+    assert.equal(r.calls.length, 1);
+  });
+
+  test('none, odd values or a failure', async () => {
+    assert.deepEqual(await rig({ reply: reply({ count: 0, last_at: null, last_amount: null, average: null }) }).site.myMugs(5),
+      { count: 0, last_at: null, last_amount: null, average: null });
+    assert.deepEqual(await rig({ reply: reply({ count: -2, last_at: 'soon', last_amount: -1, average: 'lots' }) }).site.myMugs(5),
+      { count: 0, last_at: null, last_amount: null, average: null });
+    assert.equal(await rig({ reply: reply(null, 503) }).site.myMugs(5), null);
   });
 });
