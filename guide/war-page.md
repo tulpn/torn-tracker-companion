@@ -14,8 +14,8 @@ keywords: torn ranked war, war dibs, hospital timers torn, war page script
 
 > **Test release.** The companion is in public testing. Things may change before version 1.
 
-**Core:** sorting, timers and dibs are free. **Pro:** the enemy loadout overlay, when it
-arrives. Needs your script key.
+**Core:** sorting, timers and dibs are free. **Pro:** your opponents' loadout flags. Needs
+your script key.
 
 ## Sort your opponents
 
@@ -43,6 +43,20 @@ Pressing the button tells torn-tracker.com, and your faction sees it at once on 
 in the bot and on their own war page. It does nothing in the game. Dibs refresh every 15
 seconds while the page is on screen.
 
+## Opponents' loadouts (Pro)
+
+For a Pro faction, each opponent shows the danger flags of their latest loadout and how
+long ago it was seen, for example **Heavy · Temp · 3h**:
+
+- **Heavy:** a weapon whose damage is in the top quarter of seen weapons of its kind;
+- **Armour:** at least four armour pieces;
+- **Temp:** a temporary item equipped.
+
+Hover a label for the reason and how many players saw it. A loadout older than 14 days is
+dimmed; **hidden** means the player asked for theirs to be hidden. A Core faction sees a
+one-line note instead. Switch it off in the panel's Features tab.
+
 > **What it reads and sends.** It reads the opponents already on the page. It asks
-> torn-tracker.com for your faction's dibs and the war room's timers, and sends your dibs
-> when you press the button. Nothing else.
+> torn-tracker.com for your faction's dibs, the war room's timers and, once per page view,
+> your opponents' loadout flags, and sends your dibs when you press the button. Nothing
+> else.

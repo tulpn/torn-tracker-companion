@@ -94,6 +94,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Item market prices** (wave 2). When torn-tracker.com needs fresh prices for an item
   you open on the item market, the listings' prices and quantities can be shared, never
   the sellers. Off until you switch it on.
+- **Loadouts where you need them.** On any player's profile, a card shows their latest
+  loadout from torn-tracker.com's open data, with when and by how many players it was seen,
+  never by whom. For Pro factions in a ranked war, the war page shows each opponent's
+  danger flags (heavy hitter, armoured, temp ready) and the loadout's age, and the attack
+  page shows the flags of the opponent you're attacking. A Core faction sees a note.
 
 ### Notes
 

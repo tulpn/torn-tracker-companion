@@ -22,6 +22,14 @@ export const OC_URL = `${SITE}/api/feeds/oc`;
 export const ME_GYM_URL = `${SITE}/api/feeds/me/gym`;
 export const DEMAND_URL = `${SITE}/api/feeds/demand`;
 export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
+export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
+/** Open data (public-api.md): asked anonymously, never with the script key. */
+export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
+
+export const LOADOUT_FLAGS = Object.freeze(['heavy_hitter', 'armoured', 'temp_ready']);
+const WAR_LOADOUTS_TTL = 60_000;
+const OPEN_LOADOUT_TTL = 10 * 60_000;
+const SLOT_NAMES = ['primary', 'secondary', 'melee', 'temporary', 'helmet', 'body', 'gloves', 'pants', 'boots'];
 
 /** CAPI-013: the demand feed is kept 60 s; at most 500 ids per kind. */
 const DEMAND_TTL = 60_000;
@@ -116,6 +124,37 @@ export function validCrimeValue(v) {
     && Number.isInteger(s.reporters) && s.reporters >= 0);
 }
 
+const text = (v, max) => typeof v === 'string' && v.length > 0 && v.length <= max;
+const stat = (v) => v === undefined || v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 10_000);
+
+/** Flags and their one-line reasons, as LDT-032 gives them; unknown flags are dropped. */
+function readFlags(flags, reasons) {
+  const out = [];
+  for (const flag of Array.isArray(flags) ? flags : []) {
+    if (!LOADOUT_FLAGS.includes(flag) || out.some((f) => f.flag === flag)) continue;
+    const reason = reasons && typeof reasons === 'object' && text(reasons[flag], 80) ? reasons[flag] : null;
+    out.push({ flag, reason });
+  }
+  return out;
+}
+
+/** When a loadout was seen, from its ISO time; null when it does not parse. */
+function seenAt(v) {
+  const at = typeof v === 'string' ? Date.parse(v) : NaN;
+  return Number.isFinite(at) ? at : null;
+}
+
+/** One slot of an open loadout read: the item and what the page showed of it. */
+function readSlot(v) {
+  if (!v || typeof v !== 'object' || !positiveInt(v.item_id) || !text(v.name, 100)) return null;
+  if (!stat(v.damage) || !stat(v.accuracy)) return null;
+  const bonuses = (Array.isArray(v.bonuses) ? v.bonuses : [])
+    .filter((b) => b && text(b.name, 40) && typeof b.value === 'number' && Number.isFinite(b.value))
+    .slice(0, 2)
+    .map((b) => ({ name: b.name, value: b.value }));
+  return { item_id: v.item_id, name: v.name, damage: v.damage ?? null, accuracy: v.accuracy ?? null, bonuses };
+}
+
 export const SPACES = Object.freeze({
   ff: { ttlMs: HOUR, max: 2_000, valid: validFf },
   prices: { ttlMs: 10 * 60_000, max: 2_000, valid: validPrice },
@@ -136,6 +175,10 @@ export function createSite({
   let refusedKey = null;
   /** The last demand answer and when it came. */
   let demandMemo = null;
+  /** The war loadouts answer and when it came (LDT-032: at most once a minute). */
+  let warLoadoutsMemo = null;
+  /** Open loadout reads by player id. */
+  const openLoadouts = new Map();
 
   const headers = () => ({ Authorization: `Bearer ${getKey()}`, Accept: 'application/json' });
   const usable = () => Boolean(getKey()) && getKey() !== refusedKey;
@@ -349,6 +392,75 @@ export function createSite({
       const value = validCrimeValue(rows) ? rows : [];
       // An unmapped crime is an answer too: keep it, so the page is not asked again.
       cache.set('crimeValue', typeId, value);
+      return value;
+    },
+
+    /**
+     * The current opponent's loadout flags for the token's own faction (LDT-032, Pro;
+     * accepted in hq #142). Kept 60 s. A Core faction gets `pro: false` and no rows.
+     * @returns {Promise<{pro: boolean, war: boolean, opponents: Map<number, object>}|null>}
+     */
+    async warLoadouts() {
+      if (warLoadoutsMemo && now() - warLoadoutsMemo.at < WAR_LOADOUTS_TTL) return warLoadoutsMemo.value;
+      if (!usable()) return null;
+      const result = await exchange(WAR_LOADOUTS_URL, { method: 'GET' });
+      let value = null;
+      if (result.status === 403 && result.data?.error === 'pro_required') {
+        value = { pro: false, war: false, opponents: new Map() };
+      } else if (result.ok && result.data && typeof result.data === 'object' && Object.hasOwn(result.data, 'war')) {
+        const war = result.data.war !== null && typeof result.data.war === 'object';
+        const opponents = new Map();
+        for (const row of war && Array.isArray(result.data.opponents) ? result.data.opponents : []) {
+          if (!positiveInt(row?.player_id)) continue;
+          opponents.set(row.player_id, {
+            player_id: row.player_id,
+            flags: readFlags(row.flags, row.reasons),
+            seen_at: seenAt(row.seen_at),
+            reporters: Number.isInteger(row.reporters) && row.reporters >= 0 ? row.reporters : null,
+            old: row.old === true,
+            hidden: row.hidden === true,
+          });
+        }
+        value = { pro: true, war, opponents };
+      }
+      if (value) warLoadoutsMemo = { at: now(), value };
+      return value;
+    },
+
+    /**
+     * One player's latest loadout, from the open data (LDT-032, D-053). Asked without any
+     * key, as anyone may. Kept 10 minutes.
+     * @param {number} playerId
+     * @returns {Promise<{seen: boolean, hidden?: boolean, slots?: object, flags?: object[], seen_at?: number|null, reporters?: number|null}|null>}
+     *          seen false when the site has never seen this player's loadout; null on failure
+     */
+    async playerLoadout(playerId) {
+      if (!positiveInt(playerId)) return null;
+      const memo = openLoadouts.get(playerId);
+      if (memo && now() - memo.at < OPEN_LOADOUT_TTL) return memo.value;
+      const result = await send(`${OPEN_LOADOUT_URL}/${playerId}`, { method: 'GET', headers: { Accept: 'application/json' } });
+      let value = null;
+      if (result.status === 404) value = { seen: false };
+      else if (result.ok && result.data?.player_id === playerId) {
+        const d = result.data;
+        if (d.hidden === true) value = { seen: true, hidden: true };
+        else {
+          const slots = {};
+          for (const name of SLOT_NAMES) {
+            const slot = readSlot(d.slots?.[name]);
+            if (slot) slots[name] = slot;
+          }
+          value = {
+            seen: Object.keys(slots).length > 0,
+            hidden: false,
+            slots,
+            flags: readFlags(d.flags, d.reasons),
+            seen_at: seenAt(d.seen_at),
+            reporters: Number.isInteger(d.reporters) && d.reporters >= 0 ? d.reporters : null,
+          };
+        }
+      }
+      if (value) openLoadouts.set(playerId, { at: now(), value });
       return value;
     },
 

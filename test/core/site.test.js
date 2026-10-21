@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
+import {
+  CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  WAR_LOADOUTS_URL, createSite,
+} from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
 
@@ -383,5 +386,46 @@ describe('CMP-205 value per nerve (CAPI-035, by the page typeID, hq #124)', () =
     const r = rig();
     assert.deepEqual(await r.site.crimeValue(0), []);
     assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('LDT-032 the two loadout reads (shapes accepted in hq #142)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('the war view: flags with their reasons, age and reporters; unknown flags dropped', async () => {
+    const r = rig({ reply: reply({ war: { id: 1 }, opponents: [
+      { player_id: 111, flags: ['heavy_hitter', 'sneaky', 'armoured'], reasons: { heavy_hitter: 'ArmaLite: damage 76.9' }, seen_at: '2026-10-21T10:00:00Z', reporters: 2, old: false, hidden: false },
+      { player_id: 0, flags: [] },
+    ] }) });
+    const view = await r.site.warLoadouts();
+    assert.equal(r.calls[0].url, WAR_LOADOUTS_URL);
+    assert.equal(view.pro, true);
+    assert.deepEqual(view.opponents.get(111).flags, [{ flag: 'heavy_hitter', reason: 'ArmaLite: damage 76.9' }, { flag: 'armoured', reason: null }]);
+    assert.equal(view.opponents.size, 1);
+    await r.site.warLoadouts();
+    assert.equal(r.calls.length, 1, 'kept for a minute');
+  });
+
+  test('a Core faction: pro false, nothing else', async () => {
+    const view = await rig({ reply: reply({ error: 'pro_required' }, 403) }).site.warLoadouts();
+    assert.deepEqual(view, { pro: false, war: false, opponents: new Map() });
+  });
+
+  test('the open read is asked without any key', async () => {
+    const r = rig({ reply: reply({ player_id: 111, hidden: false, seen_at: '2026-10-21T10:00:00Z', reporters: 2,
+      slots: { primary: { item_id: 399, name: 'ArmaLite M-15A4', damage: 76.9, accuracy: 54.4, bonuses: [{ name: 'Penetrate', value: 25 }] }, boots: { item_id: 0, name: 'x' } },
+      flags: ['heavy_hitter'], reasons: {} }) });
+    const loadout = await r.site.playerLoadout(111);
+    assert.equal(r.calls[0].url, `${OPEN_LOADOUT_URL}/111`);
+    assert.equal(r.calls[0].headers.Authorization, undefined);
+    assert.deepEqual(Object.keys(loadout.slots), ['primary']);
+    assert.equal(loadout.reporters, 2);
+  });
+
+  test('never seen, hidden, another player in the answer, or a failure', async () => {
+    assert.deepEqual(await rig({ reply: reply(null, 404) }).site.playerLoadout(5), { seen: false });
+    assert.deepEqual(await rig({ reply: reply({ player_id: 5, hidden: true }) }).site.playerLoadout(5), { seen: true, hidden: true });
+    assert.equal(await rig({ reply: reply({ player_id: 6, hidden: false, slots: {} }) }).site.playerLoadout(5), null);
+    assert.equal(await rig({ reply: reply(null, 503) }).site.playerLoadout(5), null);
   });
 });
