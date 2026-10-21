@@ -23,5 +23,6 @@ import mugStrip from './mug-strip/index.js';
 import applicantBadges from './applicant-badges/index.js';
 import auctionValues from './auction-values/index.js';
 import warBrief from './war-brief/index.js';
+import raceTemplates from './race-templates/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot, loadoutView, mugStrip, auctionValues, applicantBadges, warBrief];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot, loadoutView, mugStrip, auctionValues, applicantBadges, warBrief, raceTemplates];

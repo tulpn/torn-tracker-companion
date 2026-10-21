@@ -111,6 +111,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Pre-war strip** (wave 2). Before a ranked war starts, the opponent's faction page
   shows a one-line comparison of both sides and a link to the full brief on
   torn-tracker.com, with its headline for Pro factions. Needs your script key.
+- **Racing templates** (wave 3). On the custom race form, save your settings as named
+  templates and fill the form from one with a press. Kept only on this device; Forget me
+  deletes them. It never starts a race.
 
 ### Notes
 

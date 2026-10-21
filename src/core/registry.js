@@ -42,6 +42,11 @@ export function validateDescriptor(d) {
   if (!Array.isArray(d.credits) || d.credits.some((c) => typeof c !== 'string')) {
     fail(id, 'credits must be an array of strings');
   }
+  if (d.data !== undefined) {
+    if (!d.data || typeof d.data.validate !== 'function' || d.data.empty === undefined) {
+      fail(id, 'data must have an empty value and a validate function');
+    }
+  }
   if (typeof d.start !== 'function' || typeof d.stop !== 'function') {
     fail(id, 'start and stop must be functions');
   }

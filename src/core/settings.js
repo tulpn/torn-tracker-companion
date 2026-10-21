@@ -4,6 +4,10 @@
 // defaults the registry declares, and anything of the wrong type, or belonging to a
 // feature or observation kind this build does not have, is dropped.
 //
+// A feature may also keep data of its own (its descriptor's `data`: an empty value and a
+// validate function), such as saved racing templates. It lives in `featureData`, is
+// checked by that function on every load, and goes with "Forget me" like everything else.
+//
 // Sharing switches are the one place where the default is not negotiable: every kind
 // starts off and only the player turns it on (CMP-014). A switch that is on still shares
 // nothing until the player has agreed to the current wording of what is shared:
@@ -19,7 +23,19 @@ export function defaults(registry) {
     sharingConsent: 0,
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
+    featureData: Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, d.data.empty])),
   };
+}
+
+/** A feature's own data, checked by its validate function; the empty value when it fails. */
+function featureDataOf(d, value) {
+  if (value === undefined) return d.data.empty;
+  try {
+    const clean = d.data.validate(value);
+    return clean === undefined ? d.data.empty : clean;
+  } catch {
+    return d.data.empty;
+  }
 }
 
 /** Keeps only known fields whose type matches the default's. */
@@ -56,6 +72,10 @@ export function normalize(raw, registry) {
   for (const kind of shareKinds(registry)) {
     out.shares[kind] = givenShares[kind] === true;
   }
+
+  const givenData = given.featureData && typeof given.featureData === 'object' ? given.featureData : {};
+  out.featureData = {};
+  for (const d of registry.filter((f) => f.data)) out.featureData[d.id] = featureDataOf(d, givenData[d.id]);
 
   return out;
 }
