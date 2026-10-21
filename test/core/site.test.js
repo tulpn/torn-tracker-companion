@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -453,5 +453,33 @@ describe('MUG-031 your own mugs of a player', () => {
     assert.deepEqual(await rig({ reply: reply({ count: -2, last_at: 'soon', last_amount: -1, average: 'lots' }) }).site.myMugs(5),
       { count: 0, last_at: null, last_amount: null, average: null });
     assert.equal(await rig({ reply: reply(null, 503) }).site.myMugs(5), null);
+  });
+});
+
+describe('AUC-020 auction values (CAPI-035, accepted in hq #199)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('the page ids in one post; each row checked; unseen listings remembered too', async () => {
+    const r = rig({ reply: reply({ values: [
+      { listing_id: 1, estimate: 27400000, sales: 12, basis: 'auctions', deal: false },
+      { listing_id: 2, estimate: null, sales: 3, basis: 'auctions', deal: false },
+      { listing_id: 3, estimate: -5, sales: 1, basis: 'auctions', deal: false },
+      { listing_id: 99, estimate: 1, sales: 1, basis: 'auctions', deal: false },
+    ] }) });
+    const found = await r.site.auctionValues([1, 2, 3, 4]);
+    assert.equal(r.calls[0].url, AUCTION_VALUE_URL);
+    assert.deepEqual(JSON.parse(r.calls[0].body), { listings: [1, 2, 3, 4] });
+    assert.deepEqual([...found.keys()], [1, 2]);
+    await r.site.auctionValues([1, 2, 3, 4]);
+    assert.equal(r.calls.length, 1, 'answers and non-answers are kept ten minutes');
+  });
+
+  test('at most 50 per call; nothing without a key', async () => {
+    const r = rig({ reply: reply({ values: [] }) });
+    await r.site.auctionValues(Array.from({ length: 70 }, (_, i) => i + 1));
+    assert.equal(JSON.parse(r.calls[0].body).listings.length, 50);
+    const none = rig({ key: '' });
+    assert.equal((await none.site.auctionValues([1])).size, 0);
+    assert.equal(none.calls.length, 0);
   });
 });
