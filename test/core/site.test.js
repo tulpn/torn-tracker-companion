@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  APPLICANTS_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -481,5 +481,32 @@ describe('AUC-020 auction values (CAPI-035, accepted in hq #199)', () => {
     const none = rig({ key: '' });
     assert.equal((await none.site.auctionValues([1])).size, 0);
     assert.equal(none.calls.length, 0);
+  });
+});
+
+describe('JOB-072 applicant cards (accepted in hq #79)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('board and ids in one post; each card checked; links only to our own site', async () => {
+    const r = rig({ reply: reply({ cards: [
+      { id: 1, merits: 10, job_points: 1234, fit: 'good', card_url: 'https://www.torn-tracker.com/jobs/c/1/' },
+      { id: 2, merits: null, job_points: null, fit: null, card_url: 'https://evil.example/' },
+      { id: 3, merits: 11, job_points: 1, fit: 'good' },
+      { id: 4, merits: 1, job_points: 1, fit: 'great' },
+      { id: 99, merits: 1, job_points: 1, fit: 'good' },
+    ] }) });
+    const { allowed, cards } = await r.site.applicantCards('company', [1, 2, 3, 4, 2]);
+    assert.equal(r.calls[0].url, APPLICANTS_URL);
+    assert.deepEqual(JSON.parse(r.calls[0].body), { board: 'company', ids: [1, 2, 3, 4] });
+    assert.equal(allowed, true);
+    assert.deepEqual([...cards.keys()], [1, 2]);
+    assert.equal(cards.get(2).card_url, null);
+  });
+
+  test('not the director: allowed false; a bad board never leaves the script', async () => {
+    assert.equal((await rig({ reply: reply({ error: 'not_director' }, 403) }).site.applicantCards('faction', [1])).allowed, false);
+    const r = rig();
+    await r.site.applicantCards('gang', [1]);
+    assert.equal(r.calls.length, 0);
   });
 });

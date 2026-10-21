@@ -105,6 +105,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Auction value badges** (wave 2). On the auction house, each listing shows
   torn-tracker.com's value estimate ("about $27.4m, 12 sales"), "not enough sales", or a
   deal tag. Seeing them needs no sharing. Needs your script key.
+- **Applicant badges** (wave 3). On your company's or faction's application list, each
+  applicant who shared a job-board card shows their merits, job points and fit, linking
+  to the card. Only for the verified director or recruiter. Needs your script key.
 
 ### Notes
 
