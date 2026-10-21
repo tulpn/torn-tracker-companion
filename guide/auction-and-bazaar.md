@@ -1,6 +1,6 @@
 ---
 title: Auctions and bazaars
-summary: Share the bazaar, auction and item market listings you see, so torn-tracker.com can publish prices Torn's API doesn't.
+summary: See a value estimate beside every auction, and share the bazaar, auction and item market listings you see.
 section: Guides
 group: features
 order: 270
@@ -18,6 +18,14 @@ keywords: torn bazaar prices, auction house prices, item market prices torn
 Torn's API has no player's bazaar listings and no live auctions. When you browse them, the
 companion can share what the page shows, and torn-tracker.com publishes the combined
 prices openly. Every detail is in [Sharing kinds, one by one](sharing-kinds.md).
+
+## Value badges on the auction house
+
+Beside each listing, a badge gives torn-tracker.com's estimate of what it's worth: **about
+$27.4m, 12 sales** from comparable completed sales with the same bonuses, or the item
+market for plain items. **Not enough sales** means fewer than five to go on. A green
+**deal** tag means the current bid is well under the estimate, with time left to bid. You
+don't need to share anything to see them. The companion never bids.
 
 ## Bazaars
 

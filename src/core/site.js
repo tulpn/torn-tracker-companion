@@ -24,6 +24,9 @@ export const DEMAND_URL = `${SITE}/api/feeds/demand`;
 export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
 export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
 export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
+export const AUCTION_VALUE_URL = `${SITE}/api/feeds/auctions/value`;
+const AUCTION_VALUE_TTL = 10 * 60_000;
+const AUCTION_VALUE_MAX = 50;
 const ME_MUGS_TTL = 10 * 60_000;
 /** Open data (public-api.md): asked anonymously, never with the script key. */
 export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
@@ -183,6 +186,8 @@ export function createSite({
   const openLoadouts = new Map();
   /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
   const myMugs = new Map();
+  /** Auction listing values by listing id (#199: kept 10 minutes; null = the site has none). */
+  const auctionValues = new Map();
 
   const headers = () => ({ Authorization: `Bearer ${getKey()}`, Accept: 'application/json' });
   const usable = () => Boolean(getKey()) && getKey() !== refusedKey;
@@ -491,6 +496,44 @@ export function createSite({
       };
       myMugs.set(playerId, { at: now(), value });
       return value;
+    },
+
+    /**
+     * Value estimates for auction listings (CAPI-035, accepted in hq #199), by the ids the
+     * page shows. Up to 50 per call; each answer, or the lack of one, kept 10 minutes.
+     * @param {number[]} ids
+     * @returns {Promise<Map<number, {estimate: number|null, sales: number, basis: string, deal: boolean}>>}
+     */
+    async auctionValues(ids) {
+      const found = new Map();
+      const ask = [];
+      for (const id of new Set(ids.filter(positiveInt))) {
+        const memo = auctionValues.get(id);
+        if (memo && now() - memo.at < AUCTION_VALUE_TTL) {
+          if (memo.value) found.set(id, memo.value);
+        } else if (ask.length < AUCTION_VALUE_MAX) ask.push(id);
+      }
+      if (ask.length === 0 || !usable()) return found;
+      const data = await call(AUCTION_VALUE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listings: ask }),
+      });
+      if (!data) return found;
+      const answered = new Set();
+      for (const row of Array.isArray(data.values) ? data.values : []) {
+        if (!positiveInt(row?.listing_id) || !ask.includes(row.listing_id)) continue;
+        const estimate = row.estimate === null || (Number.isInteger(row.estimate) && row.estimate >= 0 && row.estimate <= 1e13) ? row.estimate : undefined;
+        if (estimate === undefined || !Number.isInteger(row.sales) || row.sales < 0) continue;
+        if (!['auctions', 'market'].includes(row.basis) || typeof row.deal !== 'boolean') continue;
+        const value = { estimate, sales: row.sales, basis: row.basis, deal: row.deal };
+        auctionValues.set(row.listing_id, { at: now(), value });
+        found.set(row.listing_id, value);
+        answered.add(row.listing_id);
+      }
+      // A listing the site has not seen is left out: remember that too, for the window.
+      for (const id of ask) if (!answered.has(id)) auctionValues.set(id, { at: now(), value: null });
+      return found;
     },
 
     /**

@@ -102,6 +102,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Your mugs of a player** (wave 2). On a profile or the attack page, a line says how often
   you've mugged that player, when last and for how much, from your own records on
   torn-tracker.com. Needs your script key.
+- **Auction value badges** (wave 2). On the auction house, each listing shows
+  torn-tracker.com's value estimate ("about $27.4m, 12 sales"), "not enough sales", or a
+  deal tag. Seeing them needs no sharing. Needs your script key.
 
 ### Notes
 
