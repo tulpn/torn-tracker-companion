@@ -34,7 +34,9 @@ export function json(name) {
  */
 export function runFeature(feature, {
   html = '', url, settings, now = Date.now, visibility = 'visible', site = null, sharing = () => true,
+  data,
 } = {}) {
+  let stored = data ?? feature.data?.empty;
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, {
     url, pretendToBeVisual: true,
   });
@@ -77,6 +79,11 @@ export function runFeature(feature, {
     log: () => {},
     now,
     sharing: (kind) => feature.shares.includes(kind) && sharing(kind),
+    data: () => stored,
+    async saveData(value) {
+      stored = feature.data ? feature.data.validate(value) : value;
+      return stored;
+    },
     share(kind, data) {
       if (!feature.shares.includes(kind)) throw new Error(`${feature.id} shared ${kind}, which it does not declare`);
       shared.push({ kind, ...data });

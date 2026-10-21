@@ -66,6 +66,14 @@ export async function boot(win = globalThis) {
       }),
       /** Whether the player shares this kind now; features ask before costly work for it. */
       sharing: (kind) => descriptor.shares.includes(kind) && isShared(settings, kind),
+      /** The feature's own saved data (its descriptor's `data`), checked on load. */
+      data: () => settings.featureData?.[descriptor.id],
+      /** Saves the feature's own data; returns it as stored, after its checks. */
+      saveData: async (value) => {
+        settings = normalize({ ...settings, featureData: { ...settings.featureData, [descriptor.id]: value } }, registry);
+        await save(settings, registry);
+        return settings.featureData[descriptor.id];
+      },
     }),
   });
 
@@ -101,10 +109,11 @@ export async function boot(win = globalThis) {
     getQueue: () => uploader.status(),
     onSave: async (nextSettings, nextKeys) => {
       const savedKeys = await applyKeys(nextKeys);
-      const savedSettings = await apply(nextSettings);
+      // The panel edits options and switches; features' own data is never its to change.
+      const savedSettings = await apply({ ...nextSettings, featureData: settings.featureData });
       return savedKeys && savedSettings;
     },
-    onReset: () => apply(defaults(registry)),
+    onReset: () => apply({ ...defaults(registry), featureData: settings.featureData }),
     onForget: async () => {
       uploader.clear();
       site.cache.clear();
