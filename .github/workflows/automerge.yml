@@ -93,6 +93,18 @@ jobs:
             echo "Commit status is $status."; exit 0
           fi
 
+          # Two checks often finish together, so a second run can find the merge already
+          # under way. That is success, not an error: check the PR's state before failing.
+          state=$(gh pr view "$num" --json state --jq .state)
+          if [ "$state" != "OPEN" ]; then echo "PR #$num is already $state."; exit 0; fi
+
           # Only the merge uses the owner's token, so it triggers CI on the target branch.
-          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$num" --merge --match-head-commit "$SHA" --author-email "$NOREPLY"
+          if ! out=$(GH_TOKEN="$MERGE_TOKEN" gh pr merge "$num" --merge --match-head-commit "$SHA" --author-email "$NOREPLY" 2>&1); then
+            sleep 10
+            state=$(gh pr view "$num" --json state --jq .state)
+            if [ "$state" = "MERGED" ] || echo "$out" | grep -qi "already in progress\|already merged"; then
+              echo "PR #$num was merged by a parallel run."; exit 0
+            fi
+            echo "$out"; exit 1
+          fi
           echo "Merged PR #$num into $base."
