@@ -24,6 +24,8 @@ export const DEMAND_URL = `${SITE}/api/feeds/demand`;
 export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
 export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
 export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
+export const STOCK_SIGNALS_URL = `${SITE}/api/feeds/stocks/signals`;
+const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
 export const AUCTION_VALUE_URL = `${SITE}/api/feeds/auctions/value`;
 const AUCTION_VALUE_TTL = 10 * 60_000;
@@ -186,6 +188,8 @@ export function createSite({
   let warLoadoutsMemo = null;
   /** Open loadout reads by player id. */
   const openLoadouts = new Map();
+  /** The stock signals answer and when it came (CMP-304: kept 5 minutes). */
+  let stockMemo = null;
   /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
   const myMugs = new Map();
   /** Auction listing values by listing id (#199: kept 10 minutes; null = the site has none). */
@@ -591,6 +595,28 @@ export function createSite({
         briefUrl: url,
         pro: data.pro === true,
       };
+    },
+
+    /**
+     * The site's simple signal per stock (CMP-304, companion-api §6.4): far below or far
+     * above its 30-day average, or none yet. Public market data, the same for everyone.
+     * Kept 5 minutes.
+     * @returns {Promise<Map<number, {signal: 'below_avg'|'above_avg'|null, avg_30d: number|null, price: number|null}>>}
+     */
+    async stockSignals() {
+      if (stockMemo && now() - stockMemo.at < STOCK_SIGNALS_TTL) return stockMemo.value;
+      const value = new Map();
+      if (!usable()) return value;
+      const data = await call(STOCK_SIGNALS_URL, { method: 'GET' });
+      if (!data) return value;
+      const money = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e9 ? v : null);
+      for (const row of Array.isArray(data.signals) ? data.signals : []) {
+        if (!positiveInt(row?.stock_id) || row.stock_id > 1_000) continue;
+        if (!(row.signal === null || row.signal === 'below_avg' || row.signal === 'above_avg')) continue;
+        value.set(row.stock_id, { signal: row.signal, avg_30d: money(row.avg_30d), price: money(row.price) });
+      }
+      stockMemo = { at: now(), value };
+      return value;
     },
 
     /**

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -527,6 +527,37 @@ describe('PRE-042 the pre-war strip read (accepted in hq #136)', () => {
     assert.equal(await rig({ reply: reply(null, 503) }).site.warBrief(), null);
     const r = rig({ key: '' });
     assert.equal(await r.site.warBrief(), null);
+    assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('CMP-304 stock signals (companion-api section 6.4)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('each row checked; kept five minutes', async () => {
+    let clock = 0;
+    const r = rig({ clock: () => clock, reply: reply({ signals: [
+      { stock_id: 1, signal: 'below_avg', avg_30d: 820.5, price: 610.2 },
+      { stock_id: 2, signal: null, avg_30d: null, price: 12 },
+      { stock_id: 3, signal: 'buy', avg_30d: 1, price: 1 },
+      { stock_id: 0, signal: null },
+    ] }) });
+    const signals = await r.site.stockSignals();
+    assert.equal(r.calls[0].url, STOCK_SIGNALS_URL);
+    assert.deepEqual([...signals.keys()], [1, 2]);
+    assert.deepEqual(signals.get(1), { signal: 'below_avg', avg_30d: 820.5, price: 610.2 });
+    clock = 4 * 60_000;
+    await r.site.stockSignals();
+    assert.equal(r.calls.length, 1);
+    clock = 5 * 60_000;
+    await r.site.stockSignals();
+    assert.equal(r.calls.length, 2);
+  });
+
+  test('a failure or no key: nothing', async () => {
+    assert.equal((await rig({ reply: reply(null, 503) }).site.stockSignals()).size, 0);
+    const r = rig({ key: '' });
+    assert.equal((await r.site.stockSignals()).size, 0);
     assert.equal(r.calls.length, 0);
   });
 });
