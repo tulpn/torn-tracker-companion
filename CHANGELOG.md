@@ -114,6 +114,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Racing templates** (wave 3). On the custom race form, save your settings as named
   templates and fill the form from one with a press. Kept only on this device; Forget me
   deletes them. It never starts a race.
+- **Stock signals** (wave 3). On the stock market, a label beside a stock says when its
+  price is far below or far above its 30-day average. A simple signal, never advice to buy
+  or sell. Needs your script key.
 
 ### Notes
 
