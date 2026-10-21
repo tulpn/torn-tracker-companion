@@ -30,11 +30,12 @@ its URL can be checked and kept current.
 
 ## Check it works
 
-Open any Torn page in PDA. The round ⚙ button of the [settings panel](settings-panel.md)
-appears in the bottom right corner.
+Open any Torn page in PDA. The small green **TT** icon in Torn's header opens the
+companion's [settings](settings-panel.md). The sidebar's **Torn Tracker** link works too,
+where PDA shows the sidebar.
 
 ## Add your script key
 
-In the panel's **Keys** tab, paste your [script key](website:script-key.md) and press
+In the settings, under **Keys**, paste your [script key](website:script-key.md) and press
 **Save**. You can use the same key as on your computer: see
 [Use it on your other device](second-device.md).

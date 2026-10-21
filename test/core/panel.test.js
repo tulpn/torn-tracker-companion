@@ -63,18 +63,18 @@ function mount({
     node.dispatchEvent(new window.Event('change', { bubbles: true }));
   };
   const open = (tab) => {
-    if (panel.panel.hidden) click(panel.fab);
+    if (panel.panel.hidden) panel.open();
     if (tab) click($(`button[data-tab="${tab}"]`));
   };
   return { panel, window, saves, $, click, change, open, text: () => panel.panel.textContent };
 }
 
-describe('CMP-107 the panel has a tab for each job', () => {
-  test('Features, Sharing, Keys and Credits', () => {
+describe('CMP-107 the settings page has a section for each job', () => {
+  test('General, Features, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
     const t = mount();
     t.open();
     const tabs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((b) => b.textContent);
-    assert.deepEqual(tabs, ['Features', 'Sharing', 'Keys', 'Credits']);
+    assert.deepEqual(tabs, ['General', 'Features', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
     assert.equal(t.$('[aria-selected=true]').textContent, 'Features');
   });
 
@@ -257,11 +257,102 @@ describe('CMP-107 credits and the version', () => {
     assert.match(t.text(), /no other script's code or ideas yet/);
   });
 
-  test('the version and the update link are on every tab', () => {
+  test('the version and the update link are under General', () => {
     const t = mount();
-    for (const tab of ['features', 'sharing', 'keys', 'credits']) {
-      t.open(tab);
-      assert.match(t.text(), /Version 9\.9\.9\. Check for an update/);
+    t.open('general');
+    assert.match(t.text(), /version 9\.9\.9\./);
+    assert.match(t.text(), /Check for an update/);
+  });
+});
+
+describe('CMP-107 the settings page, as reworked on the owner\u2019s review', () => {
+  const two = () => createRegistry([
+    descriptor(),
+    descriptor({ id: 'gym-thing', title: 'Gym thing', area: 'gym', guide: 'gym-progress', summary: 'Shows gym progress.', shares: [] }),
+  ]);
+
+  test('features are grouped by area, each with its line and a Learn more link to its page', () => {
+    const t = mount({ registry: two() });
+    t.open('features');
+    assert.deepEqual([...t.panel.panel.querySelectorAll('main h4')].map((n) => n.textContent), ['War and attacks', 'Gym']);
+    const learn = t.$('[data-card="gym-thing"] a');
+    assert.equal(learn.textContent, 'Learn more');
+    assert.equal(learn.getAttribute('href'), 'https://www.torn-tracker.com/guide/companion/gym-progress/');
+    assert.match(t.$('[data-card="gym-thing"]').textContent, /Shows gym progress\./);
+  });
+
+  test('search finds a setting in any section, and a switch found there is saved like any other', async () => {
+    const t = mount({ registry: two() });
+    t.open('general');
+    const search = t.$('#ttc-search');
+    search.value = 'gym';
+    search.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    assert.ok(t.$('[data-card="gym-thing"]'));
+    assert.equal(t.$('[data-card="war-enhancer"]'), null);
+    t.change(t.$('#ttc-feature-gym-thing'), false);
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    assert.equal(t.saves[0].settings.features['gym-thing'].enabled, false);
+  });
+
+  test('a search that matches nothing says so', () => {
+    const t = mount();
+    t.open();
+    const search = t.$('#ttc-search');
+    search.value = 'zzzz';
+    search.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    assert.match(t.text(), /Nothing matches/);
+  });
+
+  test('Esc, the close button and a press on the backdrop all leave without saving', () => {
+    for (const leave of ['esc', 'button', 'backdrop']) {
+      const t = mount();
+      t.open();
+      if (leave === 'esc') t.window.document.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Escape' }));
+      else if (leave === 'button') t.click(t.$('.ttc-head button[data-act="close"]'));
+      else t.click(t.panel.panel);
+      assert.equal(t.panel.panel.hidden, true, leave);
+      assert.equal(t.saves.length, 0);
     }
+  });
+
+  test('while it is open, the page behind does not scroll; closing puts it back', () => {
+    const t = mount();
+    t.open();
+    assert.equal(t.window.document.body.style.overflow, 'hidden');
+    t.panel.close();
+    assert.equal(t.window.document.body.style.overflow, '');
+  });
+
+  test('it follows Torn\u2019s dark theme', () => {
+    const t = mount();
+    t.window.document.body.classList.add('dark-mode');
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'dark');
+  });
+
+  test('Forget me lives under Data, and asks before clearing', async () => {
+    const t = mount();
+    t.open('data');
+    assert.match(t.text(), /stored only on this device/);
+    t.click(t.$('button[data-act="forget"]'));
+    assert.equal(t.$('button[data-act="forget"]').textContent, 'Really forget everything?');
+  });
+
+  test('Help links to the companion guide and to support', () => {
+    const t = mount();
+    t.open('help');
+    const hrefs = [...t.panel.panel.querySelectorAll('main a')].map((a) => a.getAttribute('href'));
+    assert.ok(hrefs.includes('https://www.torn-tracker.com/guide/companion/'));
+    assert.ok(hrefs.some((h) => h.endsWith('/issues')));
+  });
+
+  test('opening it makes no request (AC5)', () => {
+    const t = mount();
+    let asked = 0;
+    t.window.fetch = () => { asked += 1; return Promise.reject(new Error('no')); };
+    t.open();
+    for (const [id] of [['general'], ['features'], ['sharing'], ['keys'], ['data'], ['credits'], ['help']]) t.open(id);
+    assert.equal(asked, 0);
   });
 });

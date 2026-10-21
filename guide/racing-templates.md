@@ -33,5 +33,5 @@ field is skipped and the bar says so once.
 ## Where templates are kept
 
 Only on this device, in the companion's settings. Nothing is sent anywhere. **Forget me**
-deletes them, along with everything else the script keeps. Saving the panel's settings or
+deletes them, along with everything else the script keeps. Saving your settings or
 resetting them leaves your templates alone.

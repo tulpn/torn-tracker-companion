@@ -24,7 +24,8 @@ API doesn't: foreign stock, bazaar and auction listings, loadouts.
 ## Start here
 
 1. [Install it on desktop](install-desktop.md) or [in Torn PDA](install-pda.md).
-2. Paste your [script key](website:script-key.md) into the panel's **Keys** tab.
+2. Open the settings from the **Torn Tracker** link in the sidebar and paste your
+   [script key](website:script-key.md) under **Keys**.
 3. [Choose what to share](what-is-shared.md). Everything starts off.
 
 ## What it never does
@@ -37,4 +38,4 @@ torn-tracker.com and, if a feature ever needs it, Torn's own API. The full list 
 ## Open source
 
 The script is free software under the GPLv3, and its code is public on GitHub. Every
-script it took an idea from is credited in the panel's **Credits** tab.
+script it took an idea from is credited under **Credits** in the settings.

@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-summary: The ⚙ button doesn't show, a feature stays quiet, or your key is refused; what to check first.
+summary: The Torn Tracker link doesn't show, a feature stays quiet, or your key is refused; what to check first.
 section: Help
 order: 510
 type: how-to
@@ -12,15 +12,17 @@ keywords: companion not working, torn userscript not showing, script key refused
 
 > **Test release.** The companion is in public testing. Things may change before version 1.
 
-## The ⚙ button doesn't appear
+## The Torn Tracker link doesn't appear
 
 - Check the script is switched on in your script manager or in Torn PDA.
 - Reload the Torn page.
+- Look for the green **TT** icon by your avatar, or the **Torn Tracker** tab on the right
+  edge of the screen: some pages have no sidebar.
 - In PDA, check you added it [from its URL](install-pda.md#add-the-script-from-its-url).
 
 ## A feature stays quiet
 
-- Open the panel's **Features** tab and check the feature is switched on.
+- Open the settings, go to **Features** and check the feature is switched on.
 - Most features need your [script key](website:script-key.md) in the **Keys** tab.
 - A badge showing **?** isn't an error: torn-tracker.com has no data for that player yet.
 - If a feature hits a problem, it switches itself off until you open the next page, and

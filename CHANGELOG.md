@@ -117,6 +117,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Stock signals** (wave 3). On the stock market, a label beside a stock says when its
   price is far below or far above its 30-day average. A simple signal, never advice to buy
   or sell. Needs your script key.
+- **A clearer way into the settings.** The floating ⚙ button is gone. Open the settings
+  from the new **Torn Tracker** link in Torn's sidebar (right under TornTools Settings if
+  you have TornTools) or the green **TT** icon by your avatar; a slim tab on the screen's
+  edge appears only on pages with neither. The settings are now a full page with a menu:
+  General, Features (grouped by area, each with a Learn more link), Sharing, Keys, Data,
+  Credits and Help, with search, Torn's light and dark themes, and a layout for phones.
+  Your settings carry over unchanged.
 
 ### Notes
 

@@ -15,6 +15,8 @@ export const KEYS = Object.freeze({
   queue: 'ttc_queue',
   /** read caches with their TTLs */
   cache: 'ttc_cache',
+  /** the settings page's last section; a convenience, cleared by "Forget me" */
+  ui: 'ttc_ui',
 });
 
 const ALL = Object.freeze(Object.values(KEYS));

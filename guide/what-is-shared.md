@@ -23,7 +23,7 @@ keywords: companion sharing, what does the torn userscript send, crowd data torn
 
 ## Switch on what you want
 
-1. Open the panel and go to **Sharing**.
+1. Open the settings (the **Torn Tracker** link in the sidebar) and go to **Sharing**.
 2. Read the notice at the top, and the line beside each kind saying what it sends.
 3. Switch on the kinds you're happy to share.
 4. Press **Share the kinds I picked**. Until you do, nothing is sent.

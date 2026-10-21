@@ -7,6 +7,9 @@ import { isKnownKind } from './kinds.js';
 
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+/** The areas the settings page groups features by (CMP-107). */
+export const AREA_KEYS = Object.freeze(['war', 'travel', 'market', 'crimes', 'gym', 'jobs', 'other']);
+
 /** Option values a feature may keep in settings: scalars only, so they validate cleanly. */
 const SCALAR = new Set(['boolean', 'number', 'string']);
 
@@ -20,6 +23,9 @@ export function validateDescriptor(d) {
   if (typeof id !== 'string' || !ID.test(id)) fail(id, 'id must be kebab-case');
   if (!Number.isInteger(d.wave) || d.wave < 1) fail(id, 'wave must be 1, 2 or 3');
   if (typeof d.title !== 'string' || !d.title) fail(id, 'title is required');
+  if (!AREA_KEYS.includes(d.area)) fail(id, `area must be one of ${AREA_KEYS.join(', ')}`);
+  if (typeof d.guide !== 'string' || !ID.test(d.guide)) fail(id, 'guide must name its knowledge base page');
+  if (typeof d.summary !== 'string' || !d.summary || d.summary.length > 140) fail(id, 'summary must be one line of at most 140 characters');
   if (!Array.isArray(d.routes) || d.routes.length === 0) fail(id, 'routes must be a non-empty array');
   if (d.routes.some((r) => typeof r !== 'string' || !r)) fail(id, 'routes must be strings');
 

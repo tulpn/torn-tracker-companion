@@ -26,7 +26,7 @@ press fills one row only: there's no "fill all".
 
 ## Set your undercut
 
-In the panel's Features tab, set **Undercut the market value by ($)**. It's $1 to start
+In the settings, under **Features**, set **Undercut the market value by ($)**. It's $1 to start
 with.
 
 > **What it reads and sends.** It reads the items on the form and asks torn-tracker.com
