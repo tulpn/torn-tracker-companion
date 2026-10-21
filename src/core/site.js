@@ -24,6 +24,7 @@ export const DEMAND_URL = `${SITE}/api/feeds/demand`;
 export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
 export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
 export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
+export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
 export const AUCTION_VALUE_URL = `${SITE}/api/feeds/auctions/value`;
 const AUCTION_VALUE_TTL = 10 * 60_000;
 const AUCTION_VALUE_MAX = 50;
@@ -534,6 +535,39 @@ export function createSite({
       // A listing the site has not seen is left out: remember that too, for the window.
       for (const id of ask) if (!answered.has(id)) auctionValues.set(id, { at: now(), value: null });
       return found;
+    },
+
+    /**
+     * Shared job-board cards for the applicants on a company or faction application list
+     * (JOB-072, accepted in hq #79). The site decides whose board from the token's verified
+     * director or recruiter, never from the page. Not cached.
+     * @param {'company'|'faction'} board
+     * @param {number[]} ids  the applicants on the page, at most 100
+     * @returns {Promise<{allowed: boolean, cards: Map<number, object>}>}
+     *          allowed false when the player isn't the board's director or recruiter
+     */
+    async applicantCards(board, ids) {
+      const ask = [...new Set(ids.filter(positiveInt))].slice(0, MAX_IDS);
+      if (!['company', 'faction'].includes(board) || ask.length === 0 || !usable()) {
+        return { allowed: true, cards: new Map() };
+      }
+      const result = await exchange(APPLICANTS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ board, ids: ask }),
+      });
+      if (result.status === 403 && result.data?.error === 'not_director') return { allowed: false, cards: new Map() };
+      const cards = new Map();
+      for (const c of result.ok && Array.isArray(result.data?.cards) ? result.data.cards : []) {
+        if (!positiveInt(c?.id) || !ask.includes(c.id)) continue;
+        const merits = c.merits === null || (Number.isInteger(c.merits) && c.merits >= 0 && c.merits <= 10) ? c.merits : undefined;
+        const points = c.job_points === null || (Number.isInteger(c.job_points) && c.job_points >= 0) ? c.job_points : undefined;
+        const fit = c.fit === null || ['good', 'fair', 'poor'].includes(c.fit) ? c.fit : undefined;
+        if (merits === undefined || points === undefined || fit === undefined) continue;
+        const url = typeof c.card_url === 'string' && c.card_url.startsWith(`${SITE}/`) ? c.card_url : null;
+        cards.set(c.id, { merits, job_points: points, fit, card_url: url });
+      }
+      return { allowed: true, cards };
     },
 
     /**
