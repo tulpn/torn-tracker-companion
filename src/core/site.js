@@ -28,6 +28,7 @@ export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
 export const AUCTION_VALUE_URL = `${SITE}/api/feeds/auctions/value`;
 const AUCTION_VALUE_TTL = 10 * 60_000;
 const AUCTION_VALUE_MAX = 50;
+export const WAR_BRIEF_URL = `${SITE}/api/feeds/war/brief`;
 const ME_MUGS_TTL = 10 * 60_000;
 /** Open data (public-api.md): asked anonymously, never with the script key. */
 export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
@@ -568,6 +569,28 @@ export function createSite({
         cards.set(c.id, { merits, job_points: points, fit, card_url: url });
       }
       return { allowed: true, cards };
+    },
+
+    /**
+     * The pre-war strip for the token's own faction (PRE-042, accepted in hq #136): the
+     * one-line compare, and the brief's headline for Pro. Asked once per page view.
+     * @returns {Promise<{opponent: number, compare: string|null, headline: string|null, briefUrl: string|null, pro: boolean}|null>}
+     *          null outside the pre-war window, or on any failure
+     */
+    async warBrief() {
+      if (!usable()) return null;
+      const data = await call(WAR_BRIEF_URL, { method: 'GET' });
+      const war = data?.war;
+      if (!war || typeof war !== 'object' || !positiveInt(war.opponent_faction_id)) return null;
+      const line = (v) => (typeof v === 'string' && v.trim() && v.length <= 200 ? v.trim() : null);
+      const url = typeof data.brief_url === 'string' && data.brief_url.startsWith(`${SITE}/`) ? data.brief_url : null;
+      return {
+        opponent: war.opponent_faction_id,
+        compare: line(data.compare),
+        headline: data.pro === true ? line(data.headline) : null,
+        briefUrl: url,
+        pro: data.pro === true,
+      };
     },
 
     /**

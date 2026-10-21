@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  APPLICANTS_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -507,6 +507,26 @@ describe('JOB-072 applicant cards (accepted in hq #79)', () => {
     assert.equal((await rig({ reply: reply({ error: 'not_director' }, 403) }).site.applicantCards('faction', [1])).allowed, false);
     const r = rig();
     await r.site.applicantCards('gang', [1]);
+    assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('PRE-042 the pre-war strip read (accepted in hq #136)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+
+  test('Pro: compare, headline and a link to our own site only', async () => {
+    const r = rig({ reply: reply({ war: { id: 1, opponent_faction_id: 678, starts_at: '…' }, compare: 'A line.', headline: 'Big.', brief_url: 'https://www.torn-tracker.com/war/1/', pro: true }) });
+    assert.deepEqual(await r.site.warBrief(), { opponent: 678, compare: 'A line.', headline: 'Big.', briefUrl: 'https://www.torn-tracker.com/war/1/', pro: true });
+    assert.equal(r.calls[0].url, WAR_BRIEF_URL);
+    const odd = rig({ reply: reply({ war: { opponent_faction_id: 678 }, compare: 'x'.repeat(201), headline: 'Big.', brief_url: 'https://evil.example/', pro: false }) });
+    assert.deepEqual(await odd.site.warBrief(), { opponent: 678, compare: null, headline: null, briefUrl: null, pro: false });
+  });
+
+  test('no war, a failure or no key: nothing', async () => {
+    assert.equal(await rig({ reply: reply({ war: null }) }).site.warBrief(), null);
+    assert.equal(await rig({ reply: reply(null, 503) }).site.warBrief(), null);
+    const r = rig({ key: '' });
+    assert.equal(await r.site.warBrief(), null);
     assert.equal(r.calls.length, 0);
   });
 });

@@ -31,6 +31,14 @@ travellers show where they're flying (`→ Mexico`, `← Japan`). These come fro
 faction's war room on torn-tracker.com. The script never asks Torn about the other
 faction.
 
+## Before the war: the brief strip
+
+Between the match and the war's start, the faction page of the faction you're about to
+fight shows a short strip: a one-line comparison of both sides (members, respect, average
+level, rank and recent form) and a link to the full pre-war brief on torn-tracker.com. Pro
+factions also see the brief's headline; for a Core faction, the full brief is a Pro
+feature. The strip never names any member.
+
 ## Call dibs
 
 Each opponent has a dibs button:

@@ -108,6 +108,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Applicant badges** (wave 3). On your company's or faction's application list, each
   applicant who shared a job-board card shows their merits, job points and fit, linking
   to the card. Only for the verified director or recruiter. Needs your script key.
+- **Pre-war strip** (wave 2). Before a ranked war starts, the opponent's faction page
+  shows a one-line comparison of both sides and a link to the full brief on
+  torn-tracker.com, with its headline for Pro factions. Needs your script key.
 
 ### Notes
 
