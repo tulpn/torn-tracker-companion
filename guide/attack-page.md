@@ -1,6 +1,6 @@
 ---
 title: The attack page
-summary: Share the loadouts you see on attacks, see any player's latest loadout on their profile, and, for Pro factions, opponents' flags when you attack.
+summary: Loadouts you see on attacks, any player's latest loadout, your own mugs of a player, and opponents' flags for Pro factions.
 section: Guides
 group: features
 order: 230
@@ -42,6 +42,13 @@ so.
 When you attack an opponent in your faction's ranked war, their danger flags (heavy
 hitter, armoured, temp ready) show under their name. These are the same flags as on the
 [war page](war-page.md#opponents-loadouts-pro).
+
+## Your mugs of this player
+
+On a profile or the attack page, a line tells you how often you've mugged this player,
+when last and for how much, and what you got on average, for example **You mugged them 3
+times: last 2d ago for $1,200,000, $900,000 on average.** It comes from your own records on
+torn-tracker.com, so it shows only your mugs. See [Mugger tools](website:mugger-tools.md).
 
 ## Fair-fight badge
 

@@ -19,5 +19,6 @@ import crimeOutcome from './crime-outcome/index.js';
 import gymProgress from './gym-progress/index.js';
 import marketSnapshot from './market-snapshot/index.js';
 import loadoutView from './loadout-view/index.js';
+import mugStrip from './mug-strip/index.js';
 
-export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot, loadoutView];
+export default [ffBadges, warPage, foreignStock, bestBuy, attackLoadout, priceFiller, tradeValue, bazaarCapture, auctionCapture, ocHelper, crimeHelper, crimeOutcome, gymProgress, marketSnapshot, loadoutView, mugStrip];
