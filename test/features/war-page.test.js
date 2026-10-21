@@ -18,7 +18,7 @@ const HTML = page('faction-war.html').replace(
 );
 
 /** A site with dibs and FF estimates, remembering every call. */
-function fakeSite({ war = true, dibs = [], ff = {}, answer, roster = [] } = {}) {
+function fakeSite({ war = true, dibs = [], ff = {}, answer, roster = [], loadouts } = {}) {
   const calls = [];
   const claims = new Map(dibs.map((d) => [d.target, d]));
   return {
@@ -31,6 +31,10 @@ function fakeSite({ war = true, dibs = [], ff = {}, answer, roster = [] } = {}) 
     async dibs() {
       calls.push(['dibs']);
       return { war, dibs: new Map(claims), roster: new Map(roster.map((r) => [r.id, r])) };
+    },
+    async warLoadouts() {
+      calls.push(['warLoadouts']);
+      return loadouts ?? null;
     },
     async callDibs(target, action) {
       calls.push(['callDibs', target, action]);
@@ -246,5 +250,46 @@ describe('CMP-102 timers and destinations from the site roster (CAPI-034, hq #98
     await wait();
     assert.equal(r.doc.querySelectorAll('.ttc-war-time').length, 2);
     assert.equal(r.doc.querySelectorAll('.ttc-war-dibs').length, 0);
+  });
+});
+
+describe('LDT-032 loadout flags of opponents on the war page (Pro)', () => {
+  const pro = {
+    pro: true,
+    war: true,
+    opponents: new Map([
+      [101, { player_id: 101, flags: [{ flag: 'heavy_hitter', reason: 'Rifle: damage 76.9' }, { flag: 'temp_ready', reason: null }], seen_at: NOW - 3 * 3_600_000, reporters: 2, old: false, hidden: false }],
+      [102, { player_id: 102, flags: [], seen_at: NOW - 20 * 86_400_000, reporters: 1, old: true, hidden: false }],
+      [103, { player_id: 103, flags: [], seen_at: null, reporters: null, old: false, hidden: true }],
+    ]),
+  };
+  const label = (r, id) => r.doc.querySelector(`a[href$="XID=${id}"]`).closest('li').querySelector('.ttc-war-ld');
+
+  test('flags, age, old and hidden beside each opponent; reasons on hover; asked once', async () => {
+    const site = fakeSite({ loadouts: pro });
+    const r = run({ site });
+    await wait();
+    assert.equal(label(r, 101).textContent, 'Heavy \u00b7 Temp \u00b7 3h');
+    assert.match(label(r, 101).title, /Rifle: damage 76\.9/);
+    assert.match(label(r, 101).title, /by 2 players/);
+    assert.equal(label(r, 102).textContent, '20d');
+    assert.equal(label(r, 102).dataset.old, 'true');
+    assert.equal(label(r, 103).textContent, 'hidden');
+    assert.equal(site.calls.filter((c) => c[0] === 'warLoadouts').length, 1);
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('a Core faction gets one note, no flags', async () => {
+    const r = run({ site: fakeSite({ loadouts: { pro: false, war: false, opponents: new Map() } }) });
+    await wait();
+    assert.equal(r.doc.querySelectorAll('.ttc-war-ld').length, 0);
+    assert.match(r.doc.querySelector('.ttc-war-note').textContent, /Pro feature/);
+  });
+
+  test('switched off: not asked', async () => {
+    const site = fakeSite({ loadouts: pro });
+    run({ site, settings: { enabled: true, sortBy: 'torn', dibs: false, timers: false, loadouts: false } });
+    await wait();
+    assert.equal(site.calls.filter((c) => c[0] === 'warLoadouts').length, 0);
   });
 });

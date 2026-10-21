@@ -14,6 +14,10 @@
 // fallback, D-028). Torn War Stuff Enhanced polls the API about the enemy faction for
 // them, which #98 rules out; the script makes no Torn read.
 //
+// For Pro factions, each opponent also shows the danger flags of their latest loadout
+// (heavy hitter, armoured, temp ready) and how old it is, from torn-tracker.com's war
+// view (LDT-032), asked once per page view. A Core faction sees a one-line note instead.
+//
 // Inspiration: Torn War Stuff Enhanced by xentac (MIT, greasyfork.org/scripts/529238) and
 // its parent Torn War Stuff by tos (MIT): the idea, where the lists and status cells are,
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
@@ -35,6 +39,9 @@ const STYLE = `
   .${MARK}-dibs[data-state="mine"] { background: #4a6; color: #000; }
   .${MARK}-dibs[data-state="taken"] { background: #a44; color: #fff; cursor: default; }
   .${MARK}-time { margin-left: 4px; font: 700 11px sans-serif; }
+  .${MARK}-ld { margin-left: 4px; padding: 0 4px; border-radius: 3px; background: #5a3d2b; color: #fff; font: 700 10px/15px sans-serif; }
+  .${MARK}-ld[data-old="true"] { opacity: .55; }
+  .${MARK}-note { margin-left: 8px; opacity: .7; font-weight: 400; }
 `;
 const LABELS = {
   torn: "Torn's order", status: 'Status', leave: 'Out soonest', level: 'Level', ff: 'Fair fight',
@@ -42,7 +49,17 @@ const LABELS = {
 const SETTLE_MS = 250;
 const DIBS_EVERY_MS = 15_000;
 
+const FLAG_WORDS = { heavy_hitter: 'Heavy', armoured: 'Armour', temp_ready: 'Temp' };
+
 let state = null;
+
+/** '40m', '3h', '5d': how long ago a loadout was seen. */
+export function ago(ms) {
+  const m = Math.max(0, Math.floor(ms / 60_000));
+  if (m < 60) return `${m}m`;
+  if (m < 48 * 60) return `${Math.floor(m / 60)}h`;
+  return `${Math.floor(m / 1440)}d`;
+}
 
 /** '4:05' for a countdown; '0:00' once it has run out. */
 export function clock(ms) {
@@ -101,12 +118,13 @@ export default {
   title: 'War page: sorting and dibs',
   routes: ['factions.php#/war/'],
   defaults: {
-    enabled: true, sortBy: 'torn', dibs: true, timers: true,
+    enabled: true, sortBy: 'torn', dibs: true, timers: true, loadouts: true,
   },
   options: {
     sortBy: { label: 'Sort opponents by', choices: [...ORDERS] },
     dibs: { label: "Show your faction's dibs" },
     timers: { label: 'Show hospital timers and where opponents are flying' },
+    loadouts: { label: "Show opponents' loadout flags (Pro)" },
   },
   shares: [],
   needs: { apiKey: false, scriptKey: true },
@@ -126,6 +144,7 @@ export default {
       war: false,
       dibs: new Map(),
       roster: new Map(),
+      loadouts: null,
       pending: new Set(),
       notes: new Map(),
       scanTimer: null,
@@ -137,6 +156,7 @@ export default {
     const alive = () => state === s;
     const showDibs = Boolean(ctx.settings.dibs && ctx.site);
     const showTimers = Boolean(ctx.settings.timers && ctx.site);
+    const showLoadouts = Boolean(ctx.settings.loadouts && ctx.site?.warLoadouts);
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
 
     if (!doc.getElementById(STYLE_ID)) {
@@ -239,6 +259,59 @@ export default {
       }
     }
 
+    function loadoutLabels() {
+      if (!showLoadouts || !s.loadouts) return;
+      if (!s.loadouts.pro) {
+        for (const bar of doc.querySelectorAll(`.${MARK}-bar`)) {
+          if (!bar.querySelector(`.${MARK}-note`)) {
+            bar.append(el('span', { class: `${MARK}-note`, ownerDocument: doc }, "Opponents' loadouts are a Pro feature"));
+          }
+        }
+        return;
+      }
+      for (const row of doc.querySelectorAll(ENEMY_ROW)) {
+        const cell = row.querySelector(MEMBER);
+        const info = s.loadouts.opponents.get(playerOf(row));
+        let node = cell?.querySelector(`.${MARK}-ld`);
+        if (!cell || !info) {
+          node?.remove();
+          continue;
+        }
+        const words = info.hidden ? 'hidden' : [
+          ...info.flags.map((f) => FLAG_WORDS[f.flag]),
+          info.seen_at ? ago(now() - info.seen_at) : null,
+        ].filter(Boolean).join(' · ');
+        if (!words) {
+          node?.remove();
+          continue;
+        }
+        if (!node) {
+          node = el('span', { class: `${MARK}-ld`, [`data-${MARK}`]: '', ownerDocument: doc });
+          cell.append(node);
+        }
+        if (node.textContent !== words) node.textContent = words;
+        node.dataset.old = String(info.old);
+        node.title = info.hidden ? 'Loadout hidden at the player\u2019s request' : [
+          ...info.flags.map((f) => f.reason || FLAG_WORDS[f.flag]),
+          `Seen ${info.seen_at ? ago(now() - info.seen_at) : 'some time'} ago by ${info.reporters ?? 'some'} player${info.reporters === 1 ? '' : 's'}${info.old ? ' (old)' : ''} (torn-tracker.com)`,
+        ].join('\n');
+      }
+    }
+
+    /** Once per page view, and only once the player can see the page. */
+    function tryLoadouts() {
+      if (!showLoadouts || s.loadoutsAsked || doc.visibilityState !== 'visible') return;
+      s.loadoutsAsked = true;
+      loadLoadouts().catch((err) => ctx.log('war loadouts', err));
+    }
+
+    async function loadLoadouts() {
+      const answer = await ctx.site.warLoadouts();
+      if (!alive() || !answer) return;
+      s.loadouts = answer;
+      paint();
+    }
+
     function times() {
       if (!showTimers) return;
       for (const row of doc.querySelectorAll(ENEMY_ROW)) {
@@ -260,6 +333,7 @@ export default {
 
     function paint() {
       times();
+      loadoutLabels();
       for (const button of doc.querySelectorAll(`.${MARK}-dibs`)) render(button, Number(button.dataset.player));
       for (const button of doc.querySelectorAll(`.${MARK}-bar button`)) {
         button.setAttribute('aria-pressed', String(button.dataset.order === s.order));
@@ -320,6 +394,9 @@ export default {
       if (!records.every(ours)) later();
     }, doc);
     later();
+    s.onVisible = tryLoadouts;
+    doc.addEventListener('visibilitychange', tryLoadouts);
+    tryLoadouts();
     if (showDibs || showTimers) {
       refreshDibs();
       s.tick = timers.setInterval(paint, 1000);
@@ -334,6 +411,7 @@ export default {
     s.timers.clearTimeout(s.scanTimer);
     s.timers.clearTimeout(s.dibsTimer);
     s.timers.clearInterval(s.tick);
+    if (s.onVisible) s.doc.removeEventListener('visibilitychange', s.onVisible);
     for (const node of s.doc.querySelectorAll(`[data-${MARK}]`)) node.remove();
   },
 };
