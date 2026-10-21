@@ -21,6 +21,7 @@ export const DIBS_URL = `${SITE}/api/feeds/war/dibs`;
 export const OC_URL = `${SITE}/api/feeds/oc`;
 export const ME_GYM_URL = `${SITE}/api/feeds/me/gym`;
 export const DEMAND_URL = `${SITE}/api/feeds/demand`;
+export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
 
 /** CAPI-013: the demand feed is kept 60 s; at most 500 ids per kind. */
 const DEMAND_TTL = 60_000;
@@ -104,10 +105,22 @@ export function validRoles(v) {
     && percent(r.weight));
 }
 
+const SUBCRIMES = 50;
+
+/** One crime's value per nerve as CAPI-035 gives it (hq #124): its subcrimes, each checked. */
+export function validCrimeValue(v) {
+  return Array.isArray(v) && v.length <= SUBCRIMES && v.every((s) => s && typeof s === 'object'
+    && typeof s.name === 'string' && s.name.length > 0 && s.name.length <= 100
+    && (s.value_per_nerve === null || (Number.isFinite(s.value_per_nerve) && Math.abs(s.value_per_nerve) <= 1e12))
+    && (s.success_rate === null || percent_(s.success_rate))
+    && Number.isInteger(s.reporters) && s.reporters >= 0);
+}
+
 export const SPACES = Object.freeze({
   ff: { ttlMs: HOUR, max: 2_000, valid: validFf },
   prices: { ttlMs: 10 * 60_000, max: 2_000, valid: validPrice },
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
+  crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
 });
 
 /**
@@ -311,6 +324,32 @@ export function createSite({
         percent,
         next_gym_energy_estimate: Number.isInteger(estimate) && estimate >= 0 && estimate <= 1e7 ? estimate : null,
       };
+    },
+
+    /**
+     * Value per nerve for one crime's subcrimes (CAPI-035, hq #124), by the page's own
+     * typeID, which the site maps. Kept for an hour. An unmapped crime or a failure is
+     * an empty list: nothing is shown, nothing is guessed.
+     * @param {number} typeId
+     * @returns {Promise<Array<{name: string, value_per_nerve: number|null, success_rate: number|null, reporters: number}>>}
+     */
+    async crimeValue(typeId) {
+      if (!positiveInt(typeId)) return [];
+      const cached = cache.get('crimeValue', typeId);
+      if (cached !== undefined) return cached;
+      if (!usable()) return [];
+      const data = await call(`${CRIME_VALUE_URL}?type_id=${typeId}`, { method: 'GET' });
+      if (!data) return [];
+      const rows = (Array.isArray(data.subcrimes) ? data.subcrimes : []).map((s) => ({
+        name: s?.name,
+        value_per_nerve: s?.value_per_nerve ?? null,
+        success_rate: s?.success_rate ?? null,
+        reporters: s?.reporters,
+      }));
+      const value = validCrimeValue(rows) ? rows : [];
+      // An unmapped crime is an answer too: keep it, so the page is not asked again.
+      cache.set('crimeValue', typeId, value);
+      return value;
     },
 
     /**
