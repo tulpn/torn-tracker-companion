@@ -19,6 +19,10 @@ export function isCrimesResponse(url) {
 /** The header the morale readout goes in. */
 export const HEADER = '.crimes-app-header';
 
+/** Any crime's list of options (subcrimes), and the cell with an option's name. */
+export const OPTION_ROW = "[class*='virtualList'] .virtual-item, [class*='virtualList__'] > div";
+export const OPTION_TITLE = "[class*='crimeOptionSection']";
+
 /** Burglary's target list: one row per property, recycled as the list scrolls. */
 export const BURGLARY_ROW = '.burglary-root .virtual-item';
 export const BURGLARY_TITLE = "[class*='crimeOptionSection']";

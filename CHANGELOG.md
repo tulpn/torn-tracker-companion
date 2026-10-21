@@ -78,9 +78,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Auction listings** (wave 2). The listings the auction house shows you can be shared
   with torn-tracker.com, which publishes price history per item and bonus. Torn's API has
   only completed sales. Never the high bidder. Off until you switch it on.
-- **Crimes: morale and burglary targets** (wave 2). On Crimes 2.0, the header shows your
-  crime morale, which Torn doesn't display, and each burglary target shows how long it has
-  left before it disappears. Both come from what the page already loaded.
+- **Crimes: morale, value per nerve and burglary targets** (wave 2). On Crimes 2.0, the
+  header shows your crime morale, which Torn doesn't display; each crime option shows its
+  value per nerve from torn-tracker.com, once at least 20 players have reported it; and
+  each burglary target shows how long it has left before it disappears.
 - A player can see who reported their own loadout, and the loadout sharing line now says
   so; you are asked to agree again before sharing continues.
 - **Your crime outcomes** (wave 2). When you commit a crime, how it went and what you got

@@ -3,15 +3,19 @@
 // On Crimes 2.0, the crimes header shows your morale, which Torn does not display: 100
 // minus the "demoralisation" the page's own responses carry. On burglary, each target
 // gets how long it has left before it disappears, so the ones about to go can be cased
-// first. Both come from the page's own responses; nothing is asked of any server and
-// nothing is clicked.
+// first. Both come from the page's own responses. With your script key, each crime option
+// also shows its value per nerve: torn-tracker.com's average money and item value per
+// nerve, from players' shared outcomes (shown only once at least 20 have reported it).
+// Nothing is clicked.
 //
 // Inspiration: Crime Morale by tobytorn (MIT, https://github.com/tobytorn/crime-morale),
 // which found both fields, and the burglary helpers by NichtGersti and CowBoyCookie (MIT).
 // No code was taken.
 
 import { el } from '../../core/dom.js';
-import { BURGLARY_ROW, BURGLARY_TITLE, HEADER, isCrimesResponse } from './selectors.js';
+import {
+  BURGLARY_ROW, BURGLARY_TITLE, HEADER, OPTION_ROW, OPTION_TITLE, isCrimesResponse,
+} from './selectors.js';
 
 const MARK = 'ttc-crime';
 const STYLE_ID = 'ttc-crime-style';
@@ -45,6 +49,16 @@ export function propertiesFrom(data) {
   return out;
 }
 
+/** The crime a crimesData request was about: its typeID, from the address or the form. */
+export function typeIdOf(url, form) {
+  let id = null;
+  try {
+    id = new URL(String(url), 'https://www.torn.com').searchParams.get('typeID');
+  } catch { /* not an address */ }
+  const n = Number(id ?? form?.get?.('typeID'));
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 /** '2d 5h', '7h', '40m'; and how urgent: long (3 days or more), day, short (12 h or less). */
 export function lifetime(ms) {
   const h = Math.max(0, ms) / HOUR;
@@ -66,7 +80,10 @@ export default {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
-    const s = { doc, win, morale: null, properties: new Map(), timer: null, stopWatching: null, unsubscribe: null };
+    const s = {
+      doc, win, morale: null, properties: new Map(), timer: null, stopWatching: null, unsubscribe: null,
+      typeId: null, values: [], asked: new Set(),
+    };
     state = s;
 
     if (!doc.getElementById(STYLE_ID)) {
@@ -86,7 +103,42 @@ export default {
       return node;
     }
 
+    /** The text a cell shows, without our own badges. */
+    const shown = (cell) => [...(cell?.childNodes || [])]
+      .filter((n) => !(n.nodeType === 1 && n.classList.contains(MARK)))
+      .map((n) => n.textContent).join(' ').trim();
+
+    function paintValues() {
+      // Longest name first, so "Search the Junkyard" never takes "Junkyard"'s line.
+      const values = [...s.values].filter((v) => v.value_per_nerve !== null)
+        .sort((a, b) => b.name.length - a.name.length);
+      for (const row of doc.querySelectorAll(OPTION_ROW)) {
+        const cell = row.querySelector(OPTION_TITLE);
+        if (!cell) continue;
+        const title = shown(cell);
+        const value = values.find((v) => title.includes(v.name));
+        const old = cell.querySelector(`:scope > .${MARK}[data-kind="value"]`);
+        if (!value) {
+          old?.remove();
+          continue;
+        }
+        const n = Math.round(value.value_per_nerve);
+        const rate = value.success_rate === null ? '' : `; ${Math.round(value.success_rate)}% succeed`;
+        badge(cell, 'value', `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US')}/nerve`).title = `Average money and item value per nerve, from ${value.reporters} players' shared outcomes (torn-tracker.com)${rate}`;
+      }
+    }
+
+    async function loadValues(typeId) {
+      if (!ctx.site?.crimeValue || s.asked.has(typeId)) return;
+      s.asked.add(typeId);
+      const values = await ctx.site.crimeValue(typeId);
+      if (state !== s || s.typeId !== typeId) return;
+      s.values = values;
+      paint();
+    }
+
     function paint() {
+      paintValues();
       const header = doc.querySelector(HEADER);
       if (header && s.morale !== null) {
         badge(header, 'morale', `Morale ${s.morale}%`).title = 'Your crime morale, from the page (100 minus demoralisation)';
@@ -94,9 +146,7 @@ export default {
       for (const row of doc.querySelectorAll(BURGLARY_ROW)) {
         const cell = row.querySelector(BURGLARY_TITLE);
         // Rows are recycled as the list scrolls: always match by the title shown now.
-        const title = [...(cell?.childNodes || [])]
-          .filter((n) => !(n.nodeType === 1 && n.classList.contains(MARK)))
-          .map((n) => n.textContent).join(' ').trim();
+        const title = shown(cell);
         const expires = [...s.properties].find(([name]) => title.includes(name))?.[1];
         const old = cell?.querySelector(`:scope > .${MARK}[data-kind="left"]`);
         if (!cell || expires === undefined) {
@@ -108,7 +158,13 @@ export default {
       }
     }
 
-    s.unsubscribe = ctx.intercept.onJson(isCrimesResponse, ({ data }) => {
+    s.unsubscribe = ctx.intercept.onJson(isCrimesResponse, ({ url, data, form }) => {
+      const typeId = typeIdOf(url, form);
+      if (typeId && typeId !== s.typeId) {
+        s.typeId = typeId;
+        s.values = [];
+        loadValues(typeId).catch((err) => ctx.log('crime value', err));
+      }
       const morale = moraleFrom(data);
       if (morale !== null) s.morale = morale;
       const properties = propertiesFrom(data);

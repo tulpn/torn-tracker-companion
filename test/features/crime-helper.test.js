@@ -3,7 +3,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { lifetime, moraleFrom, propertiesFrom } from '../../src/features/crime-helper/index.js';
+import feature, { lifetime, moraleFrom, propertiesFrom, typeIdOf } from '../../src/features/crime-helper/index.js';
 import { isCrimesResponse } from '../../src/features/crime-helper/selectors.js';
 import { json, page, runFeature } from '../feature-harness.js';
 
@@ -84,5 +84,43 @@ describe('CMP-205 on the page', () => {
     await wait();
     feature.stop();
     assert.equal(r.doc.querySelectorAll('.ttc-crime').length, 0);
+  });
+});
+
+describe('CMP-205 value per nerve beside each crime option', () => {
+  const SEARCH = `<div class="crimes-app-header"></div><div class="currentCrime___a1"><div class="virtualList___b2">
+    <div class="virtual-item"><div class="crimeOptionSection___d4">Search the Trash</div></div>
+    <div class="virtual-item"><div class="crimeOptionSection___d4">Search the Junkyard</div></div>
+  </div></div>`;
+  const site = (rows) => {
+    const calls = [];
+    return { calls, async crimeValue(id) { calls.push(id); return rows; } };
+  };
+
+  test('the crime from the address or the form', () => {
+    assert.equal(typeIdOf('https://www.torn.com/page.php?sid=crimesData&step=crimesList&typeID=1'), 1);
+    assert.equal(typeIdOf('https://www.torn.com/page.php?sid=crimesData', new URLSearchParams('typeID=7')), 7);
+    assert.equal(typeIdOf('https://www.torn.com/page.php?sid=crimesData'), null);
+  });
+
+  test('one read per crime; a line only where the site has a value', async () => {
+    const s = site([
+      { name: 'Search the Trash', value_per_nerve: 310.5, success_rate: 91, reporters: 40 },
+      { name: 'Search the Junkyard', value_per_nerve: null, success_rate: null, reporters: 4 },
+    ]);
+    const r = run({ html: SEARCH, url: 'https://www.torn.com/page.php?sid=crimes#/searchforcash', site: s });
+    r.respond('https://www.torn.com/page.php?sid=crimesData&step=crimesList&typeID=1', { DB: { demMod: 0 } });
+    r.respond('https://www.torn.com/page.php?sid=crimesData&step=crimesList&typeID=1', { DB: { demMod: 0 } });
+    await wait();
+    assert.deepEqual(s.calls, [1]);
+    assert.deepEqual(badges(r, 'value').map((n) => n.textContent), ['$311/nerve']);
+    assert.match(badges(r, 'value')[0].title, /40 players/);
+  });
+
+  test('without a site answer: no value line', async () => {
+    const r = run({ html: SEARCH, url: 'https://www.torn.com/page.php?sid=crimes#/searchforcash', site: site([]) });
+    r.respond('https://www.torn.com/page.php?sid=crimesData&step=crimesList&typeID=1', { DB: { demMod: 0 } });
+    await wait();
+    assert.equal(badges(r, 'value').length, 0);
   });
 });

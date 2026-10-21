@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
+import { CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, OC_URL, PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
 
@@ -356,6 +356,32 @@ describe('CMP-203 the demand feed (CAPI-013, accepted in hq #123)', () => {
     assert.equal((await rig({ reply: reply(null, 503) }).site.demand()).size, 0);
     const r = rig({ key: '' });
     assert.equal((await r.site.demand()).size, 0);
+    assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('CMP-205 value per nerve (CAPI-035, by the page typeID, hq #124)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+  const subcrimes = [
+    { subcrime_id: 1, name: 'Search the Trash', nerve_cost: 2, value_per_nerve: 310.5, success_rate: 91, reporters: 40 },
+    { subcrime_id: 2, name: 'Search the Junkyard', nerve_cost: 2, value_per_nerve: null, success_rate: null, reporters: 4 },
+  ];
+
+  test('asked by the page typeID, rows checked, kept for the hour', async () => {
+    const r = rig({ reply: reply({ crime_id: 1, subcrimes }) });
+    const rows = await r.site.crimeValue(1);
+    assert.equal(r.calls[0].url, `${CRIME_VALUE_URL}?type_id=1`);
+    assert.deepEqual(rows.map((x) => [x.name, x.value_per_nerve]), [['Search the Trash', 310.5], ['Search the Junkyard', null]]);
+    await r.site.crimeValue(1);
+    assert.equal(r.calls.length, 1);
+  });
+
+  test('unmapped, odd or failed: nothing, never a guess', async () => {
+    assert.deepEqual(await rig({ reply: reply({ value_per_nerve: null, reason: 'unmapped' }) }).site.crimeValue(9), []);
+    assert.deepEqual(await rig({ reply: reply({ subcrimes: [{ name: '', reporters: 1 }] }) }).site.crimeValue(9), []);
+    assert.deepEqual(await rig({ reply: reply(null, 503) }).site.crimeValue(9), []);
+    const r = rig();
+    assert.deepEqual(await r.site.crimeValue(0), []);
     assert.equal(r.calls.length, 0);
   });
 });
