@@ -79,12 +79,40 @@ only rollback the update channel understands.
 The Greasy Fork listing syncs from the release asset URL through a GitHub webhook, so a
 published release appears there within minutes without a second upload.
 
-Open question (Q-CMP-2 in the spec): whether Greasy Fork accepts a synced script whose
-`@updateURL` and `@downloadURL` point at GitHub, or whether that variant must drop them so
-installs made there update from Greasy Fork instead. If it must, the build gains a
-`greasyfork` variant and this page says so.
+Answered (Q-CMP-2): **one file serves both channels, with no `greasyfork` variant.**
 
-## Open question on Torn PDA
+- Greasy Fork strips `@updateURL` and `@downloadURL` from every version it stores, and
+  serves its own instead
+  ([meta keys](https://greasyfork.org/en/help/meta-keys): "Greasy Fork will strip these
+  keys, which makes any script installed from Greasy Fork only update from Greasy Fork").
+  Installs from GitHub keep updating from GitHub.
+- The sync URL is the `releases/latest/download/torn-tracker-companion.user.js` asset. Only
+  a *published* release event triggers it, and the asset must already be attached when the
+  release is published. If it isn't, Greasy Fork falls back to reading the file from git
+  at the tag, and `dist/` isn't in git. `gh release create` with files does this right: it
+  keeps the release as a draft until every asset is uploaded, then publishes. Don't
+  publish a release by hand and attach the files afterwards.
+- [Code rules](https://greasyfork.org/en/help/code-rules): a bundle is fine "in
+  non-minified form". `test/meta.test.js` keeps the build unminified.
 
-Q-CMP-1: whether PDA applies an update by itself or only flags it, and how often it checks.
-This needs confirming on a device, and the README states the answer once it is known.
+## Torn PDA updates
+
+Answered (Q-CMP-1) from PDA's source (torn-pda `390987e`, `lib/drawer.dart` and
+`lib/providers/userscripts_provider.dart`):
+
+- PDA checks for updates on app start and when the app comes back to the front, at most
+  once an hour, plus a manual button in its UserScripts settings. It has no other timer.
+- It never applies an update by itself. It marks the script "update available" (with an
+  optional notification), and the player applies it from a review list. An update that
+  asks for new grants is not preselected in that list, so keep `@grant none`.
+- A script edited inside PDA is marked locally modified, and PDA stops checking it.
+- It reads `@updateURL`'s `.meta.js` for the version, and after an update takes the
+  script's URL from `@downloadURL`. Versions compare as three numeric parts. A version
+  with a `-suffix` counts as older than the same plain version. A version that isn't
+  three parts falls to a looser comparison that gets some orders wrong, so `@version`
+  stays strict `X.Y.Z` (tested).
+- Its header parser needs exactly one space after `//` (`// @key value`), which the
+  generated header does (tested).
+
+So a release reaches PDA players the next time they open the app, as a prompt they
+accept.

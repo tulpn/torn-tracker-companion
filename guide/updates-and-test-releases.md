@@ -14,9 +14,15 @@ keywords: companion update, torn userscript update, test release
 
 ## How updates arrive
 
-The companion updates itself from its newest release on GitHub. Your script manager, or
-Torn PDA, checks the release link now and then and installs a newer version when there
-is one. Nothing is updated from unreleased code.
+The companion updates from its newest release on GitHub. Nothing is updated from
+unreleased code.
+
+- **In a browser**, your script manager checks the release link now and then and installs
+  a newer version when there is one.
+- **In Torn PDA**, the app checks when it starts or comes back to the front, at most once
+  an hour. It doesn't install the update by itself: it marks the companion "update
+  available" in its UserScripts settings, and you apply it there. See
+  [Install in Torn PDA](install-pda.md#updates).
 
 ## Test releases
 
