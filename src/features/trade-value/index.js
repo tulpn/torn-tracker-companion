@@ -17,15 +17,9 @@ import { el } from '../../core/dom.js';
 import { ITEM_IDS } from '../../data/items.js';
 import { money, priceOffer, readSide, receipt } from './read.js';
 import { STEPS, THEIR_NAME, THEIR_SIDE } from './selectors.js';
+import { bar as uiBar, button as uiButton, strip } from '../../core/ui.js';
 
 const MARK = 'ttc-trade';
-const STYLE_ID = 'ttc-trade-style';
-const STYLE = `
-  .${MARK} { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; font: 12px sans-serif; }
-  .${MARK} strong { font-weight: 700; }
-  .${MARK} button { padding: 1px 8px; border: 1px solid #888; border-radius: 3px; background: #333; color: #ddd; cursor: pointer; }
-  .${MARK} textarea { width: 100%; min-height: 6em; font: 11px monospace; }
-`;
 const SETTLE_MS = 250;
 
 let state = null;
@@ -55,16 +49,11 @@ export default {
     state = s;
     const alive = () => state === s;
 
-    if (!doc.getElementById(STYLE_ID)) {
-      const style = el('style', { id: STYLE_ID, ownerDocument: doc });
-      style.textContent = STYLE;
-      doc.head.append(style);
-    }
 
     function box(side) {
       let node = side.querySelector(`:scope > .${MARK}`);
       if (!node) {
-        node = el('div', { class: MARK, ownerDocument: doc });
+        node = strip(doc, { cls: MARK });
         side.append(node);
       }
       return node;
@@ -73,7 +62,7 @@ export default {
     function show(side, priced, trader) {
       const node = box(side);
       const words = priced.unpriced ? `, ${priced.unpriced} without a price` : '';
-      const copy = el('button', { type: 'button', ownerDocument: doc }, 'Copy receipt');
+      const copy = uiButton(doc, {}, 'Copy receipt');
       copy.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -90,8 +79,8 @@ export default {
         }
       });
       node.replaceChildren(
-        el('span', { ownerDocument: doc }, 'Their offer at market value: ', el('strong', { ownerDocument: doc }, money(priced.total)), words),
-        copy,
+        el('div', { ownerDocument: doc }, 'Their offer at market value: ', el('strong', { ownerDocument: doc }, money(priced.total)), words),
+        uiBar(doc, {}, copy),
       );
     }
 

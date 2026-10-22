@@ -131,6 +131,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   prisoner: level x (hours left + 3), the score TornTools uses, labelled as not Torn's
   odds. It never busts or bails for you. Prisoners' level and time-left bands can be
   shared, never who they are; off until you switch it on.
+- **One look for everything** (hq #224). Every badge, strip and button the companion adds
+  to Torn's pages now shares one style: soft rounded pills whose colour says good,
+  neutral, caution or bad, cards with a light shadow, Torn's dark theme followed
+  everywhere, and buttons sized for thumbs on touch screens. The settings page has a
+  cleaner header, toggle switches, a one-line intro under each section, readable names
+  in drop-downs, and a single "add your script key" banner in place of a warning on
+  every feature.
 
 ### Notes
 

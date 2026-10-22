@@ -115,10 +115,30 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.equal(t.saves[0].settings.features['war-enhancer'].undercut, 250);
   });
 
-  test('a feature that needs the script key says so while there is none', () => {
+  test('without a script key: one banner that leads to Keys, and each card that needs it is marked', () => {
     const t = mount();
     t.open();
-    assert.match(t.text(), /Needs your script key/);
+    assert.match(t.text(), /Add your script key to see torn-tracker\.com data/);
+    assert.equal(t.$('[data-card="war-enhancer"]').dataset.needsKey, 'true');
+    t.click(t.$('.ttc-keyhint button[data-tab="keys"]'));
+    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+  });
+
+  test('with a script key: no banner', () => {
+    const t = mount({ keys: { ...emptyKeys(), script: KEY } });
+    t.open();
+    assert.equal(t.$('.ttc-keyhint'), null);
+  });
+
+  test('a choice shows its name, not its value', () => {
+    const t = mount({
+      registry: createRegistry([descriptor({
+        defaults: { enabled: true, sortBy: 'torn' },
+        options: { sortBy: { label: 'Sort by', choices: ['torn', 'level'], labels: { torn: "Torn's order", level: 'Level' } } },
+      })]),
+    });
+    t.open();
+    assert.deepEqual([...t.$('#ttc-opt-war-enhancer-sortBy').options].map((o) => [o.value, o.textContent]), [['torn', "Torn's order"], ['level', 'Level']]);
   });
 });
 

@@ -80,6 +80,10 @@ function validateOptions(d) {
         fail(id, `options.${key}.choices must be a list of values like its default`);
       }
       if (!option.choices.includes(fallback)) fail(id, `options.${key}: the default is not one of the choices`);
+      if (option.labels !== undefined && (typeof option.labels !== 'object'
+        || Object.values(option.labels).some((l) => typeof l !== 'string' || !l))) {
+        fail(id, `options.${key}.labels must give each choice a name`);
+      }
     }
     for (const bound of ['min', 'max']) {
       if (option[bound] === undefined) continue;

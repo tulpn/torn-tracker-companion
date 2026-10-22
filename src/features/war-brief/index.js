@@ -6,6 +6,7 @@
 // brief on the site. It never names a member: who to hit first stays on the site.
 
 import { el } from '../../core/dom.js';
+import { strip as uiStrip } from '../../core/ui.js';
 
 const MARK = 'ttc-brief';
 const SETTLE_MS = 300;
@@ -46,8 +47,7 @@ export default {
         const brief = await ctx.site.warBrief();
         // Only on the page of the faction the war is against.
         if (state !== s || !brief || brief.opponent !== faction || !brief.compare) return;
-        const strip = el('div', { class: MARK, ownerDocument: doc });
-        strip.style.cssText = 'margin: 6px 0; padding: 6px 8px; border-left: 3px solid #a44; font: 12px sans-serif;';
+        const strip = uiStrip(doc, { cls: MARK, tone: 'bad' });
         strip.append(el('strong', { ownerDocument: doc }, 'Your next ranked war: '), brief.compare);
         if (brief.headline) strip.append(el('div', { ownerDocument: doc }, brief.headline));
         else if (!brief.pro) strip.append(el('div', { ownerDocument: doc }, 'The full brief is a Pro feature.'));

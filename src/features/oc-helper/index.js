@@ -20,15 +20,9 @@
 
 import { el } from '../../core/dom.js';
 import { CARD, CARD_ID, NAME, SLOT, SLOT_HEADER, SLOT_TITLE } from './selectors.js';
+import { badge, note } from '../../core/ui.js';
 
 const MARK = 'ttc-oc';
-const STYLE_ID = 'ttc-oc-style';
-const STYLE = `
-  .${MARK} {
-    display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
-    background: #2d4f7a; color: #fff; font: 700 11px/16px sans-serif;
-  }
-`;
 const SETTLE_MS = 250;
 
 let state = null;
@@ -64,16 +58,11 @@ export default {
     state = s;
     const alive = () => state === s;
 
-    if (!doc.getElementById(STYLE_ID)) {
-      const style = el('style', { id: STYLE_ID, ownerDocument: doc });
-      style.textContent = STYLE;
-      doc.head.append(style);
-    }
 
     function label(parent, text, title, kind) {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
-        node = el('span', { class: MARK, 'data-kind': kind, ownerDocument: doc });
+        node = badge(doc, { cls: MARK, tone: kind === 'success' ? 'good' : 'info', attrs: { 'data-kind': kind } });
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
@@ -85,8 +74,7 @@ export default {
       const text = `Role weights: ${source}, via torn-tracker.com`;
       let node = doc.querySelector(`.${CREDIT}`);
       if (!node) {
-        node = el('div', { class: `${MARK} ${CREDIT}`, 'data-kind': 'credit', ownerDocument: doc });
-        node.style.cssText = 'display: block; margin: 4px 0; background: none; color: inherit; font-weight: 400;';
+        node = note(doc, { cls: `${MARK} ${CREDIT}`, attrs: { 'data-kind': 'credit' } });
         const first = doc.querySelector(CARD);
         (first || card).before(node);
       }

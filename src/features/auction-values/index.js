@@ -10,6 +10,7 @@
 
 import { el } from '../../core/dom.js';
 import { ROW } from '../auction-capture/selectors.js';
+import { badge, setTone } from '../../core/ui.js';
 
 const MARK = 'ttc-auc';
 const SETTLE_MS = 600;
@@ -74,15 +75,14 @@ export default {
         }
         const { text, title } = badgeFor(value);
         if (!node) {
-          node = el('span', { class: MARK, ownerDocument: doc });
-          node.style.cssText = 'display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; font: 700 11px/16px sans-serif; background: #2d4f7a; color: #fff;';
+          node = badge(doc, { cls: MARK });
           place.append(node);
         }
         const full = value.deal ? `${text} · deal` : text;
         if (node.textContent !== full) node.textContent = full;
         node.title = title;
         node.dataset.deal = String(value.deal);
-        if (value.deal) node.style.background = '#2d6a3e';
+        setTone(node, value.deal ? 'good' : value.estimate === null ? 'neutral' : 'info');
       }
     }
 

@@ -11,6 +11,7 @@
 // field names and where it sits. Those scripts that press Create are not followed.
 
 import { el } from '../../core/dom.js';
+import { bar as uiBar, button as uiButton, note as uiNote } from '../../core/ui.js';
 
 const MARK = 'ttc-race';
 export const FORM = '#createCustomRace';
@@ -120,12 +121,11 @@ export default {
     function bar(form) {
       const select = el('select', { class: `${MARK}-pick`, ownerDocument: doc });
       const name = el('input', { type: 'text', class: `${MARK}-name`, maxlength: String(NAME), placeholder: 'Template name', ownerDocument: doc });
-      const fill = el('button', { type: 'button', ownerDocument: doc }, 'Fill the form');
-      const save = el('button', { type: 'button', ownerDocument: doc }, 'Save these settings');
-      const drop = el('button', { type: 'button', ownerDocument: doc }, 'Delete');
-      const node = el('div', { class: MARK, ownerDocument: doc }, select, fill, drop, name, save,
-        el('span', { class: `${MARK}-note`, ownerDocument: doc }));
-      node.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; font: 12px sans-serif;';
+      const fill = uiButton(doc, { tone: 'good' }, 'Fill the form');
+      const save = uiButton(doc, {}, 'Save these settings');
+      const drop = uiButton(doc, {}, 'Delete');
+      const node = uiBar(doc, { cls: MARK }, el('strong', { ownerDocument: doc }, 'Templates'), select, fill, drop, name, save,
+        uiNote(doc, { cls: `${MARK}-note` }));
       options(select);
 
       // Our own buttons, pressed by the player; none of them touches Torn's own button.

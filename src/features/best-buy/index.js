@@ -17,16 +17,9 @@ import { el } from '../../core/dom.js';
 import { fromPage, fromResponse, itemIdOf } from '../foreign-stock/read.js';
 import { INFO_CAPACITY, INFO_MONEY, ITEM_IMAGE, ITEM_NAME, ROWS, isShopResponse } from '../foreign-stock/selectors.js';
 import { bestBuy, readCapacity, readMoney } from './best.js';
+import { badge } from '../../core/ui.js';
 
 const MARK = 'ttc-best';
-const STYLE_ID = 'ttc-best-style';
-const STYLE = `
-  [class*='row___']:has(.${MARK}) { outline: 2px solid #4a6; outline-offset: -2px; }
-  .${MARK} {
-    display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 3px;
-    background: #4a6; color: #000; font: 700 11px/16px sans-serif;
-  }
-`;
 const SETTLE_MS = 250;
 
 let state = null;
@@ -72,11 +65,6 @@ export default {
     state = s;
     const alive = () => state === s;
 
-    if (!doc.getElementById(STYLE_ID)) {
-      const style = el('style', { id: STYLE_ID, ownerDocument: doc });
-      style.textContent = STYLE;
-      doc.head.append(style);
-    }
 
     /** Puts the label on the best item's row, once, and takes it off any other. */
     function paint() {
@@ -94,7 +82,7 @@ export default {
           if (label.textContent !== text) label.textContent = text;
           continue;
         }
-        const node = el('span', { class: MARK, title: "torn-tracker.com market value minus this shop's price", ownerDocument: doc }, text);
+        const node = badge(doc, { cls: MARK, tone: 'good', attrs: { title: "torn-tracker.com market value minus this shop's price" } }, text);
         (row.querySelector(ITEM_NAME) || row).append(node);
       }
     }

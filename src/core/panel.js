@@ -44,6 +44,17 @@ export const SECTIONS = Object.freeze([
   ['help', 'Help'],
 ]);
 
+/** One line under each section's heading: what it's for, in plain words. */
+const INTROS = Object.freeze({
+  general: 'Your version, updates, and help when something misbehaves.',
+  features: 'Switch each feature on or off and set its options. Changes apply when you press Save.',
+  sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
+  keys: 'The key that connects the companion to torn-tracker.com.',
+  data: 'What the companion keeps on this device, and how to clear it.',
+  credits: 'The scripts the companion learned from, with their licences.',
+  help: 'Guides, answers, and where to report a problem.',
+});
+
 /** The areas features are grouped by, in the order the page lists them. */
 export const AREAS = Object.freeze([
   ['war', 'War and attacks'],
@@ -57,83 +68,125 @@ export const AREAS = Object.freeze([
 
 const STYLE = `
   #${P}-panel {
-    --ttc-bg: #f2f2f2; --ttc-surface: #ffffff; --ttc-text: #222; --ttc-muted: #666;
-    --ttc-line: #d4d4d4; --ttc-accent: #2e7d4f; --ttc-accent-text: #fff; --ttc-danger: #c0392b;
-    --ttc-warn: #8a6d1d; --ttc-link: #2a5d9f; --ttc-field: #fff;
-    position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: center;
-    align-items: stretch; background: rgba(0, 0, 0, .55); font: 14px/1.45 Arial, sans-serif;
+    --ttc-bg: #f4f5f7; --ttc-surface: #ffffff; --ttc-text: #1f2328; --ttc-muted: #5f6b76;
+    --ttc-line: #e3e6ea; --ttc-accent: #278552; --ttc-accent-soft: rgba(39, 133, 82, .12); --ttc-accent-text: #fff;
+    --ttc-danger: #c0392b; --ttc-warn: #8a5a00; --ttc-link: #23578f; --ttc-field: #fff; --ttc-off: #c9ced4;
+    --ttc-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+    position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: center; align-items: stretch;
+    background: rgba(15, 18, 22, .55); backdrop-filter: blur(2px);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ttc-text);
   }
   #${P}-panel[data-theme="dark"] {
-    --ttc-bg: #191919; --ttc-surface: #242424; --ttc-text: #e8e8e8; --ttc-muted: #a0a0a0;
-    --ttc-line: #3a3a3a; --ttc-accent: #3aa76d; --ttc-accent-text: #0b0b0b; --ttc-danger: #ff7b6b;
-    --ttc-warn: #f1c40f; --ttc-link: #8ab4f8; --ttc-field: #121212;
+    --ttc-bg: #16181b; --ttc-surface: #1f2226; --ttc-text: #e6e8eb; --ttc-muted: #9aa4ae;
+    --ttc-line: #2e3238; --ttc-accent: #3fae6e; --ttc-accent-soft: rgba(63, 174, 110, .16); --ttc-accent-text: #0b0c0d;
+    --ttc-danger: #ff8a7d; --ttc-warn: #f3cd6b; --ttc-link: #8ab4f8; --ttc-field: #121416; --ttc-off: #4a5058;
+    --ttc-shadow: none;
   }
   #${P}-panel[hidden] { display: none; }
+  #${P}-panel *, #${P}-panel *::before, #${P}-panel *::after { box-sizing: border-box; }
   #${P}-panel .${P}-sheet {
-    display: grid; grid-template-columns: 200px 1fr; grid-template-rows: auto 1fr auto;
+    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
     grid-template-areas: "head head" "nav main" "foot foot";
-    width: min(1040px, 100%); max-height: 100%; margin: auto; background: var(--ttc-bg); color: var(--ttc-text);
-    box-sizing: border-box; box-shadow: 0 8px 32px rgba(0,0,0,.5); border-radius: 8px; overflow: hidden;
-    height: min(760px, 100%);
+    width: min(1060px, 100%); min-width: 0; height: min(780px, 100%); margin: auto; overflow: hidden;
+    background: var(--ttc-bg); border-radius: 14px; box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
   }
   #${P}-panel .${P}-head {
-    grid-area: head; display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+    grid-area: head; display: flex; align-items: center; gap: 14px; padding: 12px 18px;
     background: var(--ttc-surface); border-bottom: 1px solid var(--ttc-line);
   }
-  #${P}-panel .${P}-head h2 { margin: 0; font-size: 18px; flex: none; }
-  #${P}-panel .${P}-head input[type=search] { flex: 1; min-width: 0; }
-  #${P}-panel nav { grid-area: nav; overflow: auto; padding: 8px; border-right: 1px solid var(--ttc-line); background: var(--ttc-surface); }
-  #${P}-panel nav button {
-    display: block; width: 100%; text-align: left; margin: 2px 0; border: 0; background: none; color: var(--ttc-text);
-    border-left: 3px solid transparent; border-radius: 0 4px 4px 0;
+  #${P}-panel .${P}-brand { display: flex; align-items: center; gap: 10px; flex: none; }
+  #${P}-panel .${P}-logo {
+    display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px;
+    background: var(--ttc-accent); color: #fff; font: 800 13px/1 system-ui, Arial, sans-serif; letter-spacing: -.02em;
   }
-  #${P}-panel nav button[aria-selected=true] { border-left-color: var(--ttc-accent); background: var(--ttc-bg); font-weight: 700; }
-  #${P}-panel main { grid-area: main; overflow: auto; padding: 12px 20px 20px; }
-  #${P}-panel main h3 { margin: 4px 0 10px; font-size: 17px; }
-  #${P}-panel main h4 { margin: 18px 0 6px; font-size: 13px; color: var(--ttc-muted); text-transform: uppercase; letter-spacing: .04em; }
-  #${P}-panel .${P}-card { background: var(--ttc-surface); border: 1px solid var(--ttc-line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+  #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+  #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
+  #${P}-panel .${P}-head input[type=search] { flex: 1; min-width: 0; max-width: 420px; margin-left: auto; border-radius: 999px; padding-left: 16px; }
+  #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; }
+  #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head, #${P}-panel .${P}-foot { min-width: 0; }
+  #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
+    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+    background: var(--ttc-accent-soft); color: var(--ttc-muted);
+  }
+  #${P}-panel nav { grid-area: nav; overflow: auto; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
+  #${P}-panel nav button {
+    display: block; width: 100%; margin: 2px 0; padding: 8px 12px; text-align: left; border: 0; border-radius: 8px;
+    background: none; color: var(--ttc-text); font-weight: 500;
+  }
+  #${P}-panel nav button:hover { background: var(--ttc-bg); }
+  #${P}-panel nav button[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-accent); font-weight: 700; }
+  #${P}-panel main { grid-area: main; overflow: auto; padding: 18px 26px 26px; }
+  #${P}-panel main > * { max-width: 760px; }
+  #${P}-panel main h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+  #${P}-panel main .${P}-intro { margin: 0 0 14px; color: var(--ttc-muted); }
+  #${P}-panel main h4 {
+    margin: 22px 0 8px; font-size: 12px; font-weight: 700; color: var(--ttc-muted); text-transform: uppercase; letter-spacing: .06em;
+  }
+  #${P}-panel .${P}-card {
+    background: var(--ttc-surface); border: 1px solid var(--ttc-line); border-radius: 12px; padding: 10px 14px; margin: 10px 0;
+    box-shadow: var(--ttc-shadow);
+  }
+  #${P}-panel .${P}-card ul { margin: 6px 0 0 18px; padding: 0; }
   #${P}-panel .${P}-foot {
-    grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px;
+    grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 18px;
     background: var(--ttc-surface); border-top: 1px solid var(--ttc-line);
   }
   #${P}-panel .${P}-foot .${P}-status { flex: 1; min-width: 160px; }
-  #${P}-panel label.${P}-check { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-weight: 600; }
+  #${P}-panel label.${P}-check { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; font-weight: 600; }
   #${P}-panel label.${P}-check[data-off] { color: var(--ttc-muted); cursor: default; }
-  #${P}-panel label.${P}-field { display: block; margin-top: 8px; }
-  #${P}-panel label.${P}-field > span { display: block; margin-bottom: 3px; }
-  #${P}-panel input[type=checkbox] { width: 20px; height: 20px; flex: none; accent-color: var(--ttc-accent); }
+  #${P}-panel label.${P}-field { display: block; margin-top: 10px; }
+  #${P}-panel label.${P}-field > span { display: block; margin-bottom: 4px; font-weight: 600; font-size: 13px; }
+  /* Toggle switches: drawn with backgrounds only, so they look the same in every browser. */
+  #${P}-panel input[type=checkbox] {
+    appearance: none; -webkit-appearance: none; flex: none; width: 40px; height: 24px; margin: 0; border-radius: 999px;
+    cursor: pointer; transition: background-color .15s, background-position .15s;
+    background: radial-gradient(circle, #fff 0 8px, transparent 9px) 2px 50% / 20px 20px no-repeat, var(--ttc-off);
+  }
+  #${P}-panel input[type=checkbox]:checked { background-color: var(--ttc-accent); background-position: 18px 50%; }
+  #${P}-panel input[type=checkbox]:disabled { opacity: .45; cursor: default; }
+  #${P}-panel input[type=checkbox]:focus-visible { outline: 2px solid var(--ttc-link); outline-offset: 2px; }
   #${P}-panel input[type=text], #${P}-panel input[type=password], #${P}-panel input[type=number],
   #${P}-panel input[type=search], #${P}-panel select {
-    width: 100%; min-height: 44px; box-sizing: border-box; padding: 6px 10px;
-    background: var(--ttc-field); color: var(--ttc-text); border: 1px solid var(--ttc-line); border-radius: 4px; font: inherit;
+    width: 100%; min-height: 44px; padding: 8px 12px; background: var(--ttc-field); color: var(--ttc-text);
+    border: 1px solid var(--ttc-line); border-radius: 10px; font: inherit;
   }
-  #${P}-panel .${P}-option { margin-left: 30px; }
+  #${P}-panel input:focus-visible, #${P}-panel select:focus-visible { outline: 2px solid var(--ttc-accent); outline-offset: 1px; }
+  #${P}-panel .${P}-option { margin-left: 52px; }
   #${P}-panel button {
-    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line); border-radius: 4px;
-    min-height: 44px; min-width: 44px; padding: 6px 14px; cursor: pointer; font: inherit;
+    min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: 10px; cursor: pointer; font: inherit; font-weight: 600;
+    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line);
   }
-  #${P}-panel button.${P}-primary { background: var(--ttc-accent); color: var(--ttc-accent-text); border-color: var(--ttc-accent); font-weight: 700; }
+  #${P}-panel button:hover { border-color: var(--ttc-accent); }
+  #${P}-panel button.${P}-primary { background: var(--ttc-accent); color: var(--ttc-accent-text); border-color: var(--ttc-accent); }
+  #${P}-panel button.${P}-primary:hover { filter: brightness(1.05); }
   #${P}-panel button.${P}-danger { border-color: var(--ttc-danger); color: var(--ttc-danger); }
-  #${P}-panel .${P}-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-  #${P}-panel .${P}-muted { color: var(--ttc-muted); font-size: 13px; margin-top: 4px; }
-  #${P}-panel a { color: var(--ttc-link); }
-  #${P}-panel .${P}-notice { background: var(--ttc-surface); border-left: 4px solid var(--ttc-accent); padding: 10px 12px; margin: 8px 0; white-space: pre-line; }
-  #${P}-panel .${P}-warn { color: var(--ttc-warn); margin-top: 6px; }
-  #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; }
+  #${P}-panel .${P}-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  #${P}-panel .${P}-muted { color: var(--ttc-muted); font-size: 13px; margin-top: 2px; }
+  #${P}-panel a { color: var(--ttc-link); font-weight: 600; text-decoration: none; }
+  #${P}-panel a:hover { text-decoration: underline; }
+  #${P}-panel .${P}-notice {
+    background: var(--ttc-accent-soft); border-radius: 12px; padding: 12px 14px; margin: 10px 0; white-space: pre-line;
+  }
+  #${P}-panel .${P}-warn { color: var(--ttc-warn); margin-top: 6px; font-size: 13px; }
+  #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; font-size: 13px; }
   #${P}-panel dl { margin: 6px 0; }
   #${P}-panel dt { color: var(--ttc-muted); font-size: 12px; margin-top: 8px; }
   #${P}-panel dd { margin: 0; }
+  #${P}-panel .${P}-credits { padding-left: 18px; }
   #${P}-panel .${P}-credits li { margin: 8px 0; }
   @media (max-width: 700px) {
     #${P}-panel .${P}-sheet {
-      grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto;
+      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
       grid-template-areas: "head" "nav" "main" "foot"; height: 100%; border-radius: 0;
     }
-    #${P}-panel nav { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ttc-line); padding: 4px; }
-    #${P}-panel nav button { width: auto; flex: none; border-left: 0; border-bottom: 3px solid transparent; border-radius: 0; }
-    #${P}-panel nav button[aria-selected=true] { border-bottom-color: var(--ttc-accent); }
-    #${P}-panel main { padding: 10px 12px 16px; }
-    #${P}-panel .${P}-head h2 { font-size: 16px; }
+    #${P}-panel .${P}-head { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+    #${P}-panel .${P}-head input[type=search] { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
+    #${P}-panel .${P}-head .${P}-x { margin-left: auto; }
+    #${P}-panel .${P}-foot button { flex: 1; }
+    #${P}-panel nav { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ttc-line); padding: 6px 8px; }
+    #${P}-panel nav button { width: auto; flex: none; white-space: nowrap; }
+    #${P}-panel main { padding: 14px 14px 20px; }
+    #${P}-panel .${P}-option { margin-left: 0; }
   }
 `;
 
@@ -189,9 +242,11 @@ export function mountPanel({
   const status = h('div', { class: `${P}-status`, role: 'status' });
   panel.append(h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
-      h('h2', null, 'Torn Tracker'),
+      h('div', { class: `${P}-brand` },
+        h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
+        h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       search,
-      h('button', { type: 'button', 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close (Esc)' }, '✕')),
+      h('button', { type: 'button', class: `${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close (Esc)' }, '\u2715')),
     nav,
     main,
     h('div', { class: `${P}-foot` },
@@ -236,7 +291,9 @@ export function mountPanel({
     }
     let input;
     if (option.choices) {
-      input = h('select', data, ...option.choices.map((choice) => h('option', { value: choice, selected: choice === value }, String(choice))));
+      input = h('select', data, ...option.choices.map((choice) => h('option', {
+        value: choice, selected: choice === value,
+      }, option.labels?.[choice] ?? String(choice))));
     } else if (typeof value === 'number') {
       input = h('input', { type: 'number', inputmode: 'decimal', ...data, value, min: option.min, max: option.max });
     } else {
@@ -255,9 +312,7 @@ export function mountPanel({
         }),
         d.title),
       h('div', { class: `${P}-muted ${P}-option` }, d.summary, ' ', link(`${GUIDE}${d.guide}/`, 'Learn more')));
-    if (d.needs.scriptKey && !keys.script) {
-      card.append(h('div', { class: `${P}-warn ${P}-option` }, 'Needs your script key (Keys).'));
-    }
+    if (d.needs.scriptKey && !keys.script) card.dataset.needsKey = 'true';
     if (d.needs.apiKey && !keys.api && !keys.usePdaKey) {
       card.append(h('div', { class: `${P}-warn ${P}-option` }, 'Needs a Torn API key (Keys).'));
     }
@@ -268,6 +323,13 @@ export function mountPanel({
   function featuresBody() {
     if (registry.length === 0) return [h('div', { class: `${P}-muted` }, 'No features in this build yet.')];
     const rows = [];
+    if (!draft.keys.script && registry.some((d) => d.needs.scriptKey) && !query) {
+      rows.push(h('div', { class: `${P}-notice ${P}-keyhint` },
+        h('strong', null, 'Add your script key to see torn-tracker.com data. '),
+        'Most features show estimates, prices and dibs from torn-tracker.com, and need your script key. '
+        + 'Features that only read the page work without it.',
+        h('div', { class: `${P}-row` }, h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'tab', 'data-tab': 'keys' }, 'Add your script key'))));
+    }
     for (const [area, title] of AREAS) {
       const items = registry.filter((d) => d.area === area && matches(d.title, d.summary, title));
       if (items.length === 0) continue;
@@ -454,7 +516,9 @@ export function mountPanel({
       type: 'button', role: 'tab', 'data-act': 'tab', 'data-tab': id, 'aria-selected': String(!query && id === section),
     }, title)));
     const title = SECTIONS.find(([id]) => id === section)[1];
-    main.replaceChildren(...(query ? searchBody() : [h('h3', null, title), ...BODIES[section]()]));
+    main.replaceChildren(...(query ? searchBody() : [
+      h('h3', null, title), h('p', { class: `${P}-intro` }, INTROS[section]), ...BODIES[section](),
+    ]));
     status.textContent = message;
   }
 
