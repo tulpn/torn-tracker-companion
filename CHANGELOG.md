@@ -124,6 +124,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   General, Features (grouped by area, each with a Learn more link), Sharing, Keys, Data,
   Credits and Help, with search, Torn's light and dark themes, and a layout for phones.
   Your settings carry over unchanged.
+- **Your best runs on the travel agency** (wave 1). Before you fly, the travel agency shows
+  your top three runs from the torn-tracker.com planner: where, what to buy, profit per
+  hour, landing time and how sure, with a link to the planner. Needs your script key.
 
 ### Notes
 

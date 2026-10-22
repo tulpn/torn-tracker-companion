@@ -25,6 +25,8 @@ export const CRIME_VALUE_URL = `${SITE}/api/feeds/crimes/value`;
 export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
 export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
 export const STOCK_SIGNALS_URL = `${SITE}/api/feeds/stocks/signals`;
+export const TRAVEL_RUNS_URL = `${SITE}/api/feeds/me/travel/runs`;
+const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
 export const AUCTION_VALUE_URL = `${SITE}/api/feeds/auctions/value`;
@@ -188,6 +190,8 @@ export function createSite({
   let warLoadoutsMemo = null;
   /** Open loadout reads by player id. */
   const openLoadouts = new Map();
+  /** The player's own travel runs and when they came (TRV-050: kept 5 minutes). */
+  let runsMemo = null;
   /** The stock signals answer and when it came (CMP-304: kept 5 minutes). */
   let stockMemo = null;
   /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
@@ -595,6 +599,51 @@ export function createSite({
         briefUrl: url,
         pro: data.pro === true,
       };
+    },
+
+    /**
+     * The player's own best travel runs, as their planner ranks them (TRV-050, accepted
+     * in hq #78). Kept 5 minutes. Every field is checked; a run that does not fit is left
+     * out, never guessed.
+     * @returns {Promise<{runs: object[], reason: string|null, basis: string|null}|null>}
+     */
+    async travelRuns(limit = 3) {
+      if (runsMemo && now() - runsMemo.at < TRAVEL_RUNS_TTL) return runsMemo.value;
+      if (!usable()) return null;
+      const n = Math.min(5, Math.max(1, Math.trunc(limit) || 3));
+      const data = await call(`${TRAVEL_RUNS_URL}?limit=${n}`, { method: 'GET' });
+      if (!data || typeof data !== 'object') return null;
+      const whole = (v) => (Number.isInteger(v) && v >= 0 && v <= 1e13 ? v : null);
+      const runs = [];
+      for (const r of Array.isArray(data.runs) ? data.runs.slice(0, n) : []) {
+        const country = typeof r?.country === 'string' && /^[a-z-]{2,20}$/.test(r.country) ? r.country : null;
+        const lands = typeof r?.lands_at === 'string' ? Date.parse(r.lands_at) : NaN;
+        const hours = typeof r?.hours === 'number' && Number.isFinite(r.hours) && r.hours > 0 && r.hours < 100 ? r.hours : null;
+        const stops = Array.isArray(r?.stops) && r.stops.every((c) => typeof c === 'string' && /^[a-z-]{2,20}$/.test(c)) ? r.stops.slice(0, 3) : null;
+        if (!country || !positiveInt(r.item_id) || typeof r.item_name !== 'string' || !r.item_name || r.item_name.length > 60) continue;
+        if (!positiveInt(r.quantity) || whole(r.profit_per_hour) === null || !Number.isFinite(lands) || hours === null) continue;
+        runs.push({
+          country,
+          stops,
+          item_id: r.item_id,
+          item_name: r.item_name,
+          quantity: r.quantity,
+          cash_needed: whole(r.cash_needed),
+          profit: whole(r.profit),
+          profit_per_hour: r.profit_per_hour,
+          hours,
+          lands_at: lands - skewOf(data),
+          accuracy: typeof r.accuracy === 'string' && r.accuracy.length <= 20 ? r.accuracy : null,
+          data_age_s: whole(r.data_age_s),
+        });
+      }
+      const value = {
+        runs,
+        reason: data.reason === 'no_capacity' ? 'no_capacity' : null,
+        basis: typeof data.basis === 'string' && data.basis.length <= 30 ? data.basis : null,
+      };
+      runsMemo = { at: now(), value };
+      return value;
     },
 
     /**
