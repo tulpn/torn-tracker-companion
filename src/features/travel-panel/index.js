@@ -6,6 +6,7 @@
 // It takes no game action: nothing is booked, bought or clicked.
 
 import { el } from '../../core/dom.js';
+import { strip } from '../../core/ui.js';
 
 const MARK = 'ttc-runs';
 export const PLANNER = 'https://www.torn-tracker.com/travel/';
@@ -65,13 +66,10 @@ export default {
       try {
         const answer = await ctx.site.travelRuns(3);
         if (state !== s || !answer || doc.querySelector(`.${MARK}`)) return;
-        const panel = el('div', { class: MARK, ownerDocument: doc });
-        panel.style.cssText = 'margin: 8px 0; padding: 8px 12px; border-left: 4px solid #2e7d4f; font: 13px/1.5 Arial, sans-serif;'
-          + ' background: var(--default-bg-panel-color, #f2f2f2); color: var(--default-font-color, #333);';
+        const panel = strip(doc, { cls: MARK });
         panel.append(el('strong', { ownerDocument: doc }, 'Your best runs (torn-tracker.com)'));
         if (answer.runs.length) {
           const list = el('ol', { ownerDocument: doc });
-          list.style.cssText = 'margin: 4px 0 4px 20px; padding: 0;';
           for (const run of answer.runs) list.append(el('li', { ownerDocument: doc }, runLine(run)));
           panel.append(list);
         } else if (answer.reason === 'no_capacity') {

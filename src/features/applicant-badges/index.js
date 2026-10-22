@@ -12,13 +12,14 @@
 // No open-source script reads these lists' markup, so applicants are found by their
 // profile links in the page's main content. A capture should confirm where badges land.
 
-import { el } from '../../core/dom.js';
 import { ownIdFrom } from '../bazaar-capture/read.js';
+import { badge as uiBadge } from '../../core/ui.js';
 
 const MARK = 'ttc-applicant';
 const CONTENT = '.content-wrapper';
 const PROFILE = "a[href*='profiles.php?XID=']";
 const SETTLE_MS = 400;
+const TONE = { good: 'good', fair: 'warn', poor: 'bad' };
 const FIT = { good: 'good fit', fair: 'fair fit', poor: 'poor fit' };
 
 let state = null;
@@ -81,10 +82,9 @@ export default {
         placed.add(id);
         if (a.nextElementSibling?.classList.contains(MARK)) continue;
         const badge = card.card_url
-          ? el('a', { class: MARK, href: card.card_url, target: '_blank', rel: 'noopener noreferrer', ownerDocument: doc }, badgeText(card))
-          : el('span', { class: MARK, ownerDocument: doc }, badgeText(card));
+          ? uiBadge(doc, { cls: MARK, tag: 'a', tone: TONE[card.fit] || 'info', attrs: { href: card.card_url, target: '_blank', rel: 'noopener noreferrer' } }, badgeText(card))
+          : uiBadge(doc, { cls: MARK, tone: TONE[card.fit] || 'info' }, badgeText(card));
         badge.title = 'Their shared job-board card on torn-tracker.com';
-        badge.style.cssText = 'display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #2d4f7a; color: #fff; font: 700 11px/16px sans-serif; text-decoration: none;';
         a.after(badge);
       }
     }

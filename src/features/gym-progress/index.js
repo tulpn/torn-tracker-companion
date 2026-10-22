@@ -13,9 +13,9 @@
 // Auto gym switch by Stephen Lynx (MIT) for the page's gym ids and answers. No code was
 // taken.
 
-import { el } from '../../core/dom.js';
 import { readInitial, readProgress, readTrain } from './read.js';
 import { gymStep } from './selectors.js';
+import { badge } from '../../core/ui.js';
 
 const MARK = 'ttc-gym';
 const SETTLE_MS = 500;
@@ -54,10 +54,9 @@ export default {
         return;
       }
       const text = `about ${estimate.next_gym_energy_estimate.toLocaleString('en-US')} energy to go (an estimate)`;
-      const node = old || el('div', { class: MARK, ownerDocument: doc });
+      const node = old || badge(doc, { cls: MARK, tone: 'info', block: true });
       if (node.textContent !== text) node.textContent = text;
       node.title = 'torn-tracker.com’s estimate: the game counts gym experience, not energy';
-      node.style.cssText = 'font: 11px sans-serif; opacity: .85; margin-top: 2px;';
       if (!old) progress.button.append(node);
     }
 

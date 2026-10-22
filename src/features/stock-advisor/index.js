@@ -10,6 +10,7 @@
 // Torn Stock Analyzer and Torn Stock Advisor (both MIT) confirmed the rows.
 
 import { el } from '../../core/dom.js';
+import { badge, setTone } from '../../core/ui.js';
 
 const MARK = 'ttc-stock';
 export const ROW = "#stockmarketroot [class*='stockMarket__'] > ul[class*='stock___'][id]";
@@ -65,8 +66,7 @@ export default {
           continue;
         }
         if (!node) {
-          node = el('span', { class: MARK, ownerDocument: doc });
-          node.style.cssText = 'display: block; font: 11px/14px sans-serif; opacity: .85;';
+          node = badge(doc, { cls: MARK, block: true });
           // The row's cells open Torn's dropdown; a press on our label stays ours.
           node.addEventListener('click', (event) => event.stopPropagation());
           name.append(node);
@@ -74,6 +74,9 @@ export default {
         if (node.textContent !== label.text) node.textContent = label.text;
         node.title = label.title;
         node.dataset.signal = s.signals.get(Number(row.id)).signal;
+        // A price far below its average reads as an opportunity, far above as a caution;
+        // the words, not the colour, carry the meaning, and neither says buy or sell.
+        setTone(node, node.dataset.signal === 'below_avg' ? 'info' : 'warn');
       }
     }
 

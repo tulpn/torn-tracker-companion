@@ -10,6 +10,7 @@
 
 import { el } from '../../core/dom.js';
 import { ago } from '../war-page/index.js';
+import { badge, strip } from '../../core/ui.js';
 
 const MARK = 'ttc-loadout';
 const SLOT_LABELS = {
@@ -71,8 +72,7 @@ export default {
     async function profileCard() {
       const loadout = await ctx.site.playerLoadout(id);
       if (!alive() || !loadout?.seen) return;
-      const card = el('div', { class: MARK, ownerDocument: doc });
-      card.style.cssText = 'margin: 6px 0; padding: 6px 8px; border: 1px solid #555; border-radius: 4px; font: 12px sans-serif;';
+      const card = strip(doc, { cls: MARK, tone: 'info' });
       if (loadout.hidden) {
         card.append(el('div', { ownerDocument: doc }, 'Loadout hidden at the player’s request.'));
       } else {
@@ -83,7 +83,7 @@ export default {
           card.append(el('div', { ownerDocument: doc }, slotLine(name, slot)));
         }
         if (loadout.flags.length) {
-          card.append(el('div', { ownerDocument: doc }, loadout.flags.map((f) => FLAG_WORDS[f.flag]).join(' · ')));
+          card.append(el('div', { ownerDocument: doc }, ...loadout.flags.map((f) => badge(doc, { tone: f.flag === 'heavy_hitter' ? 'bad' : 'warn' }, FLAG_WORDS[f.flag]))));
         }
       }
       if (alive()) place(card);
@@ -94,9 +94,8 @@ export default {
       const info = war?.pro ? war.opponents.get(id) : null;
       if (!alive() || !info || (!info.hidden && info.flags.length === 0)) return;
       const text = info.hidden ? 'Loadout hidden' : info.flags.map((f) => FLAG_WORDS[f.flag]).join(' · ');
-      const node = el('div', { class: MARK, ownerDocument: doc }, text);
+      const node = badge(doc, { cls: MARK, tone: info.hidden ? 'neutral' : 'bad', block: true }, text);
       node.title = info.flags.map((f) => f.reason || FLAG_WORDS[f.flag]).join('\n');
-      node.style.cssText = 'margin: 4px 0; font: 700 12px sans-serif;';
       place(node);
     }
 

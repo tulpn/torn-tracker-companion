@@ -14,6 +14,7 @@
 
 import { createGate, isVisible } from '../../core/capture.js';
 import { el } from '../../core/dom.js';
+import { badge, setTone } from '../../core/ui.js';
 
 const MARK = 'ttc-bust';
 export const ROW = '.users-list > li, ul.user-info-list-wrap > li';
@@ -92,8 +93,7 @@ export default {
         const value = score(level, hours);
         const band = value <= easy ? 'easy' : value >= hard ? 'hard' : 'medium';
         if (!node) {
-          node = el('span', { class: MARK, ownerDocument: doc });
-          node.style.cssText = 'display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; font: 700 11px/16px Arial, sans-serif; color: #fff;';
+          node = badge(doc, { cls: MARK });
           const spot = row.querySelector(NAME) || row.querySelector('.info-wrap');
           if (spot?.matches?.(NAME)) spot.after(node);
           else (spot || row).append(node);
@@ -101,7 +101,7 @@ export default {
         const text = `${value}`;
         if (node.textContent !== text) node.textContent = text;
         node.dataset.band = band;
-        node.style.background = band === 'easy' ? '#2e7d4f' : band === 'hard' ? '#a33' : '#8a6d1d';
+        setTone(node, { easy: 'good', medium: 'warn', hard: 'bad' }[band]);
         node.title = `Rule of thumb, not Torn's odds: level ${level} × (${hours.toFixed(1)} hours left + 3) = ${value}. Lower is easier.`;
 
         // Shared only with its switch on; never who: the row's key stays here.

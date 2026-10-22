@@ -5,8 +5,8 @@
 // records on torn-tracker.com. Nothing about anyone else's mugs, no Torn request of its
 // own, and on the attack page it fills nothing and clicks nothing.
 
-import { el } from '../../core/dom.js';
 import { ago } from '../war-page/index.js';
+import { badge } from '../../core/ui.js';
 
 const MARK = 'ttc-mugs';
 const HEADING = '.content-title h4, h4';
@@ -57,9 +57,8 @@ export default {
         const line = mugLine(await ctx.site.myMugs(id), now());
         const heading = doc.querySelector(HEADING);
         if (state !== s || !line || !heading || doc.querySelector(`.${MARK}`)) return;
-        const node = el('div', { class: MARK, ownerDocument: doc }, line);
+        const node = badge(doc, { cls: MARK, tone: 'info', block: true }, line);
         node.title = 'From your own mugs on torn-tracker.com';
-        node.style.cssText = 'margin: 4px 0; font: 12px sans-serif; opacity: .9;';
         (heading.closest('.content-title') || heading).after(node);
       } catch (err) {
         ctx.log('mug strip', err);

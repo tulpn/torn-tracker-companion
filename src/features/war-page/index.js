@@ -23,26 +23,11 @@
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
 
 import { el } from '../../core/dom.js';
+import { badge, bar as uiBar, button as uiButton, setTone } from '../../core/ui.js';
 import { ENEMY_ROW, LISTS, MEMBER, STATUS } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
 const MARK = 'ttc-war';
-const STYLE_ID = 'ttc-war-style';
-const STYLE = `
-  .${MARK}-bar { display: flex; gap: 4px; align-items: center; margin: 4px 0; font: 12px sans-serif; }
-  .${MARK}-bar button, .${MARK}-dibs {
-    padding: 1px 6px; border: 1px solid #888; border-radius: 3px; background: #333; color: #ddd;
-    font: 11px/16px sans-serif; cursor: pointer;
-  }
-  .${MARK}-bar button[aria-pressed="true"] { background: #4a6; color: #000; }
-  .${MARK}-dibs { margin: 0 4px; min-width: 44px; }
-  .${MARK}-dibs[data-state="mine"] { background: #4a6; color: #000; }
-  .${MARK}-dibs[data-state="taken"] { background: #a44; color: #fff; cursor: default; }
-  .${MARK}-time { margin-left: 4px; font: 700 11px sans-serif; }
-  .${MARK}-ld { margin-left: 4px; padding: 0 4px; border-radius: 3px; background: #5a3d2b; color: #fff; font: 700 10px/15px sans-serif; }
-  .${MARK}-ld[data-old="true"] { opacity: .55; }
-  .${MARK}-note { margin-left: 8px; opacity: .7; font-weight: 400; }
-`;
 const LABELS = {
   torn: "Torn's order", status: 'Status', leave: 'Out soonest', level: 'Level', ff: 'Fair fight',
 };
@@ -124,7 +109,7 @@ export default {
     enabled: true, sortBy: 'torn', dibs: true, timers: true, loadouts: true,
   },
   options: {
-    sortBy: { label: 'Sort opponents by', choices: [...ORDERS] },
+    sortBy: { label: 'Sort opponents by', choices: [...ORDERS], labels: LABELS },
     dibs: { label: "Show your faction's dibs" },
     timers: { label: 'Show hospital timers and where opponents are flying' },
     loadouts: { label: "Show opponents' loadout flags (Pro)" },
@@ -162,18 +147,13 @@ export default {
     const showLoadouts = Boolean(ctx.settings.loadouts && ctx.site?.warLoadouts);
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
 
-    if (!doc.getElementById(STYLE_ID)) {
-      const style = el('style', { id: STYLE_ID, ownerDocument: doc });
-      style.textContent = STYLE;
-      doc.head.append(style);
-    }
 
     function bar(list) {
       const prev = list.previousElementSibling;
       if (prev?.classList.contains(`${MARK}-bar`)) return prev;
-      const node = el('div', { class: `${MARK}-bar`, [`data-${MARK}`]: '', ownerDocument: doc }, 'Sort:');
+      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '' } }, el('strong', { ownerDocument: doc }, 'Sort'));
       for (const order of ORDERS) {
-        const button = el('button', { type: 'button', 'data-order': order, ownerDocument: doc }, LABELS[order]);
+        const button = uiButton(doc, { attrs: { 'data-order': order } }, LABELS[order]);
         button.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -215,6 +195,7 @@ export default {
       if (button.textContent !== text) button.textContent = text;
       button.title = title;
       button.dataset.state = look;
+      button.dataset.tone = { free: '', mine: 'good', taken: 'bad' }[look] || '';
       button.disabled = look === 'taken' || s.pending.has(id);
     }
 
@@ -249,8 +230,8 @@ export default {
           const id = playerOf(row);
           const cell = row.querySelector(MEMBER);
           if (!id || !cell || cell.querySelector(`.${MARK}-dibs`)) continue;
-          const button = el('button', {
-            type: 'button', class: `${MARK}-dibs`, [`data-${MARK}`]: '', 'data-player': String(id), ownerDocument: doc,
+          const button = uiButton(doc, {
+            cls: `${MARK}-dibs`, attrs: { [`data-${MARK}`]: '', 'data-player': String(id) },
           });
           button.addEventListener('click', (event) => {
             event.preventDefault();
@@ -267,7 +248,7 @@ export default {
       if (!s.loadouts.pro) {
         for (const bar of doc.querySelectorAll(`.${MARK}-bar`)) {
           if (!bar.querySelector(`.${MARK}-note`)) {
-            bar.append(el('span', { class: `${MARK}-note`, ownerDocument: doc }, "Opponents' loadouts are a Pro feature"));
+            bar.append(badge(doc, { cls: `${MARK}-note`, tone: 'info' }, "Opponents' loadouts are a Pro feature"));
           }
         }
         return;
@@ -289,10 +270,12 @@ export default {
           continue;
         }
         if (!node) {
-          node = el('span', { class: `${MARK}-ld`, [`data-${MARK}`]: '', ownerDocument: doc });
+          node = badge(doc, { cls: `${MARK}-ld`, attrs: { [`data-${MARK}`]: '' } });
           cell.append(node);
         }
         if (node.textContent !== words) node.textContent = words;
+        const heavy = info.flags.some((f) => f.flag === 'heavy_hitter');
+        setTone(node, info.hidden ? 'neutral' : heavy ? 'bad' : info.flags.length ? 'warn' : 'neutral', { dim: info.old });
         node.dataset.old = String(info.old);
         node.title = info.hidden ? 'Loadout hidden at the player\u2019s request' : [
           ...info.flags.map((f) => f.reason || FLAG_WORDS[f.flag]),
@@ -327,10 +310,12 @@ export default {
           continue;
         }
         if (!label) {
-          label = el('span', { class: `${MARK}-time`, [`data-${MARK}`]: '', ownerDocument: doc });
+          label = badge(doc, { cls: `${MARK}-time`, attrs: { [`data-${MARK}`]: '' } });
           cell.append(label);
         }
         if (label.textContent !== text) label.textContent = text;
+        // A countdown out of hospital or jail is a wait; a destination is information.
+        setTone(label, /^\d/.test(text) ? 'warn' : 'info');
       }
     }
 

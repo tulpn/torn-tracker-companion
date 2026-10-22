@@ -10,18 +10,11 @@
 // https://github.com/xentac/FFScouter): the idea, where the rows are, and the colour
 // scale. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { badge, setTone } from '../../core/ui.js';
 import { HEADING, ROWS, ROW_LINK } from './selectors.js';
 import { describe, textColourFor } from './view.js';
 
 const MARK = 'ttc-ff';
-const STYLE_ID = 'ttc-ff-style';
-const STYLE = `
-  .${MARK} {
-    display: inline-block; min-width: 34px; margin: 0 4px; padding: 1px 4px; border-radius: 3px;
-    font: 700 11px/16px sans-serif; text-align: center; vertical-align: middle; cursor: default;
-  }
-`;
 /** Torn re-renders lists in bursts; one scan once it settles. */
 const SETTLE_MS = 250;
 
@@ -65,11 +58,11 @@ export function findSpots(doc, loc) {
   return spots;
 }
 
-function badge(doc, estimate) {
+function makeBadge(doc, estimate) {
   const look = describe(estimate);
-  const node = el('span', { class: MARK, title: look.title, ownerDocument: doc }, look.text);
-  node.style.background = look.background;
-  node.style.color = textColourFor(look.background);
+  const node = badge(doc, { cls: MARK, attrs: { title: look.title } }, look.text);
+  // The colour is the information here, on the scale players know from FF Scouter.
+  setTone(node, null, { scale: look.background, ink: textColourFor(look.background) === '#000000' ? 'dark' : 'light' });
   return node;
 }
 
@@ -91,11 +84,6 @@ export default {
     timers = ctx.win || globalThis;
     const { doc } = ctx;
     page = doc;
-    if (!doc.getElementById(STYLE_ID)) {
-      const style = el('style', { id: STYLE_ID, ownerDocument: doc });
-      style.textContent = STYLE;
-      doc.head.append(style);
-    }
 
     const scan = async () => {
       const spots = findSpots(doc, ctx.win?.location);
@@ -104,7 +92,7 @@ export default {
       if (!alive) return;
       for (const { id, after } of spots) {
         if (!after.isConnected || after.parentNode?.querySelector(`:scope > .${MARK}[data-player="${id}"]`)) continue;
-        const node = badge(doc, estimates.get(id));
+        const node = makeBadge(doc, estimates.get(id));
         node.dataset.player = String(id);
         after.after(node);
       }
