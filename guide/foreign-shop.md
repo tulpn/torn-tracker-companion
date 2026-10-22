@@ -1,6 +1,6 @@
 ---
 title: Abroad: best buy
-summary: When you land abroad, the shop's best buy for what you can carry and afford is outlined, with how many to buy and the profit.
+summary: Your best runs on the travel agency, and abroad the shop's best buy for what you can carry and afford.
 section: Guides
 group: features
 order: 240
@@ -14,6 +14,13 @@ keywords: torn travel profit, foreign shop best buy, torn abroad stock
 > **Test release.** The companion is in public testing. Things may change before version 1.
 
 **Core:** free for everyone. Needs your script key.
+
+## Your best runs on the travel agency
+
+On Torn's travel agency, before you fly, a small panel lists your top three runs from the
+torn-tracker.com planner: where to go, what and how many to buy, the profit per hour, when
+you'd land (Torn time) and how sure the restock estimate is. It links to the full planner.
+Nothing is booked or bought for you.
 
 ## Best buy
 

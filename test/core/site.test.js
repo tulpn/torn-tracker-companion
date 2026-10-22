@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -558,6 +558,31 @@ describe('CMP-304 stock signals (companion-api section 6.4)', () => {
     assert.equal((await rig({ reply: reply(null, 503) }).site.stockSignals()).size, 0);
     const r = rig({ key: '' });
     assert.equal((await r.site.stockSignals()).size, 0);
+    assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('TRV-050 your travel runs (accepted in hq #78)', () => {
+  const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
+  const good = { country: 'mexico', item_id: 258, item_name: 'Jaguar Plushie', quantity: 29, cash_needed: 290000, profit: 58000,
+    profit_per_hour: 13500, hours: 4.3, lands_at: '2026-10-22T14:20:00Z', accuracy: '±10 min', data_age_s: 240 };
+
+  test('the runs, each checked; a multi-stop run keeps its stops; kept five minutes', async () => {
+    let clock = 0;
+    const r = rig({ clock: () => clock, reply: reply({ runs: [good, { ...good, country: 'cayman', stops: ['uk'] }, { ...good, country: 'MEX' }, { ...good, quantity: 0 }], basis: 'profit_per_hour' }) });
+    const answer = await r.site.travelRuns(3);
+    assert.equal(r.calls[0].url, `${TRAVEL_RUNS_URL}?limit=3`);
+    assert.deepEqual(answer.runs.map((x) => [x.country, x.stops]), [['mexico', null], ['cayman', ['uk']]]);
+    clock = 4 * 60_000;
+    await r.site.travelRuns(3);
+    assert.equal(r.calls.length, 1);
+  });
+
+  test('no capacity yet, a failure, or no key', async () => {
+    assert.deepEqual(await rig({ reply: reply({ runs: [], reason: 'no_capacity' }) }).site.travelRuns(), { runs: [], reason: 'no_capacity', basis: null });
+    assert.equal(await rig({ reply: reply(null, 503) }).site.travelRuns(), null);
+    const r = rig({ key: '' });
+    assert.equal(await r.site.travelRuns(), null);
     assert.equal(r.calls.length, 0);
   });
 });
