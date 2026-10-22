@@ -39,8 +39,11 @@ https://github.com/tulpn/torn-tracker-companion/releases/latest/download/torn-tr
 ```
 
 Pasting the text gives you a copy PDA cannot update. Adding it from the URL lets PDA check
-the version and keep it current. (Whether PDA installs an update by itself or only tells
-you one is waiting is being confirmed on a device; this page will say which.)
+the version for you. PDA checks when the app starts or comes back to the front, at most once
+an hour, and you can check by hand in its UserScripts settings. It never installs an
+update by itself: it marks the script "update available" (and notifies you, if you
+switched that on), and you apply it from the UserScripts section. If you edit the script
+in PDA, it stops checking that copy until you reload it from its URL.
 
 Either way the script updates itself from the newest release, and a beta is never installed
 over a stable one. How a release is made is in [RELEASING.md](RELEASING.md).

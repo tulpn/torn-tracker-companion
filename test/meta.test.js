@@ -69,6 +69,14 @@ describe('CMP-020 update channel', () => {
   test('CMP-021 @version is plain semver, which PDA compares correctly', () => {
     assert.match(header.version[0], /^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/);
   });
+
+  test('CMP-021 every key is written "// @key", the one spacing PDA\'s header parser reads', () => {
+    // PDA's parseHeader matches `\/\/\x20(@\S+)`: one space, no tab (torn-pda 390987e,
+    // lib/models/userscript_model.dart). A key it can't read is a missing @updateURL.
+    const lines = metaFile.split('\n').filter((line) => line.includes('@'));
+    assert.ok(lines.length > 5);
+    for (const line of lines) assert.match(line, /^\/\/ @\S+/, line);
+  });
 });
 
 describe('CMP-040 the licence travels with the file', () => {

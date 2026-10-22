@@ -28,6 +28,17 @@ https://github.com/tulpn/torn-tracker-companion/releases/latest/download/torn-tr
 Don't copy and paste the script's text. A pasted copy can't be updated; one added from
 its URL can be checked and kept current.
 
+## Updates
+
+PDA checks for a new version when the app starts or comes back to the front, at most
+once an hour. You can also check by hand in its userscripts settings. When there is one,
+PDA marks the companion "update available", and notifies you if you switched that on. You
+apply it yourself from the userscripts settings, because PDA never updates a script on
+its own.
+
+If you edit the script inside PDA, PDA stops checking that copy for updates. To get
+updates again, load it from its URL once more.
+
 ## Check it works
 
 Open any Torn page in PDA. The small green **TT** icon in Torn's header opens the
