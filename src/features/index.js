@@ -26,6 +26,7 @@ import warBrief from './war-brief/index.js';
 import raceTemplates from './race-templates/index.js';
 import stockAdvisor from './stock-advisor/index.js';
 import travelPanel from './travel-panel/index.js';
+import bustSafety from './bust-safety/index.js';
 
 export default [
   ffBadges,
@@ -50,4 +51,5 @@ export default [
   raceTemplates,
   stockAdvisor,
   travelPanel,
+  bustSafety,
 ];

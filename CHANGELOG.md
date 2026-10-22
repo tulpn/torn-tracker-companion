@@ -127,6 +127,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - **Your best runs on the travel agency** (wave 1). Before you fly, the travel agency shows
   your top three runs from the torn-tracker.com planner: where, what to buy, profit per
   hour, landing time and how sure, with a link to the planner. Needs your script key.
+- **Bust safety** (wave 3). On the jail page, a coloured rule-of-thumb score beside each
+  prisoner: level x (hours left + 3), the score TornTools uses, labelled as not Torn's
+  odds. It never busts or bails for you. Prisoners' level and time-left bands can be
+  shared, never who they are; off until you switch it on.
 
 ### Notes
 

@@ -16,7 +16,7 @@
 // I picked" again.
 
 export const DISCLOSURE = Object.freeze({
-  version: 7,
+  version: 8,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -31,6 +31,12 @@ export const DISCLOSURE = Object.freeze({
   ].join(' '),
   /** kind -> one line saying what that kind shares, shown beside its switch. */
   kinds: Object.freeze({
+    jail_difficulty: [
+      "On the jail page: for each prisoner, only their level as a band (like 26-50) and their time",
+      'left as a band (like 1-3 hours), at most once per prisoner every ten minutes and only while',
+      'the tab is on screen. Never who they are. The site uses them only to count prisoners per',
+      'band, never who.',
+    ].join(' '),
     item_market_snapshot: [
       "On the item market: the prices and quantities of up to 50 listings of the item you opened,",
       'never who is selling. Only for items torn-tracker.com asks for at that moment (Torn\'s API',

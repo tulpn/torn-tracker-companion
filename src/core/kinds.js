@@ -257,6 +257,15 @@ export const KINDS = Object.freeze({
       listings: list(d.listings, 'listings', 50, marketListing),
     }),
   },
+  jail_difficulty: {
+    title: 'Jail difficulty bands',
+    fields: ['level_band', 'hours_left_band'],
+    // hq #219: two closed bands from a jail row, never who it is.
+    check: (d) => ({
+      level_band: oneOf(d.level_band, 'level_band', ['1-10', '11-25', '26-50', '51-75', '76-100']),
+      hours_left_band: oneOf(d.hours_left_band, 'hours_left_band', ['<1', '1-3', '3-6', '6-12', '12-24', '24+']),
+    }),
+  },
   bazaar_listing: {
     title: 'Bazaar listings',
     fields: ['owner_id', 'items', 'open', 'complete'],
