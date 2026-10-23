@@ -62,7 +62,10 @@ of sections and a search box. Nothing is added to Torn's header.
   achievements show at the top of the settings. For that, when you open a Torn page and at
   most once every five minutes, it asks torn-tracker.com with your script key for the
   achievements earned since it last asked; nothing else is sent, and never from the attack
-  page. Switch either off here; with both off, nothing is asked.
+  page. Switch either off here; with both off, nothing is asked. Every section starts with
+  your next step in the torn-tracker guide, if you started it: for that it asks
+  torn-tracker.com with your script key at most once every 15 minutes, when you open a
+  Torn page. It has its own switch here.
 - **Features**: every feature, grouped by area, with its switch, one line on what it does,
   its options and a link to its guide page.
 - **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, war,

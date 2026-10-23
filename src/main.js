@@ -1,5 +1,6 @@
 // Boot: load the settings, keys and upload queue, start the router, put the way into the
-// settings and the sidebar block in Torn's sidebar, and watch for new achievements.
+// settings and the sidebar block in Torn's sidebar, and watch for new achievements and the
+// guide's next step.
 //
 // Torn Tracker Companion — https://github.com/tulpn/torn-tracker-companion
 // Copyright (C) 2026 tulpn. Licensed under the GNU GPL, version 3 or later.
@@ -17,6 +18,7 @@ import { mountPage } from './core/page.js';
 import { mountSidebarBlock } from './core/sidebar.js';
 import { createTours } from './core/tours.js';
 import { createUnlocks } from './core/unlocks.js';
+import { createGuide } from './core/guide.js';
 import { tornTheme } from './core/tokens.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
@@ -67,6 +69,8 @@ export async function boot(win = globalThis) {
     now: uploader.serverNow,
   });
   await unlocks.load();
+  // The guide's next step on the settings page (GDE-007).
+  const guide = createGuide({ doc: win.document, site, getSettings: () => settings });
   // Leaving the page is the player's own action; whatever is waiting goes with it.
   const onPageHide = () => uploader.flush({ keepalive: true });
   win.addEventListener('pagehide', onPageHide);
@@ -138,6 +142,7 @@ export async function boot(win = globalThis) {
     getQueue: () => uploader.status(),
     tours,
     unlocks,
+    guide,
     onSave: async (nextSettings, nextKeys) => {
       const savedKeys = await applyKeys(nextKeys);
       const wasOn = new Set(registry.filter((d) => isEnabled(settings, d.id)).map((d) => d.id));
@@ -201,6 +206,7 @@ export async function boot(win = globalThis) {
     runner.update(loc);
     tours.update(loc, { theme: tornTheme(win.document) });
     unlocks.update(loc);
+    guide.update(loc);
   }, win);
 
   log('started', VERSION, `${registry.length} features`);
@@ -222,6 +228,7 @@ export async function boot(win = globalThis) {
       stopRouter();
       tours.destroy();
       unlocks.destroy();
+      guide.destroy();
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();
