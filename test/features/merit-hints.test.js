@@ -55,11 +55,13 @@ describe('CMP-301 AC1 hints only with free merits', () => {
   test('every merit below its maximum gets its next cost; a maxed one gets nothing', async () => {
     const r = run();
     await wait();
-    assert.equal(hint(r, 'Nerve Bar').textContent, 'next: 4 merits');
+    assert.equal(hint(r, 'Nerve Bar').textContent, 'next 4');
+    assert.equal(hint(r, 'Nerve Bar').parentElement.className.includes('iconWrap'), true, 'pinned on the icon, taking no line');
     assert.equal(hint(r, 'Nerve Bar').dataset.tone, 'neutral', 'more than the 2 free');
-    assert.equal(hint(r, 'Bank Interest').textContent, 'next: 2 merits');
+    assert.equal(hint(r, 'Bank Interest').textContent, 'next 2');
     assert.equal(hint(r, 'Bank Interest').dataset.tone, 'good');
-    assert.equal(hint(r, 'Stealth').textContent, 'next: 1 merit');
+    assert.equal(hint(r, 'Stealth').textContent, 'next 1');
+    assert.match(hint(r, 'Stealth').title, /can raise Stealth to level 1/);
     assert.equal(hint(r, 'Critical Hit Rate'), null);
     const below = [...r.doc.querySelectorAll('li[aria-label]')].filter((li) => !/10 \/ 10/.test(li.getAttribute('aria-label')));
     assert.equal(r.doc.querySelectorAll('li .ttc-merits').length, below.length);
