@@ -28,6 +28,9 @@ export const STOCK_SIGNALS_URL = `${SITE}/api/feeds/stocks/signals`;
 export const TRAVEL_RUNS_URL = `${SITE}/api/feeds/me/travel/runs`;
 export const SIDEBAR_URL = `${SITE}/api/feeds/me/sidebar`;
 export const ACHIEVEMENTS_URL = `${SITE}/api/feeds/me/achievements`;
+export const GUIDE_URL = `${SITE}/api/feeds/me/guide`;
+const GUIDE_TTL = 15 * 60_000;
+const GUIDE_PAGE = `${SITE}/guide/`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
@@ -257,6 +260,50 @@ export function readAchievements(data) {
   return { unlocked, featured, url, cursor };
 }
 
+const trimmed = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
+/** A link on our site: an absolute one on our host, or a path on it. */
+function siteLink(v) {
+  if (typeof v !== 'string' || v.length > 200) return null;
+  if (/^\/(?!\/)/.test(v)) return `${SITE}${v}`;
+  return v.startsWith(`${SITE}/`) ? v : null;
+}
+
+/**
+ * The guide read's answer (GDE-007), checked field by field, or null when it doesn't fit:
+ * whether the player started the guide, whether the site still offers it (never after a
+ * dismissal), the step count, and the next open step with its call to action.
+ */
+export function readGuide(data) {
+  if (!data || typeof data !== 'object' || typeof data.started !== 'boolean') return null;
+  if (!count(data.done, 100) || !count(data.total, 100) || data.total === 0) return null;
+  const n = data.next;
+  let next = null;
+  if (n && typeof n === 'object') {
+    const title = trimmed(n.title, 80);
+    const cta = trimmed(n.cta_label, 40);
+    const href = siteLink(n.cta_url);
+    if (title && cta && href) next = { title, outcome: trimmed(n.outcome, 200), cta, href };
+  }
+  return {
+    started: data.started,
+    offer: data.offer === true,
+    done: Math.min(data.done, data.total),
+    total: data.total,
+    next,
+    url: siteLink(data.url) ?? GUIDE_PAGE,
+  };
+}
+
+/** A cached guide answer still has the shape readGuide gives. */
+export function validGuide(v) {
+  if (!v || typeof v !== 'object' || typeof v.started !== 'boolean' || typeof v.offer !== 'boolean') return false;
+  if (!count(v.done, 100) || !count(v.total, 100) || v.done > v.total || typeof v.url !== 'string' || !v.url.startsWith(`${SITE}/`)) return false;
+  if (v.next === null) return true;
+  return typeof v.next?.title === 'string' && typeof v.next.cta === 'string'
+    && typeof v.next.href === 'string' && v.next.href.startsWith(`${SITE}/`)
+    && (v.next.outcome === null || typeof v.next.outcome === 'string');
+}
+
 export const POSITIONS = Object.freeze(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
 const LABEL = 40;
 /** D-074: OC role weights come from this provider, fetched by the site; always credited. */
@@ -321,6 +368,7 @@ export const SPACES = Object.freeze({
   prices: { ttlMs: 10 * 60_000, max: 2_000, valid: validPrice },
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
+  guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
 });
 
 /**
@@ -855,6 +903,23 @@ export function createSite({
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       return { status: 'ok', ...readAchievements(result.data) };
     },
+
+    /**
+     * The player's guide: the next open step and its call to action (GDE-007). Kept 15
+     * minutes in the read cache, so the settings page shows it without asking.
+     * @returns {Promise<object|null>}
+     */
+    async guide() {
+      const hit = cache.get('guide', 'me');
+      if (hit !== undefined) return hit;
+      if (!usable()) return null;
+      const value = readGuide(await call(GUIDE_URL, { method: 'GET' }));
+      if (value) cache.set('guide', 'me', value);
+      return value;
+    },
+
+    /** The guide as last read, without asking; null when there is none fresh. */
+    guideHeld: () => cache.get('guide', 'me') ?? null,
 
     /** The site refused the current key (the panel says so). */
     keyRefused: () => Boolean(getKey()) && getKey() === refusedKey,

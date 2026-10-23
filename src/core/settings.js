@@ -20,6 +20,9 @@
 //
 // `achievements` holds the two switches of core/unlocks.js: the unlock toast and the
 // featured achievements in the settings header (WP-UX-8). Both start on.
+//
+// `guideStrip` is the switch for the guide's next step on the settings page (GDE-007,
+// core/guide.js). It starts on.
 
 import { KEYS, read, write } from './storage.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
@@ -34,6 +37,7 @@ export function defaults(registry) {
     look: DEFAULT_LOOK,
     sharingConsent: 0,
     achievements: { ...ACHIEVEMENT_DEFAULTS },
+    guideStrip: true,
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
     featureData: Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, d.data.empty])),
@@ -62,6 +66,7 @@ export function normalize(raw, registry) {
 
   const out = {
     debug: typeof given.debug === 'boolean' ? given.debug : base.debug,
+    guideStrip: typeof given.guideStrip === 'boolean' ? given.guideStrip : base.guideStrip,
     look: LOOKS.includes(given.look) ? given.look : base.look,
     sharingConsent: Number.isInteger(given.sharingConsent) && given.sharingConsent > 0
       ? given.sharingConsent

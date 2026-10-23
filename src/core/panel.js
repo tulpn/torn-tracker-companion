@@ -19,7 +19,8 @@
 // A search box finds a setting in any section. Edits are kept in a draft until Save, so
 // moving between sections loses nothing; Close, or any link away, leaves without saving.
 // The header shows the player's featured achievements (WP-UX-8) from what core/unlocks.js
-// last read; opening the page asks for nothing. The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
+// last read, and every section starts with the guide's next step (GDE-007) as core/guide.js
+// last read it; opening the page asks for nothing. The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
 // dark unless the player picks light or Torn's own theme under General, and every
 // target is at least 44 px so it can be hit with a thumb in Torn PDA; under 600 px of
 // width the menu goes across the top.
@@ -112,6 +113,7 @@ const STYLE = `
   #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
   #${P}-panel .${P}-featured { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; margin: 0; padding: 0; list-style: none; }
   #${P}-panel .${P}-featured:empty { display: none; }
+  #${P}-panel .${P}-guide { border-left: 4px solid var(--primary); }
   #${P}-panel .${P}-featured li { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
     background: color-mix(in srgb, var(--tt-warning) 16%, transparent); }
   #${P}-panel .${P}-head input[type=search] { flex: 1; min-width: 0; max-width: 420px; margin-left: auto; border-radius: 999px; padding-left: 16px; }
@@ -251,6 +253,7 @@ export function mountPanel({
   credits = CREDITS,
   tours = null,
   unlocks = null,
+  guide = null,
 }) {
   addStyle(doc, root);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -517,6 +520,12 @@ export function mountPanel({
         'Show my featured achievements at the top of this page'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion asks torn-tracker.com for new ones when you open a Torn page, at most every five minutes. Sharing one is only ever your own press, on torn-tracker.com.'),
+      h('h4', null, 'Guide'),
+      h('label', { class: `${P}-check` },
+        h('input', { type: 'checkbox', 'data-setting': 'guideStrip', checked: draft.settings.guideStrip !== false }),
+        'Show my next step in the torn-tracker guide at the top of this page'),
+      h('div', { class: `${P}-muted` },
+        'With your script key, the companion asks torn-tracker.com for it when you open a Torn page, at most every 15 minutes.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
@@ -622,6 +631,22 @@ export function mountPanel({
       a.tier ? `${a.name} · ${a.tier[0].toUpperCase()}${a.tier.slice(1)}` : a.name)));
   }
 
+  /** The guide's next step (GDE-007), above every section; nothing when there's none. */
+  function guideStrip() {
+    const strip = guide?.strip();
+    if (!strip) return null;
+    if (strip.kind === 'offer') {
+      return h('div', { class: `${P}-card ${P}-guide`, id: `${P}-guide` },
+        h('div', null, h('b', null, 'Get the most out of torn-tracker. '),
+          'A short guide, one step at a time: the bot, alerts, target lists and this companion.'),
+        h('div', { class: `${P}-row` }, link(strip.url, 'Start the guide')));
+    }
+    return h('div', { class: `${P}-card ${P}-guide`, id: `${P}-guide` },
+      h('div', { class: `${P}-muted` }, `Your guide · ${strip.done} of ${strip.total} done · next:`),
+      h('div', null, h('b', null, strip.title), strip.outcome ? ` — ${strip.outcome}` : ''),
+      h('div', { class: `${P}-row` }, link(strip.href, strip.cta), link(strip.url, 'The whole guide')));
+  }
+
   function render(message = '', tone = '') {
     drawFeatured();
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
@@ -630,6 +655,7 @@ export function mountPanel({
     }, title)));
     const title = SECTIONS.find(([id]) => id === section)[1];
     main.replaceChildren(...(query ? searchBody() : [
+      ...[guideStrip()].filter(Boolean),
       h('h3', null, title), h('p', { class: `${P}-intro` }, INTROS[section]), ...BODIES[section](),
     ]));
     status.textContent = message;
@@ -670,6 +696,8 @@ export function mountPanel({
       draft.keys[key] = input.value;
     } else if (setting === 'debug') {
       draft.settings.debug = input.checked;
+    } else if (setting === 'guideStrip') {
+      draft.settings.guideStrip = input.checked;
     } else if (setting === 'look') {
       // Shown at once, so the player sees it before saving; Close without Save puts it back.
       draft.settings.look = input.value;
@@ -774,6 +802,15 @@ export function mountPanel({
     if (id) tours?.request(id);
   });
   const stopUnlocks = unlocks?.onChange(drawFeatured);
+  // A new guide answer while the page shows: only the strip is redrawn, so nothing typed is lost.
+  const stopGuide = guide?.onChange(() => {
+    if (!active || query) return;
+    const fresh = guideStrip();
+    const old = main.querySelector(`#${P}-guide`);
+    if (old && fresh) old.replaceWith(fresh);
+    else if (old) old.remove();
+    else if (fresh) main.prepend(fresh);
+  });
   const stopTours = tours?.onChange(() => {
     const box = active ? panel.querySelector(`#${P}-tours`) : null;
     if (box) box.replaceWith(toursCard());
@@ -794,6 +831,7 @@ export function mountPanel({
     },
     destroy() {
       stopUnlocks?.();
+      stopGuide?.();
       stopTours?.();
       panel.remove();
     },

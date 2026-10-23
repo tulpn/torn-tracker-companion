@@ -183,6 +183,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   open a Torn page, at most every five minutes and never during an attack.
 - Switching a feature on now starts its page's tour at that feature, the next time you
   open the page.
+- **Your next guide step** (hq #155, GDE-007). If you started the torn-tracker guide, every
+  section of the settings page starts with your next step and a button straight to where
+  it's done. If you haven't, one line offers it, until you dismiss the guide on the site.
+  With your script key it asks torn-tracker.com at most every 15 minutes, when you open a
+  Torn page; switch it off under **General → Guide**.
 
 ### Notes
 
