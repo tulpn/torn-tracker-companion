@@ -41,9 +41,11 @@ updates again, load it from its URL once more.
 
 ## Check it works
 
-Open any Torn page in PDA. The small green **TT** icon in Torn's header opens the
-companion's [settings](settings-panel.md). The sidebar's **Torn Tracker** link works too,
-where PDA shows the sidebar.
+Open any Torn page in PDA and open Torn's menu. A **Torn Tracker** entry is in the
+**Areas** list (right under **TornTools Settings** if you have TornTools). It opens the
+companion's [settings](settings-panel.md) as a page inside Torn. The
+[Torn Tracker block](sidebar.md) sits in the same menu, under **Lists**, closed until you
+press it.
 
 ## Add your script key
 

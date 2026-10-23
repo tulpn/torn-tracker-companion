@@ -25,10 +25,10 @@ const ALLOWED_HOSTS = new Set(HOSTS);
 
 /**
  * Hosts that may appear in the source as a link or as header metadata — the repository,
- * the licence, the forum thread. A URL on one of these may never be a request target:
+ * the licence, the forum thread, the scripts we credit. A URL on one of these may never be a request target:
  * that is checked separately, so www.torn.com being here does not weaken anything.
  */
-const LINK_HOSTS = new Set(['github.com', 'www.gnu.org', 'www.torn.com', 'greasyfork.org']);
+const LINK_HOSTS = new Set(['github.com', 'www.gnu.org', 'www.torn.com', 'greasyfork.org', 'torncontracts.online']);
 
 /** A filler may tell Torn's form that a field changed. It may do nothing else. */
 const ALLOWED_EVENTS = new Set(['input', 'change']);

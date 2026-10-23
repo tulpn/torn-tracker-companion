@@ -31,9 +31,10 @@ Install [Tampermonkey](https://www.tampermonkey.net) or
 
 ## Check it works
 
-Open any page on torn.com. A **Torn Tracker** link appears in the sidebar (right under
-**TornTools Settings** if you have TornTools), and a small green **TT** icon by your avatar
-in the top bar. Either opens the companion's [settings](settings-panel.md).
+Open any page on torn.com. A **Torn Tracker** entry appears in the sidebar's **Areas**
+list (right under **TornTools Settings** if you have TornTools). It opens the companion's
+[settings](settings-panel.md) as a page inside Torn. Under **Lists** you'll also find the
+[Torn Tracker block](sidebar.md) with your chain, war and dibs.
 
 ## Add your script key
 

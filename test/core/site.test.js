@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite,
 } from '../../src/core/site.js';
 
@@ -584,5 +584,25 @@ describe('TRV-050 your travel runs (accepted in hq #78)', () => {
     const r = rig({ key: '' });
     assert.equal(await r.site.travelRuns(), null);
     assert.equal(r.calls.length, 0);
+  });
+});
+
+describe('CMP-108 the sidebar read', () => {
+  test('it asks only for the items switched on, in the contract’s order, with the script key', async () => {
+    const { site, calls } = rig({ reply: () => ({ ok: true, status: 200, data: { chain: null } }) });
+    const answer = await site.sidebar(['oc', 'chain', 'nonsense']);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, `${SIDEBAR_URL}?items=chain,oc`);
+    assert.equal(calls[0].headers.Authorization, `Bearer ${KEY}`);
+    assert.equal(answer.status, 'ok');
+    assert.equal(answer.items.get('chain'), null);
+  });
+
+  test('no key asks nothing; a refusal, a 429 and a failure each say what happened', async () => {
+    assert.equal((await rig({ key: '' }).site.sidebar(['chain'])).status, 'no_key');
+    assert.equal((await rig({ reply: () => ({ ok: false, status: 401, data: null }) }).site.sidebar(['chain'])).status, 'refused');
+    assert.deepEqual(await rig({ reply: () => ({ ok: false, status: 429, data: null, retryAfter: '120' }) }).site.sidebar(['chain']),
+      { status: 'wait', retryMs: 120_000 });
+    assert.equal((await rig({ reply: () => ({ ok: false, status: 404, data: null }) }).site.sidebar(['chain'])).status, 'failed');
   });
 });

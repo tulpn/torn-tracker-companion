@@ -37,8 +37,13 @@ function mount({
   const saves = [];
   let current = settings;
   let currentKeys = keys;
+  // The page lives in a Shadow DOM host, as core/page.js mounts it.
+  const host = window.document.createElement('div');
+  window.document.body.append(host);
+  const root = host.attachShadow({ mode: 'open' });
   const panel = mountPanel({
     doc: window.document,
+    root,
     registry,
     version: '9.9.9',
     getSettings: () => current,
@@ -62,20 +67,38 @@ function mount({
     else node.value = value;
     node.dispatchEvent(new window.Event('change', { bubbles: true }));
   };
-  const open = (tab) => {
-    if (panel.panel.hidden) panel.open();
-    if (tab) click($(`button[data-tab="${tab}"]`));
-  };
-  return { panel, window, saves, $, click, change, open, text: () => panel.panel.textContent };
+  // What the router does: arriving on #/torn-tracker, or on #/torn-tracker/<tab>.
+  const open = (tab) => panel.open(tab ?? '');
+  return { panel, root, window, saves, $, click, change, open, text: () => panel.panel.textContent };
 }
 
 describe('CMP-107 the settings page has a section for each job', () => {
-  test('General, Features, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
+  test('General, Features, Sidebar, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
     const t = mount();
     t.open();
     const tabs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((b) => b.textContent);
-    assert.deepEqual(tabs, ['General', 'Features', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
+    assert.deepEqual(tabs, ['General', 'Features', 'Sidebar', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
     assert.equal(t.$('[aria-selected=true]').textContent, 'Features');
+  });
+
+  test('each section is a plain link to its own route, so Back and Forward work', () => {
+    const t = mount();
+    t.open();
+    const hrefs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((a) => [a.tagName, a.getAttribute('href')]);
+    assert.ok(hrefs.every(([tag]) => tag === 'A'));
+    assert.deepEqual(hrefs.map(([, href]) => href).slice(0, 2), ['#/torn-tracker/general', '#/torn-tracker/features']);
+  });
+
+  test('AC5: a named section opens on it, an unknown one opens General, none keeps the last', () => {
+    const t = mount();
+    t.open('sharing');
+    assert.equal(t.$('[aria-selected=true]').textContent, 'Sharing');
+    t.open('nonsense');
+    assert.equal(t.$('[aria-selected=true]').textContent, 'General');
+    t.open('keys');
+    t.panel.close();
+    t.open();
+    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
   });
 
   test('an edit survives moving between tabs and is saved with the rest', async () => {
@@ -90,14 +113,14 @@ describe('CMP-107 the settings page has a section for each job', () => {
     await settle();
     assert.equal(t.saves[0].settings.features['war-enhancer'].enabled, false);
     assert.equal(t.saves[0].keys.script, KEY);
-    assert.equal(t.panel.panel.hidden, true);
+    assert.equal(t.$('[role=status]').textContent, 'Saved.');
   });
 
-  test('closing without saving throws the draft away', async () => {
+  test('leaving the route without saving throws the draft away', async () => {
     const t = mount();
     t.open();
     t.change(t.$('#ttc-feature-war-enhancer'), false);
-    t.click(t.$('button[data-act="close"]'));
+    t.panel.close();
     t.open();
     assert.equal(t.$('#ttc-feature-war-enhancer').checked, true);
   });
@@ -120,8 +143,7 @@ describe('CMP-107 the settings page has a section for each job', () => {
     t.open();
     assert.match(t.text(), /Add your script key to see torn-tracker\.com data/);
     assert.equal(t.$('[data-card="war-enhancer"]').dataset.needsKey, 'true');
-    t.click(t.$('.ttc-keyhint button[data-tab="keys"]'));
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+    assert.equal(t.$('.ttc-keyhint a').getAttribute('href'), '#/torn-tracker/keys');
   });
 
   test('with a script key: no banner', () => {
@@ -324,24 +346,23 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.match(t.text(), /Nothing matches/);
   });
 
-  test('Esc, the close button and a press on the backdrop all leave without saving', () => {
-    for (const leave of ['esc', 'button', 'backdrop']) {
-      const t = mount();
-      t.open();
-      if (leave === 'esc') t.window.document.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Escape' }));
-      else if (leave === 'button') t.click(t.$('.ttc-head button[data-act="close"]'));
-      else t.click(t.panel.panel);
-      assert.equal(t.panel.panel.hidden, true, leave);
-      assert.equal(t.saves.length, 0);
-    }
-  });
-
-  test('while it is open, the page behind does not scroll; closing puts it back', () => {
+  test('both Close links lead back to Torn\u2019s home page, without saving', () => {
     const t = mount();
     t.open();
-    assert.equal(t.window.document.body.style.overflow, 'hidden');
-    t.panel.close();
+    const closes = [...t.panel.panel.querySelectorAll('[data-act="close"]')];
+    assert.equal(closes.length, 2);
+    assert.ok(closes.every((a) => a.tagName === 'A' && a.getAttribute('href') === '#'));
+    assert.equal(t.saves.length, 0);
+  });
+
+  test('it is a page, not an overlay: it lives in its root and leaves Torn\u2019s page alone', () => {
+    const t = mount();
+    t.open();
+    assert.equal(t.panel.panel.parentNode, t.root);
+    assert.ok(t.root.querySelector('#ttc-style'), 'its styles stay inside the Shadow DOM');
+    assert.equal(t.window.document.head.querySelector('#ttc-style'), null);
     assert.equal(t.window.document.body.style.overflow, '');
+    assert.doesNotMatch(t.root.querySelector('#ttc-style').textContent, /position: fixed/);
   });
 
   test('it follows Torn\u2019s dark theme', () => {
@@ -372,7 +393,44 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     let asked = 0;
     t.window.fetch = () => { asked += 1; return Promise.reject(new Error('no')); };
     t.open();
-    for (const [id] of [['general'], ['features'], ['sharing'], ['keys'], ['data'], ['credits'], ['help']]) t.open(id);
+    for (const [id] of [['general'], ['features'], ['sidebar'], ['sharing'], ['keys'], ['data'], ['credits'], ['help']]) t.open(id);
     assert.equal(asked, 0);
+  });
+});
+
+describe('CMP-108 Settings \u2192 Sidebar', () => {
+  test('a master switch and one switch per item, with the spec\u2019s defaults', () => {
+    const t = mount();
+    t.open('sidebar');
+    assert.equal(t.$('#ttc-sidebar-enabled').checked, true);
+    const on = [...t.panel.panel.querySelectorAll('[data-sidebar]')]
+      .filter((n) => n.dataset.sidebar !== 'enabled' && n.checked).map((n) => n.dataset.sidebar);
+    assert.deepEqual(on, ['chain', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'links']);
+    for (const off of ['travel', 'loot', 'gym', 'stocks']) assert.equal(t.$(`#ttc-sidebar-${off}`).checked, false, off);
+    assert.match(t.text(), /Core \(free\)/);
+  });
+
+  test('switches are saved with the rest, and the master switch greys the items out', async () => {
+    const t = mount();
+    t.open('sidebar');
+    t.change(t.$('#ttc-sidebar-gym'), true);
+    t.change(t.$('#ttc-sidebar-chain'), false);
+    t.change(t.$('#ttc-sidebar-enabled'), false);
+    assert.equal(t.$('#ttc-sidebar-war').disabled, true);
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    const saved = t.saves[0].settings.sidebar;
+    assert.equal(saved.enabled, false);
+    assert.equal(saved.items.gym, true);
+    assert.equal(saved.items.chain, false);
+  });
+
+  test('search finds a sidebar item', () => {
+    const t = mount();
+    t.open('general');
+    const search = t.$('#ttc-search');
+    search.value = 'med-out';
+    search.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    assert.ok(t.$('#ttc-sidebar-partner'));
   });
 });

@@ -1,5 +1,5 @@
-// Boot: load the settings, keys and upload queue, start the router, put the panel on the
-// page.
+// Boot: load the settings, keys and upload queue, start the router, put the way into the
+// settings and the sidebar block in Torn's sidebar.
 //
 // Torn Tracker Companion — https://github.com/tulpn/torn-tracker-companion
 // Copyright (C) 2026 tulpn. Licensed under the GNU GPL, version 3 or later.
@@ -13,10 +13,12 @@ import { createSite } from './core/site.js';
 import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
 import { mountPanel } from './core/panel.js';
 import { mountEntry } from './core/entry.js';
+import { mountPage } from './core/page.js';
+import { mountSidebarBlock } from './core/sidebar.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
 import { defaults, isShared, load, normalize, save } from './core/settings.js';
-import { forget } from './core/storage.js';
+import { KEYS, forget, read, write } from './core/storage.js';
 import { error, log, setDebug } from './core/log.js';
 import * as dom from './core/dom.js';
 import * as net from './core/net.js';
@@ -29,6 +31,7 @@ export async function boot(win = globalThis) {
   setDebug(settings.debug);
 
   let panel = null;
+  let block = null;
   const uploader = createUploader({
     getKey: () => keys.script,
     timers: win,
@@ -88,6 +91,7 @@ export async function boot(win = globalThis) {
     setDebug(settings.debug);
     const ok = await save(settings, registry);
     restart();
+    block?.update();
     return ok;
   };
 
@@ -99,10 +103,7 @@ export async function boot(win = globalThis) {
     return ok;
   };
 
-  const stopRouter = startRouter((loc) => runner.update(loc), win);
-
-  panel = mountPanel({
-    doc: win.document,
+  const panelOptions = {
     registry,
     version: VERSION,
     getSettings: () => settings,
@@ -123,12 +124,48 @@ export async function boot(win = globalThis) {
       keys = emptyKeys();
       setDebug(false);
       restart();
+      block?.update();
       return ok;
+    },
+  };
+
+  // The settings route (CMP-107): the page lives in a Shadow DOM host in Torn's main
+  // column while the location is /index.php#/torn-tracker.
+  let entry = null;
+  const page = mountPage({
+    doc: win.document,
+    fill: (root) => {
+      panel = mountPanel({ doc: win.document, root, ...panelOptions });
+    },
+    onEnter: (section) => {
+      panel.open(section);
+      entry?.place();
+    },
+    onLeave: () => {
+      panel.close();
+      entry?.place();
     },
   });
 
-  // The sidebar link, the header icon, or the edge tab where neither fits (CMP-107).
-  const entry = mountEntry({ doc: win.document, onOpen: () => panel.toggle(), onMutation: dom.onMutation });
+  // The one way in: the "Torn Tracker" entry in Torn's sidebar (CMP-107). No header icon.
+  entry = mountEntry({ doc: win.document, isCurrent: page.isOpen, onMutation: dom.onMutation });
+  const stopPageWatch = dom.onMutation(() => page.restore(), win.document);
+
+  // The Torn Tracker block under Lists (CMP-108).
+  block = mountSidebarBlock({
+    doc: win.document,
+    site,
+    getSettings: () => settings,
+    onMutation: dom.onMutation,
+    store: { read: () => read(KEYS.sidebar), write: (value) => write(KEYS.sidebar, value) },
+    timers: win,
+    now: uploader.serverNow,
+  });
+
+  const stopRouter = startRouter((loc) => {
+    page.update(loc);
+    runner.update(loc);
+  }, win);
 
   log('started', VERSION, `${registry.length} features`);
 
@@ -136,7 +173,9 @@ export async function boot(win = globalThis) {
     registry,
     runner,
     panel,
+    page,
     entry,
+    block,
     uploader,
     get settings() {
       return settings;
@@ -146,7 +185,10 @@ export async function boot(win = globalThis) {
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();
+      stopPageWatch();
+      page.destroy();
       entry.destroy();
+      block.destroy();
       panel.destroy();
     },
   };
