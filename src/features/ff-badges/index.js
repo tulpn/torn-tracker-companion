@@ -60,7 +60,7 @@ export function findSpots(doc, loc) {
 
 function makeBadge(doc, estimate) {
   const look = describe(estimate);
-  const node = badge(doc, { cls: MARK, attrs: { title: look.title } }, look.text);
+  const node = badge(doc, { cls: MARK, attrs: { title: look.title, 'data-tour': 'ff-badge' } }, look.text);
   // The colour is the information here, on the scale players know from FF Scouter.
   setTone(node, null, { scale: look.background, ink: textColourFor(look.background) === '#000000' ? 'dark' : 'light' });
   return node;

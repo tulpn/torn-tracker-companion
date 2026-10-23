@@ -14,7 +14,7 @@
 //   Keys      the script key, and the optional Torn API key behind Torn's terms table
 //   Data      what is kept on this device, and "Forget me"
 //   Credits   every script this one took code or an idea from
-//   Help      the knowledge base and where to ask
+//   Help      the tours (core/tours.js), the knowledge base and where to ask
 // A search box finds a setting in any section. Edits are kept in a draft until Save, so
 // moving between sections loses nothing; Close, or any link away, leaves without saving.
 // The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
@@ -184,6 +184,9 @@ const STYLE = `
   #${P}-panel dd { margin: 0; }
   #${P}-panel .${P}-credits { padding-left: 18px; }
   #${P}-panel .${P}-credits li { margin: 8px 0; }
+  #${P}-panel .${P}-tours { list-style: none; margin: 8px 0 0; padding: 0; }
+  #${P}-panel .${P}-tours li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0; }
+  #${P}-panel .${P}-tours a { display: inline-flex; align-items: center; min-height: 44px; }
   @container (max-width: 600px) {
     #${P}-panel .${P}-sheet {
       grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
@@ -240,6 +243,7 @@ export function mountPanel({
   version,
   disclosure = DISCLOSURE,
   credits = CREDITS,
+  tours = null,
 }) {
   addStyle(doc, root);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -250,7 +254,7 @@ export function mountPanel({
 
   const panel = h('div', { id: `${P}-panel`, role: 'region', 'aria-label': `${META.name} settings`, 'data-tour': 'companion-settings' });
   const search = h('input', { type: 'search', id: `${P}-search`, placeholder: 'Search settings', 'aria-label': 'Search settings', autocomplete: 'off' });
-  const nav = h('nav', { 'aria-label': 'Settings sections' });
+  const nav = h('nav', { 'aria-label': 'Settings sections', 'data-tour': 'companion-sections' });
   const main = h('main');
   const status = h('div', { class: `${P}-status`, role: 'status' });
   panel.append(h('div', { class: `${P}-sheet` },
@@ -259,6 +263,10 @@ export function mountPanel({
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       search,
+      ...(tours ? [h('button', {
+        type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
+        'aria-label': 'Show me around this page', title: 'Show me around',
+      }, '?')] : []),
       h('a', { href: CLOSE, class: `${P}-btn ${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close' }, '\u2715')),
     nav,
     main,
@@ -505,6 +513,7 @@ export function mountPanel({
           h('li', null, 'your settings, sharing choices and saved templates'),
           h('li', null, 'your script key, and your Torn API key if you add one'),
           h('li', null, 'reports waiting to be sent, kept at most ten minutes'),
+          h('li', null, 'which tours you\u2019ve seen'),
           h('li', null, 'answers from torn-tracker.com, kept a short while so pages ask less'))),
       h('h4', null, 'Forget me'),
       h('div', { class: `${P}-muted` }, 'Clears all of the above on this device. Your other devices keep theirs.'),
@@ -528,8 +537,34 @@ export function mountPanel({
     return rows;
   }
 
+  /** Where the settings tour looks for its anchors, and its look: the page's own. */
+  function tourOptions() {
+    return { roots: [root, doc], theme: panel.dataset.theme === 'light' ? 'light' : 'dark' };
+  }
+
+  function startTour(id) {
+    if (!tours || !id) return;
+    tours.start(id, tourOptions());
+  }
+
+  /** Help → Tours: this page's tour starts here; another page's tour starts when you open it. */
+  function toursCard() {
+    const rows = tours.list().map((tour) => {
+      const label = `Show me ${tour.title.replace(/^The /, 'the ')}`;
+      return h('li', null,
+        tour.href
+          ? h('a', { href: tour.href, 'data-tour-page': tour.id }, label)
+          : h('button', { type: 'button', 'data-act': 'tour', 'data-tour-id': tour.id }, label),
+        h('span', { class: `${P}-muted` }, tour.done ? 'Done' : 'Not done yet'));
+    });
+    return h('div', { class: `${P}-card`, id: `${P}-tours` },
+      h('div', null, 'Short tours of what the companion adds. Each takes under a minute.'),
+      h('ul', { class: `${P}-tours` }, ...rows));
+  }
+
   function helpBody() {
     return [
+      ...(tours ? [h('h4', null, 'Tours'), toursCard()] : []),
       h('div', { class: `${P}-card` },
         h('div', null, link(GUIDE, 'The companion guide'), ': installing, every feature, what each kind of sharing sends.'),
         h('div', { class: `${P}-muted` }, link(`${GUIDE}troubleshooting/`, 'Troubleshooting'), ' · ',
@@ -564,7 +599,7 @@ export function mountPanel({
   function render(message = '', tone = '') {
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
     nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
-      href: sectionHref(id), role: 'tab', 'data-tab': id, 'aria-selected': String(!query && id === section),
+      href: sectionHref(id), role: 'tab', 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-selected': String(!query && id === section),
     }, title)));
     const title = SECTIONS.find(([id]) => id === section)[1];
     main.replaceChildren(...(query ? searchBody() : [
@@ -624,6 +659,8 @@ export function mountPanel({
 
   /** The route closed: whatever wasn't saved is dropped. */
   function close() {
+    // A tour of this page ends with it, and counts as not seen.
+    if (active) tours?.stop();
     active = false;
     armedForget = false;
     draft = null;
@@ -651,6 +688,10 @@ export function mountPanel({
     const button = event.target.closest('button[data-act]');
     if (!button) return;
     const act = button.dataset.act;
+    if (act === 'tour') {
+      startTour(button.dataset.tourId);
+      return;
+    }
     if (act !== 'forget') armedForget = false;
 
     if (act === 'save') {
@@ -692,9 +733,21 @@ export function mountPanel({
     query = '';
     search.value = '';
     render();
+    // The first time the page opens (and for each new version), the settings tour.
+    tours?.auto('settings', tourOptions());
   }
 
   panel.addEventListener('click', onClick);
+  // A tour of another page: noted here, and it starts when that page opens. The link
+  // itself is plain navigation, the player's own.
+  panel.addEventListener('click', (event) => {
+    const id = event.target.closest?.('a[data-tour-page]')?.dataset.tourPage;
+    if (id) tours?.request(id);
+  });
+  const stopTours = tours?.onChange(() => {
+    const box = active ? panel.querySelector(`#${P}-tours`) : null;
+    if (box) box.replaceWith(toursCard());
+  });
   panel.addEventListener('input', onInput);
   panel.addEventListener('change', onInput);
 
@@ -710,6 +763,7 @@ export function mountPanel({
       if (box) box.replaceChildren(...queueLines(getQueue()));
     },
     destroy() {
+      stopTours?.();
       panel.remove();
     },
   };

@@ -15,9 +15,11 @@ import { mountPanel } from './core/panel.js';
 import { mountEntry } from './core/entry.js';
 import { mountPage } from './core/page.js';
 import { mountSidebarBlock } from './core/sidebar.js';
+import { createTours } from './core/tours.js';
+import { tornTheme } from './core/tokens.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
-import { defaults, isShared, load, normalize, save } from './core/settings.js';
+import { defaults, isEnabled, isShared, load, normalize, save } from './core/settings.js';
 import { KEYS, forget, read, write } from './core/storage.js';
 import { error, log, setDebug } from './core/log.js';
 import * as dom from './core/dom.js';
@@ -32,6 +34,20 @@ export async function boot(win = globalThis) {
 
   let panel = null;
   let block = null;
+
+  // Tours (UXT-022): a step's `requires` is a feature switch, a missing key or the sidebar block.
+  const tours = createTours({
+    win,
+    store: { read: () => read(KEYS.tours), write: (value) => write(KEYS.tours, value) },
+    isMet: (requires) => {
+      if (requires.startsWith('feature:')) return isEnabled(settings, requires.slice('feature:'.length));
+      if (requires === 'nokey:script') return !keys.script;
+      if (requires === 'sidebar') return settings.sidebar?.enabled === true;
+      return false;
+    },
+    onMutation: dom.onMutation,
+  });
+  await tours.load();
   const uploader = createUploader({
     getKey: () => keys.script,
     timers: win,
@@ -109,6 +125,7 @@ export async function boot(win = globalThis) {
     getSettings: () => settings,
     getKeys: () => keys,
     getQueue: () => uploader.status(),
+    tours,
     onSave: async (nextSettings, nextKeys) => {
       const savedKeys = await applyKeys(nextKeys);
       // The panel edits options and switches; features' own data is never its to change.
@@ -119,6 +136,7 @@ export async function boot(win = globalThis) {
     onForget: async () => {
       uploader.clear();
       site.cache.clear();
+      tours.reset();
       const ok = await forget();
       settings = defaults(registry);
       keys = emptyKeys();
@@ -165,6 +183,7 @@ export async function boot(win = globalThis) {
   const stopRouter = startRouter((loc) => {
     page.update(loc);
     runner.update(loc);
+    tours.update(loc, { theme: tornTheme(win.document) });
   }, win);
 
   log('started', VERSION, `${registry.length} features`);
@@ -176,12 +195,14 @@ export async function boot(win = globalThis) {
     page,
     entry,
     block,
+    tours,
     uploader,
     get settings() {
       return settings;
     },
     stop() {
       stopRouter();
+      tours.destroy();
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();

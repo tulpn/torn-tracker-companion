@@ -151,7 +151,7 @@ export default {
     function bar(list) {
       const prev = list.previousElementSibling;
       if (prev?.classList.contains(`${MARK}-bar`)) return prev;
-      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '' } }, el('strong', { ownerDocument: doc }, 'Sort'));
+      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-sort' } }, el('strong', { ownerDocument: doc }, 'Sort'));
       for (const order of ORDERS) {
         const button = uiButton(doc, { attrs: { 'data-order': order } }, LABELS[order]);
         button.addEventListener('click', (event) => {
@@ -231,7 +231,7 @@ export default {
           const cell = row.querySelector(MEMBER);
           if (!id || !cell || cell.querySelector(`.${MARK}-dibs`)) continue;
           const button = uiButton(doc, {
-            cls: `${MARK}-dibs`, attrs: { [`data-${MARK}`]: '', 'data-player': String(id) },
+            cls: `${MARK}-dibs`, attrs: { [`data-${MARK}`]: '', 'data-player': String(id), 'data-tour': 'war-dibs' },
           });
           button.addEventListener('click', (event) => {
             event.preventDefault();
@@ -270,7 +270,7 @@ export default {
           continue;
         }
         if (!node) {
-          node = badge(doc, { cls: `${MARK}-ld`, attrs: { [`data-${MARK}`]: '' } });
+          node = badge(doc, { cls: `${MARK}-ld`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-loadout' } });
           cell.append(node);
         }
         if (node.textContent !== words) node.textContent = words;
@@ -310,7 +310,7 @@ export default {
           continue;
         }
         if (!label) {
-          label = badge(doc, { cls: `${MARK}-time`, attrs: { [`data-${MARK}`]: '' } });
+          label = badge(doc, { cls: `${MARK}-time`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-timer' } });
           cell.append(label);
         }
         if (label.textContent !== text) label.textContent = text;

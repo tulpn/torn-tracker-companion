@@ -1,4 +1,4 @@
-// Device storage (CMP-008). Four keys, nothing else, and "Forget me" clears all four.
+// Device storage (CMP-008). The keys below, nothing else, and "Forget me" clears them all.
 //
 // Torn PDA injects PDA_storage (async); browsers get localStorage. The backend is looked
 // up on every call rather than at load, because PDA injects it around the time the script
@@ -19,6 +19,8 @@ export const KEYS = Object.freeze({
   ui: 'ttc_ui',
   /** whether the sidebar block is open; a convenience, cleared by "Forget me" */
   sidebar: 'ttc_sidebar',
+  /** which tours were seen, and a tour asked for on another page (core/tours.js) */
+  tours: 'ttc_tours',
 });
 
 const ALL = Object.freeze(Object.values(KEYS));
