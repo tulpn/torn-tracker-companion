@@ -8,8 +8,10 @@
 // Nothing here ever reaches www.torn.com. The page's own requests are observed in
 // intercept.js and never repeated.
 
-import { HOSTS, hostAllowed } from '../hosts.js';
+import { HOSTS, SITE, hostAllowed } from '../hosts.js';
 import { log, warn } from './log.js';
+import { onPda } from './keys.js';
+import { VERSION } from './version.js';
 
 export class HostNotAllowedError extends Error {
   constructor(url) {
@@ -49,6 +51,24 @@ function take(host, now = Date.now()) {
 /** Tests start from a clean budget. */
 export function resetBudget() {
   recent.clear();
+}
+
+/** 'pda' inside Torn PDA, 'desktop' anywhere else: the only thing said about the device. */
+export function platform(win = globalThis) {
+  return onPda(win) ? 'pda' : 'desktop';
+}
+
+/**
+ * Every request to torn-tracker.com says which version of the script asks and whether
+ * it runs in Torn PDA or a browser (GDE-008, hq #233), so the guide's second-device step
+ * can tick itself. Query parameters rather than a header: a server that doesn't know them
+ * ignores them, and they never change a browser's CORS preflight. Torn's API is never
+ * told anything about us.
+ */
+export function tagged(url, win = globalThis) {
+  if (!url.startsWith(`${SITE}/`)) return url;
+  const join = url.includes('?') ? '&' : '?';
+  return `${url}${join}ttc_v=${encodeURIComponent(VERSION)}&ttc_p=${platform(win)}`;
 }
 
 function pdaTransport(method) {
@@ -93,10 +113,11 @@ export async function request(url, {
   }
 
   const verb = String(method).toUpperCase();
+  const sent = tagged(url);
   try {
     const { status, text, retryAfter } = pdaTransport(verb)
-      ? normalizePda(await pdaTransport(verb)(url, headers, body))
-      : await viaFetch(url, { method: verb, headers, body, timeout, keepalive });
+      ? normalizePda(await pdaTransport(verb)(sent, headers, body))
+      : await viaFetch(sent, { method: verb, headers, body, timeout, keepalive });
 
     let data = null;
     try {
