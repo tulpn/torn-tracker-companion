@@ -7,7 +7,7 @@ import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
 import { LAYER_ID, LIMITS, checkTour, findAnchor, runTour, typing } from '../../src/core/tour.js';
-import { PENDING_MS, TOURS, cleanProgress, createTours } from '../../src/core/tours.js';
+import { PENDING_MS, TOURS, cleanProgress, createTours, tourFor } from '../../src/core/tours.js';
 import { ROOT } from '../helpers.js';
 
 const windows = [];
@@ -288,6 +288,31 @@ describe('UXT-003 and UXT-022 when tours run, and what is kept', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.ok(tours.running, 'it starts once the anchor is there');
     assert.equal(writes.at(-1).pending, null, 'and the request is used up');
+  });
+
+  test('after an unlock: a feature switched on asks for its page’s tour, starting at its step', async () => {
+    assert.deepEqual(tourFor('ff-badges'), { id: 'war-page', from: 'ff-badge' });
+    assert.deepEqual(tourFor('travel-panel'), { id: 'travel-agency', from: 'travel-runs' });
+    assert.equal(tourFor('no-such-feature'), null);
+    const win = page('<div data-tour="war-sort"></div><div data-tour="ff-badge"></div>', 'https://www.torn.com/factions.php?step=your#/war/rank');
+    const { tours, writes } = manager(win);
+    await tours.load();
+    await tours.unlocked(['no-such-feature', 'ff-badges']);
+    assert.deepEqual(writes.at(-1).pending, { id: 'war-page', at: 1_000_000, from: 'ff-badge' });
+    assert.equal(cleanProgress(writes.at(-1), 1_000_001).pending.from, 'ff-badge', 'the step survives a reload');
+    assert.equal(cleanProgress({ pending: { id: 'war-page', at: 1, from: 'nope' } }, 2).pending.from, undefined);
+    tours.update(win.location);
+    assert.ok(tours.running);
+    assert.match(win.document.querySelector('[role=dialog]').textContent, /Fair fight at a glance/);
+    assert.doesNotMatch(win.document.querySelector('[role=dialog]').textContent, /Sort the opponents/);
+  });
+
+  test('a feature whose step was already seen asks for nothing', async () => {
+    const win = page();
+    const { tours, writes } = manager(win, { stored: { tours: { 'war-page': { version: 1, seen: ['ff-badge'], done: true } } } });
+    await tours.load();
+    assert.equal(await tours.unlocked(['ff-badges']), false);
+    assert.equal(writes.length, 0);
   });
 
   test('a request older than ten minutes is dropped', async () => {

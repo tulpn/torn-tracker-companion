@@ -31,6 +31,7 @@ function mount({
   credits = [],
   pda = false,
   tours = undefined,
+  unlocks = undefined,
 } = {}) {
   const { window } = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://www.torn.com/' });
   windows.push(window);
@@ -61,6 +62,7 @@ function mount({
     disclosure,
     credits,
     tours,
+    unlocks,
   });
   const $ = (sel) => panel.panel.querySelector(sel);
   const click = (node) => node.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

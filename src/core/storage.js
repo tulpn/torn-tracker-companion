@@ -21,6 +21,8 @@ export const KEYS = Object.freeze({
   sidebar: 'ttc_sidebar',
   /** which tours were seen, and a tour asked for on another page (core/tours.js) */
   tours: 'ttc_tours',
+  /** where the next achievements read starts, and the featured ones (core/unlocks.js) */
+  unlocks: 'ttc_unlocks',
 });
 
 const ALL = Object.freeze(Object.values(KEYS));

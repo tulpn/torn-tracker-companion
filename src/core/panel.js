@@ -6,7 +6,8 @@
 // (core/entry.js). It is built from what the script already holds: opening it makes no
 // request. A menu of sections sits on the left, and across the top on a narrow screen;
 // each section is a plain link to #/torn-tracker/<section>, so Back and Forward work:
-//   General   version, the update link, the page's look, console logging
+//   General   version, the update link, the page's look, the achievement switches,
+//             console logging
 //   Features  each feature with its switch, one line on what it does, its options and a
 //             "Learn more" link to its knowledge base page, grouped by area
 //   Sidebar   the Torn Tracker sidebar block's master switch and one switch per item
@@ -17,7 +18,8 @@
 //   Help      the tours (core/tours.js), the knowledge base and where to ask
 // A search box finds a setting in any section. Edits are kept in a draft until Save, so
 // moving between sections loses nothing; Close, or any link away, leaves without saving.
-// The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
+// The header shows the player's featured achievements (WP-UX-8) from what core/unlocks.js
+// last read; opening the page asks for nothing. The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
 // dark unless the player picks light or Torn's own theme under General, and every
 // target is at least 44 px so it can be hit with a thumb in Torn PDA; under 600 px of
 // width the menu goes across the top.
@@ -108,6 +110,10 @@ const STYLE = `
   }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
   #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
+  #${P}-panel .${P}-featured { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+  #${P}-panel .${P}-featured:empty { display: none; }
+  #${P}-panel .${P}-featured li { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
+    background: color-mix(in srgb, var(--tt-warning) 16%, transparent); }
   #${P}-panel .${P}-head input[type=search] { flex: 1; min-width: 0; max-width: 420px; margin-left: auto; border-radius: 999px; padding-left: 16px; }
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head, #${P}-panel .${P}-foot { min-width: 0; }
@@ -244,6 +250,7 @@ export function mountPanel({
   disclosure = DISCLOSURE,
   credits = CREDITS,
   tours = null,
+  unlocks = null,
 }) {
   addStyle(doc, root);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -257,11 +264,13 @@ export function mountPanel({
   const nav = h('nav', { 'aria-label': 'Settings sections', 'data-tour': 'companion-sections' });
   const main = h('main');
   const status = h('div', { class: `${P}-status`, role: 'status' });
+  const featured = h('ul', { class: `${P}-featured`, 'aria-label': 'Your featured achievements' });
   panel.append(h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
+      featured,
       search,
       ...(tours ? [h('button', {
         type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
@@ -297,6 +306,7 @@ export function mountPanel({
         features: Object.fromEntries(Object.entries(settings.features).map(([id, f]) => [id, { ...f }])),
         shares: { ...settings.shares },
         sidebar: { ...settings.sidebar, items: { ...settings.sidebar?.items } },
+        achievements: { ...settings.achievements },
       },
       keys: { ...getKeys() },
     };
@@ -498,6 +508,15 @@ export function mountPanel({
           value: look, selected: look === draft.settings.look,
         }, LOOK_LABELS[look])))),
       h('div', { class: `${P}-muted` }, 'What the companion adds to Torn’s own pages always follows Torn’s theme.'),
+      h('h4', null, 'Achievements'),
+      h('label', { class: `${P}-check` },
+        h('input', { type: 'checkbox', 'data-achievements': 'toast', checked: draft.settings.achievements?.toast !== false }),
+        'Show a toast on Torn’s page when I earn one'),
+      h('label', { class: `${P}-check` },
+        h('input', { type: 'checkbox', 'data-achievements': 'featured', checked: draft.settings.achievements?.featured !== false }),
+        'Show my featured achievements at the top of this page'),
+      h('div', { class: `${P}-muted` },
+        'With your script key, the companion asks torn-tracker.com for new ones when you open a Torn page, at most every five minutes. Sharing one is only ever your own press, on torn-tracker.com.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
@@ -514,6 +533,7 @@ export function mountPanel({
           h('li', null, 'your script key, and your Torn API key if you add one'),
           h('li', null, 'reports waiting to be sent, kept at most ten minutes'),
           h('li', null, 'which tours you\u2019ve seen'),
+          h('li', null, 'your featured achievements, and when it last asked for new ones'),
           h('li', null, 'answers from torn-tracker.com, kept a short while so pages ask less'))),
       h('h4', null, 'Forget me'),
       h('div', { class: `${P}-muted` }, 'Clears all of the above on this device. Your other devices keep theirs.'),
@@ -596,7 +616,14 @@ export function mountPanel({
     return rows;
   }
 
+  /** The featured achievements, as saved: the switch acts once saved, like every other. */
+  function drawFeatured() {
+    featured.replaceChildren(...(unlocks?.featured() || []).map((a) => h('li', null,
+      a.tier ? `${a.name} · ${a.tier[0].toUpperCase()}${a.tier.slice(1)}` : a.name)));
+  }
+
   function render(message = '', tone = '') {
+    drawFeatured();
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
     nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
       href: sectionHref(id), role: 'tab', 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-selected': String(!query && id === section),
@@ -620,7 +647,7 @@ export function mountPanel({
       render();
       return;
     }
-    const { feature, opt, share, key, setting, sidebar } = input.dataset || {};
+    const { feature, opt, share, key, setting, sidebar, achievements } = input.dataset || {};
     if (feature && opt) {
       const current = draft.settings.features[feature]?.[opt];
       let value;
@@ -654,6 +681,8 @@ export function mountPanel({
       }
     } else if (sidebar) {
       draft.settings.sidebar.items[sidebar] = input.checked;
+    } else if (achievements) {
+      draft.settings.achievements[achievements] = input.checked;
     }
   }
 
@@ -744,6 +773,7 @@ export function mountPanel({
     const id = event.target.closest?.('a[data-tour-page]')?.dataset.tourPage;
     if (id) tours?.request(id);
   });
+  const stopUnlocks = unlocks?.onChange(drawFeatured);
   const stopTours = tours?.onChange(() => {
     const box = active ? panel.querySelector(`#${P}-tours`) : null;
     if (box) box.replaceWith(toursCard());
@@ -763,6 +793,7 @@ export function mountPanel({
       if (box) box.replaceChildren(...queueLines(getQueue()));
     },
     destroy() {
+      stopUnlocks?.();
       stopTours?.();
       panel.remove();
     },

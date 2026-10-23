@@ -176,6 +176,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   loadout flags). Next, Back and Skip work with the arrow keys, Esc and a swipe; on a phone
   each step is a sheet at the bottom of the screen. A tour never starts by itself during an
   attack or while you're typing, and "Forget me" clears which tours you've seen.
+- **Achievements** (hq #241, WP-UX-8). When torn-tracker.com says you earned an
+  achievement, a small toast shows on the Torn page you're on, with a link to share it on
+  the site. Your featured achievements show at the top of the settings page. Both have a
+  switch under **General**. With your script key, the companion asks for new ones when you
+  open a Torn page, at most every five minutes and never during an attack.
+- Switching a feature on now starts its page's tour at that feature, the next time you
+  open the page.
 
 ### Notes
 

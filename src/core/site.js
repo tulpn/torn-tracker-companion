@@ -27,6 +27,7 @@ export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
 export const STOCK_SIGNALS_URL = `${SITE}/api/feeds/stocks/signals`;
 export const TRAVEL_RUNS_URL = `${SITE}/api/feeds/me/travel/runs`;
 export const SIDEBAR_URL = `${SITE}/api/feeds/me/sidebar`;
+export const ACHIEVEMENTS_URL = `${SITE}/api/feeds/me/achievements`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
@@ -220,6 +221,40 @@ export function readSidebar(data, asked, skew = 0) {
       && typeof l.url === 'string' && l.url.startsWith(`${SITE}/`) && l.url.length <= 200)
     .map((l) => ({ label: l.label, url: l.url }));
   return { items, links };
+}
+
+export const TIERS = Object.freeze(['bronze', 'silver', 'gold']);
+const ACHIEVEMENT_ID = /^[a-z0-9][a-z0-9_-]{0,59}$/;
+const SENTENCE = 160;
+const UNLOCKED_MAX = 10;
+const FEATURED_MAX = 5;
+const ACHIEVEMENTS_PAGE = `${SITE}/me/achievements/`;
+
+/** One achievement as the reply names it: id, name and tier, or null when it doesn't fit. */
+function readAchievement(a) {
+  if (typeof a?.id !== 'string' || !ACHIEVEMENT_ID.test(a.id) || !validName(a.name)) return null;
+  if (a.tier != null && !TIERS.includes(a.tier)) return null;
+  return { id: a.id, name: a.name, tier: a.tier ?? null };
+}
+
+/**
+ * The achievements read's answer (WP-UX-8), checked field by field: what was earned after
+ * `since`, oldest first, and the player's featured ones. `cursor` is the reply's own
+ * server_time, as the site wrote it, for the next read's `since`.
+ * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null}}
+ */
+export function readAchievements(data) {
+  const unlocked = (Array.isArray(data?.unlocked) ? data.unlocked : []).slice(0, UNLOCKED_MAX).map((a) => {
+    const base = readAchievement(a);
+    if (!base) return null;
+    const sentence = typeof a.sentence === 'string' && a.sentence.trim() && a.sentence.length <= SENTENCE ? a.sentence.trim() : null;
+    return { ...base, sentence, hidden: a.hidden === true, points: count(a.points, 1000) ? a.points : 0 };
+  }).filter(Boolean);
+  const featured = (Array.isArray(data?.featured) ? data.featured : []).slice(0, FEATURED_MAX).map(readAchievement).filter(Boolean);
+  const url = typeof data?.url === 'string' && data.url.startsWith(`${SITE}/`) && data.url.length <= 200 ? data.url : ACHIEVEMENTS_PAGE;
+  const cursor = typeof data?.server_time === 'string' && data.server_time.length <= 40 && Number.isFinite(Date.parse(data.server_time))
+    ? data.server_time : null;
+  return { unlocked, featured, url, cursor };
 }
 
 export const POSITIONS = Object.freeze(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
@@ -800,6 +835,25 @@ export function createSite({
       }
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       return { status: 'ok', ...readSidebar(result.data, ask, skewOf(result.data)) };
+    },
+
+    /**
+     * The player's achievements earned after `since` (an ISO time from the last reply),
+     * and their featured ones (WP-UX-8). Never cached here: core/unlocks.js paces it.
+     * @param {string|null} since
+     */
+    async achievements(since) {
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const query = since ? `?since=${encodeURIComponent(since)}` : '';
+      const result = await exchange(`${ACHIEVEMENTS_URL}${query}`, { method: 'GET' });
+      if (result.status === 401 || result.status === 403) return { status: 'refused' };
+      if (result.status === 429) {
+        const seconds = Number(result.retryAfter);
+        return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 5 * 60_000 };
+      }
+      if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
+      return { status: 'ok', ...readAchievements(result.data) };
     },
 
     /** The site refused the current key (the panel says so). */

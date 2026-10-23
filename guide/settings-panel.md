@@ -41,8 +41,9 @@ without saving throws them away. After **Save** you stay on the page, and it say
 
 ## The sections
 
-- **General:** the version, a link to check for an update, the page's **Look**, and
-  console logging for troubleshooting.
+- **General:** the version, a link to check for an update, the page's **Look**, the
+  switches for [achievements](achievements.md), and console logging for troubleshooting.
+  Your featured achievements show at the top of the page.
 - **Features:** every feature, grouped by area (war, travel, market, crimes, gym, jobs),
   each with its switch, one line on what it does, its options, and a **Learn more** link to
   its page here. A feature that's off doesn't run at all. **Reset settings to defaults** is
@@ -68,6 +69,8 @@ until the tour itself changes, and then it shows only what's new.
 - Press **?** at the top of the settings page to see it again.
 - **Help → Tours** lists every tour and whether you've done it. A tour of another page,
   such as the ranked-war page, starts when you next open that page (within ten minutes).
+- When you switch a feature on and save, its page's tour starts at that feature the next
+  time you open the page (within ten minutes), unless you've seen that step already.
 
 Tours never start on their own while you're attacking or typing in a field. A step about
 a feature you've switched off is left out. Which tours you've seen is kept on this
