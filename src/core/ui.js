@@ -40,6 +40,16 @@ const STYLE = `
     --ttc-info-bg: rgba(90, 160, 240, .2); --ttc-info-fg: #9cc8ff;
   }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
+  /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
+     its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
+  .${P}-ui-badge[data-pin="under"] {
+    position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); z-index: 1; margin: 0;
+    padding: 0 7px; white-space: nowrap; font-size: 10px; line-height: 15px; pointer-events: none;
+    --ttc-pin-under: var(--default-bg-panel-color, #f2f2f2);
+    box-shadow: 0 0 0 2px var(--ttc-pin-under);
+  }
+  body.dark-mode .${P}-ui-badge[data-pin="under"] { --ttc-pin-under: #2a2a2a; }
+${['good', 'neutral', 'warn', 'bad', 'info'].map((t) => `  .${P}-ui-badge[data-pin="under"][data-tone="${t}"] { background: linear-gradient(var(--ttc-${t}-bg), var(--ttc-${t}-bg)), var(--ttc-pin-under); }`).join(' ')}
   .${P}-ui-strip {
     display: block; box-sizing: border-box; max-width: 100%; margin: 10px 0; padding: 10px 14px;
     border-radius: 10px; border: 1px solid rgba(0, 0, 0, .08); border-left: 4px solid #278552;
@@ -103,13 +113,15 @@ function classes(base, extra) {
  * @param {string} [opts.cls]    the feature's own class, which finds it again
  * @param {string} [opts.tone]   good, neutral, warn, bad or info
  * @param {boolean} [opts.block] on its own line
+ * @param {'under'} [opts.pin]   pinned over the bottom edge of its (positioned) parent
  * @param {string} [opts.tag]    span by default; 'a' for a link
  * @param {object} [opts.attrs]  any other attributes
  */
-export function badge(doc, { cls, tone = 'neutral', block = false, tag = 'span', attrs = {} } = {}, ...children) {
+export function badge(doc, { cls, tone = 'neutral', block = false, pin = null, tag = 'span', attrs = {} } = {}, ...children) {
   ensureStyle(doc);
   const node = el(tag, {
-    class: classes(`${P}-ui-badge${block ? ` ${P}-ui-block` : ''}`, cls), 'data-tone': tone, ownerDocument: doc, ...attrs,
+    class: classes(`${P}-ui-badge${block ? ` ${P}-ui-block` : ''}`, cls), 'data-tone': tone, ownerDocument: doc,
+    ...(pin === 'under' ? { 'data-pin': 'under' } : {}), ...attrs,
   }, ...children);
   return node;
 }

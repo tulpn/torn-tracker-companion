@@ -88,13 +88,15 @@ export default {
           continue;
         }
         const cost = nextCost(merit.level);
-        const text = `next: ${merits(cost)}`;
         if (!node) {
-          node = badge(doc, { cls: MARK });
-          const spot = li.querySelector("[class*='title']");
-          if (spot) spot.after(node);
-          else li.append(node);
+          // Over the bottom of the merit's round icon: Torn's row has a fixed height, and a
+          // line of our own would push its description out of sight.
+          const icon = li.querySelector("[class*='iconWrap']");
+          node = badge(doc, { cls: MARK, pin: icon ? 'under' : null });
+          if (icon) icon.append(node);
+          else li.querySelector("[class*='title']")?.after(node) ?? li.append(node);
         }
+        const text = node.dataset.pin ? `next ${cost}` : `next: ${merits(cost)}`;
         if (node.textContent !== text) node.textContent = text;
         setTone(node, cost <= free ? 'good' : 'neutral');
         node.title = cost <= free
