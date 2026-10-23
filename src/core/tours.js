@@ -1,7 +1,7 @@
 // The companion's tours and when they run (hq #237, WP-UX-4; UXT-001, UXT-003, UXT-022).
 //
-// Two tours so far: the settings page, and the ranked-war page. The copy is a draft in the
-// voice spec's terms; the lead's tour content (hq #238) replaces it.
+// Eight tours: the settings page, the ranked-war page, the travel agency, the foreign shop,
+// the bazaar, trades, crimes and organised crimes. The copy is hq #238's.
 //
 // When a tour runs:
 //   - the settings tour, the first time the settings page opens, once per tour version;
@@ -32,7 +32,7 @@ export const TOURS = Object.freeze([
     steps: [
       {
         target: 'companion-settings',
-        title: 'Your companion, one page',
+        title: 'Your companion, on one page',
         body: 'Every feature has a switch here. Nothing changes on Torn’s pages until you press Save.',
       },
       {
@@ -43,7 +43,7 @@ export const TOURS = Object.freeze([
       {
         target: 'companion-keys-tab',
         title: 'Add your script key',
-        body: 'Dibs, timers and fair-fight estimates come from torn-tracker.com. Your script key connects them. It stays on this device.',
+        body: 'Dibs, timers and fair-fight estimates come from torn-tracker.com, and your script key connects them. It stays on this device.',
         requires: 'nokey:script',
       },
       {
@@ -54,12 +54,12 @@ export const TOURS = Object.freeze([
       {
         target: 'companion-save',
         title: 'Save when you’re done',
-        body: 'Close leaves without saving. The page opens on the section you used last.',
+        body: 'Close leaves without saving. Next time, the page opens on the section you used last.',
       },
       {
         target: 'companion-sidebar',
         title: 'Live facts in Torn’s sidebar',
-        body: 'Your chain, the war score and your dibs, under Lists. Choose its lines under Sidebar.',
+        body: 'Your chain, the war score and your dibs, under Lists. Pick which lines show under Sidebar.',
         requires: 'sidebar',
       },
       {
@@ -87,13 +87,13 @@ export const TOURS = Object.freeze([
         target: 'ff-badge',
         title: 'Fair fight at a glance',
         body: 'An estimate from torn-tracker.com: blue is an easy hit, red a hard one, ? means no estimate yet.',
-        example: { lines: ['Ares · level 74 · Okay', 'FF 2.41 → good respect for one hit'] },
+        example: { lines: ['Ares · level 74 · Okay', 'FF 2.41: good respect for one hit'] },
         requires: 'feature:ff-badges',
       },
       {
         target: 'war-dibs',
         title: 'Call dibs',
-        body: 'Press to claim a target for your faction, press again to let it go. It never attacks for you.',
+        body: 'Press to claim a target for your faction, and again to let it go. It never attacks for you.',
         requires: 'feature:war-page',
       },
       {
@@ -107,6 +107,116 @@ export const TOURS = Object.freeze([
         title: 'Loadout flags (Pro)',
         body: 'Heavy hitter, armour or temps seen on their latest loadout, and how old that sighting is.',
         requires: 'feature:war-page',
+      },
+    ],
+  }),
+  checkTour({
+    id: 'travel-agency',
+    version: 1,
+    surface: 'companion',
+    page: 'travel.php',
+    href: 'https://www.torn.com/travel.php',
+    title: 'The travel agency',
+    steps: [
+      {
+        target: 'travel-runs',
+        title: 'Your best runs',
+        body: 'Your top three runs from torn-tracker.com’s planner: where, what to buy, profit per hour and when you’d land. Nothing is booked for you.',
+        example: { lines: ['Mexico · 29 Jaguar plushies · $1.21m an hour', 'Lands 04:52 TCT · restock likely'] },
+        requires: 'feature:travel-panel',
+      },
+    ],
+  }),
+  checkTour({
+    id: 'foreign-shop',
+    version: 1,
+    surface: 'companion',
+    page: 'page.php?sid=travel',
+    href: 'https://www.torn.com/page.php?sid=travel',
+    title: 'The foreign shop',
+    steps: [
+      {
+        target: 'shop-best-buy',
+        title: 'The best buy on this shelf',
+        body: 'The item that makes the most for what you can still carry and afford, with how many to buy. Nothing is bought for you.',
+        example: { lines: ['Buy 29 · about $412k profit at home'] },
+        requires: 'feature:best-buy',
+      },
+    ],
+  }),
+  checkTour({
+    id: 'bazaar',
+    version: 1,
+    surface: 'companion',
+    page: 'bazaar.php#/add',
+    href: 'https://www.torn.com/bazaar.php#/add',
+    title: 'Pricing in your bazaar',
+    steps: [
+      {
+        target: 'price-fill',
+        title: 'Fill the price',
+        body: 'Fills this row with the market value minus your undercut. You still press Torn’s own button to list it.',
+        requires: 'feature:price-filler',
+      },
+    ],
+  }),
+  checkTour({
+    id: 'trade',
+    version: 1,
+    surface: 'companion',
+    page: 'trade.php',
+    href: 'https://www.torn.com/trade.php',
+    title: 'Trades',
+    steps: [
+      {
+        target: 'trade-value',
+        title: 'Their offer at market value',
+        body: 'Their money and items, totalled at torn-tracker.com’s market value. Copy makes a receipt to paste in the chat.',
+        requires: 'feature:trade-value',
+      },
+    ],
+  }),
+  checkTour({
+    id: 'crimes',
+    version: 1,
+    surface: 'companion',
+    page: 'page.php?sid=crimes',
+    href: 'https://www.torn.com/page.php?sid=crimes',
+    title: 'Crimes',
+    steps: [
+      {
+        target: 'crime-morale',
+        title: 'Your morale',
+        body: 'Torn doesn’t show it, so we work it out from the page: 100 minus your demoralisation.',
+        requires: 'feature:crime-helper',
+      },
+      {
+        target: 'crime-value',
+        title: 'Money per nerve',
+        body: 'What each crime option earns for the nerve it costs, from torn-tracker.com, so you spend nerve where it pays.',
+        requires: 'feature:crime-helper',
+      },
+    ],
+  }),
+  checkTour({
+    id: 'faction-crimes',
+    version: 1,
+    surface: 'companion',
+    page: 'factions.php#/tab=crimes',
+    href: 'https://www.torn.com/factions.php?step=your#/tab=crimes',
+    title: 'Organised crimes',
+    steps: [
+      {
+        target: 'oc-success',
+        title: 'Success estimate',
+        body: 'torn-tracker.com’s estimate for this crime, when your faction’s key allows it.',
+        requires: 'feature:oc-helper',
+      },
+      {
+        target: 'oc-weight',
+        title: 'How much this role counts',
+        body: 'Each role’s weight towards the crime’s success, so the right member takes the slot that matters most.',
+        requires: 'feature:oc-helper',
       },
     ],
   }),

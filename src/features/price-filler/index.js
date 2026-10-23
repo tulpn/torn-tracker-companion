@@ -61,7 +61,7 @@ const feature = {
         if (!row.isConnected || row.querySelector(`.${MARK}`)) continue;
         const price = priceFrom(prices.get(id), ctx.settings.undercut);
         const button = el('button', {
-          type: 'button', class: MARK, ownerDocument: doc, disabled: price === null,
+          type: 'button', class: MARK, ownerDocument: doc, disabled: price === null, 'data-tour': 'price-fill',
           title: price === null ? 'No market value for this item yet' : `Fill the price with ${money(price)}`,
         }, price === null ? 'No price' : `Fill ${money(price)}`);
         button.addEventListener('click', (event) => {

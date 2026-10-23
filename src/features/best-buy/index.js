@@ -82,7 +82,7 @@ export default {
           if (label.textContent !== text) label.textContent = text;
           continue;
         }
-        const node = badge(doc, { cls: MARK, tone: 'good', attrs: { title: "torn-tracker.com market value minus this shop's price" } }, text);
+        const node = badge(doc, { cls: MARK, tone: 'good', attrs: { title: "torn-tracker.com market value minus this shop's price", 'data-tour': 'shop-best-buy' } }, text);
         (row.querySelector(ITEM_NAME) || row).append(node);
       }
     }

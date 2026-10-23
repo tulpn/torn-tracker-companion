@@ -53,7 +53,7 @@ export default {
     function box(side) {
       let node = side.querySelector(`:scope > .${MARK}`);
       if (!node) {
-        node = strip(doc, { cls: MARK });
+        node = strip(doc, { cls: MARK, attrs: { 'data-tour': 'trade-value' } });
         side.append(node);
       }
       return node;

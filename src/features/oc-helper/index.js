@@ -62,7 +62,9 @@ export default {
     function label(parent, text, title, kind) {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
-        node = badge(doc, { cls: MARK, tone: kind === 'success' ? 'good' : 'info', attrs: { 'data-kind': kind } });
+        // The tour's anchors (hq #238), one per kind of label.
+        const anchor = kind === 'success' ? { 'data-tour': 'oc-success' } : { 'data-tour': 'oc-weight' };
+        node = badge(doc, { cls: MARK, tone: kind === 'success' ? 'good' : 'info', attrs: { 'data-kind': kind, ...anchor } });
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
