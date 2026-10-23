@@ -56,7 +56,22 @@ without saving throws them away. After **Save** you stay on the page, and it say
   key, it's kept only on this device, and it's never written to the console.
 - **Data:** what the companion keeps on this device, and [Forget me](forget-me.md).
 - **Credits:** every script the companion took an idea from, with its licence and a link.
-- **Help:** this guide, troubleshooting, and where to report a problem.
+- **Help:** the tours, this guide, troubleshooting, and where to report a problem.
+
+## Tours
+
+The first time you open the settings page, a short tour points out what's where. It takes
+under a minute: **Next** (or the right arrow, or a swipe to the left on a phone) goes on,
+**Back** goes back, and **Skip tour** (or Esc) ends it. It won't start by itself again
+until the tour itself changes, and then it shows only what's new.
+
+- Press **?** at the top of the settings page to see it again.
+- **Help → Tours** lists every tour and whether you've done it. A tour of another page,
+  such as the ranked-war page, starts when you next open that page (within ten minutes).
+
+Tours never start on their own while you're attacking or typing in a field. A step about
+a feature you've switched off is left out. Which tours you've seen is kept on this
+device and goes with [Forget me](forget-me.md).
 
 The page is dark to start with, in torn-tracker.com's colours. Under **General → Look**
 you can make it light, or **Same as Torn** to follow Torn's own light or dark theme. What

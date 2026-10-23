@@ -170,6 +170,12 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   torn-tracker.com, so the companion and the site look like one product. Labels on Torn's
   pages still follow Torn's light or dark theme. The settings page is dark to start with;
   **General → Look** makes it light or has it follow Torn.
+- **Tours** (hq #237, WP-UX-4). The first time you open the settings page, a short tour
+  points out what's where; **?** at the top shows it again, and **Help → Tours** lists every
+  tour, including one of the ranked-war page (sorting, fair-fight estimates, dibs, timers,
+  loadout flags). Next, Back and Skip work with the arrow keys, Esc and a swipe; on a phone
+  each step is a sheet at the bottom of the screen. A tour never starts by itself during an
+  attack or while you're typing, and "Forget me" clears which tours you've seen.
 
 ### Notes
 

@@ -30,6 +30,7 @@ function mount({
   queue = null,
   credits = [],
   pda = false,
+  tours = undefined,
 } = {}) {
   const { window } = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://www.torn.com/' });
   windows.push(window);
@@ -59,6 +60,7 @@ function mount({
     onForget: async () => true,
     disclosure,
     credits,
+    tours,
   });
   const $ = (sel) => panel.panel.querySelector(sel);
   const click = (node) => node.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -463,5 +465,78 @@ describe('CMP-108 Settings \u2192 Sidebar', () => {
     search.value = 'med-out';
     search.dispatchEvent(new t.window.Event('input', { bubbles: true }));
     assert.ok(t.$('#ttc-sidebar-partner'));
+  });
+});
+
+describe('WP-UX-4 tours from the settings page (UXT-022)', () => {
+  function fakeTours() {
+    const calls = [];
+    let done = false;
+    return {
+      calls,
+      finish: () => { done = true; },
+      list: () => [
+        { id: 'settings', title: 'The settings page', href: null, done },
+        { id: 'war-page', title: 'The ranked-war page', href: 'https://www.torn.com/factions.php?step=your#/war/rank', done: false },
+      ],
+      auto: (id, opts) => calls.push(['auto', id, opts]),
+      start: (id, opts) => calls.push(['start', id, opts]),
+      request: (id) => calls.push(['request', id]),
+      stop: () => calls.push(['stop']),
+      onChange(fn) { this.changed = fn; return () => {}; },
+    };
+  }
+
+  test('the first time it opens, it offers its own tour, with its anchors and its look', () => {
+    const tours = fakeTours();
+    const t = mount({ tours });
+    t.open();
+    const [act, id, opts] = tours.calls[0];
+    assert.deepEqual([act, id], ['auto', 'settings']);
+    assert.equal(opts.roots[0], t.root);
+    assert.equal(opts.theme, 'dark');
+  });
+
+  test('"?" in the header shows this page’s tour again', () => {
+    const tours = fakeTours();
+    const t = mount({ tours });
+    t.open();
+    const help = t.$('[data-tour="companion-tour-button"]');
+    assert.equal(help.getAttribute('aria-label'), 'Show me around this page');
+    t.click(help);
+    assert.deepEqual(tours.calls.at(-1).slice(0, 2), ['start', 'settings']);
+  });
+
+  test('Help → Tours lists every tour with done or not; another page’s tour is a plain link, noted first', () => {
+    const tours = fakeTours();
+    const t = mount({ tours });
+    t.open('help');
+    const box = t.$('#ttc-tours');
+    assert.match(box.textContent, /Show me the settings page\s*Not done yet/);
+    const link = box.querySelector('a[data-tour-page="war-page"]');
+    assert.equal(link.getAttribute('href'), 'https://www.torn.com/factions.php?step=your#/war/rank');
+    t.click(link);
+    assert.deepEqual(tours.calls.at(-1), ['request', 'war-page']);
+    tours.finish();
+    tours.changed();
+    assert.match(t.$('#ttc-tours').textContent, /Show me the settings page\s*Done/);
+  });
+
+  test('closing the page ends its tour; the sections and Save carry anchors', () => {
+    const tours = fakeTours();
+    const t = mount({ tours });
+    t.open();
+    for (const anchor of ['companion-settings', 'companion-sections', 'companion-keys-tab', 'companion-sharing-tab', 'companion-save']) {
+      assert.ok(t.root.querySelector(`[data-tour="${anchor}"]`), anchor);
+    }
+    t.panel.close();
+    assert.deepEqual(tours.calls.at(-1), ['stop']);
+  });
+
+  test('without tours there is no "?" and no Tours list', () => {
+    const t = mount();
+    t.open('help');
+    assert.equal(t.$('[data-tour="companion-tour-button"]'), null);
+    assert.equal(t.$('#ttc-tours'), null);
   });
 });
