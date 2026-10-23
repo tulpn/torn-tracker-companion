@@ -156,6 +156,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   for the lines you chose, with your script key; until the site serves that read, lines
   say "no data". Core.
 
+- **Merit hints** (wave 3, CMP-301, hq #228). On the merits tab, when you have free merits:
+  a note names every merit they can raise and what it costs, and each merit below its
+  maximum shows its next level's cost. Pressing a name only scrolls to it; the script
+  never upgrades. It reads only the tab and sends nothing. Core, no key needed.
+
 ### Notes
 
 - Sharing can be switched on for foreign shop stock, loadouts, bazaar listings, auction
