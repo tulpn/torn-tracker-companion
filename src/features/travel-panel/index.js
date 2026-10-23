@@ -66,7 +66,7 @@ export default {
       try {
         const answer = await ctx.site.travelRuns(3);
         if (state !== s || !answer || doc.querySelector(`.${MARK}`)) return;
-        const panel = strip(doc, { cls: MARK });
+        const panel = strip(doc, { cls: MARK, attrs: { 'data-tour': 'travel-runs' } });
         panel.append(el('strong', { ownerDocument: doc }, 'Your best runs (torn-tracker.com)'));
         if (answer.runs.length) {
           const list = el('ol', { ownerDocument: doc });

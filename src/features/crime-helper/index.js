@@ -116,7 +116,7 @@ export default {
         }
         const n = Math.round(value.value_per_nerve);
         const rate = value.success_rate === null ? '' : `; ${Math.round(value.success_rate)}% succeed`;
-        badge(cell, 'value', `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US')}/nerve`, {}, n > 0 ? 'good' : 'neutral').title = `Average money and item value per nerve, from ${value.reporters} players' shared outcomes (torn-tracker.com)${rate}`;
+        badge(cell, 'value', `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US')}/nerve`, { 'data-tour': 'crime-value' }, n > 0 ? 'good' : 'neutral').title = `Average money and item value per nerve, from ${value.reporters} players' shared outcomes (torn-tracker.com)${rate}`;
       }
     }
 
@@ -133,7 +133,7 @@ export default {
       paintValues();
       const header = doc.querySelector(HEADER);
       if (header && s.morale !== null) {
-        badge(header, 'morale', `Morale ${s.morale}%`, {}, s.morale >= 80 ? 'good' : s.morale >= 50 ? 'warn' : 'bad').title = 'Your crime morale, from the page (100 minus demoralisation)';
+        badge(header, 'morale', `Morale ${s.morale}%`, { 'data-tour': 'crime-morale' }, s.morale >= 80 ? 'good' : s.morale >= 50 ? 'warn' : 'bad').title = 'Your crime morale, from the page (100 minus demoralisation)';
       }
       for (const row of doc.querySelectorAll(BURGLARY_ROW)) {
         const cell = row.querySelector(BURGLARY_TITLE);
