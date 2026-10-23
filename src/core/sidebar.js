@@ -1,9 +1,10 @@
 // The Torn Tracker block in Torn's sidebar (CMP-108).
 //
-// A collapsible block of its own after Torn's "Lists", looking like Torn's own blocks,
-// with a few live facts the player would otherwise open the site or Discord for. It has a
-// master switch, and every item has its own switch (Settings → Sidebar). An item with
-// nothing to say is left out, and the block hides itself when every item is empty.
+// A collapsible block of its own after Torn's "Lists", shaped like Torn's own blocks and
+// coloured by the suite's tokens in Torn's theme (WP-UI-8), with a few live facts the
+// player would otherwise open the site or Discord for. It has a master switch, and every
+// item has its own switch (Settings → Sidebar). An item with nothing to say is left out,
+// and the block hides itself when every item is empty.
 //
 // One read feeds it: GET /api/feeds/me/sidebar with the items switched on (site.sidebar).
 // It's asked when the block is opened, then at most once a minute, and only while the
@@ -17,6 +18,7 @@
 import { el, ownChange } from './dom.js';
 import { SITE } from '../hosts.js';
 import { OURS, SIDEBAR } from './entry.js';
+import { followTorn } from './tokens.js';
 
 const P = 'ttc';
 export const BLOCK_ID = `${P}-sidebar-block`;
@@ -48,30 +50,37 @@ const PLANNER_URL = `${SITE}/travel/`;
 const STOCKS_URL = `${SITE}/stocks/`;
 
 const STYLE = `
-  #${BLOCK_ID} { margin-top: 8px; font: 12px/1.4 Arial, sans-serif; color: var(--default-font-color, #333); }
+  ${followTorn(`#${BLOCK_ID}`)}
+  #${BLOCK_ID} { margin-top: 8px; font: 12px/1.4 var(--tt-font-sans); color: var(--card-foreground); }
   #${BLOCK_ID} .${P}-sb-head {
     display: flex; align-items: center; gap: 6px; width: 100%; min-height: 32px; padding: 0 8px; border: 0; cursor: pointer;
-    border-radius: 5px 5px 0 0; background: var(--default-bg-panel-color, #f2f2f2); color: inherit;
-    font: 700 13px/1 Arial, sans-serif; text-align: left;
+    border-radius: var(--radius) var(--radius) 0 0; background: var(--card); color: inherit;
+    font: 700 13px/1 var(--tt-font-sans); text-align: left;
   }
-  #${BLOCK_ID} .${P}-sb-head::after { content: "▾"; margin-left: auto; transition: transform .15s; }
+  #${BLOCK_ID} .${P}-sb-head:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+  #${BLOCK_ID} .${P}-sb-head::before {
+    content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--primary);
+  }
+  #${BLOCK_ID} .${P}-sb-head::after { content: "▾"; margin-left: auto; transition: transform var(--tt-duration-fast) var(--tt-ease); }
+  #${BLOCK_ID}[data-open="false"] .${P}-sb-head { border-radius: var(--radius); }
   #${BLOCK_ID}[data-open="false"] .${P}-sb-head::after { transform: rotate(-90deg); }
   #${BLOCK_ID}[data-open="false"] .${P}-sb-body { display: none; }
   #${BLOCK_ID} .${P}-sb-body {
-    padding: 4px 8px 6px; border-radius: 0 0 5px 5px; background: var(--default-bg-panel-color, #f2f2f2);
-    border-top: 1px solid var(--default-panel-divider-outer-side-color, rgba(0, 0, 0, .08));
+    padding: 4px 8px 6px; border-radius: 0 0 var(--radius) var(--radius); background: var(--card);
+    border-top: 1px solid var(--border);
   }
   #${BLOCK_ID} .${P}-sb-row { padding: 3px 0; overflow-wrap: anywhere; }
-  #${BLOCK_ID} .${P}-sb-row + .${P}-sb-row { border-top: 1px dashed rgba(127, 127, 127, .25); }
+  #${BLOCK_ID} .${P}-sb-row + .${P}-sb-row { border-top: 1px dashed var(--border); }
   #${BLOCK_ID} .${P}-sb-row b { font-weight: 700; }
-  #${BLOCK_ID} .${P}-sb-row a { color: var(--default-blue-color, #2a5d9f); text-decoration: none; }
+  #${BLOCK_ID} .${P}-sb-row a { color: var(--ring); text-decoration: none; }
   #${BLOCK_ID} .${P}-sb-row a:hover { text-decoration: underline; }
-  #${BLOCK_ID} .${P}-sb-muted { color: var(--default-gray-6-color, #777); }
-  #${BLOCK_ID} .${P}-sb-alert { color: var(--default-red-color, #c0392b); font-weight: 700; }
+  #${BLOCK_ID} .${P}-sb-muted { color: var(--muted-foreground); }
+  #${BLOCK_ID} .${P}-sb-alert { color: color-mix(in srgb, var(--destructive) 65%, var(--foreground)); font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-links a { margin-right: 10px; }
-  body.dark-mode #${BLOCK_ID} { color: var(--default-font-color, #ddd); }
-  body.dark-mode #${BLOCK_ID} .${P}-sb-head, body.dark-mode #${BLOCK_ID} .${P}-sb-body { background: var(--default-bg-panel-color, #333); }
-  body.dark-mode #${BLOCK_ID} .${P}-sb-row a { color: var(--default-blue-color, #8ab4f8); }
+  @media (pointer: coarse) {
+    #${BLOCK_ID} .${P}-sb-head { min-height: 44px; }
+    #${BLOCK_ID} .${P}-sb-links a { display: inline-flex; align-items: center; min-height: 44px; }
+  }
 `;
 
 function addStyle(doc) {

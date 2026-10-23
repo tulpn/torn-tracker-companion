@@ -65,6 +65,13 @@ describe('CMP-008 settings from storage are validated field by field', () => {
     assert.equal(settings.features.travel.capacity, 5);
   });
 
+  test('the settings page\'s look is dark, light or Torn\'s, and dark otherwise', () => {
+    assert.equal(normalize({}, registry).look, 'dark');
+    assert.equal(normalize({ look: 'torn' }, registry).look, 'torn');
+    assert.equal(normalize({ look: 'purple' }, registry).look, 'dark');
+    assert.equal(normalize({ look: 1 }, registry).look, 'dark');
+  });
+
   test('NaN and Infinity are not numbers we keep', () => {
     const settings = normalize({ features: { travel: { capacity: Number.NaN } } }, registry);
     assert.equal(settings.features.travel.capacity, 5);

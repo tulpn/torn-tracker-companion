@@ -8,6 +8,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "data:items": "node tools/build-items.mjs",
+    "data:tokens": "node tools/build-tokens.mjs",
     "guide": "node tools/build-guide.mjs",
     "check": "node --check dist/torn-tracker-companion.user.js",
     "lint:rules": "node tools/rules-lint.mjs",
