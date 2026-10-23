@@ -242,6 +242,7 @@ describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
     assert.equal(entry.querySelector('svg'), null, 'our mark replaces Torn\u2019s icon');
     assert.equal(entry.querySelector('[class*="amount"]'), null);
     assert.equal(entry.querySelectorAll('[id]').length, 0);
+    assert.equal(entry.dataset.tour, 'companion-entry', 'a stable anchor for the tours (hq #233)');
     assert.equal(t.doc.querySelectorAll('#nav-home').length, 1, 'Torn\u2019s own entry is untouched');
   });
 

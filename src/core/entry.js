@@ -97,12 +97,13 @@ export function copyEntry(parent, doc = parent.ownerDocument) {
   }
   copy.id = LINK_ID;
   copy.dataset.ttcOpen = 'sidebar';
+  copy.dataset.tour = 'companion-entry';
   return copy;
 }
 
 function ownEntry(doc) {
   return el('a', {
-    href: ROUTE_HREF, id: LINK_ID, 'data-ttc-open': 'sidebar', 'data-own': '', ownerDocument: doc,
+    href: ROUTE_HREF, id: LINK_ID, 'data-ttc-open': 'sidebar', 'data-tour': 'companion-entry', 'data-own': '', ownerDocument: doc,
   }, mark(doc), el('span', { ownerDocument: doc }, LABEL));
 }
 
