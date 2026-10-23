@@ -30,7 +30,7 @@ function use({ local = fakeLocalStorage(), pda = null } = {}) {
 
 beforeEach(() => use());
 
-describe('CMP-008 seven keys and nothing else', () => {
+describe('CMP-008 eight keys and nothing else', () => {
   test('the keys are the ones the spec names', () => {
     assert.deepEqual(KEYS, {
       settings: 'ttc_settings',
@@ -40,6 +40,7 @@ describe('CMP-008 seven keys and nothing else', () => {
       ui: 'ttc_ui',
       sidebar: 'ttc_sidebar',
       tours: 'ttc_tours',
+      unlocks: 'ttc_unlocks',
     });
   });
 
@@ -66,10 +67,10 @@ describe('CMP-008 seven keys and nothing else', () => {
     assert.equal(await write(KEYS.settings, { debug: true }), false);
   });
 
-  test('"Forget me" clears all seven, the last settings section, the sidebar block\u2019s state and the tours included', async () => {
+  test('"Forget me" clears all eight, the last settings section, the sidebar block\u2019s state, the tours and the achievements included', async () => {
     const { local } = use();
     for (const key of Object.values(KEYS)) await write(key, { some: 'thing' });
-    assert.equal(local.map.size, 7);
+    assert.equal(local.map.size, 8);
     assert.equal(await forget(), true);
     assert.equal(local.map.size, 0);
   });

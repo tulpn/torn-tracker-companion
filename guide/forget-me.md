@@ -21,8 +21,8 @@ keywords: companion forget me, clear userscript data, remove script key
 2. Press **Forget me**. The button changes to **Really forget everything?**: press it
    again to confirm.
 
-The companion then forgets your script key, your settings, what it has cached, and
-anything still waiting to be sent. It starts again as if freshly installed, with every
+The companion then forgets your script key, your settings, what it has cached, which
+tours you've seen, your featured achievements, and anything still waiting to be sent. It starts again as if freshly installed, with every
 feature at its default and every kind of sharing off.
 
 ## What it doesn't clear

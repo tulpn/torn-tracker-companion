@@ -9,6 +9,8 @@
 //   - any tour on demand: the "?" in the settings page's header, or Help → Tours. A tour
 //     of another page is asked for there and starts when the player next opens that page
 //     (within ten minutes), once its first anchor is on the page;
+//   - after an unlock (UXT-003): when the player switches a feature on and saves, its
+//     page's tour is asked for the same way, and starts at that feature's first step;
 //   - never on the attack page, and never while the player is typing in a field.
 //
 // Progress lives on this device under `ttc_tours`, is checked field by field when read,
@@ -243,6 +245,9 @@ export function cleanProgress(raw, now = Date.now()) {
   const pending = given.pending;
   if (pending && byId.has(pending.id) && Number.isFinite(pending.at) && now - pending.at < PENDING_MS && pending.at <= now) {
     out.pending = { id: pending.id, at: pending.at };
+    if (typeof pending.from === 'string' && byId.get(pending.id).steps.some((step) => stepId(step) === pending.from)) {
+      out.pending.from = pending.from;
+    }
   }
   return out;
 }
@@ -252,6 +257,16 @@ const current = (progress, tour) => (progress.tours[tour.id]?.version === tour.v
 export const isDone = (progress, tour) => current(progress, tour)?.done === true;
 /** Whether this version has had its turn: done or skipped, so it doesn't start by itself again. */
 export const hadTurn = (progress, tour) => Boolean(current(progress, tour)?.done || current(progress, tour)?.skipped);
+
+/** The tour of a feature's page and the step it starts at, or null when no tour shows it. */
+export function tourFor(featureId) {
+  for (const tour of TOURS) {
+    if (!tour.href) continue;
+    const step = tour.steps.find((s) => s.requires === `feature:${featureId}`);
+    if (step) return { id: tour.id, from: stepId(step) };
+  }
+  return null;
+}
 
 /**
  * @param {object} opts
@@ -301,13 +316,16 @@ export function createTours({ win, store, isMet, onMutation, now = () => Date.no
    * @param {Array<ParentNode>} [opts.roots]
    * @param {'dark'|'light'} [opts.theme]
    * @param {boolean} [opts.onlyNew]  skip the steps this player has seen already
+   * @param {string} [opts.from]  start at this step, skipping the ones before it
    */
-  function start(id, { roots = [doc], theme, onlyNew = false } = {}) {
+  function start(id, { roots = [doc], theme, onlyNew = false, from = null } = {}) {
     const tour = byId.get(id);
     if (!tour) return false;
     running?.stop();
     stopWaiting();
-    const skip = onlyNew ? progress.tours[id]?.seen || [] : [];
+    const skip = onlyNew ? [...(progress.tours[id]?.seen || [])] : [];
+    const at = from ? tour.steps.findIndex((step) => stepId(step) === from) : -1;
+    if (at > 0) skip.push(...tour.steps.slice(0, at).map(stepId));
     const started = generation;
     running = runTour(doc, tour, { roots, theme, isMet, skip, onEnd: (result) => record(tour, started, result) });
     return true;
@@ -336,10 +354,22 @@ export function createTours({ win, store, isMet, onMutation, now = () => Date.no
       return start(id, { ...opts, onlyNew: true });
     },
     /** Asks for a tour of another page; it starts when the player opens that page. */
-    request(id) {
+    request(id, { from = null } = {}) {
       if (!byId.has(id)) return Promise.resolve(false);
-      progress.pending = { id, at: now() };
+      progress.pending = { id, at: now(), ...(from ? { from } : {}) };
       return save();
+    },
+    /**
+     * Features the player just switched on (UXT-003, after an unlock): the first one
+     * with a tour has it asked for, starting at its step. A step already seen isn't.
+     */
+    unlocked(featureIds) {
+      for (const featureId of featureIds) {
+        const found = tourFor(featureId);
+        if (!found || progress.tours[found.id]?.seen.includes(found.from)) continue;
+        return this.request(found.id, { from: found.from });
+      }
+      return Promise.resolve(false);
     },
     /** On every location change: start a tour asked for on this page, once its first anchor shows. */
     update(loc, opts = {}) {
@@ -354,7 +384,7 @@ export function createTours({ win, store, isMet, onMutation, now = () => Date.no
         stopWaiting();
         progress.pending = null;
         save();
-        start(tour.id, opts);
+        start(tour.id, { ...opts, from: pending.from || null });
         return true;
       };
       if (go()) return;

@@ -1,5 +1,5 @@
 // Boot: load the settings, keys and upload queue, start the router, put the way into the
-// settings and the sidebar block in Torn's sidebar.
+// settings and the sidebar block in Torn's sidebar, and watch for new achievements.
 //
 // Torn Tracker Companion — https://github.com/tulpn/torn-tracker-companion
 // Copyright (C) 2026 tulpn. Licensed under the GNU GPL, version 3 or later.
@@ -16,6 +16,7 @@ import { mountEntry } from './core/entry.js';
 import { mountPage } from './core/page.js';
 import { mountSidebarBlock } from './core/sidebar.js';
 import { createTours } from './core/tours.js';
+import { createUnlocks } from './core/unlocks.js';
 import { tornTheme } from './core/tokens.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
@@ -56,6 +57,16 @@ export async function boot(win = globalThis) {
   await uploader.load();
   const site = createSite({ getKey: () => keys.script });
   await site.cache.load();
+  // Achievements (WP-UX-8): a toast when one is earned, the featured ones in the settings header.
+  const unlocks = createUnlocks({
+    doc: win.document,
+    site,
+    getSettings: () => settings,
+    store: { read: () => read(KEYS.unlocks), write: (value) => write(KEYS.unlocks, value) },
+    timers: win,
+    now: uploader.serverNow,
+  });
+  await unlocks.load();
   // Leaving the page is the player's own action; whatever is waiting goes with it.
   const onPageHide = () => uploader.flush({ keepalive: true });
   win.addEventListener('pagehide', onPageHide);
@@ -126,10 +137,14 @@ export async function boot(win = globalThis) {
     getKeys: () => keys,
     getQueue: () => uploader.status(),
     tours,
+    unlocks,
     onSave: async (nextSettings, nextKeys) => {
       const savedKeys = await applyKeys(nextKeys);
+      const wasOn = new Set(registry.filter((d) => isEnabled(settings, d.id)).map((d) => d.id));
       // The panel edits options and switches; features' own data is never its to change.
       const savedSettings = await apply({ ...nextSettings, featureData: settings.featureData });
+      // A feature just switched on: its page's tour starts at it next time (UXT-003).
+      if (savedSettings) await tours.unlocked(registry.filter((d) => isEnabled(settings, d.id) && !wasOn.has(d.id)).map((d) => d.id));
       return savedKeys && savedSettings;
     },
     onReset: () => apply({ ...defaults(registry), featureData: settings.featureData }),
@@ -137,6 +152,7 @@ export async function boot(win = globalThis) {
       uploader.clear();
       site.cache.clear();
       tours.reset();
+      unlocks.reset();
       const ok = await forget();
       settings = defaults(registry);
       keys = emptyKeys();
@@ -184,6 +200,7 @@ export async function boot(win = globalThis) {
     page.update(loc);
     runner.update(loc);
     tours.update(loc, { theme: tornTheme(win.document) });
+    unlocks.update(loc);
   }, win);
 
   log('started', VERSION, `${registry.length} features`);
@@ -196,6 +213,7 @@ export async function boot(win = globalThis) {
     entry,
     block,
     tours,
+    unlocks,
     uploader,
     get settings() {
       return settings;
@@ -203,6 +221,7 @@ export async function boot(win = globalThis) {
     stop() {
       stopRouter();
       tours.destroy();
+      unlocks.destroy();
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();

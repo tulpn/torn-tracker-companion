@@ -56,7 +56,13 @@ Open the settings from the **Torn Tracker** entry in Torn's sidebar, in the Area
 or in Torn PDA). They open as a page inside Torn, at `index.php#/torn-tracker`, with a menu
 of sections and a search box. Nothing is added to Torn's header.
 
-- **General**: the version, a link to check for an update, and console logging.
+- **General**: the version, a link to check for an update, the page's look, the
+  achievement switches, and console logging. When torn-tracker.com says you earned an
+  achievement, a small toast shows on the Torn page you're on, and your featured
+  achievements show at the top of the settings. For that, when you open a Torn page and at
+  most once every five minutes, it asks torn-tracker.com with your script key for the
+  achievements earned since it last asked; nothing else is sent, and never from the attack
+  page. Switch either off here; with both off, nothing is asked.
 - **Features**: every feature, grouped by area, with its switch, one line on what it does,
   its options and a link to its guide page.
 - **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, war,

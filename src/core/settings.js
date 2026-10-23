@@ -17,18 +17,23 @@
 // defaults its table in the spec gives.
 //
 // `look` is the settings page's theme (WP-UI-8): dark, light, or Torn's own.
+//
+// `achievements` holds the two switches of core/unlocks.js: the unlock toast and the
+// featured achievements in the settings header (WP-UX-8). Both start on.
 
 import { KEYS, read, write } from './storage.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
 import { inRange, shareKinds } from './registry.js';
 import { DISCLOSURE, kindOffered } from './disclosure.js';
 import { DEFAULT_LOOK, LOOKS } from './tokens.js';
+import { ACHIEVEMENT_DEFAULTS } from './unlocks.js';
 
 export function defaults(registry) {
   return {
     debug: false,
     look: DEFAULT_LOOK,
     sharingConsent: 0,
+    achievements: { ...ACHIEVEMENT_DEFAULTS },
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
     featureData: Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, d.data.empty])),
@@ -62,6 +67,11 @@ export function normalize(raw, registry) {
       ? given.sharingConsent
       : base.sharingConsent,
   };
+
+  const givenAchievements = given.achievements && typeof given.achievements === 'object' ? given.achievements : {};
+  out.achievements = Object.fromEntries(Object.entries(ACHIEVEMENT_DEFAULTS).map(([key, on]) => [
+    key, typeof givenAchievements[key] === 'boolean' ? givenAchievements[key] : on,
+  ]));
 
   const givenFeatures = given.features && typeof given.features === 'object' ? given.features : {};
   out.features = {};
