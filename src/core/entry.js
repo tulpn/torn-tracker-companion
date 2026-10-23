@@ -16,6 +16,7 @@
 // Areas entry and routes its page through the hash. No code was taken from either.
 
 import { el, ownChange } from './dom.js';
+import { followTorn } from './tokens.js';
 
 const P = 'ttc';
 export const ROUTE_HREF = '/index.php#/torn-tracker';
@@ -40,9 +41,10 @@ const LINK_NAME = "[class*='linkName']";
 export const OURS = '[data-ttc-open], [data-ttc-own]';
 
 const STYLE = `
+  ${followTorn(`.${P}-mark`)}
   .${P}-mark {
     display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none;
-    border-radius: 4px; background: #2e7d4f; color: #fff; font: 700 9px/1 Arial, sans-serif; letter-spacing: -.02em;
+    border-radius: 4px; background: var(--primary); color: var(--primary-foreground); font: 700 9px/1 Arial, sans-serif; letter-spacing: -.02em;
   }
   #${LINK_ID}[data-own] {
     display: flex; align-items: center; gap: 6px; min-height: 23px; margin: 2px 0; padding: 0 6px;

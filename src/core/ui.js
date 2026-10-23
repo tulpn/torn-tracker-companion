@@ -1,94 +1,94 @@
-// One look for everything the companion adds to Torn's pages (hq #224).
+// One look for everything the companion adds to Torn's pages (hq #224, WP-UI-8).
 //
 // Features never pick colours or sizes of their own: they ask for a badge, a strip, a
-// note or a small button here, with a tone that says what it means. One stylesheet,
-// built on Torn's own CSS variables where they exist, follows Torn's light and dark
-// themes (`body.dark-mode`) and wraps on a phone instead of overflowing. A badge whose
-// colour is the data itself (the fair-fight scale) passes it in as `--ttc-tone-bg`.
+// note or a small button here, with a tone that says what it means. Every colour, radius
+// and font comes from the suite's design tokens (core/tokens.js), declared on our own
+// elements only, in the theme Torn shows (`body.dark-mode`), and everything wraps on a
+// phone instead of overflowing. A badge whose colour is the data itself (the fair-fight
+// scale) passes it in as `--ttc-tone-bg`.
 
 import { el } from './dom.js';
+import { followTorn } from './tokens.js';
+import { TOKENS } from '../data/tokens.js';
 
 const P = 'ttc';
 export const TONES = Object.freeze(['good', 'neutral', 'warn', 'bad', 'info']);
 
+const OWN = `.${P}-ui-badge, .${P}-ui-strip, .${P}-ui-note, .${P}-ui-bar, .${P}-ui-button`;
+/** Each tone's ink; its background is the same colour, faint. */
+const INK = Object.freeze({
+  good: 'var(--tt-success)',
+  neutral: 'var(--muted-foreground)',
+  warn: 'var(--tt-warning)',
+  // The destructive red is a fill colour; as text on a dark card it needs lifting.
+  bad: 'color-mix(in srgb, var(--destructive) 65%, var(--foreground))',
+  info: 'var(--ring)',
+});
+const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
+
 const STYLE = `
+  ${followTorn(OWN)}
   .${P}-ui-badge {
-    --ttc-good-bg: rgba(39, 133, 82, .14); --ttc-good-fg: #1d6b40;
-    --ttc-neutral-bg: rgba(95, 107, 117, .14); --ttc-neutral-fg: #4a5560;
-    --ttc-warn-bg: rgba(196, 135, 0, .16); --ttc-warn-fg: #8a5a00;
-    --ttc-bad-bg: rgba(192, 57, 43, .14); --ttc-bad-fg: #a3271b;
-    --ttc-info-bg: rgba(45, 105, 170, .14); --ttc-info-fg: #23578f;
+    --ttc-ink: ${INK.neutral};
     display: inline-flex; align-items: center; gap: 4px; max-width: 100%; box-sizing: border-box;
     margin: 1px 0 1px 6px; padding: 1px 8px; border-radius: 999px;
-    font: 600 11px/16px system-ui, -apple-system, "Segoe UI", Arial, sans-serif; letter-spacing: .01em;
+    font: 600 11px/16px var(--tt-font-sans); letter-spacing: .01em;
     vertical-align: middle; white-space: normal; overflow-wrap: anywhere; text-decoration: none;
-    background: var(--ttc-neutral-bg); color: var(--ttc-neutral-fg);
+    background: ${tint('var(--ttc-ink)')}; color: var(--ttc-ink);
   }
-  .${P}-ui-badge[data-tone="good"] { background: var(--ttc-good-bg); color: var(--ttc-good-fg); }
-  .${P}-ui-badge[data-tone="warn"] { background: var(--ttc-warn-bg); color: var(--ttc-warn-fg); }
-  .${P}-ui-badge[data-tone="bad"] { background: var(--ttc-bad-bg); color: var(--ttc-bad-fg); }
-  .${P}-ui-badge[data-tone="info"] { background: var(--ttc-info-bg); color: var(--ttc-info-fg); }
+${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="${t}"] { --ttc-ink: ${INK[t]}; }`).join('\n')}
   .${P}-ui-badge[data-tone="scale"] { background: var(--ttc-tone-bg); color: #fff; min-width: 34px; justify-content: center; }
   .${P}-ui-badge[data-tone="scale"][data-ink="dark"] { color: #111; }
   .${P}-ui-badge[data-dim="true"] { opacity: .5; }
   a.${P}-ui-badge:hover { filter: brightness(.95); text-decoration: underline; }
-  body.dark-mode .${P}-ui-badge {
-    --ttc-good-bg: rgba(72, 187, 120, .2); --ttc-good-fg: #8fe0b0;
-    --ttc-neutral-bg: rgba(160, 170, 180, .18); --ttc-neutral-fg: #c9d1d9;
-    --ttc-warn-bg: rgba(240, 180, 40, .2); --ttc-warn-fg: #f3cd6b;
-    --ttc-bad-bg: rgba(240, 90, 75, .2); --ttc-bad-fg: #ff9e92;
-    --ttc-info-bg: rgba(90, 160, 240, .2); --ttc-info-fg: #9cc8ff;
-  }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
   /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
   .${P}-ui-badge[data-pin="under"] {
     position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); z-index: 1; margin: 0;
     padding: 0 7px; white-space: nowrap; font-size: 10px; line-height: 15px; pointer-events: none;
-    --ttc-pin-under: var(--default-bg-panel-color, #f2f2f2);
+    --ttc-pin-under: var(--default-bg-panel-color, var(--card));
+    background: linear-gradient(${tint('var(--ttc-ink)')}, ${tint('var(--ttc-ink)')}), var(--ttc-pin-under);
     box-shadow: 0 0 0 2px var(--ttc-pin-under);
   }
-  body.dark-mode .${P}-ui-badge[data-pin="under"] { --ttc-pin-under: #2a2a2a; }
-${['good', 'neutral', 'warn', 'bad', 'info'].map((t) => `  .${P}-ui-badge[data-pin="under"][data-tone="${t}"] { background: linear-gradient(var(--ttc-${t}-bg), var(--ttc-${t}-bg)), var(--ttc-pin-under); }`).join(' ')}
+  .${P}-ui-badge[data-pin="under"][data-tone="scale"] { background: var(--ttc-tone-bg); }
   .${P}-ui-strip {
+    --ttc-ink: ${INK.good};
     display: block; box-sizing: border-box; max-width: 100%; margin: 10px 0; padding: 10px 14px;
-    border-radius: 10px; border: 1px solid rgba(0, 0, 0, .08); border-left: 4px solid #278552;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
-    font: 13px/1.55 system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-    background: var(--default-bg-panel-color, #fff); color: var(--default-font-color, #2b2b2b);
+    border-radius: var(--radius); border: 1px solid var(--border); border-left: 4px solid var(--ttc-ink);
+    box-shadow: var(--tt-shadow-sm);
+    font: 13px/1.55 var(--tt-font-sans);
+    background: var(--card); color: var(--card-foreground);
     overflow-wrap: anywhere;
   }
-  .${P}-ui-strip[data-tone="bad"] { border-left-color: #c0392b; }
-  .${P}-ui-strip[data-tone="info"] { border-left-color: #2d69aa; }
+  .${P}-ui-strip[data-tone="bad"] { --ttc-ink: var(--destructive); }
+  .${P}-ui-strip[data-tone="info"] { --ttc-ink: var(--primary); }
   .${P}-ui-strip strong:first-child { display: block; margin-bottom: 4px; font-size: 13px; }
   .${P}-ui-strip ol, .${P}-ui-strip ul { margin: 4px 0 6px 18px; padding: 0; }
   .${P}-ui-strip li { margin: 2px 0; }
-  .${P}-ui-strip a { color: var(--default-blue-color, #2a5d9f); font-weight: 600; }
-  body.dark-mode .${P}-ui-strip {
-    background: var(--default-bg-panel-color, #2a2a2a); color: var(--default-font-color, #e3e3e3);
-    border-color: rgba(255, 255, 255, .08); box-shadow: none;
-  }
-  body.dark-mode .${P}-ui-strip a { color: var(--default-blue-color, #8ab4f8); }
-  .${P}-ui-note { display: block; margin-top: 2px; font: 11px/1.4 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; opacity: .75; overflow-wrap: anywhere; }
+  .${P}-ui-strip a { color: var(--ring); font-weight: 600; }
+  .${P}-ui-note { display: block; margin-top: 2px; font: 11px/1.4 var(--tt-font-sans); color: var(--muted-foreground); overflow-wrap: anywhere; }
   .${P}-ui-bar {
     display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0;
-    font: 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font: 12px var(--tt-font-sans);
   }
   .${P}-ui-button {
-    min-height: 26px; padding: 2px 12px; border: 1px solid rgba(0, 0, 0, .15); border-radius: 999px; cursor: pointer;
-    font: 600 11px/18px system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-    background: var(--default-bg-panel-color, #fff); color: var(--default-font-color, #333);
-    transition: background-color .15s, border-color .15s;
+    min-height: 26px; padding: 2px 12px; border: 1px solid var(--input); border-radius: 999px; cursor: pointer;
+    font: 600 11px/18px var(--tt-font-sans);
+    background: var(--card); color: var(--card-foreground);
+    transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
   }
-  .${P}-ui-button:hover:not(:disabled) { border-color: #278552; }
-  .${P}-ui-button[aria-pressed="true"], .${P}-ui-button[data-tone="good"] { background: #278552; border-color: #278552; color: #fff; }
-  .${P}-ui-button[data-tone="bad"] { background: rgba(192, 57, 43, .14); border-color: transparent; color: #a3271b; cursor: default; }
+  .${P}-ui-button:hover:not(:disabled) { border-color: var(--primary); }
+  .${P}-ui-button[aria-pressed="true"], .${P}-ui-button[data-tone="good"] {
+    background: var(--primary); border-color: var(--primary); color: var(--primary-foreground);
+  }
+  .${P}-ui-button[data-tone="bad"] { background: ${tint(INK.bad)}; border-color: transparent; color: ${INK.bad}; cursor: default; }
   .${P}-ui-button:disabled { cursor: default; }
-  .${P}-ui-button:focus-visible { outline: 2px solid #2d69aa; outline-offset: 2px; }
-  body.dark-mode .${P}-ui-button { background: var(--default-bg-panel-color, #2a2a2a); color: var(--default-font-color, #e3e3e3); border-color: rgba(255, 255, 255, .18); }
-  body.dark-mode .${P}-ui-button[data-tone="bad"] { background: rgba(240, 90, 75, .2); color: #ff9e92; }
+  .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   /* The best buy abroad: its whole row is outlined, without touching Torn's own styles. */
-  [class*='row___']:has(.${P}-best) { outline: 2px solid #278552; outline-offset: -2px; border-radius: 6px; }
+  /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
+  [class*='row___']:has(.${P}-best) { outline: 2px solid ${TOKENS.light['tt-success']}; outline-offset: -2px; border-radius: 6px; }
+  body.dark-mode [class*='row___']:has(.${P}-best) { outline-color: ${TOKENS.dark['tt-success']}; }
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
   }

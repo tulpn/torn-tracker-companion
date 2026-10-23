@@ -15,15 +15,19 @@
 //
 // The sidebar block (CMP-108) has a master switch and one switch per item, with the
 // defaults its table in the spec gives.
+//
+// `look` is the settings page's theme (WP-UI-8): dark, light, or Torn's own.
 
 import { KEYS, read, write } from './storage.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
 import { inRange, shareKinds } from './registry.js';
 import { DISCLOSURE, kindOffered } from './disclosure.js';
+import { DEFAULT_LOOK, LOOKS } from './tokens.js';
 
 export function defaults(registry) {
   return {
     debug: false,
+    look: DEFAULT_LOOK,
     sharingConsent: 0,
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
@@ -53,6 +57,7 @@ export function normalize(raw, registry) {
 
   const out = {
     debug: typeof given.debug === 'boolean' ? given.debug : base.debug,
+    look: LOOKS.includes(given.look) ? given.look : base.look,
     sharingConsent: Number.isInteger(given.sharingConsent) && given.sharingConsent > 0
       ? given.sharingConsent
       : base.sharingConsent,

@@ -41,8 +41,8 @@ without saving throws them away. After **Save** you stay on the page, and it say
 
 ## The sections
 
-- **General:** the version, a link to check for an update, and console logging for
-  troubleshooting.
+- **General:** the version, a link to check for an update, the page's **Look**, and
+  console logging for troubleshooting.
 - **Features:** every feature, grouped by area (war, travel, market, crimes, gym, jobs),
   each with its switch, one line on what it does, its options, and a **Learn more** link to
   its page here. A feature that's off doesn't run at all. **Reset settings to defaults** is
@@ -58,6 +58,9 @@ without saving throws them away. After **Save** you stay on the page, and it say
 - **Credits:** every script the companion took an idea from, with its licence and a link.
 - **Help:** this guide, troubleshooting, and where to report a problem.
 
-The page follows Torn's light or dark theme. When it's narrower than 600 px (on a phone
+The page is dark to start with, in torn-tracker.com's colours. Under **General → Look**
+you can make it light, or **Same as Torn** to follow Torn's own light or dark theme. What
+the companion adds to Torn's pages (labels, panels, the sidebar block) always follows
+Torn's theme, so it matches the page around it. When it's narrower than 600 px (on a phone
 or in PDA), its menu moves to the top and scrolls sideways; every button is big enough
 for a thumb.

@@ -165,6 +165,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   a note names every merit they can raise and what it costs, and each merit below its
   maximum shows its next level's cost. Pressing a name only scrolls to it; the script
   never upgrades. It reads only the tab and sends nothing. Core, no key needed.
+- **torn-tracker.com's colours** (hq #273, WP-UI-8). Every label, panel, button, the
+  sidebar block and the settings page now use the same colours, corners and type as
+  torn-tracker.com, so the companion and the site look like one product. Labels on Torn's
+  pages still follow Torn's light or dark theme. The settings page is dark to start with;
+  **General → Look** makes it light or has it follow Torn.
 
 ### Notes
 

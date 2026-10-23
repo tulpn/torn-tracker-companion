@@ -6,7 +6,7 @@
 // (core/entry.js). It is built from what the script already holds: opening it makes no
 // request. A menu of sections sits on the left, and across the top on a narrow screen;
 // each section is a plain link to #/torn-tracker/<section>, so Back and Forward work:
-//   General   version, the update link, console logging
+//   General   version, the update link, the page's look, console logging
 //   Features  each feature with its switch, one line on what it does, its options and a
 //             "Learn more" link to its knowledge base page, grouped by area
 //   Sidebar   the Torn Tracker sidebar block's master switch and one switch per item
@@ -17,7 +17,8 @@
 //   Help      the knowledge base and where to ask
 // A search box finds a setting in any section. Edits are kept in a draft until Save, so
 // moving between sections loses nothing; Close, or any link away, leaves without saving.
-// The page remembers the last section. It follows Torn's light or dark theme, and every
+// The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
+// dark unless the player picks light or Torn's own theme under General, and every
 // target is at least 44 px so it can be hit with a thumb in Torn PDA; under 600 px of
 // width the menu goes across the top.
 //
@@ -29,6 +30,7 @@ import { DISCLOSURE, TOS_COLUMNS, hasTosTable, kindOffered, sharingOffered } fro
 import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
+import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
 import { KEYS, backendName, read, write } from './storage.js';
@@ -61,6 +63,9 @@ const INTROS = Object.freeze({
   help: 'Guides, answers, and where to report a problem.',
 });
 
+/** The choices of the page's look; dark is the suite's default. */
+const LOOK_LABELS = Object.freeze({ dark: 'Dark', light: 'Light', torn: 'Same as Torn' });
+
 /** The areas features are grouped by, in the order the page lists them. */
 export const AREAS = Object.freeze([
   ['war', 'War and attacks'],
@@ -74,26 +79,23 @@ export const AREAS = Object.freeze([
 
 const STYLE = `
   #${P}-panel {
-    --ttc-bg: #f4f5f7; --ttc-surface: #ffffff; --ttc-text: #1f2328; --ttc-muted: #5f6b76;
-    --ttc-line: #e3e6ea; --ttc-accent: #278552; --ttc-accent-soft: rgba(39, 133, 82, .12); --ttc-accent-text: #fff;
-    --ttc-danger: #c0392b; --ttc-warn: #8a5a00; --ttc-link: #23578f; --ttc-field: #fff; --ttc-off: #c9ced4;
-    --ttc-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+    ${declarations('dark')}
+    --ttc-bg: var(--background); --ttc-surface: var(--card); --ttc-text: var(--foreground); --ttc-muted: var(--muted-foreground);
+    --ttc-line: var(--border); --ttc-accent: var(--primary); --ttc-accent-soft: color-mix(in srgb, var(--primary) 16%, transparent);
+    --ttc-accent-text: var(--primary-foreground); --ttc-danger: color-mix(in srgb, var(--destructive) 65%, var(--foreground));
+    --ttc-warn: var(--tt-warning); --ttc-good: var(--tt-success); --ttc-link: var(--ring); --ttc-field: var(--background);
+    --ttc-field-line: var(--input); --ttc-off: var(--input); --ttc-shadow: var(--tt-shadow-sm);
     display: block; container-type: inline-size; margin: 0 0 10px;
-    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ttc-text);
+    font: 14px/1.5 var(--tt-font-sans); color: var(--ttc-text);
   }
-  #${P}-panel[data-theme="dark"] {
-    --ttc-bg: #16181b; --ttc-surface: #1f2226; --ttc-text: #e6e8eb; --ttc-muted: #9aa4ae;
-    --ttc-line: #2e3238; --ttc-accent: #3fae6e; --ttc-accent-soft: rgba(63, 174, 110, .16); --ttc-accent-text: #0b0c0d;
-    --ttc-danger: #ff8a7d; --ttc-warn: #f3cd6b; --ttc-link: #8ab4f8; --ttc-field: #121416; --ttc-off: #4a5058;
-    --ttc-shadow: none;
-  }
+  #${P}-panel[data-theme="light"] { ${declarations('light')} }
   #${P}-panel[hidden] { display: none; }
   #${P}-panel *, #${P}-panel *::before, #${P}-panel *::after { box-sizing: border-box; }
   #${P}-panel .${P}-sheet {
     display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
     grid-template-areas: "head head" "nav main" "foot foot";
     width: 100%; min-width: 0; min-height: 70vh;
-    background: var(--ttc-bg); border-radius: 10px; border: 1px solid var(--ttc-line);
+    background: var(--ttc-bg); border-radius: var(--radius); border: 1px solid var(--ttc-line);
   }
   #${P}-panel .${P}-head {
     grid-area: head; display: flex; align-items: center; gap: 14px; padding: 12px 18px;
@@ -102,7 +104,7 @@ const STYLE = `
   #${P}-panel .${P}-brand { display: flex; align-items: center; gap: 10px; flex: none; }
   #${P}-panel .${P}-logo {
     display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px;
-    background: var(--ttc-accent); color: #fff; font: 800 13px/1 system-ui, Arial, sans-serif; letter-spacing: -.02em;
+    background: var(--ttc-accent); color: var(--ttc-accent-text); font: 800 13px/1 var(--tt-font-sans); letter-spacing: -.02em;
   }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
   #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
@@ -119,7 +121,7 @@ const STYLE = `
     color: var(--ttc-text); font-weight: 500; text-decoration: none;
   }
   #${P}-panel nav a:hover { background: var(--ttc-bg); text-decoration: none; }
-  #${P}-panel nav a[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-accent); font-weight: 700; }
+  #${P}-panel nav a[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-link); font-weight: 700; }
   #${P}-panel main { grid-area: main; padding: 18px 26px 26px; }
   #${P}-panel main > * { max-width: 760px; }
   #${P}-panel main h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
@@ -134,7 +136,7 @@ const STYLE = `
   #${P}-panel .${P}-card ul { margin: 6px 0 0 18px; padding: 0; }
   #${P}-panel .${P}-foot {
     grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 18px;
-    background: var(--ttc-surface); border-top: 1px solid var(--ttc-line); border-radius: 0 0 10px 10px;
+    background: var(--ttc-surface); border-top: 1px solid var(--ttc-line); border-radius: 0 0 var(--radius) var(--radius);
     position: sticky; bottom: 0; z-index: 1;
   }
   #${P}-panel .${P}-foot .${P}-status { flex: 1; min-width: 160px; }
@@ -145,8 +147,8 @@ const STYLE = `
   /* Toggle switches: drawn with backgrounds only, so they look the same in every browser. */
   #${P}-panel input[type=checkbox] {
     appearance: none; -webkit-appearance: none; flex: none; width: 40px; height: 24px; margin: 0; border-radius: 999px;
-    cursor: pointer; transition: background-color .15s, background-position .15s;
-    background: radial-gradient(circle, #fff 0 8px, transparent 9px) 2px 50% / 20px 20px no-repeat, var(--ttc-off);
+    cursor: pointer; transition: background-color var(--tt-duration-fast) var(--tt-ease), background-position var(--tt-duration-fast) var(--tt-ease);
+    background: radial-gradient(circle, var(--ttc-accent-text) 0 8px, transparent 9px) 2px 50% / 20px 20px no-repeat, var(--ttc-off);
   }
   #${P}-panel input[type=checkbox]:checked { background-color: var(--ttc-accent); background-position: 18px 50%; }
   #${P}-panel input[type=checkbox]:disabled { opacity: .45; cursor: default; }
@@ -154,13 +156,13 @@ const STYLE = `
   #${P}-panel input[type=text], #${P}-panel input[type=password], #${P}-panel input[type=number],
   #${P}-panel input[type=search], #${P}-panel select {
     width: 100%; min-height: 44px; padding: 8px 12px; background: var(--ttc-field); color: var(--ttc-text);
-    border: 1px solid var(--ttc-line); border-radius: 10px; font: inherit;
+    border: 1px solid var(--ttc-field-line); border-radius: var(--radius); font: inherit;
   }
   #${P}-panel input:focus-visible, #${P}-panel select:focus-visible { outline: 2px solid var(--ttc-accent); outline-offset: 1px; }
   #${P}-panel .${P}-option { margin-left: 52px; }
   #${P}-panel button, #${P}-panel a.${P}-btn {
     display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: 10px; cursor: pointer; font: inherit; font-weight: 600;
+    min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font: inherit; font-weight: 600;
     background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line); text-decoration: none;
   }
   #${P}-panel button:hover, #${P}-panel a.${P}-btn:hover { border-color: var(--ttc-accent); text-decoration: none; }
@@ -176,7 +178,7 @@ const STYLE = `
   }
   #${P}-panel .${P}-warn { color: var(--ttc-warn); margin-top: 6px; font-size: 13px; }
   #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; font-size: 13px; }
-  #${P}-panel .${P}-status[data-tone="good"] { color: var(--ttc-accent); }
+  #${P}-panel .${P}-status[data-tone="good"] { color: var(--ttc-good); }
   #${P}-panel dl { margin: 6px 0; }
   #${P}-panel dt { color: var(--ttc-muted); font-size: 12px; margin-top: 8px; }
   #${P}-panel dd { margin: 0; }
@@ -207,11 +209,6 @@ function addStyle(doc, root) {
   into.appendChild(style);
 }
 
-/** Torn marks its dark theme on the body; without it, the page is light. */
-export function themeOf(doc) {
-  const body = doc.body;
-  return body?.classList.contains('dark-mode') || body?.classList.contains('dark') ? 'dark' : 'light';
-}
 
 const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 const sectionIds = SECTIONS.map(([id]) => id);
@@ -487,6 +484,12 @@ export function mountPanel({
       h('div', { class: `${P}-card` },
         h('div', null, `${META.name}, version ${version}.`),
         h('div', { class: `${P}-muted` }, 'It updates itself from its newest release. ', link(RELEASES, 'Check for an update'))),
+      h('h4', null, 'Look'),
+      h('label', { class: `${P}-field` }, h('span', null, 'Colours of this page'),
+        h('select', { id: `${P}-look`, 'data-setting': 'look' }, ...LOOKS.map((look) => h('option', {
+          value: look, selected: look === draft.settings.look,
+        }, LOOK_LABELS[look])))),
+      h('div', { class: `${P}-muted` }, 'What the companion adds to Torn’s own pages always follows Torn’s theme.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
@@ -559,7 +562,7 @@ export function mountPanel({
   }
 
   function render(message = '', tone = '') {
-    panel.dataset.theme = themeOf(doc);
+    panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
     nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
       href: sectionHref(id), role: 'tab', 'data-tab': id, 'aria-selected': String(!query && id === section),
     }, title)));
@@ -605,6 +608,10 @@ export function mountPanel({
       draft.keys[key] = input.value;
     } else if (setting === 'debug') {
       draft.settings.debug = input.checked;
+    } else if (setting === 'look') {
+      // Shown at once, so the player sees it before saving; Close without Save puts it back.
+      draft.settings.look = input.value;
+      panel.dataset.theme = lookTheme(input.value, doc);
     } else if (sidebar === 'enabled') {
       draft.settings.sidebar.enabled = input.checked;
       for (const item of panel.querySelectorAll('[data-sidebar]')) {

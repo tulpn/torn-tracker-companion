@@ -365,11 +365,42 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.doesNotMatch(t.root.querySelector('#ttc-style').textContent, /position: fixed/);
   });
 
-  test('it follows Torn\u2019s dark theme', () => {
+  test('its look is dark by default, even on Torn\u2019s light theme (WP-UI-8)', () => {
     const t = mount();
-    t.window.document.body.classList.add('dark-mode');
     t.open();
     assert.equal(t.panel.panel.dataset.theme, 'dark');
+  });
+
+  test('set to Torn\u2019s look, it follows Torn\u2019s theme', () => {
+    const t = mount({ settings: { ...defaults(createRegistry([descriptor()])), look: 'torn' } });
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'light');
+    t.window.document.body.classList.add('dark-mode');
+    t.panel.close();
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'dark');
+  });
+
+  test('a new look shows at once, is kept by Save, and Close without Save puts it back', () => {
+    const t = mount();
+    t.open('general');
+    t.change(t.$('#ttc-look'), 'light');
+    assert.equal(t.panel.panel.dataset.theme, 'light');
+    t.panel.close();
+    t.open('general');
+    assert.equal(t.panel.panel.dataset.theme, 'dark');
+    assert.equal(t.$('#ttc-look').value, 'dark');
+    t.change(t.$('#ttc-look'), 'light');
+    t.click(t.$('button[data-act="save"]'));
+    assert.equal(t.saves.at(-1).settings.look, 'light');
+  });
+
+  test('its colours are the suite\u2019s tokens, for both themes, inside its Shadow DOM', () => {
+    const t = mount();
+    t.open();
+    const css = t.root.querySelector('#ttc-style').textContent;
+    assert.match(css, /#ttc-panel \{\s*--accent: /);
+    assert.match(css, /#ttc-panel\[data-theme="light"\] \{ --accent: /);
   });
 
   test('Forget me lives under Data, and asks before clearing', async () => {
