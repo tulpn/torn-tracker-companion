@@ -119,8 +119,7 @@ export default {
       }, SETTLE_MS);
     }
 
-    const ours = (r) => [r.target, ...r.addedNodes, ...r.removedNodes]
-      .every((n) => (n.nodeType === 1 ? n : n.parentElement)?.closest?.(`.${MARK}`));
+    const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (!records.every(ours)) later();
     }, doc);

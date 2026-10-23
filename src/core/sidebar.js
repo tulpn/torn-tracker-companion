@@ -14,9 +14,9 @@
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
 
-import { el } from './dom.js';
+import { el, ownChange } from './dom.js';
 import { SITE } from '../hosts.js';
-import { SIDEBAR } from './entry.js';
+import { OURS, SIDEBAR } from './entry.js';
 
 const P = 'ttc';
 export const BLOCK_ID = `${P}-sidebar-block`;
@@ -111,18 +111,35 @@ export function askedItems(settings) {
   return SIDEBAR_ITEMS.filter((item) => item.id !== 'links' && sb.items?.[item.id] === true).map((item) => item.id);
 }
 
-/** Where the block goes: after Torn's Lists, or after Areas when Lists can't be found. */
-function anchorOf(doc) {
+/** One of Torn's sidebar entries (Friends, Enemies, Targets under Lists). */
+const ENTRY = "[id^='nav-'], [class*='area-desktop'], [class*='area-mobile']";
+
+/**
+ * Where the block goes: after Torn's Lists, or after Areas when Lists can't be found.
+ * On the captured desktop sidebar (2026-10-23) Lists isn't a wrapper: it's a header with
+ * the h2 "Lists", followed by its entries as siblings. So the block goes after the last
+ * of those entries; where Lists is a wrapper, it has no such siblings, and the block
+ * goes after the wrapper.
+ */
+export function anchorOf(doc) {
   const areas = doc.querySelector(SIDEBAR);
   if (!areas) return null;
   const scope = doc.querySelector('#sidebarroot') || doc.querySelector('#sidebar') || doc.body;
   const heading = [...scope.querySelectorAll('h2, h3, [class*="title"], [class*="header"]')]
     .find((n) => n.children.length === 0 && n.textContent.trim() === 'Lists');
   if (heading) {
-    // Climb until the next step up would also hold Areas: that's the Lists block.
+    // Climb until the next step up would also hold Areas: that's the Lists header or block.
     let block = heading;
     while (block.parentElement && block.parentElement !== scope && !block.parentElement.contains(areas)) block = block.parentElement;
-    if (!block.contains(areas)) return block;
+    if (!block.contains(areas)) {
+      let last = block;
+      for (let n = block.nextElementSibling; n; n = n.nextElementSibling) {
+        if (n.id === BLOCK_ID) continue;
+        if (!n.matches(ENTRY)) break;
+        last = n;
+      }
+      return last;
+    }
   }
   return areas.closest("[class*='sidebar-block'], [class*='toggle-block']") || areas;
 }
@@ -314,9 +331,7 @@ export function mountSidebarBlock({
   }
 
   const stopWatching = onMutation((records) => {
-    const ours = records.every((r) => [r.target, ...r.addedNodes, ...r.removedNodes]
-      .every((n) => (n.nodeType === 1 ? n : n.parentElement)?.closest?.('[data-ttc-own], [data-ttc-open]')));
-    if (ours) return;
+    if (records.every((r) => ownChange(r, OURS))) return;
     timers.clearTimeout(placeTimer);
     placeTimer = timers.setTimeout(place, 200);
   }, doc);

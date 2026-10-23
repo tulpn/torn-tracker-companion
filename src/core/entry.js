@@ -15,7 +15,7 @@
 // the two places it looks for Areas; that The Contract (torncontracts.online) clones an
 // Areas entry and routes its page through the hash. No code was taken from either.
 
-import { el } from './dom.js';
+import { el, ownChange } from './dom.js';
 
 const P = 'ttc';
 export const ROUTE_HREF = '/index.php#/torn-tracker';
@@ -25,9 +25,19 @@ export const LINK_ID = `${P}-sidebar-link`;
 const LABEL = 'Torn Tracker';
 
 /** Class names on a copied entry that carry Torn's state, not its look. */
-const STATE_CLASS = /active|selected|current|highlight|blink|notification/i;
-/** Nodes in a copied entry that show Torn's counters. */
-const COUNTERS = "[class*='amount'], [class*='counter'], [class*='badge'], [class*='notification'], [class*='timer']";
+const STATE_CLASS = /active|selected|current|highlight|blink|notification|attention/i;
+/** Nodes in a copied entry that show Torn's counters, or act on the entry it came from. */
+const COUNTERS = "[class*='amount'], [class*='Amount'], [class*='counter'], [class*='badge'], [class*='notification'], [class*='timer'], button";
+/**
+ * One of Torn's own area entries, as the captured sidebar has them (2026-10-23):
+ * `#nav-home.area-desktop___…` holding `a.desktopLink___…` and `span.linkName___…`. The
+ * Areas list also holds its collapsible header, which has a link too: that is never
+ * the one copied.
+ */
+const AREA_ENTRY = "[id^='nav-'], [class*='area-desktop'], [class*='area-mobile']";
+const LINK_NAME = "[class*='linkName']";
+/** Every node the entry, the page host and the sidebar block add. */
+export const OURS = '[data-ttc-open], [data-ttc-own]';
 
 const STYLE = `
   .${P}-mark {
@@ -74,9 +84,9 @@ function scrub(root) {
  * to copy (then the entry is drawn in Torn's panel colours instead).
  */
 export function copyEntry(parent, doc = parent.ownerDocument) {
-  const source = [...parent.children].find((n) => n.id !== LINK_ID
-    && !/TornTools/.test(n.textContent || '')
-    && (n.matches('a[href]') || n.querySelector('a[href]')));
+  const entries = [...parent.children].filter((n) => n.id !== LINK_ID && n.matches(AREA_ENTRY)
+    && n.querySelector('a[href]') && n.querySelector(LINK_NAME));
+  const source = entries.find((n) => n.id === 'nav-home') || entries[0];
   if (!source) return null;
   const copy = source.cloneNode(true);
   scrub(copy);
@@ -86,7 +96,7 @@ export function copyEntry(parent, doc = parent.ownerDocument) {
   link.setAttribute('href', ROUTE_HREF);
   link.removeAttribute('target');
   // The name: Torn's own name span when it has one, otherwise the link's text.
-  const name = link.querySelector("[class*='linkName'], [class*='name']");
+  const name = link.querySelector(LINK_NAME);
   if (name) name.textContent = LABEL;
   const icon = link.querySelector('svg')?.parentElement;
   if (icon && icon !== link) icon.replaceChildren(mark(doc));
@@ -137,9 +147,7 @@ export function mountEntry({ doc = globalThis.document, isCurrent = () => false,
   let timer = null;
   const view = doc.defaultView || globalThis;
   const stopWatching = onMutation((records) => {
-    const ours = records.every((r) => [r.target, ...r.addedNodes, ...r.removedNodes]
-      .every((n) => (n.nodeType === 1 ? n : n.parentElement)?.closest?.(`[data-ttc-open], [data-ttc-own]`)));
-    if (ours) return;
+    if (records.every((r) => ownChange(r, OURS))) return;
     view.clearTimeout(timer);
     timer = view.setTimeout(place, 200);
   }, doc);

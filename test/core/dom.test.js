@@ -123,3 +123,23 @@ describe('CMP-006 text readers return null rather than guess', () => {
     assert.equal(readDuration(''), null);
   });
 });
+
+describe('ownChange: our own re-renders are ours', () => {
+  test('inside our node, adding ours, and removing ours (whose ancestors are gone) all count', async () => {
+    const { JSDOM: J } = await import('jsdom');
+    const { window } = new J('<div id="torn"><div class="ttc-x"><span>old</span></div></div>');
+    const { ownChange } = await import('../../src/core/dom.js');
+    const records = [];
+    const watch = new window.MutationObserver((rs) => records.push(...rs));
+    watch.observe(window.document.body, { childList: true, subtree: true });
+    const box = window.document.querySelector('.ttc-x');
+    box.replaceChildren(window.document.createElement('b')); // a re-render of ours
+    const mine = window.document.createElement('i');
+    mine.className = 'ttc-x';
+    window.document.getElementById('torn').append(mine); // ours added to Torn's node
+    window.document.getElementById('torn').append(window.document.createElement('p')); // Torn's own
+    await new Promise((r) => setTimeout(r, 0));
+    watch.disconnect();
+    assert.deepEqual(records.map((r) => ownChange(r, '.ttc-x')), [true, true, false]);
+  });
+});

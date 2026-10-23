@@ -3,7 +3,10 @@
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PREFIX, boot, closeAll, fakePdaStorage, readBuilt, readPackage } from './helpers.js';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { PREFIX, ROOT, boot, closeAll, fakePdaStorage, readBuilt, readPackage } from './helpers.js';
 
 const { version } = readPackage();
 
@@ -324,5 +327,35 @@ describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
     await new Promise((resolve) => setTimeout(resolve, 400));
     assert.ok(t.entry()?.isConnected);
     assert.deepEqual(t.violations, []);
+  });
+});
+
+describe('on Torn’s real sidebar (the owner’s capture, 2026-10-23)', () => {
+  const REAL = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-desktop.html'), 'utf8');
+
+  test('the entry is a copy of an area entry, not of the Areas header, right after TornTools Settings', async () => {
+    const t = await boot(REAL + PAGE);
+    const entry = t.entry();
+    assert.match(entry.className, /area-desktop/);
+    assert.equal(entry.previousElementSibling.textContent.trim(), 'TornTools Settings');
+    assert.equal(entry.querySelector('[class*="linkName"]').textContent, 'Torn Tracker');
+    assert.equal(entry.querySelector('a').getAttribute('href'), '/index.php#/torn-tracker');
+    assert.doesNotMatch(entry.textContent, /Areas/);
+    assert.equal(t.doc.querySelectorAll('[class*="header___"] .ttc-mark').length, 0, 'no header was copied');
+  });
+
+  test('the block goes after the last Lists entry, not between the heading and its entries', async () => {
+    const t = await boot(REAL + PAGE);
+    assert.equal(t.doc.getElementById('ttc-sidebar-block').previousElementSibling.id, 'nav-targets_list');
+  });
+
+  test('once placed, nothing keeps changing the page', async () => {
+    const t = await boot(REAL + PAGE);
+    await t.tick(500);
+    let changes = 0;
+    new t.window.MutationObserver((records) => { changes += records.length; })
+      .observe(t.doc.body, { childList: true, subtree: true, characterData: true });
+    await t.tick(1200);
+    assert.equal(changes, 0, 'our own re-renders must not wake us again');
   });
 });

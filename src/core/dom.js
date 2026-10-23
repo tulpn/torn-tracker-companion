@@ -44,6 +44,21 @@ export function onMutation(handler, doc = globalThis.document) {
   };
 }
 
+/**
+ * Whether a mutation is only our own doing: it happened inside one of our nodes, or it
+ * only added or removed our nodes. A removed node has no ancestors left, so closest()
+ * can't place it; it's judged by itself. Every observer uses this, so a re-render of our
+ * own content is never mistaken for Torn's and never wakes us again (a loop that kept
+ * the page busy, found on the owner's capture of 2026-10-23).
+ * @param {MutationRecord} record
+ * @param {string} selector  what our nodes match
+ */
+export function ownChange(record, selector) {
+  const own = (n) => Boolean((n.nodeType === 1 ? n : n.parentElement)?.closest?.(selector));
+  const moved = [...record.addedNodes, ...record.removedNodes];
+  return own(record.target) || (moved.length > 0 && moved.every(own));
+}
+
 /** Drops the shared observer. Tests use it between cases. */
 export function resetObserver() {
   handlers.clear();
