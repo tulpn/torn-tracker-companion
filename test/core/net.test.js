@@ -1,7 +1,7 @@
 import { beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { HostNotAllowedError, budgetLeft, request, resetBudget } from '../../src/core/net.js';
+import { HostNotAllowedError, budgetLeft, request, resetBudget, tagged } from '../../src/core/net.js';
 import { HOSTS, hostAllowed } from '../../src/hosts.js';
 
 const SITE = 'https://www.torn-tracker.com/api/feeds/prices?ids=1';
@@ -128,7 +128,7 @@ describe('CMP-007 Torn PDA\'s helpers are used when PDA provides them', () => {
     const result = await request(SITE, { headers: { Authorization: 'Bearer tt_feed_test' } });
     assert.equal(fetched, false);
     assert.deepEqual(result.data, { via: 'pda' });
-    assert.equal(seen[0][0], SITE);
+    assert.equal(seen[0][0], `${SITE}&ttc_v=0.0.0-dev&ttc_p=pda`);
     assert.equal(seen[0][1].Authorization, 'Bearer tt_feed_test');
   });
 
@@ -147,5 +147,27 @@ describe('CMP-007 Torn PDA\'s helpers are used when PDA provides them', () => {
     globalThis.PDA_httpGet = async () => ({ statusCode: 200, body: '{"via":"other"}' });
     const result = await request(SITE);
     assert.deepEqual(result.data, { via: 'other' });
+  });
+});
+
+describe('GDE-008 every torn-tracker.com request says the version and the platform (hq #233)', () => {
+  test('desktop or PDA, and the script version, as query parameters', () => {
+    assert.equal(tagged('https://www.torn-tracker.com/api/feeds/me/sidebar', {}),
+      'https://www.torn-tracker.com/api/feeds/me/sidebar?ttc_v=0.0.0-dev&ttc_p=desktop');
+    assert.equal(tagged(SITE, { PDA_httpGet: () => {} }), `${SITE}&ttc_v=0.0.0-dev&ttc_p=pda`);
+  });
+
+  test('Torn’s API is never told anything about the script', () => {
+    assert.equal(tagged(API, {}), API);
+  });
+
+  test('a fetch carries it too', async () => {
+    let asked = null;
+    stubFetch(async (url) => {
+      asked = url;
+      return new Response('{}');
+    });
+    await request(SITE);
+    assert.match(asked, /&ttc_v=[^&]+&ttc_p=desktop$/);
   });
 });

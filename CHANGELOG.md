@@ -163,6 +163,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   them. The Sharing tab says
   exactly what each one sends, and what torn-tracker.com keeps and publishes; the README
   has the same table. Everything starts off.
+- Every request to torn-tracker.com now says the script's version and whether it runs in
+  Torn PDA or a desktop browser (two query parameters, hq #233), so the guide's
+  second-device step can tick itself. Nothing else about your device is sent.
 - This version asks for no Torn API key.
 
 - There is no public release yet. Wave 1 — fair-fight badges, the war page, foreign stock

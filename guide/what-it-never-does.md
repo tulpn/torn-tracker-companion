@@ -24,6 +24,10 @@ keywords: torn scripting rules, is the companion allowed, safe torn userscript
 - **Nothing is shared until you say so.** Every kind starts off.
 - **Never your keys in the open.** Your script key stays on your device and is never
   written to the console.
+- **Almost nothing about your device.** Each request to torn-tracker.com says only the
+  script's version and whether it runs in Torn PDA or a desktop browser, so the guide can
+  tick [Use it on your other device](second-device.md) by itself. Torn's API is told
+  nothing about the script.
 
 ## Things it will never offer
 

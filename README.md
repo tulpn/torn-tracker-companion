@@ -21,6 +21,7 @@ repository's [`guide/`](guide/) folder, so you can read them here too.
 - One click does at most one game action. It fills in fields for you but never submits them.
 - It can share what it sees on those pages with torn-tracker.com, which publishes the combined data openly for every player and tool. Every kind is off until you switch it on. [What is shared](#what-is-shared) lists each kind exactly.
 - It updates itself automatically from this repository.
+- Every request it makes to torn-tracker.com says which version of the script is asking and whether it runs in Torn PDA or a desktop browser, so the guide can tick "use it on your second device" by itself. Nothing else about your device is sent, and Torn's API is never told.
 
 ## Installing it
 
