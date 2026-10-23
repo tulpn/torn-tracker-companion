@@ -161,6 +161,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   block sits after the last Lists entry instead of between the Lists heading and its
   entries. And the block no longer re-draws itself every fraction of a second, which had
   kept the page busy and held back other features' badges.
+- **Merit hints** (wave 3, CMP-301, hq #228). On the merits tab, when you have free merits:
+  a note names every merit they can raise and what it costs, and each merit below its
+  maximum shows its next level's cost. Pressing a name only scrolls to it; the script
+  never upgrades. It reads only the tab and sends nothing. Core, no key needed.
 
 ### Notes
 

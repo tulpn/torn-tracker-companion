@@ -16,6 +16,7 @@ Saved Torn pages and the JSON responses Torn's own pages request, for feature te
 | `crimes-burglary.html`, `crimes-burglary.json` | the burglary crime's target list, and the page's own `crimesData` response for it | **Synthetic**, classes and fields as Crime Morale (MIT) and the burglary helpers (MIT) read them |
 | `attack-data.json` | `page.php?sid=attackData` during a fight | **Synthetic**, fields as TornTools types them and Torn Loadout Share (MIT) reads them. Replace with a capture. |
 | `sidebar-desktop.html` | Torn's desktop sidebar: the Areas list (its header, four entries, TornTools' settings pill) and the Lists header with its three entries | **Captured** by the owner on 2026-10-23, with TornTools on. Nothing about the player; nodes the companion and The Contract had added removed; icons emptied |
+| `awards-merits.html` | the merits tab, `page.php?sid=awards&tab=merits`: the merits panel only | **Captured** by the owner on 2026-10-23. Torn's structure and class names as captured; every level, count and total made up, icons emptied |
 | `attack-data-before.json` | the same before the fight starts, defender's items not shown | **Synthetic**, as above |
 
 A capture replaces a synthetic file one for one. Strip anything about the player (name,

@@ -27,6 +27,7 @@ import raceTemplates from './race-templates/index.js';
 import stockAdvisor from './stock-advisor/index.js';
 import travelPanel from './travel-panel/index.js';
 import bustSafety from './bust-safety/index.js';
+import meritHints from './merit-hints/index.js';
 
 export default [
   ffBadges,
@@ -52,4 +53,5 @@ export default [
   stockAdvisor,
   travelPanel,
   bustSafety,
+  meritHints,
 ];
