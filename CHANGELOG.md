@@ -156,6 +156,12 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   for the lines you chose, with your script key; until the site serves that read, lines
   say "no data". Core.
 
+- **Fixed on Torn's real sidebar** (checked against the owner's capture). The Torn Tracker
+  entry is now a copy of one of Torn's area links, not of the Areas heading. The sidebar
+  block sits after the last Lists entry instead of between the Lists heading and its
+  entries. And the block no longer re-draws itself every fraction of a second, which had
+  kept the page busy and held back other features' badges.
+
 ### Notes
 
 - Sharing can be switched on for foreign shop stock, loadouts, bazaar listings, auction
