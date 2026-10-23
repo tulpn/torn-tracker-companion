@@ -1,22 +1,25 @@
 // The settings page (CMP-003, CMP-007, CMP-011, CMP-012, CMP-014, CMP-107 as reworked
-// on the owner's review, 2026-10-22).
+// on the owner's review, 2026-10-23).
 //
-// A full-screen page laid over the Torn page the player is on, like TornTools' own
-// settings, opened from the "Torn Tracker" sidebar link or the icon by the avatar
+// A page inside Torn, at /index.php#/torn-tracker (core/page.js puts it in Torn's main
+// column, in a Shadow DOM host), reached from the "Torn Tracker" entry in the sidebar
 // (core/entry.js). It is built from what the script already holds: opening it makes no
-// request. A menu of sections sits on the left, and across the top on a phone:
+// request. A menu of sections sits on the left, and across the top on a narrow screen;
+// each section is a plain link to #/torn-tracker/<section>, so Back and Forward work:
 //   General   version, the update link, console logging
 //   Features  each feature with its switch, one line on what it does, its options and a
 //             "Learn more" link to its knowledge base page, grouped by area
+//   Sidebar   the Torn Tracker sidebar block's master switch and one switch per item
 //   Sharing   the notice, a switch per kind with its "what is shared" line, the queue
 //   Keys      the script key, and the optional Torn API key behind Torn's terms table
 //   Data      what is kept on this device, and "Forget me"
 //   Credits   every script this one took code or an idea from
 //   Help      the knowledge base and where to ask
 // A search box finds a setting in any section. Edits are kept in a draft until Save, so
-// moving between sections loses nothing; Esc or Close leaves without saving. The page
-// remembers the last section. It follows Torn's light or dark theme, and every target is
-// at least 44 px so it can be hit with a thumb in Torn PDA.
+// moving between sections loses nothing; Close, or any link away, leaves without saving.
+// The page remembers the last section. It follows Torn's light or dark theme, and every
+// target is at least 44 px so it can be hit with a thumb in Torn PDA; under 600 px of
+// width the menu goes across the top.
 //
 // Everything is built with createElement and text nodes.
 
@@ -27,6 +30,7 @@ import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
 import { shareKinds } from './registry.js';
+import { SIDEBAR_ITEMS } from './sidebar.js';
 import { KEYS, backendName, read, write } from './storage.js';
 
 const P = 'ttc';
@@ -37,6 +41,7 @@ export const GUIDE = 'https://www.torn-tracker.com/guide/companion/';
 export const SECTIONS = Object.freeze([
   ['general', 'General'],
   ['features', 'Features'],
+  ['sidebar', 'Sidebar'],
   ['sharing', 'Sharing'],
   ['keys', 'Keys'],
   ['data', 'Data'],
@@ -48,6 +53,7 @@ export const SECTIONS = Object.freeze([
 const INTROS = Object.freeze({
   general: 'Your version, updates, and help when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Changes apply when you press Save.',
+  sidebar: 'A Torn Tracker block in Torn’s sidebar, under Lists, with a few live facts. Choose what it shows. All of it is Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
   data: 'What the companion keeps on this device, and how to clear it.',
@@ -72,8 +78,7 @@ const STYLE = `
     --ttc-line: #e3e6ea; --ttc-accent: #278552; --ttc-accent-soft: rgba(39, 133, 82, .12); --ttc-accent-text: #fff;
     --ttc-danger: #c0392b; --ttc-warn: #8a5a00; --ttc-link: #23578f; --ttc-field: #fff; --ttc-off: #c9ced4;
     --ttc-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
-    position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: center; align-items: stretch;
-    background: rgba(15, 18, 22, .55); backdrop-filter: blur(2px);
+    display: block; container-type: inline-size; margin: 0 0 10px;
     font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ttc-text);
   }
   #${P}-panel[data-theme="dark"] {
@@ -87,8 +92,8 @@ const STYLE = `
   #${P}-panel .${P}-sheet {
     display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
     grid-template-areas: "head head" "nav main" "foot foot";
-    width: min(1060px, 100%); min-width: 0; height: min(780px, 100%); margin: auto; overflow: hidden;
-    background: var(--ttc-bg); border-radius: 14px; box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+    width: 100%; min-width: 0; min-height: 70vh;
+    background: var(--ttc-bg); border-radius: 10px; border: 1px solid var(--ttc-line);
   }
   #${P}-panel .${P}-head {
     grid-area: head; display: flex; align-items: center; gap: 14px; padding: 12px 18px;
@@ -102,20 +107,20 @@ const STYLE = `
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
   #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
   #${P}-panel .${P}-head input[type=search] { flex: 1; min-width: 0; max-width: 420px; margin-left: auto; border-radius: 999px; padding-left: 16px; }
-  #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; }
+  #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head, #${P}-panel .${P}-foot { min-width: 0; }
   #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
     content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
     background: var(--ttc-accent-soft); color: var(--ttc-muted);
   }
-  #${P}-panel nav { grid-area: nav; overflow: auto; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
-  #${P}-panel nav button {
-    display: block; width: 100%; margin: 2px 0; padding: 8px 12px; text-align: left; border: 0; border-radius: 8px;
-    background: none; color: var(--ttc-text); font-weight: 500;
+  #${P}-panel nav { grid-area: nav; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
+  #${P}-panel nav a {
+    display: flex; align-items: center; min-height: 44px; margin: 2px 0; padding: 0 12px; border-radius: 8px;
+    color: var(--ttc-text); font-weight: 500; text-decoration: none;
   }
-  #${P}-panel nav button:hover { background: var(--ttc-bg); }
-  #${P}-panel nav button[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-accent); font-weight: 700; }
-  #${P}-panel main { grid-area: main; overflow: auto; padding: 18px 26px 26px; }
+  #${P}-panel nav a:hover { background: var(--ttc-bg); text-decoration: none; }
+  #${P}-panel nav a[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-accent); font-weight: 700; }
+  #${P}-panel main { grid-area: main; padding: 18px 26px 26px; }
   #${P}-panel main > * { max-width: 760px; }
   #${P}-panel main h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
   #${P}-panel main .${P}-intro { margin: 0 0 14px; color: var(--ttc-muted); }
@@ -129,7 +134,8 @@ const STYLE = `
   #${P}-panel .${P}-card ul { margin: 6px 0 0 18px; padding: 0; }
   #${P}-panel .${P}-foot {
     grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 18px;
-    background: var(--ttc-surface); border-top: 1px solid var(--ttc-line);
+    background: var(--ttc-surface); border-top: 1px solid var(--ttc-line); border-radius: 0 0 10px 10px;
+    position: sticky; bottom: 0; z-index: 1;
   }
   #${P}-panel .${P}-foot .${P}-status { flex: 1; min-width: 160px; }
   #${P}-panel label.${P}-check { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; font-weight: 600; }
@@ -152,13 +158,14 @@ const STYLE = `
   }
   #${P}-panel input:focus-visible, #${P}-panel select:focus-visible { outline: 2px solid var(--ttc-accent); outline-offset: 1px; }
   #${P}-panel .${P}-option { margin-left: 52px; }
-  #${P}-panel button {
+  #${P}-panel button, #${P}-panel a.${P}-btn {
+    display: inline-flex; align-items: center; justify-content: center;
     min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: 10px; cursor: pointer; font: inherit; font-weight: 600;
-    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line);
+    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line); text-decoration: none;
   }
-  #${P}-panel button:hover { border-color: var(--ttc-accent); }
-  #${P}-panel button.${P}-primary { background: var(--ttc-accent); color: var(--ttc-accent-text); border-color: var(--ttc-accent); }
-  #${P}-panel button.${P}-primary:hover { filter: brightness(1.05); }
+  #${P}-panel button:hover, #${P}-panel a.${P}-btn:hover { border-color: var(--ttc-accent); text-decoration: none; }
+  #${P}-panel .${P}-primary, #${P}-panel a.${P}-btn.${P}-primary { background: var(--ttc-accent); color: var(--ttc-accent-text); border-color: var(--ttc-accent); }
+  #${P}-panel .${P}-primary:hover { filter: brightness(1.05); }
   #${P}-panel button.${P}-danger { border-color: var(--ttc-danger); color: var(--ttc-danger); }
   #${P}-panel .${P}-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
   #${P}-panel .${P}-muted { color: var(--ttc-muted); font-size: 13px; margin-top: 2px; }
@@ -169,32 +176,35 @@ const STYLE = `
   }
   #${P}-panel .${P}-warn { color: var(--ttc-warn); margin-top: 6px; font-size: 13px; }
   #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; font-size: 13px; }
+  #${P}-panel .${P}-status[data-tone="good"] { color: var(--ttc-accent); }
   #${P}-panel dl { margin: 6px 0; }
   #${P}-panel dt { color: var(--ttc-muted); font-size: 12px; margin-top: 8px; }
   #${P}-panel dd { margin: 0; }
   #${P}-panel .${P}-credits { padding-left: 18px; }
   #${P}-panel .${P}-credits li { margin: 8px 0; }
-  @media (max-width: 700px) {
+  @container (max-width: 600px) {
     #${P}-panel .${P}-sheet {
       grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
-      grid-template-areas: "head" "nav" "main" "foot"; height: 100%; border-radius: 0;
+      grid-template-areas: "head" "nav" "main" "foot"; border-radius: 0;
     }
     #${P}-panel .${P}-head { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
     #${P}-panel .${P}-head input[type=search] { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
     #${P}-panel .${P}-head .${P}-x { margin-left: auto; }
     #${P}-panel .${P}-foot button { flex: 1; }
     #${P}-panel nav { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ttc-line); padding: 6px 8px; }
-    #${P}-panel nav button { width: auto; flex: none; white-space: nowrap; }
+    #${P}-panel nav a { flex: none; white-space: nowrap; }
     #${P}-panel main { padding: 14px 14px 20px; }
     #${P}-panel .${P}-option { margin-left: 0; }
   }
 `;
 
-function addStyle(doc) {
-  if (doc.getElementById(`${P}-style`)) return;
+/** The page's styles go where the page does: inside its Shadow DOM host. */
+function addStyle(doc, root) {
+  const into = root.nodeType === 11 ? root : doc.head;
+  if (into.querySelector(`#${P}-style`)) return;
   const style = el('style', { id: `${P}-style`, ownerDocument: doc });
   style.textContent = STYLE;
-  doc.head.appendChild(style);
+  into.appendChild(style);
 }
 
 /** Torn marks its dark theme on the body; without it, the page is light. */
@@ -208,6 +218,8 @@ const sectionIds = SECTIONS.map(([id]) => id);
 
 /**
  * @param {object} opts
+ * @param {Document} opts.doc
+ * @param {ShadowRoot|Element} [opts.root]  where the page goes (core/page.js's host)
  * @param {ReadonlyArray<object>} opts.registry
  * @param {() => object} opts.getSettings
  * @param {() => object} opts.getKeys
@@ -220,6 +232,7 @@ const sectionIds = SECTIONS.map(([id]) => id);
  */
 export function mountPanel({
   doc = globalThis.document,
+  root = doc.body,
   registry,
   getSettings,
   getKeys,
@@ -231,11 +244,14 @@ export function mountPanel({
   disclosure = DISCLOSURE,
   credits = CREDITS,
 }) {
-  addStyle(doc);
+  addStyle(doc, root);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
   const pda = onPda(doc.defaultView || globalThis);
+  /** Leaving goes back to Torn's home page, in the same document. */
+  const CLOSE = '#';
+  const sectionHref = (id) => `#/torn-tracker/${id}`;
 
-  const panel = h('div', { id: `${P}-panel`, hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': `${META.name} settings` });
+  const panel = h('div', { id: `${P}-panel`, role: 'region', 'aria-label': `${META.name} settings`, 'data-tour': 'companion-settings' });
   const search = h('input', { type: 'search', id: `${P}-search`, placeholder: 'Search settings', 'aria-label': 'Search settings', autocomplete: 'off' });
   const nav = h('nav', { 'aria-label': 'Settings sections' });
   const main = h('main');
@@ -246,16 +262,18 @@ export function mountPanel({
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       search,
-      h('button', { type: 'button', class: `${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close (Esc)' }, '\u2715')),
+      h('a', { href: CLOSE, class: `${P}-btn ${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close' }, '\u2715')),
     nav,
     main,
     h('div', { class: `${P}-foot` },
       status,
-      h('button', { type: 'button', 'data-act': 'close' }, 'Close'),
-      h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'save' }, 'Save'))));
-  doc.body.append(panel);
+      h('a', { href: CLOSE, class: `${P}-btn`, 'data-act': 'close' }, 'Close'),
+      h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'save', 'data-tour': 'companion-save' }, 'Save'))));
+  root.append(panel);
 
   let section = 'features';
+  /** Whether the route is showing; the draft lives as long as it does. */
+  let active = false;
   let query = '';
   let armedForget = false;
   /** What the player has changed and not yet saved. */
@@ -263,7 +281,7 @@ export function mountPanel({
 
   // The last section is a convenience kept on this device; any failure just means Features.
   read(KEYS.ui).then((ui) => {
-    if (sectionIds.includes(ui?.section)) section = ui.section;
+    if (!active && sectionIds.includes(ui?.section)) section = ui.section;
   }).catch(() => {});
 
   function freshDraft() {
@@ -273,6 +291,7 @@ export function mountPanel({
         ...settings,
         features: Object.fromEntries(Object.entries(settings.features).map(([id, f]) => [id, { ...f }])),
         shares: { ...settings.shares },
+        sidebar: { ...settings.sidebar, items: { ...settings.sidebar?.items } },
       },
       keys: { ...getKeys() },
     };
@@ -328,7 +347,7 @@ export function mountPanel({
         h('strong', null, 'Add your script key to see torn-tracker.com data. '),
         'Most features show estimates, prices and dibs from torn-tracker.com, and need your script key. '
         + 'Features that only read the page work without it.',
-        h('div', { class: `${P}-row` }, h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'tab', 'data-tab': 'keys' }, 'Add your script key'))));
+        h('div', { class: `${P}-row` }, h('a', { href: sectionHref('keys'), class: `${P}-btn ${P}-primary` }, 'Add your script key'))));
     }
     for (const [area, title] of AREAS) {
       const items = registry.filter((d) => d.area === area && matches(d.title, d.summary, title));
@@ -336,6 +355,35 @@ export function mountPanel({
       rows.push(h('h4', null, title), ...items.map(featureCard));
     }
     if (!query) rows.push(h('div', { class: `${P}-row` }, h('button', { type: 'button', 'data-act': 'reset' }, 'Reset settings to defaults')));
+    return rows;
+  }
+
+  // ------------------------------------------------------------ Sidebar
+
+  function sidebarBody() {
+    const sb = draft.settings.sidebar;
+    const rows = [];
+    if (matches('Torn Tracker sidebar block', 'Sidebar')) {
+      rows.push(h('div', { class: `${P}-card`, 'data-card': 'sidebar' },
+        h('label', { class: `${P}-check` },
+          h('input', { type: 'checkbox', id: `${P}-sidebar-enabled`, 'data-sidebar': 'enabled', checked: sb.enabled === true }),
+          'Show the Torn Tracker block in the sidebar'),
+        h('div', { class: `${P}-muted ${P}-option` },
+          'It asks torn-tracker.com at most once a minute, only while it’s open and you’re looking at the tab. ',
+          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more'))));
+    }
+    const items = SIDEBAR_ITEMS.filter((item) => matches(item.title, item.summary));
+    if (items.length && !query) rows.push(h('h4', null, 'What it shows'));
+    for (const item of items) {
+      rows.push(h('div', { class: `${P}-card`, 'data-card': `sidebar-${item.id}` },
+        h('label', { class: `${P}-check` },
+          h('input', {
+            type: 'checkbox', id: `${P}-sidebar-${item.id}`, 'data-sidebar': item.id,
+            checked: sb.items[item.id] === true, disabled: sb.enabled !== true,
+          }),
+          item.title),
+        h('div', { class: `${P}-muted ${P}-option` }, item.summary)));
+    }
     return rows;
   }
 
@@ -492,7 +540,7 @@ export function mountPanel({
   // ------------------------------------------------------------ frame
 
   const BODIES = {
-    general: generalBody, features: featuresBody, sharing: sharingBody, keys: keysBody,
+    general: generalBody, features: featuresBody, sidebar: sidebarBody, sharing: sharingBody, keys: keysBody,
     data: dataBody, credits: creditsBody, help: helpBody,
   };
 
@@ -500,7 +548,7 @@ export function mountPanel({
   function searchBody() {
     const rows = [];
     for (const [id, title] of SECTIONS) {
-      if (!['features', 'sharing', 'credits'].includes(id) && !matches(title)) continue;
+      if (!['features', 'sidebar', 'sharing', 'credits'].includes(id) && !matches(title)) continue;
       const body = BODIES[id]();
       const found = body.filter((n) => n.classList?.contains(`${P}-card`) || n.tagName === 'UL' || n.tagName === 'H4');
       if (!found.some((n) => n.classList?.contains(`${P}-card`) || (n.tagName === 'UL' && n.children.length)) && !matches(title)) continue;
@@ -510,16 +558,20 @@ export function mountPanel({
     return rows;
   }
 
-  function render(message = '') {
+  function render(message = '', tone = '') {
     panel.dataset.theme = themeOf(doc);
-    nav.replaceChildren(...SECTIONS.map(([id, title]) => h('button', {
-      type: 'button', role: 'tab', 'data-act': 'tab', 'data-tab': id, 'aria-selected': String(!query && id === section),
+    nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
+      href: sectionHref(id), role: 'tab', 'data-tab': id, 'aria-selected': String(!query && id === section),
     }, title)));
     const title = SECTIONS.find(([id]) => id === section)[1];
     main.replaceChildren(...(query ? searchBody() : [
       h('h3', null, title), h('p', { class: `${P}-intro` }, INTROS[section]), ...BODIES[section](),
     ]));
     status.textContent = message;
+    status.dataset.tone = tone;
+    // On a narrow screen the menu scrolls sideways: keep the open section in sight.
+    const current = nav.querySelector('[aria-selected=true]');
+    if (current && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = Math.max(0, current.offsetLeft - 8);
   }
 
   /** Keeps the draft in step with every input, so a section change loses nothing. */
@@ -530,7 +582,7 @@ export function mountPanel({
       render();
       return;
     }
-    const { feature, opt, share, key, setting } = input.dataset || {};
+    const { feature, opt, share, key, setting, sidebar } = input.dataset || {};
     if (feature && opt) {
       const current = draft.settings.features[feature]?.[opt];
       let value;
@@ -553,16 +605,21 @@ export function mountPanel({
       draft.keys[key] = input.value;
     } else if (setting === 'debug') {
       draft.settings.debug = input.checked;
+    } else if (sidebar === 'enabled') {
+      draft.settings.sidebar.enabled = input.checked;
+      for (const item of panel.querySelectorAll('[data-sidebar]')) {
+        if (item !== input && item.dataset.sidebar !== 'enabled') item.disabled = !input.checked;
+      }
+    } else if (sidebar) {
+      draft.settings.sidebar.items[sidebar] = input.checked;
     }
   }
 
-  // While the page is open, Torn's page behind it does not scroll.
-  let bodyOverflow = '';
-
+  /** The route closed: whatever wasn't saved is dropped. */
   function close() {
-    if (!panel.hidden) doc.body.style.overflow = bodyOverflow;
-    panel.hidden = true;
+    active = false;
     armedForget = false;
+    draft = null;
   }
 
   async function save(settings) {
@@ -580,36 +637,23 @@ export function mountPanel({
       return;
     }
     freshDraft();
-    close();
+    render('Saved.', 'good');
   }
 
   async function onClick(event) {
-    if (event.target === panel) {
-      close();
-      return;
-    }
     const button = event.target.closest('button[data-act]');
     if (!button) return;
     const act = button.dataset.act;
     if (act !== 'forget') armedForget = false;
 
-    if (act === 'tab') {
-      section = button.dataset.tab;
-      query = '';
-      search.value = '';
-      write(KEYS.ui, { section }).catch(() => {});
-      render();
-      main.scrollTop = 0;
-    } else if (act === 'save') {
+    if (act === 'save') {
       await save(draft.settings);
     } else if (act === 'consent') {
       await save({ ...draft.settings, sharingConsent: disclosure.version });
     } else if (act === 'reset') {
       await onReset();
       freshDraft();
-      render('Back to defaults.');
-    } else if (act === 'close') {
-      close();
+      render('Back to defaults.', 'good');
     } else if (act === 'forget') {
       if (!armedForget) {
         armedForget = true;
@@ -623,44 +667,42 @@ export function mountPanel({
     }
   }
 
-  function onKey(event) {
-    if (event.key === 'Escape' && !panel.hidden) close();
-  }
-
-  /** Opens the page, on a section when one is named. Nothing is requested. */
+  /**
+   * Shows the page on a section (AC5): a known name opens that section, an unknown one
+   * General, and '' or null the last section. Moving between sections keeps the draft;
+   * arriving from elsewhere starts a fresh one. Nothing is requested.
+   */
   function show(at) {
-    if (sectionIds.includes(at)) section = at;
-    freshDraft();
-    armedForget = false;
+    if (typeof at === 'string' && at) {
+      section = sectionIds.includes(at) ? at : 'general';
+      write(KEYS.ui, { section }).catch(() => {});
+    }
+    if (!active) {
+      freshDraft();
+      armedForget = false;
+      active = true;
+    }
     query = '';
     search.value = '';
     render();
-    if (panel.hidden) bodyOverflow = doc.body.style.overflow;
-    doc.body.style.overflow = 'hidden';
-    panel.hidden = false;
   }
 
   panel.addEventListener('click', onClick);
   panel.addEventListener('input', onInput);
   panel.addEventListener('change', onInput);
-  doc.addEventListener('keydown', onKey);
 
   return {
     panel,
     open: show,
     close,
-    toggle() {
-      if (panel.hidden) show();
-      else close();
-    },
+    isActive: () => active,
     render,
     /** The queue changed: refresh its lines if the Sharing section is showing. */
     updateQueue() {
-      const box = panel.hidden ? null : panel.querySelector(`#${P}-queue`);
+      const box = active ? panel.querySelector(`#${P}-queue`) : null;
       if (box) box.replaceChildren(...queueLines(getQueue()));
     },
     destroy() {
-      doc.removeEventListener('keydown', onKey);
       panel.remove();
     },
   };

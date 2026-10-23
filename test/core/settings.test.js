@@ -119,3 +119,26 @@ describe('CMP-003 a feature is on only when its switch says so', () => {
     assert.equal(isEnabled(undefined, 'war-enhancer'), false);
   });
 });
+
+describe('CMP-108 the sidebar block’s switches', () => {
+  test('on by default, with the spec’s items on and off', () => {
+    const { sidebar } = defaults(registry);
+    assert.equal(sidebar.enabled, true);
+    assert.deepEqual(Object.entries(sidebar.items).filter(([, on]) => !on).map(([id]) => id), ['travel', 'loot', 'gym', 'stocks']);
+  });
+
+  test('saved switches are kept; wrong types and unknown items fall back or go', () => {
+    const out = normalize({ sidebar: { enabled: 'no', items: { gym: true, chain: false, wrapped: true, war: 1 } } }, registry);
+    assert.equal(out.sidebar.enabled, true);
+    assert.equal(out.sidebar.items.gym, true);
+    assert.equal(out.sidebar.items.chain, false);
+    assert.equal(out.sidebar.items.war, true);
+    assert.equal('wrapped' in out.sidebar.items, false);
+  });
+
+  test('settings from before the block get its defaults (AC6)', () => {
+    const out = normalize({ debug: true, features: {} }, registry);
+    assert.equal(out.debug, true);
+    assert.deepEqual(out.sidebar, defaults(registry).sidebar);
+  });
+});

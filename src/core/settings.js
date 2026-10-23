@@ -12,8 +12,12 @@
 // starts off and only the player turns it on (CMP-014). A switch that is on still shares
 // nothing until the player has agreed to the current wording of what is shared:
 // `sharingConsent` holds the disclosure version they agreed to, 0 for none.
+//
+// The sidebar block (CMP-108) has a master switch and one switch per item, with the
+// defaults its table in the spec gives.
 
 import { KEYS, read, write } from './storage.js';
+import { SIDEBAR_ITEMS } from './sidebar.js';
 import { inRange, shareKinds } from './registry.js';
 import { DISCLOSURE, kindOffered } from './disclosure.js';
 
@@ -24,6 +28,10 @@ export function defaults(registry) {
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
     featureData: Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, d.data.empty])),
+    sidebar: {
+      enabled: true,
+      items: Object.fromEntries(SIDEBAR_ITEMS.map((item) => [item.id, item.on])),
+    },
   };
 }
 
@@ -76,6 +84,15 @@ export function normalize(raw, registry) {
   const givenData = given.featureData && typeof given.featureData === 'object' ? given.featureData : {};
   out.featureData = {};
   for (const d of registry.filter((f) => f.data)) out.featureData[d.id] = featureDataOf(d, givenData[d.id]);
+
+  const givenSidebar = given.sidebar && typeof given.sidebar === 'object' ? given.sidebar : {};
+  const givenItems = givenSidebar.items && typeof givenSidebar.items === 'object' ? givenSidebar.items : {};
+  out.sidebar = {
+    enabled: typeof givenSidebar.enabled === 'boolean' ? givenSidebar.enabled : base.sidebar.enabled,
+    items: Object.fromEntries(SIDEBAR_ITEMS.map((item) => [
+      item.id, typeof givenItems[item.id] === 'boolean' ? givenItems[item.id] : item.on,
+    ])),
+  };
 
   return out;
 }

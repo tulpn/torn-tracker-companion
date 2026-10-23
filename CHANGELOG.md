@@ -138,6 +138,23 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   cleaner header, toggle switches, a one-line intro under each section, readable names
   in drop-downs, and a single "add your script key" banner in place of a warning on
   every feature.
+- **Settings as a page inside Torn, opened from the sidebar only** (hq #231, CMP-107). The
+  icon by your avatar is gone: it broke Torn's header menu. So is the edge tab. The one
+  way in is the **Torn Tracker** entry in Torn's Areas list (right under TornTools
+  Settings if you have it, and in the slide-out menu on a phone or in PDA), drawn as a
+  copy of Torn's own entries. It opens `index.php#/torn-tracker`: the settings take the
+  place of Torn's home page in the main column while Torn's header, sidebar and chat stay,
+  and Back, Close or any link brings the home page back untouched. Sections have their
+  own addresses (`#/torn-tracker/sharing`). Saving keeps you on the page. Your settings
+  carry over unchanged.
+- **The Torn Tracker sidebar block** (hq #231, CMP-108). Under Lists in Torn's sidebar:
+  your chain with its timeout counting down, the ranked war's score and end, the war
+  terms, your med-out partner, your dibs, your OC ("needs you"), your guide progress and
+  quick links; best travel run, NPC loot, gym and stock watches can be switched on. Each
+  line has its own switch under the new **Sidebar** section, and the block a master
+  switch. While it's open and the tab is visible it asks torn-tracker.com once a minute
+  for the lines you chose, with your script key; until the site serves that read, lines
+  say "no data". Core.
 
 ### Notes
 

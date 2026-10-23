@@ -125,9 +125,18 @@ export async function boot(bodyHtml = '', opts = {}) {
     window,
     doc,
     violations,
-    /** The first way into the settings page: the sidebar link, the header icon or the edge tab. */
-    entry: () => doc.querySelector('[data-ttc-open]'),
-    panel: () => doc.getElementById(`${PREFIX}-panel`),
+    /** The one way into the settings page: the "Torn Tracker" entry in the sidebar. */
+    entry: () => doc.getElementById(`${PREFIX}-sidebar-link`),
+    /** The settings page, while the route shows it; null otherwise. */
+    panel: () => doc.getElementById(`${PREFIX}-page-host`)?.shadowRoot?.getElementById(`${PREFIX}-panel`) ?? null,
+    /** The player following a link to a hash on this page; the router hears it. */
+    async go(hash) {
+      const changed = new Promise((resolve) => window.addEventListener('hashchange', resolve, { once: true }));
+      const before = window.location.hash;
+      window.location.hash = hash;
+      if (window.location.hash !== before) await changed;
+      await tick(1); // the router settles on a timer of its own
+    },
     /** A player's click: a trusted event, not the .click() the guard forbids. */
     userClick(node) {
       nativeDispatch.call(node, new window.MouseEvent('click', { bubbles: true, cancelable: true }));

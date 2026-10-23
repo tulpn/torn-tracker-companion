@@ -10,12 +10,23 @@ const { version } = readPackage();
 after(closeAll);
 
 // A thin stand-in for a Torn page. Feature tests bring fixtures of the real markup.
-const PAGE = '<div id="mainContainer"><div class="content-wrapper"></div></div>';
+const PAGE = '<div id="mainContainer"><div class="content-wrapper"><div class="home">Torn home</div></div></div>';
 
-/** Opens the panel on one of its tabs, the way a player would. */
-function openOn(t, tab) {
-  if (t.panel().hidden) t.userClick(t.entry());
-  t.userClick(t.panel().querySelector(`button[data-tab="${tab}"]`));
+/** Torn's sidebar, as TornTools finds it, with or without TornTools' own entry. */
+const SIDEBAR = (tornTools) => `<div id="sidebar"><div class="sidebar-block___a"><div class="toggle-block___b">
+    <h2 class="title___c">Areas</h2>
+    <div class="areas___x1">
+      <div id="nav-home" class="area-desktop___d active___z"><div class="area-row___e"><a href="/index.php" class="desktopLink___f"><span class="svgIconWrap___g"><svg></svg></span><span class="linkName___h">Home</span></a></div></div>
+      <div id="nav-items" class="area-desktop___d"><div class="area-row___e"><a href="/item.php" class="desktopLink___f"><span class="svgIconWrap___g"><svg></svg></span><span class="linkName___h">Items</span><span class="amount___i">12</span></a></div></div>
+      ${tornTools ? '<div class="settings___tt pill"><span>TornTools Settings</span></div>' : ''}
+      <div id="nav-city" class="area-desktop___d"><div class="area-row___e"><a href="/city.php" class="desktopLink___f"><span class="linkName___h">City</span></a></div></div>
+    </div></div></div>
+    <div class="sidebar-block___a"><div class="toggle-block___b"><h2 class="title___c">Lists</h2><div class="toggle-content___j">Friends</div></div></div>
+  </div>`;
+
+/** Opens the settings on one of its sections, the way a player's link does. */
+async function openOn(t, tab) {
+  await t.go(`#/torn-tracker/${tab}`);
 }
 
 /** A player ticking a box: the property changes, then the browser says so. */
@@ -25,10 +36,10 @@ function userCheck(t, input, checked = true) {
 }
 
 describe('CMP-001 the built file boots on a Torn page', () => {
-  test('it adds a way into the settings and a hidden settings page', async () => {
-    const t = await boot(PAGE);
+  test('it adds a way into the settings, and the settings page only on its route', async () => {
+    const t = await boot(SIDEBAR(false) + PAGE);
     assert.ok(t.entry(), 'no way into the settings');
-    assert.equal(t.panel().hidden, true);
+    assert.equal(t.panel(), null);
   });
 
   test('it leaves Torn\'s own markup alone', async () => {
@@ -38,60 +49,59 @@ describe('CMP-001 the built file boots on a Torn page', () => {
   });
 
   test('CMP-030 it makes no request to torn.com, clicks nothing and submits nothing', async () => {
-    const t = await boot(PAGE, { url: 'https://www.torn.com/factions.php#/war/rank' });
-    t.userClick(t.entry());
+    const t = await boot(SIDEBAR(true) + PAGE, { url: 'https://www.torn.com/factions.php#/war/rank' });
     await t.tick();
+    assert.ok(t.entry());
     assert.deepEqual(t.violations, []);
   });
 });
 
 describe('CMP-107 the panel tells the player where their settings live', () => {
-  test('it opens from its way in and shows the version and where things are kept', async () => {
+  test('it opens on its route and shows the version and where things are kept', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.entry());
-    assert.equal(t.panel().hidden, false);
-    openOn(t, 'general');
+    await t.go('#/torn-tracker');
+    assert.ok(t.panel());
+    await openOn(t, 'general');
     assert.match(t.panel().textContent, new RegExp(`version ${version.replace(/\./g, '\\.')}\\b`));
-    openOn(t, 'data');
+    await openOn(t, 'data');
     assert.match(t.panel().textContent, /localStorage/);
   });
 
   test('the features in this build are listed by area, each with its switch', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.entry());
-    openOn(t, 'features');
+    await openOn(t, 'features');
     assert.match(t.panel().textContent, /Travel/);
     assert.equal(t.panel().querySelector(`#${PREFIX}-feature-foreign-stock`).checked, true);
   });
 
-  test('its way in closes the page again', async () => {
+  test('saving keeps the page open and says so', async () => {
     const t = await boot(PAGE);
-    t.userClick(t.entry());
-    t.userClick(t.entry());
-    assert.equal(t.panel().hidden, true);
+    await openOn(t, 'general');
+    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    await t.tick();
+    assert.match(t.panel().textContent, /Saved\./);
   });
 });
 
 describe('CMP-008 settings are kept on the device and validated on the way in', () => {
   test('a change is saved to localStorage', async () => {
     const t = await boot(PAGE);
-    openOn(t, 'general');
+    await openOn(t, 'general');
     userCheck(t, t.panel().querySelector(`#${PREFIX}-debug`));
     t.userClick(t.panel().querySelector('button[data-act="save"]'));
     await t.tick();
 
-    assert.equal(t.panel().hidden, true);
     assert.equal(JSON.parse(t.window.localStorage.getItem(`${PREFIX}_settings`)).debug, true);
   });
 
   test('garbage in storage falls back to the defaults', async () => {
     const t = await boot(PAGE, { savedSettings: '{"debug":"yes","junk":true}' });
-    openOn(t, 'general');
+    await openOn(t, 'general');
     assert.equal(t.panel().querySelector(`#${PREFIX}-debug`).checked, false);
   });
 
   test('settings that are not JSON at all do not stop the script', async () => {
-    const t = await boot(PAGE, { savedSettings: 'not json' });
+    const t = await boot(SIDEBAR(false) + PAGE, { savedSettings: 'not json' });
     assert.ok(t.entry());
   });
 
@@ -100,7 +110,7 @@ describe('CMP-008 settings are kept on the device and validated on the way in', 
     for (const key of ['ttc_settings', 'ttc_keys', 'ttc_queue', 'ttc_cache']) {
       t.window.localStorage.setItem(key, '{"x":1}');
     }
-    openOn(t, 'data');
+    await openOn(t, 'data');
 
     const forget = () => t.panel().querySelector('button[data-act="forget"]');
     t.userClick(forget());
@@ -120,7 +130,7 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
   test('settings go to PDA_storage when PDA injects it', async () => {
     const pda = fakePdaStorage();
     const t = await boot(PAGE, { pdaStorage: pda });
-    openOn(t, 'data');
+    await openOn(t, 'data');
     assert.match(t.panel().textContent, /PDA_storage/);
 
     t.userClick(t.panel().querySelector('button[data-act="save"]'));
@@ -132,7 +142,7 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
   test('the settings page is built for a thumb, and folds its menu on a phone', () => {
     const built = readBuilt();
     assert.match(built, /min-height: 44px; min-width: 44px/, 'every button is at least 44 px');
-    assert.match(built, /@media \(max-width: 700px\)/, 'the left menu becomes a top menu on a phone');
+    assert.match(built, /@container \(max-width: 600px\)/, 'the left menu becomes a top menu under 600 px');
     assert.doesNotMatch(built, /ttc-fab/, 'no floating button is left');
   });
 });
@@ -142,7 +152,7 @@ describe('CMP-011 the script key is kept on the device and never logged', () => 
 
   test('a key typed in the panel is saved to ttc_keys', async () => {
     const t = await boot(PAGE);
-    openOn(t, 'keys');
+    await openOn(t, 'keys');
     const field = t.panel().querySelector(`#${PREFIX}-key-script`);
     field.value = KEY;
     field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
@@ -159,7 +169,7 @@ describe('CMP-011 the script key is kept on the device and never logged', () => 
     try {
       const t = await boot(PAGE, { savedSettings: '{"debug":true}' });
       t.window.localStorage.setItem(`${PREFIX}_keys`, JSON.stringify({ script: KEY }));
-      openOn(t, 'keys');
+      await openOn(t, 'keys');
       const field = t.panel().querySelector(`#${PREFIX}-key-script`);
       field.value = KEY;
       field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
@@ -190,7 +200,7 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
 
   test('this build offers a switch for each kind it can share, every one off', async () => {
     const t = await boot(PAGE);
-    openOn(t, 'sharing');
+    await openOn(t, 'sharing');
     const switches = [...t.panel().querySelectorAll('[data-share]')];
     assert.deepEqual(switches.map((s) => s.dataset.share).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_stock', 'gym_progress', 'gym_train', 'item_market_snapshot', 'jail_difficulty', 'loadout']);
     assert.ok(switches.every((s) => !s.checked && !s.disabled));
@@ -198,53 +208,121 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
   });
 });
 
-describe('CMP-107 the ways into the settings, as the owner asked', () => {
-  const SIDEBAR = (tornTools) => `<div id="sidebar"><div class="areas___x1">
-    <div id="nav-home"><a href="/index.php">Home</a></div>
-    <div id="nav-items"><a href="/item.php">Items</a></div>
-    ${tornTools ? '<div class="settings___tt pill"><span>TornTools Settings</span></div>' : ''}
-    <div id="nav-city"><a href="/city.php">City</a></div>
-  </div></div>`;
+describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
   const HEADER = '<div id="topHeaderBanner"><div class="header-wrapper-top"><div class="menu"><a class="avatar___h1" href="/profiles.php?XID=1"><img src="/avatar.png"></a></div></div></div>';
 
-  test('AC1: with TornTools, the link sits directly after "TornTools Settings"', async () => {
+  test('AC1: with TornTools, the entry sits directly after "TornTools Settings"', async () => {
     const t = await boot(SIDEBAR(true) + PAGE);
-    const link = t.doc.getElementById(`${PREFIX}-sidebar-link`);
-    assert.ok(link);
-    assert.equal(link.previousElementSibling.textContent, 'TornTools Settings');
-    assert.match(link.textContent, /Torn Tracker/);
+    const entry = t.entry();
+    assert.ok(entry);
+    assert.equal(entry.previousElementSibling.textContent, 'TornTools Settings');
+    assert.match(entry.textContent, /Torn Tracker/);
   });
 
-  test('AC1: without TornTools, it is in Areas', async () => {
+  test('AC1: without TornTools, it is the last entry in Areas', async () => {
     const t = await boot(SIDEBAR(false) + PAGE);
-    const link = t.doc.getElementById(`${PREFIX}-sidebar-link`);
-    assert.equal(link.parentElement.className, 'areas___x1');
+    const entry = t.entry();
+    assert.equal(entry.parentElement.className, 'areas___x1');
+    assert.equal(entry.nextElementSibling, null);
   });
 
-  test('AC2: the icon by the avatar opens the same page', async () => {
-    const t = await boot(HEADER + PAGE);
-    const icon = t.doc.getElementById(`${PREFIX}-header-link`);
-    assert.ok(icon);
-    assert.equal(icon.nextElementSibling.className, 'avatar___h1');
-    t.userClick(icon);
-    assert.equal(t.panel().hidden, false);
+  test('AC1: in PDA\u2019s slide-out menu too', async () => {
+    const t = await boot(`<div class="areasWrapper"><div class="toggle-content___m">
+      <div class="area-mobile___n"><a href="/index.php"><span class="linkName___h">Home</span></a></div></div></div>${PAGE}`);
+    assert.equal(t.entry().parentElement.className, 'toggle-content___m');
   });
 
-  test('AC3: no floating button anywhere; the edge tab only where neither place exists', async () => {
-    const both = await boot(SIDEBAR(true) + HEADER + PAGE);
-    assert.equal(both.doc.getElementById(`${PREFIX}-fab`), null);
-    assert.equal(both.doc.getElementById(`${PREFIX}-edge-tab`), null);
-    const bare = await boot(PAGE);
-    assert.equal(bare.doc.getElementById(`${PREFIX}-fab`), null);
-    assert.ok(bare.doc.getElementById(`${PREFIX}-edge-tab`));
+  test('it is a copy of Torn\u2019s own entry: a plain link to the route, without ids, counters or "active"', async () => {
+    const t = await boot(SIDEBAR(false) + PAGE);
+    const entry = t.entry();
+    assert.equal(entry.className, 'area-desktop___d', 'Torn\u2019s look, without its active class');
+    const link = entry.querySelector('a');
+    assert.equal(link.getAttribute('href'), '/index.php#/torn-tracker');
+    assert.equal(link.querySelector('[class*="linkName"]').textContent, 'Torn Tracker');
+    assert.equal(entry.querySelector('svg'), null, 'our mark replaces Torn\u2019s icon');
+    assert.equal(entry.querySelector('[class*="amount"]'), null);
+    assert.equal(entry.querySelectorAll('[id]').length, 0);
+    assert.equal(t.doc.querySelectorAll('#nav-home').length, 1, 'Torn\u2019s own entry is untouched');
   });
 
-  test('when Torn redraws its sidebar, the link comes back', async () => {
+  test('AC2: nothing is added to Torn\u2019s header; no icon, edge tab or floating element anywhere', async () => {
+    for (const page of [SIDEBAR(true) + HEADER + PAGE, HEADER + PAGE, PAGE]) {
+      const t = await boot(page);
+      const header = t.doc.getElementById('topHeaderBanner');
+      if (header) assert.equal(header.querySelector('[id^="ttc"], [class*="ttc"], [data-ttc-open]'), null);
+      for (const id of ['ttc-header-link', 'ttc-edge-tab', 'ttc-fab']) assert.equal(t.doc.getElementById(id), null, id);
+      const fixed = [...t.doc.querySelectorAll('[id^="ttc"], [class^="ttc"], [data-ttc-own], [data-ttc-open]')]
+        .filter((n) => t.window.getComputedStyle(n).position === 'fixed');
+      assert.deepEqual(fixed, []);
+    }
+  });
+
+  test('AC3: the route shows the settings in the main column; Back brings Torn\u2019s home page back as it was', async () => {
+    const t = await boot(SIDEBAR(false) + PAGE);
+    const column = t.doc.querySelector('#mainContainer .content-wrapper');
+    const before = t.doc.querySelectorAll('*').length;
+    const home = column.querySelector('.home');
+
+    await t.go('#/torn-tracker');
+    assert.ok(t.panel());
+    assert.equal(t.doc.getElementById('ttc-page-host').parentElement, column);
+    assert.ok(t.doc.body.classList.contains('ttc-page'));
+    assert.equal(t.window.getComputedStyle(home).display, 'none', 'Torn\u2019s nodes are hidden');
+    assert.ok(home.isConnected, 'and never removed');
+    assert.equal(t.entry().querySelector('a').getAttribute('aria-current'), 'page');
+    assert.ok(t.doc.getElementById('sidebar').isConnected, 'the sidebar stays');
+
+    await t.go('');
+    assert.equal(t.panel(), null);
+    assert.equal(t.doc.body.classList.contains('ttc-page'), false);
+    assert.notEqual(t.window.getComputedStyle(home).display, 'none');
+    assert.equal(column.querySelector('.home'), home);
+    assert.equal(t.doc.querySelectorAll('*').length, before, 'the same nodes as before');
+    assert.equal(t.entry().querySelector('a').hasAttribute('aria-current'), false);
+  });
+
+  test('AC4: the route makes no request on mount, in any section', async () => {
+    const t = await boot(PAGE);
+    const calls = [];
+    const guarded = t.window.fetch;
+    t.window.fetch = (...args) => {
+      calls.push(String(args[0]));
+      return guarded(...args);
+    };
+    for (const section of ['', 'general', 'features', 'sidebar', 'sharing', 'keys', 'data', 'credits', 'help']) {
+      await t.go(`#/torn-tracker${section ? `/${section}` : ''}`);
+    }
+    assert.deepEqual(calls, []);
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('AC5: #/torn-tracker/sharing opens straight on Sharing; an unknown section opens General', async () => {
+    const t = await boot(PAGE, { url: 'https://www.torn.com/index.php#/torn-tracker/sharing' });
+    assert.equal(t.panel().querySelector('[aria-selected=true]').textContent, 'Sharing');
+    await t.go('#/torn-tracker/nonsense');
+    assert.equal(t.panel().querySelector('[aria-selected=true]').textContent, 'General');
+  });
+
+  test('the route lives only on Torn\u2019s home page', async () => {
+    const t = await boot(PAGE, { url: 'https://www.torn.com/factions.php#/torn-tracker' });
+    assert.equal(t.panel(), null);
+  });
+
+  test('AC6: settings saved by the last version carry over unchanged', async () => {
+    const saved = JSON.stringify({ debug: true, sharingConsent: 0, features: { 'foreign-stock': { enabled: false } }, shares: {} });
+    const t = await boot(PAGE, { savedSettings: saved });
+    await openOn(t, 'features');
+    assert.equal(t.panel().querySelector('#ttc-feature-foreign-stock').checked, false);
+    await openOn(t, 'general');
+    assert.equal(t.panel().querySelector('#ttc-debug').checked, true);
+  });
+
+  test('when Torn redraws its sidebar, the entry comes back', async () => {
     const t = await boot(SIDEBAR(false) + PAGE);
     const areas = t.doc.querySelector('.areas___x1');
     areas.replaceChildren(t.doc.createElement('div'));
     await new Promise((resolve) => setTimeout(resolve, 400));
-    assert.ok(t.doc.getElementById(`${PREFIX}-sidebar-link`)?.isConnected);
+    assert.ok(t.entry()?.isConnected);
     assert.deepEqual(t.violations, []);
   });
 });

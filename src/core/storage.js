@@ -17,6 +17,8 @@ export const KEYS = Object.freeze({
   cache: 'ttc_cache',
   /** the settings page's last section; a convenience, cleared by "Forget me" */
   ui: 'ttc_ui',
+  /** whether the sidebar block is open; a convenience, cleared by "Forget me" */
+  sidebar: 'ttc_sidebar',
 });
 
 const ALL = Object.freeze(Object.values(KEYS));

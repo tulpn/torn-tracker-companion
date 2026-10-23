@@ -14,7 +14,15 @@ export const CREDITS = Object.freeze([
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',
     url: 'https://github.com/Mephiles/torntools_extension',
-    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, how to set a React field so the form sees it, and totalling each side of a trade',
+    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, how to set a React field so the form sees it, totalling each side of a trade, and where its settings entry sits in the sidebar',
+    merged: false,
+  },
+  {
+    name: 'The Contract',
+    author: 'its author, at torncontracts.online',
+    licence: 'none',
+    url: 'https://torncontracts.online/',
+    taken: "the idea of a settings page inside Torn on a hash route, reached from a copy of one of Torn's own sidebar entries",
     merged: false,
   },
   {

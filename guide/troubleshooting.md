@@ -12,12 +12,13 @@ keywords: companion not working, torn userscript not showing, script key refused
 
 > **Test release.** The companion is in public testing. Things may change before version 1.
 
-## The Torn Tracker link doesn't appear
+## The Torn Tracker entry doesn't appear
 
 - Check the script is switched on in your script manager or in Torn PDA.
 - Reload the Torn page.
-- Look for the green **TT** icon by your avatar, or the **Torn Tracker** tab on the right
-  edge of the screen: some pages have no sidebar.
+- On a phone or in PDA, open Torn's menu: the entry is in its **Areas** list.
+- A few full-screen pages have no sidebar. Open another page, or go straight to
+  `torn.com/index.php#/torn-tracker`.
 - In PDA, check you added it [from its URL](install-pda.md#add-the-script-from-its-url).
 
 ## A feature stays quiet

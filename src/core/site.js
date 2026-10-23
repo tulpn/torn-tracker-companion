@@ -26,6 +26,7 @@ export const WAR_LOADOUTS_URL = `${SITE}/api/feeds/war/loadouts`;
 export const ME_MUGS_URL = `${SITE}/api/feeds/me/mugs`;
 export const STOCK_SIGNALS_URL = `${SITE}/api/feeds/stocks/signals`;
 export const TRAVEL_RUNS_URL = `${SITE}/api/feeds/me/travel/runs`;
+export const SIDEBAR_URL = `${SITE}/api/feeds/me/sidebar`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
@@ -105,6 +106,120 @@ export function readRosterRow(row, skew) {
   return {
     id: row.id, state, until: Number.isInteger(until) && until > 0 ? until * 1000 - skew : null, description,
   };
+}
+
+const whole = (v) => (Number.isInteger(v) && v >= 0 && v <= 1e13 ? v : null);
+
+/**
+ * One run from the travel runs read (TRV-050), with its landing time on the local clock;
+ * null when any field doesn't fit.
+ */
+export function readRun(r, skew = 0) {
+  const country = typeof r?.country === 'string' && /^[a-z-]{2,20}$/.test(r.country) ? r.country : null;
+  const lands = typeof r?.lands_at === 'string' ? Date.parse(r.lands_at) : NaN;
+  const hours = typeof r?.hours === 'number' && Number.isFinite(r.hours) && r.hours > 0 && r.hours < 100 ? r.hours : null;
+  const stops = Array.isArray(r?.stops) && r.stops.every((c) => typeof c === 'string' && /^[a-z-]{2,20}$/.test(c)) ? r.stops.slice(0, 3) : null;
+  if (!country || !positiveInt(r.item_id) || typeof r.item_name !== 'string' || !r.item_name || r.item_name.length > 60) return null;
+  if (!positiveInt(r.quantity) || whole(r.profit_per_hour) === null || !Number.isFinite(lands) || hours === null) return null;
+  return {
+    country,
+    stops,
+    item_id: r.item_id,
+    item_name: r.item_name,
+    quantity: r.quantity,
+    cash_needed: whole(r.cash_needed),
+    profit: whole(r.profit),
+    profit_per_hour: r.profit_per_hour,
+    hours,
+    lands_at: lands - skew,
+    accuracy: typeof r.accuracy === 'string' && r.accuracy.length <= 20 ? r.accuracy : null,
+    data_age_s: whole(r.data_age_s),
+  };
+}
+
+/** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
+export const SIDEBAR_KEYS = Object.freeze(['chain', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks']);
+const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
+const count = (v, max = 1e9) => Number.isInteger(v) && v >= 0 && v <= max;
+const score = (v) => count(v, 1e7);
+const time = (v, skew) => {
+  const at = typeof v === 'string' ? Date.parse(v) : NaN;
+  return Number.isFinite(at) ? at - skew : null;
+};
+
+/** Each sidebar item's reader: the checked value, or null when it doesn't fit. */
+const SIDEBAR_READERS = {
+  chain(v, skew) {
+    if (!count(v?.current, 1e5) || !count(v.max, 1e5)) return null;
+    return { current: v.current, max: v.max, timeoutAt: v.timeout_at === null ? null : time(v.timeout_at, skew) };
+  },
+  war(v, skew) {
+    if (!validName(v?.opponent_name) || !score(v.our_score) || !score(v.their_score) || !score(v.target)) return null;
+    return {
+      opponent: v.opponent_name, ours: v.our_score, theirs: v.their_score, target: v.target,
+      finishAt: v.finish_eta == null ? null : time(v.finish_eta, skew),
+    };
+  },
+  terms: (v) => (typeof v?.label === 'string' && v.label.trim() && v.label.length <= 120 ? { label: v.label.trim() } : null),
+  partner: (v) => (positiveInt(v?.torn_id) && validName(v.name) ? { id: v.torn_id, name: v.name } : null),
+  dibs(v, skew) {
+    if (!Array.isArray(v)) return null;
+    const rows = v.slice(0, 10).map((d) => ({
+      id: d?.target_id, name: d?.target_name, expiresAt: time(d?.expires_at, skew),
+    })).filter((d) => positiveInt(d.id) && validName(d.name) && d.expiresAt !== null);
+    return rows.length ? rows : null;
+  },
+  oc(v, skew) {
+    if (!positiveInt(v?.crime_id) || typeof v.name !== 'string' || !v.name || v.name.length > OC_NAME) return null;
+    if (!OC_STATES.includes(v.state) || typeof v.needs_me !== 'boolean') return null;
+    return { name: v.name, state: v.state, readyAt: v.ready_at == null ? null : time(v.ready_at, skew), needsMe: v.needs_me };
+  },
+  guide(v) {
+    if (!count(v?.done, 100) || !count(v.total, 100) || v.total === 0 || !count(v.bonuses_unclaimed, 100)) return null;
+    return { done: Math.min(v.done, v.total), total: v.total, bonuses: v.bonuses_unclaimed };
+  },
+  travel: (v, skew) => readRun(v, skew),
+  loot(v, skew, data) {
+    if (!Array.isArray(v)) return null;
+    const rows = v.slice(0, 10).map((n) => ({
+      id: n?.npc_id, name: n?.name, level: n?.level, nextAt: n?.next_level_at == null ? null : time(n.next_level_at, skew),
+    })).filter((n) => positiveInt(n.id) && validName(n.name) && count(n.level, 10));
+    const source = typeof data.source === 'string' && /^[a-z0-9 .-]{3,60}$/i.test(data.source) ? data.source : null;
+    return rows.length && source ? { npcs: rows, source } : null;
+  },
+  gym(v) {
+    if (typeof v?.next_gym !== 'string' || !v.next_gym || v.next_gym.length > 40 || !percent_(v.percent)) return null;
+    return { nextGym: v.next_gym, percent: v.percent, energy: count(v.energy_to_next, 1e7) ? v.energy_to_next : null };
+  },
+  stocks: (v) => (count(v?.watched, 100) && count(v.crossed, 100) && v.watched > 0 ? { watched: v.watched, crossed: Math.min(v.crossed, v.watched) } : null),
+};
+
+/**
+ * The sidebar read's answer, checked item by item. An item that was asked for and doesn't
+ * fit is null, the same as nothing to show; one that wasn't asked for is left out.
+ * @returns {{items: Map<string, object|null>, links: Array<{label: string, url: string}>}}
+ */
+export function readSidebar(data, asked, skew = 0) {
+  const items = new Map();
+  for (const key of asked) {
+    const reader = SIDEBAR_READERS[key];
+    if (!reader) continue;
+    const raw = data?.[key];
+    let value = null;
+    if (raw !== null && raw !== undefined) {
+      try {
+        value = reader(raw, skew, data);
+      } catch {
+        value = null;
+      }
+    }
+    items.set(key, value);
+  }
+  const links = (Array.isArray(data?.links) ? data.links : []).slice(0, 6)
+    .filter((l) => typeof l?.label === 'string' && l.label && l.label.length <= 30
+      && typeof l.url === 'string' && l.url.startsWith(`${SITE}/`) && l.url.length <= 200)
+    .map((l) => ({ label: l.label, url: l.url }));
+  return { items, links };
 }
 
 export const POSITIONS = Object.freeze(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
@@ -613,30 +728,8 @@ export function createSite({
       const n = Math.min(5, Math.max(1, Math.trunc(limit) || 3));
       const data = await call(`${TRAVEL_RUNS_URL}?limit=${n}`, { method: 'GET' });
       if (!data || typeof data !== 'object') return null;
-      const whole = (v) => (Number.isInteger(v) && v >= 0 && v <= 1e13 ? v : null);
-      const runs = [];
-      for (const r of Array.isArray(data.runs) ? data.runs.slice(0, n) : []) {
-        const country = typeof r?.country === 'string' && /^[a-z-]{2,20}$/.test(r.country) ? r.country : null;
-        const lands = typeof r?.lands_at === 'string' ? Date.parse(r.lands_at) : NaN;
-        const hours = typeof r?.hours === 'number' && Number.isFinite(r.hours) && r.hours > 0 && r.hours < 100 ? r.hours : null;
-        const stops = Array.isArray(r?.stops) && r.stops.every((c) => typeof c === 'string' && /^[a-z-]{2,20}$/.test(c)) ? r.stops.slice(0, 3) : null;
-        if (!country || !positiveInt(r.item_id) || typeof r.item_name !== 'string' || !r.item_name || r.item_name.length > 60) continue;
-        if (!positiveInt(r.quantity) || whole(r.profit_per_hour) === null || !Number.isFinite(lands) || hours === null) continue;
-        runs.push({
-          country,
-          stops,
-          item_id: r.item_id,
-          item_name: r.item_name,
-          quantity: r.quantity,
-          cash_needed: whole(r.cash_needed),
-          profit: whole(r.profit),
-          profit_per_hour: r.profit_per_hour,
-          hours,
-          lands_at: lands - skewOf(data),
-          accuracy: typeof r.accuracy === 'string' && r.accuracy.length <= 20 ? r.accuracy : null,
-          data_age_s: whole(r.data_age_s),
-        });
-      }
+      const skew = skewOf(data);
+      const runs = (Array.isArray(data.runs) ? data.runs.slice(0, n) : []).map((r) => readRun(r, skew)).filter(Boolean);
       const value = {
         runs,
         reason: data.reason === 'no_capacity' ? 'no_capacity' : null,
@@ -685,6 +778,28 @@ export function createSite({
       }
       demandMemo = { at: now(), value };
       return value;
+    },
+
+    /**
+     * The sidebar block's one read (CMP-108, companion-api §6.4): only the items asked
+     * for. Never cached: the block asks at most once a minute, and only while it's open
+     * and the tab is visible.
+     * @param {string[]} asked
+     * @returns {Promise<{status: 'ok', items: Map<string, object|null>, links: object[]}
+     *   | {status: 'no_key'|'refused'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async sidebar(asked) {
+      const ask = SIDEBAR_KEYS.filter((key) => asked.includes(key));
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const result = await exchange(`${SIDEBAR_URL}?items=${ask.join(',')}`, { method: 'GET' });
+      if (result.status === 401 || result.status === 403) return { status: 'refused' };
+      if (result.status === 429) {
+        const seconds = Number(result.retryAfter);
+        return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
+      }
+      if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
+      return { status: 'ok', ...readSidebar(result.data, ask, skewOf(result.data)) };
     },
 
     /** The site refused the current key (the panel says so). */

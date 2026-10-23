@@ -50,13 +50,18 @@ over a stable one. How a release is made is in [RELEASING.md](RELEASING.md).
 
 ## Settings
 
-Open the settings from the **Torn Tracker** link in Torn's sidebar (right under
-**TornTools Settings** if you have TornTools) or the green **TT** icon by your avatar. They
-open as a full page over the one you're on, with a menu of sections and a search box.
+Open the settings from the **Torn Tracker** entry in Torn's sidebar, in the Areas list
+(right under **TornTools Settings** if you have TornTools; in the slide-out menu on a phone
+or in Torn PDA). They open as a page inside Torn, at `index.php#/torn-tracker`, with a menu
+of sections and a search box. Nothing is added to Torn's header.
 
 - **General**: the version, a link to check for an update, and console logging.
 - **Features**: every feature, grouped by area, with its switch, one line on what it does,
   its options and a link to its guide page.
+- **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, war,
+  dibs, med-out partner and OC. Switch it off, or choose which lines it shows. While it is
+  open and the tab is visible, it asks torn-tracker.com once a minute for those lines,
+  with your script key; nothing else is sent.
 - **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
   starts off, switching a feature on never switches sharing on, and nothing is shared
   until you press "Share the kinds I picked". If the wording of what is shared changes
