@@ -81,7 +81,8 @@ of sections and a search box. Nothing is added to Torn's header.
 - **Keys**: your torn-tracker.com script key, which is not a Torn API key. An optional
   Torn API key field will appear here, below Torn's terms table, for features that need
   your own data.
-- **Data**: what the script keeps on this device, and "Forget me", which clears it all.
+- **Data**: what the script keeps on this device, export and import for your player notes
+  and racing templates, and "Forget me", which clears it all.
 - **Credits**: every script this one took code or an idea from.
 - **Help**: the companion guide and where to report a problem.
 

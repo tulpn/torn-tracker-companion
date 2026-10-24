@@ -6,7 +6,7 @@ import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
-import { mountPanel } from '../../src/core/panel.js';
+import { exportText, importText, mountPanel } from '../../src/core/panel.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults } from '../../src/core/settings.js';
 import { DISCLOSURE } from '../../src/core/disclosure.js';
@@ -413,6 +413,39 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.match(t.text(), /stored only on this device/);
     t.click(t.$('button[data-act="forget"]'));
     assert.equal(t.$('button[data-act="forget"]').textContent, 'Really forget everything?');
+  });
+
+  test('notes and templates export as text and import back, each kind checked by its feature', async () => {
+    const notes = descriptor({ id: 'notes', title: 'Player notes', data: { empty: { notes: [] }, validate: (v) => ({ notes: Array.isArray(v?.notes) ? v.notes.filter(Number.isInteger) : [] }) } });
+    const registry = createRegistry([notes]);
+    const t = mount({ registry, settings: { ...defaults(registry), featureData: { notes: { notes: [1, 2] } } } });
+    t.open('data');
+    assert.match(t.text(), /Your player notes as text/);
+    t.click(t.$('button[data-act="export"]'));
+    await settle();
+    const text = t.$('#ttc-transfer').value;
+    assert.deepEqual(JSON.parse(text), { kind: 'ttc-feature-data', version: 1, data: { notes: { notes: [1, 2] } } });
+
+    t.$('#ttc-transfer').value = JSON.stringify({ kind: 'ttc-feature-data', version: 1, data: { notes: { notes: [3, 'x'] }, other: {} } });
+    t.click(t.$('button[data-act="import"]'));
+    await settle();
+    assert.deepEqual(t.saves.at(-1).settings.featureData.notes, { notes: [3] });
+    assert.match(t.text(), /Imported: Player notes\./);
+
+    t.$('#ttc-transfer').value = '{"not":"ours"}';
+    t.click(t.$('button[data-act="import"]'));
+    await settle();
+    assert.equal(t.saves.length, 1, 'text that is not an export saves nothing');
+    assert.match(t.text(), /isn’t an export from the companion/);
+  });
+
+  test('the import text is checked before anything is read from it', () => {
+    const registry = createRegistry([descriptor({ id: 'n', data: { empty: { a: [] }, validate: () => ({ a: [] }) } })]);
+    assert.equal(importText(registry, 'not json'), null);
+    assert.equal(importText(registry, JSON.stringify({ kind: 'ttc-feature-data', version: 2, data: { n: {} } })), null);
+    assert.equal(importText(registry, JSON.stringify({ kind: 'ttc-feature-data', version: 1, data: { unknown: {} } })), null);
+    assert.equal(importText(registry, 'x'.repeat(500_001)), null);
+    assert.deepEqual(importText(registry, exportText(registry, { featureData: {} })), { n: { a: [] } });
   });
 
   test('Help links to the companion guide and to support', () => {
