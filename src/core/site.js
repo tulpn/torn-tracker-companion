@@ -13,7 +13,7 @@
 
 import { SITE } from '../hosts.js';
 import { createCache } from './cache.js';
-import { request } from './net.js';
+import { keyRefused, request } from './net.js';
 import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
 
 export const FF_URL = `${SITE}/api/feeds/ff`;
@@ -175,8 +175,9 @@ const SIDEBAR_READERS = {
   partner: (v) => (positiveInt(v?.torn_id) && validName(v.name) ? { id: v.torn_id, name: v.name } : null),
   dibs(v, skew) {
     if (!Array.isArray(v)) return null;
+    // The site sends an empty name for a target it hasn't seen yet: the row is shown by id.
     const rows = v.slice(0, 10).map((d) => ({
-      id: d?.target_id, name: d?.target_name, expiresAt: time(d?.expires_at, skew),
+      id: d?.target_id, name: d?.target_name === '' ? `#${d.target_id}` : d?.target_name, expiresAt: time(d?.expires_at, skew),
     })).filter((d) => positiveInt(d.id) && validName(d.name) && d.expiresAt !== null);
     return rows.length ? rows : null;
   },
@@ -199,6 +200,8 @@ const SIDEBAR_READERS = {
     return rows.length && source ? { npcs: rows, source } : null;
   },
   gym(v) {
+    // At the last gym there is no next one: the site sends both as null.
+    if (v?.next_gym === null && v.percent === null) return { nextGym: null, percent: null, energy: null };
     if (typeof v?.next_gym !== 'string' || !v.next_gym || v.next_gym.length > 40 || !percent_(v.percent)) return null;
     return { nextGym: v.next_gym, percent: v.percent, energy: count(v.energy_to_next, 1e7) ? v.energy_to_next : null };
   },
@@ -317,6 +320,15 @@ const LABEL = 40;
 export const WEIGHTS_SOURCE = 'tornprobability.com';
 const OC_NAME = 100;
 
+const BARE_SITE = SITE.replace('://www.', '://');
+
+/** A link on torn-tracker.com, or null; the bare host is moved to www, the one @connect names. */
+export function siteUrl(v) {
+  if (typeof v !== 'string' || v.length > 500) return null;
+  if (v.startsWith(`${SITE}/`)) return v;
+  return v.startsWith(`${BARE_SITE}/`) ? `${SITE}${v.slice(BARE_SITE.length)}` : null;
+}
+
 const percent_ = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100;
 const percent = (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100);
 
@@ -324,7 +336,7 @@ const percent = (v) => v === null || (typeof v === 'number' && Number.isFinite(v
 export function validRoles(v) {
   return Array.isArray(v) && v.length > 0 && v.length <= POSITIONS.length && v.every((r) => r
     && typeof r === 'object' && POSITIONS.includes(r.position_id)
-    && typeof r.label === 'string' && r.label.length > 0 && r.label.length <= LABEL
+    && typeof r.label === 'string' && r.label.length <= LABEL
     && percent(r.weight));
 }
 
@@ -414,7 +426,7 @@ export function createSite({
 
   async function exchange(url, opts) {
     const result = await send(url, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
-    if (result.status === 401 || result.status === 403) refusedKey = getKey();
+    if (keyRefused(result)) refusedKey = getKey();
     return result;
   }
 
@@ -826,7 +838,7 @@ export function createSite({
       const war = data?.war;
       if (!war || typeof war !== 'object' || !positiveInt(war.opponent_faction_id)) return null;
       const line = (v) => (typeof v === 'string' && v.trim() && v.length <= 200 ? v.trim() : null);
-      const url = typeof data.brief_url === 'string' && data.brief_url.startsWith(`${SITE}/`) ? data.brief_url : null;
+      const url = siteUrl(data.brief_url);
       return {
         opponent: war.opponent_faction_id,
         compare: line(data.compare),
@@ -913,7 +925,7 @@ export function createSite({
       if (!getKey()) return { status: 'no_key' };
       if (!usable()) return { status: 'refused' };
       const result = await exchange(`${SIDEBAR_URL}?items=${ask.join(',')}`, { method: 'GET' });
-      if (result.status === 401 || result.status === 403) return { status: 'refused' };
+      if (keyRefused(result)) return { status: 'refused' };
       if (result.status === 429) {
         const seconds = Number(result.retryAfter);
         return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
@@ -932,7 +944,7 @@ export function createSite({
       if (!usable()) return { status: 'refused' };
       const query = since ? `?since=${encodeURIComponent(since)}` : '';
       const result = await exchange(`${ACHIEVEMENTS_URL}${query}`, { method: 'GET' });
-      if (result.status === 401 || result.status === 403) return { status: 'refused' };
+      if (keyRefused(result)) return { status: 'refused' };
       if (result.status === 429) {
         const seconds = Number(result.retryAfter);
         return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 5 * 60_000 };

@@ -232,7 +232,7 @@ export function mountSidebarBlock({
       link(PLANNER_URL, `${r.country.replace(/-/g, ' ')} · ${r.item_name} · +${short(r.profit_per_hour)}/h`, true)),
     loot: (l) => row(h('b', null, 'Loot'), ...l.npcs.map((n) => ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''};`),
       h('span', { class: `${P}-sb-muted` }, ` (${l.source})`)),
-    gym: (g) => row(h('b', null, 'Gym'), ` ${Math.round(g.percent)}% to ${g.nextGym}`),
+    gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
     stocks: (s) => row(link(STOCKS_URL, `${s.crossed} of ${s.watched} watched stocks crossed`, true)),
   };
 

@@ -11,8 +11,8 @@ const HTML = '<div class="content-wrapper"><div class="content-title"><h4>Travel
 const LANDS = Date.parse('2026-10-22T14:20:00Z');
 
 const RUNS = [
-  { country: 'mexico', stops: null, item_id: 258, item_name: 'Jaguar Plushie', quantity: 29, profit_per_hour: 13500, lands_at: LANDS, accuracy: '±10 min', hours: 4.3 },
-  { country: 'cayman', stops: ['uk'], item_id: 1, item_name: 'Banana Orchid', quantity: 29, profit_per_hour: 9800, lands_at: LANDS, accuracy: null, hours: 6 },
+  { country: 'mexico', stops: null, item_id: 258, item_name: 'Jaguar Plushie', quantity: 29, profit_per_hour: 13500, lands_at: LANDS, accuracy: '92% within 5 min', hours: 4.3 },
+  { country: 'cayman', stops: ['cayman', 'uk'], item_id: 1, item_name: 'Banana Orchid', quantity: 29, profit_per_hour: 9800, lands_at: LANDS, accuracy: null, hours: 6 },
 ];
 
 function fakeSite(answer = { runs: RUNS, reason: null, basis: 'profit_per_hour' }) {
@@ -43,8 +43,9 @@ describe('TRV-050 a run as one line', () => {
     assert.equal(short(13500), '$13.5k');
     assert.equal(short(1_200_000), '$1.2m');
     assert.equal(tct(LANDS), '14:20');
-    assert.equal(runLine(RUNS[0]), 'Mexico: 29 Jaguar Plushie, +$13.5k/h, lands 14:20 TCT (±10 min)');
+    assert.equal(runLine(RUNS[0]), 'Mexico: 29 Jaguar Plushie, +$13.5k/h, lands 14:20 TCT (92% within 5 min)');
     assert.equal(runLine(RUNS[1]), 'Cayman Islands → United Kingdom: 29 Banana Orchid, +$9.8k/h, lands 14:20 TCT');
+    assert.equal(runLine({ ...RUNS[1], stops: ['uk'] }), 'Cayman Islands → United Kingdom: 29 Banana Orchid, +$9.8k/h, lands 14:20 TCT', 'an older reply without the lead country');
   });
 });
 

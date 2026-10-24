@@ -35,9 +35,11 @@ export function tct(ms) {
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
 
-/** "Mexico: 29 Jaguar Plushie, +$13.5k/h, lands 14:20 TCT (±10 min)". */
+/** "Mexico: 29 Jaguar Plushie, +$13.5k/h, lands 14:20 TCT (92% within 5 min)". */
 export function runLine(run) {
-  const where = run.stops?.length ? [run.country, ...run.stops].map(countryName).join(' → ') : countryName(run.country);
+  // The site's stops start with the run's own country; an older reply might not.
+  const stops = run.stops?.length ? (run.stops[0] === run.country ? run.stops : [run.country, ...run.stops]) : [run.country];
+  const where = stops.map(countryName).join(' → ');
   const sure = run.accuracy ? ` (${run.accuracy})` : '';
   return `${where}: ${run.quantity} ${run.item_name}, +${short(run.profit_per_hour)}/h, lands ${tct(run.lands_at)} TCT${sure}`;
 }

@@ -19,8 +19,8 @@ after(() => windows.forEach((w) => w.close()));
 
 const T0 = Date.UTC(2026, 9, 24, 12, 0, 0);
 const iso = (ms) => new Date(ms).toISOString();
-const NIGHT = { id: 'night-shift', name: 'Night shift', tier: null, points: 3, sentence: 'Hit during a war between 02:00 and 05:00 TCT.', earned_at: iso(T0), hidden: true };
-const CHAINS = { id: 'chains', name: 'Chain tracker', tier: 'silver', points: 10, sentence: 'Tracked 25 chains.', earned_at: iso(T0) };
+const NIGHT = { id: 'achievement-night_shift', name: 'Night shift', tier: null, points: 3, sentence: 'Hit during a war between 02:00 and 05:00 TCT.', earned_at: iso(T0), hidden: true };
+const CHAINS = { id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver', points: 10, sentence: 'Tracked 25 chains.', earned_at: iso(T0) };
 
 function fakeTimers() {
   let next = 1;
@@ -98,15 +98,15 @@ describe('WP-UX-8 the achievements read', () => {
         { ...CHAINS, id: 'long', sentence: 'x'.repeat(161) },
         { ...CHAINS, id: 'noname', name: '' },
       ],
-      featured: [{ id: 'chains', name: 'Chain tracker', tier: 'silver' }, { id: 'x', name: 'y', tier: 'tin' }, 'junk'],
+      featured: [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }, { id: 'x', name: 'y', tier: 'tin' }, 'junk'],
       url: 'https://evil.example/me/',
       server_time: iso(T0),
     });
-    assert.deepEqual(read.unlocked.map((a) => a.id), ['night-shift', 'chains', 'long']);
+    assert.deepEqual(read.unlocked.map((a) => a.id), ['achievement-night_shift', 'achievement-chain_tracker', 'long']);
     assert.equal(read.unlocked[0].hidden, true);
     assert.equal(read.unlocked[1].tier, 'silver');
     assert.equal(read.unlocked[2].sentence, null, 'too long a sentence is dropped, not cut');
-    assert.deepEqual(read.featured, [{ id: 'chains', name: 'Chain tracker', tier: 'silver' }]);
+    assert.deepEqual(read.featured, [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }]);
     assert.equal(read.url, 'https://www.torn-tracker.com/me/achievements/', 'a link off our site is replaced');
     assert.equal(read.cursor, iso(T0));
     assert.equal(readAchievements({ server_time: 'yesterday' }).cursor, null);
@@ -134,7 +134,7 @@ describe('WP-UX-8 the achievements read', () => {
     assert.equal((await none.achievements(null)).status, 'no_key');
     const slow = createSite({ getKey: () => KEY, send: async () => ({ ok: false, status: 429, data: null, retryAfter: '600' }) });
     assert.deepEqual(await slow.achievements(null), { status: 'wait', retryMs: 600_000 });
-    const refused = createSite({ getKey: () => KEY, send: async () => ({ ok: false, status: 403, data: null }) });
+    const refused = createSite({ getKey: () => KEY, send: async () => ({ ok: false, status: 403, data: { detail: 'token lacks the feeds:read scope' } }) });
     assert.equal((await refused.achievements(null)).status, 'refused');
   });
 });
@@ -223,7 +223,7 @@ describe('WP-UX-8 the unlock toast', () => {
     const settings = defaults(createRegistry([]));
     settings.achievements.toast = false;
     const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
-    const featured = [{ id: 'chains', name: 'Chain tracker', tier: 'silver' }];
+    const featured = [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }];
     const r = rig({ settings, stored: { cursor: iso(T0 - 1000) }, replies: [ok({ unlocked, featured })] });
     await r.unlocks.load();
     let told = 0;
@@ -265,7 +265,7 @@ describe('WP-UX-8 the switches and the settings header', () => {
     const registry = createRegistry([]);
     let current = defaults(registry);
     const saves = [];
-    let featured = [{ id: 'chains', name: 'Chain tracker', tier: 'silver' }, { id: 'night-shift', name: 'Night shift', tier: null }];
+    let featured = [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }, { id: 'achievement-night_shift', name: 'Night shift', tier: null }];
     const listeners = new Set();
     const unlocks = { featured: () => featured, onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); } };
     const panel = mountPanel({

@@ -201,6 +201,15 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   With your script key it asks torn-tracker.com at most every 15 minutes, when you open a
   Torn page; switch it off under **General → Guide**.
 
+### Fixed
+
+- Checked against torn-tracker.com's real replies. Only a key the site refuses now
+  pauses your reads and sharing; "you're not the director" or "Pro only" answers just
+  that one read. The sidebar shows "every gym unlocked" at the last gym, and a dibs
+  target without a name yet by its id. The travel panel no longer names the first
+  country twice on a multi-stop run, the OC helper keeps its weights when the site has no
+  name for one role, and the pre-war strip's link to the full brief shows again.
+
 ### Notes
 
 - Sharing can be switched on for foreign shop stock, loadouts, bazaar listings, auction

@@ -19,7 +19,7 @@ const HTML = `<div id="sidebar"><a href="/profiles.php?XID=9">Me in the sidebar<
 
 function fakeSite({ allowed = true, cards = {
   101: { merits: 10, job_points: 1234, fit: 'good', card_url: 'https://www.torn-tracker.com/jobs/c/1/' },
-  102: { merits: null, job_points: null, fit: 'poor', card_url: null },
+  102: { merits: null, job_points: null, fit: 'poor', card_url: 'https://www.torn-tracker.com/jobs/c/2/' },
 } } = {}) {
   const calls = [];
   return {
