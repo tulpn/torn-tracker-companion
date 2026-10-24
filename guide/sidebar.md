@@ -32,6 +32,7 @@ Each line is one thing you'd otherwise open the website or Discord for:
 | **My dibs** | the targets you hold, each with its time left, linking to its attack page | on |
 | **Organised Crime** | your OC and its state, and **needs you** when it's waiting on you | on |
 | **Guide** | your progress in the torn-tracker guide, and any bonus to claim | on |
+| **Below shop price** | on the Item Market, how many listings on screen sell below what a shop pays (see [Shop price guard](shop-price-guard.md)) | on |
 | **Quick links** | your dashboard and the guide on torn-tracker.com | on |
 | **Best travel run** | your planner's best run, like "Mexico · Jaguar Plushie · +$13.5k/h" | off |
 | **NPC loot** | the next loot level per NPC and when it comes, with its source named | off |

@@ -14,6 +14,7 @@
 import { SITE } from '../hosts.js';
 import { createCache } from './cache.js';
 import { request } from './net.js';
+import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
 
 export const FF_URL = `${SITE}/api/feeds/ff`;
 export const PRICES_URL = `${SITE}/api/feeds/prices`;
@@ -45,6 +46,12 @@ export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
 export const LOADOUT_FLAGS = Object.freeze(['heavy_hitter', 'armoured', 'temp_ready']);
 const WAR_LOADOUTS_TTL = 60_000;
 const OPEN_LOADOUT_TTL = 10 * 60_000;
+/**
+ * The item catalogue's shop prices (CMP-109): public, asked anonymously, kept 24 hours.
+ * The shape is the companion's proposal on hq #363 until companion-api.md names it.
+ */
+export const SHOP_PRICES_URL = `${SITE}/api/open/v1/items/shops`;
+const DAY = 24 * 3_600_000;
 const SLOT_NAMES = ['primary', 'secondary', 'melee', 'temporary', 'helmet', 'body', 'gloves', 'pants', 'boots'];
 
 /** CAPI-013: the demand feed is kept 60 s; at most 500 ids per kind. */
@@ -369,6 +376,9 @@ export const SPACES = Object.freeze({
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
   guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
+  shops: { ttlMs: DAY, max: 1, valid: validShopRows },
+  // The site had no table: the built-in one serves for an hour before it is asked again.
+  shopsMissed: { ttlMs: HOUR, max: 1, valid: (v) => v === true },
 });
 
 /**
@@ -396,6 +406,8 @@ export function createSite({
   const myMugs = new Map();
   /** Auction listing values by listing id (#199: kept 10 minutes; null = the site has none). */
   const auctionValues = new Map();
+  /** The shop price read in flight, so a page asks once however many features want it. */
+  let shopsAsking = null;
 
   const headers = () => ({ Authorization: `Bearer ${getKey()}`, Accept: 'application/json' });
   const usable = () => Boolean(getKey()) && getKey() !== refusedKey;
@@ -487,6 +499,31 @@ export function createSite({
         found.set(row.item_id, row.market);
       }
       return found;
+    },
+
+    /**
+     * What a shop pays for each item (CMP-109): the site's table, kept 24 hours, or the
+     * table built into this release when the site has none. Public data: asked without
+     * the script key, so it works before the player has one.
+     * @returns {Promise<Map<number, import('./shops.js').ShopPrice>>}
+     */
+    async shops() {
+      const cached = cache.get('shops', 'all');
+      if (cached) return tableOf(cached);
+      if (cache.get('shopsMissed', 'all')) return BUILT_IN;
+      shopsAsking ||= send(SHOP_PRICES_URL, { method: 'GET', headers: { Accept: 'application/json' } })
+        .then((result) => {
+          const rows = result.ok ? readShopReply(result.data) : null;
+          if (rows) cache.set('shops', 'all', rows);
+          else cache.set('shopsMissed', 'all', true);
+          return rows;
+        })
+        .catch(() => null)
+        .finally(() => {
+          shopsAsking = null;
+        });
+      const rows = await shopsAsking;
+      return rows ? tableOf(rows) : BUILT_IN;
     },
 
     /**

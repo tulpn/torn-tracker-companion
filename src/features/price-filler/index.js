@@ -2,9 +2,10 @@
 //
 // On the bazaar's add and manage pages and the item market's sell form, each row gets a
 // "Fill" button. A press fills that row's price (the site's market value minus the
-// player's undercut) and, where the form has one, the quantity the player owns. Torn's
-// own button still has to be pressed by the player: the script never submits, never
-// presses anything of Torn's, and one press fills one row.
+// player's undercut) and, where the form has one, the quantity the player owns. It never
+// fills below what a shop in Torn pays for the item, and says so when it stopped there
+// (CMP-109). Torn's own button still has to be pressed by the player: the script never
+// submits, never presses anything of Torn's, and one press fills one row.
 //
 // Inspiration: Torn Bazaar Filler (Ramin Quluzade and Silmaril, MIT,
 // https://greasyfork.org/scripts/473470) and Torn Market Filler (Silmaril, MIT,
@@ -13,6 +14,7 @@
 // Torn's mobile Manage button are deliberately not here (CMP-900).
 
 import { el } from '../../core/dom.js';
+import { shopName } from '../../core/shops.js';
 import { fillRow, itemIdOf, ownedOf, priceFrom } from './fill.js';
 import { FORMS, formFor } from './selectors.js';
 
@@ -26,6 +28,15 @@ let page = null;
 let alive = false;
 
 const money = (n) => `$${n.toLocaleString('en-US')}`;
+
+/**
+ * Never fills below what a shop in Torn pays (CMP-109): the market price, or the shop's
+ * when that is higher, with the shop that set it.
+ */
+export function floored(price, shop) {
+  if (price === null || !shop || shop.price <= price) return { price, shop: null };
+  return { price: shop.price, shop };
+}
 
 const feature = {
   id: 'price-filler',
@@ -55,15 +66,17 @@ const feature = {
       const items = rows.map((row) => ({ row, id: itemIdOf(row, form) })).filter((r) => r.id);
       if (items.length === 0) return;
 
-      const prices = await ctx.site.prices(items.map((r) => r.id));
+      const [prices, shops] = await Promise.all([ctx.site.prices(items.map((r) => r.id)), ctx.site.shops()]);
       if (!alive) return;
       for (const { row, id } of items) {
         if (!row.isConnected || row.querySelector(`.${MARK}`)) continue;
-        const price = priceFrom(prices.get(id), ctx.settings.undercut);
+        const { price, shop } = floored(priceFrom(prices.get(id), ctx.settings.undercut), shops.get(id));
         const button = el('button', {
           type: 'button', class: MARK, ownerDocument: doc, disabled: price === null, 'data-tour': 'price-fill',
-          title: price === null ? 'No market value for this item yet' : `Fill the price with ${money(price)}`,
-        }, price === null ? 'No price' : `Fill ${money(price)}`);
+          title: price === null ? 'No market value for this item yet'
+            : shop ? `Stopped at the shop price: ${shopName(shop)} pays ${money(price)} each, more than the market value less your undercut`
+              : `Fill the price with ${money(price)}`,
+        }, price === null ? 'No price' : `Fill ${money(price)}${shop ? ' (shop price)' : ''}`);
         button.addEventListener('click', (event) => {
           // The player's own press. It fills this row and stops there.
           event.preventDefault();

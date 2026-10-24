@@ -71,7 +71,8 @@ of sections and a search box. Nothing is added to Torn's header.
 - **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, war,
   dibs, med-out partner and OC. Switch it off, or choose which lines it shows. While it is
   open and the tab is visible, it asks torn-tracker.com once a minute for those lines,
-  with your script key; nothing else is sent.
+  with your script key; nothing else is sent. Its "Below shop price" line is counted on
+  the Item Market page itself and asks nothing.
 - **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
   starts off, switching a feature on never switches sharing on, and nothing is shared
   until you press "Share the kinds I picked". If the wording of what is shared changes
@@ -111,7 +112,10 @@ stops until you have read the new ones and agreed again.
 ## API Terms of Service
 
 This version asks for **no Torn API key**: it reads only the pages you open, and talks only
-to torn-tracker.com with your torn-tracker.com script key. Torn's terms say that when a tool
+to torn-tracker.com with your torn-tracker.com script key. The one exception is public:
+once a day the shop price guard asks torn-tracker.com's item catalogue for what shops in
+Torn pay for each item, with no key at all, and uses the table built into the script when
+the site can't be reached. Torn's terms say that when a tool
 does not store or share a key, it is enough to say so. When a feature that uses your own
 Torn API key arrives, this section and the panel will show Torn's five-column table (data
 storage, data sharing, purpose of use, key storage and sharing, key access level) above
