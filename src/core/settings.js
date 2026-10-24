@@ -89,6 +89,7 @@ export function normalize(raw, registry) {
       const option = d.options?.[key];
       const usable = typeof value === typeof fallback
         && (typeof value !== 'number' || (Number.isFinite(value) && inRange(value, option)))
+        && (typeof value !== 'string' || option?.maxLength === undefined || value.length <= option.maxLength)
         && (!option?.choices || option.choices.includes(value));
       feature[key] = usable ? value : fallback;
     }

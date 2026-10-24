@@ -204,8 +204,15 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   and a coloured tag (Friend, Ally, Watch, Enemy or Note). It shows again beside that
   player on their profile, in faction member lists, on the ranked-war page and on the
   attack page. Kept only on this device; nothing is sent and no one is looked up.
-- **Export and import** under Settings → Data: your player notes and racing templates as
-  text, to keep a copy or move them to another device.
+- **Export and import** under Settings → Data: your player notes, racing templates and
+  message templates as text, to keep a copy or move them to another device.
+- **Message templates** (wave 3). On any player's profile, **Messages** opens your
+  templates filled in for that player: their name, ID, faction and level from the
+  profile, and your own name, links and buying price from the settings. A placeholder
+  the page doesn't show stays as written and is marked, never guessed. **Copy message**
+  puts it on the clipboard; you paste it and send it yourself. Seven starter templates
+  (trade offer, buying, recruitment, faction welcome, war call-up, armory return, job
+  offer) to edit or delete. Kept only on this device; nothing is sent.
 
 ### Fixed
 

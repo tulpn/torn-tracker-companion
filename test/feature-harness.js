@@ -99,6 +99,8 @@ export function runFeature(feature, {
     doc: window.document,
     shared,
     violations,
+    /** What the feature has saved in its data. */
+    stored: () => stored,
     /** The page receiving one of its own JSON responses. */
     respond(url, data, method = 'GET', form = null) {
       for (const sub of [...subscribers]) if (sub.test(url)) sub.handler({ url, method, data, form });

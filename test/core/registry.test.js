@@ -26,6 +26,8 @@ describe('CMP-002 every feature exports one descriptor', () => {
     ['choices that do not include the default', { options: { sortBy: { label: 'Sort', choices: ['level'] } } }],
     ['choices of another type', { options: { sortBy: { label: 'Sort', choices: ['status', 1] } } }],
     ['a bound on a text option', { options: { sortBy: { label: 'Sort', min: 0 } } }],
+    ['a length on a number option', { defaults: { enabled: true, n: 5 }, options: { n: { label: 'N', maxLength: 3 } } }],
+    ['a text default longer than its length', { defaults: { enabled: true, t: 'long' }, options: { t: { label: 'T', maxLength: 3 } } }],
     ['a number default out of its range', { defaults: { enabled: true, n: 5 }, options: { n: { label: 'N', max: 3 } } }],
     ['needs without apiKey', { needs: { scriptKey: true } }],
     ['credits that are not strings', { credits: [{ name: 'x' }] }],

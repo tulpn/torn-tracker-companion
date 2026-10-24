@@ -62,7 +62,8 @@ export function validateDescriptor(d) {
 /**
  * The panel shows an option only when the descriptor describes it:
  *   options: { sortBy: { label: 'Sort by', choices: ['status', 'level'] },
- *              undercut: { label: 'Undercut by ($)', min: 0, max: 1000000 } }
+ *              undercut: { label: 'Undercut by ($)', min: 0, max: 1000000 },
+ *              myName: { label: 'Your name', maxLength: 30 } }
  * Every described option has a default, and `enabled` is the feature's own switch.
  */
 function validateOptions(d) {
@@ -90,6 +91,10 @@ function validateOptions(d) {
       if (typeof fallback !== 'number' || !Number.isFinite(option[bound])) {
         fail(id, `options.${key}.${bound} needs a number option and a number`);
       }
+    }
+    if (option.maxLength !== undefined && (typeof fallback !== 'string' || !Number.isInteger(option.maxLength)
+      || option.maxLength < 1 || fallback.length > option.maxLength)) {
+      fail(id, `options.${key}.maxLength needs a text option, a whole number and a default that fits`);
     }
     if (typeof fallback === 'number' && !inRange(fallback, option)) fail(id, `options.${key}: the default is out of range`);
   }
