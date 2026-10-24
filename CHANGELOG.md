@@ -200,6 +200,12 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   it's done. If you haven't, one line offers it, until you dismiss the guide on the site.
   With your script key it asks torn-tracker.com at most every 15 minutes, when you open a
   Torn page; switch it off under **General → Guide**.
+- **Player notes** (wave 3). On any player's profile, **Add note** keeps a private note
+  and a coloured tag (Friend, Ally, Watch, Enemy or Note). It shows again beside that
+  player on their profile, in faction member lists, on the ranked-war page and on the
+  attack page. Kept only on this device; nothing is sent and no one is looked up.
+- **Export and import** under Settings → Data: your player notes and racing templates as
+  text, to keep a copy or move them to another device.
 
 ### Fixed
 

@@ -238,6 +238,35 @@ const sectionIds = SECTIONS.map(([id]) => id);
  * @param {object} [opts.disclosure]
  * @param {ReadonlyArray<object>} [opts.credits]
  */
+const TRANSFER = 'ttc-feature-data';
+const TRANSFER_MAX = 500_000;
+
+/** The features' own data (notes, templates) as text the Data section hands the player. */
+export function exportText(registry, settings) {
+  const data = Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, settings.featureData?.[d.id] ?? d.data.empty]));
+  return JSON.stringify({ kind: TRANSFER, version: 1, data });
+}
+
+/**
+ * The feature data an export holds, each kind checked by its own feature, or null when
+ * the text is not one. Kinds this build doesn't know are left out.
+ */
+export function importText(registry, text) {
+  if (typeof text !== 'string' || !text.trim() || text.length > TRANSFER_MAX) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (parsed?.kind !== TRANSFER || parsed.version !== 1 || !parsed.data || typeof parsed.data !== 'object') return null;
+  const picked = {};
+  for (const d of registry.filter((f) => f.data)) {
+    if (Object.hasOwn(parsed.data, d.id)) picked[d.id] = d.data.validate(parsed.data[d.id]);
+  }
+  return Object.keys(picked).length ? picked : null;
+}
+
 export function mountPanel({
   doc = globalThis.document,
   root = doc.body,
@@ -295,6 +324,8 @@ export function mountPanel({
   let armedForget = false;
   /** What the player has changed and not yet saved. */
   let draft = null;
+  /** The Data section's export and import box. */
+  let transferText = '';
 
   // The last section is a convenience kept on this device; any failure just means Features.
   read(KEYS.ui).then((ui) => {
@@ -534,16 +565,25 @@ export function mountPanel({
   }
 
   function dataBody() {
+    const kept = registry.filter((d) => d.data);
     return [
       h('div', { class: `${P}-card` },
         h('div', null, `Everything the script keeps is stored only on this device (${backendName()}):`),
         h('ul', null,
-          h('li', null, 'your settings, sharing choices and saved templates'),
+          h('li', null, 'your settings, sharing choices, saved templates and player notes'),
           h('li', null, 'your script key, and your Torn API key if you add one'),
           h('li', null, 'reports waiting to be sent, kept at most ten minutes'),
           h('li', null, 'which tours you\u2019ve seen'),
           h('li', null, 'your featured achievements, and when it last asked for new ones'),
           h('li', null, 'answers from torn-tracker.com, kept a short while so pages ask less'))),
+      ...(kept.length ? [
+        h('h4', null, 'Export and import'),
+        h('div', { class: `${P}-muted` },
+          `Your ${kept.map((d) => d.title.toLowerCase()).join(' and ')} as text, to keep a copy or move them to another device. Importing replaces what this device has for each kind the text holds.`),
+        h('textarea', { id: `${P}-transfer`, rows: '4', spellcheck: 'false', 'aria-label': 'Exported or imported text' }, transferText),
+        h('div', { class: `${P}-row` },
+          h('button', { type: 'button', 'data-act': 'export' }, 'Export'),
+          h('button', { type: 'button', 'data-act': 'import' }, 'Import'))] : []),
       h('h4', null, 'Forget me'),
       h('div', { class: `${P}-muted` }, 'Clears all of the above on this device. Your other devices keep theirs.'),
       h('div', { class: `${P}-row` },
@@ -721,9 +761,10 @@ export function mountPanel({
     active = false;
     armedForget = false;
     draft = null;
+    transferText = '';
   }
 
-  async function save(settings) {
+  async function save(settings, done = 'Saved.') {
     const typed = checkTyped(draft.keys);
     if (typed.error) {
       section = 'keys';
@@ -738,7 +779,7 @@ export function mountPanel({
       return;
     }
     freshDraft();
-    render('Saved.', 'good');
+    render(done, 'good');
   }
 
   async function onClick(event) {
@@ -755,6 +796,19 @@ export function mountPanel({
       await save(draft.settings);
     } else if (act === 'consent') {
       await save({ ...draft.settings, sharingConsent: disclosure.version });
+    } else if (act === 'export') {
+      transferText = exportText(registry, draft.settings);
+      render('Exported below. Copy the text and keep it somewhere safe; it holds your notes.', 'good');
+    } else if (act === 'import') {
+      transferText = panel.querySelector(`#${P}-transfer`)?.value || '';
+      const picked = importText(registry, transferText);
+      if (!picked) {
+        render('That text isn’t an export from the companion.');
+        return;
+      }
+      transferText = '';
+      const names = registry.filter((d) => d.id in picked).map((d) => d.title).join(', ');
+      await save({ ...draft.settings, featureData: { ...draft.settings.featureData, ...picked } }, `Imported: ${names}.`);
     } else if (act === 'reset') {
       await onReset();
       freshDraft();
@@ -767,6 +821,7 @@ export function mountPanel({
       }
       armedForget = false;
       const ok = await onForget();
+      transferText = '';
       freshDraft();
       render(ok ? 'Everything on this device is cleared.' : 'Could not clear storage.');
     }

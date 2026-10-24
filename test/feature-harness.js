@@ -81,7 +81,8 @@ export function runFeature(feature, {
     sharing: (kind) => feature.shares.includes(kind) && sharing(kind),
     data: () => stored,
     async saveData(value) {
-      stored = feature.data ? feature.data.validate(value) : value;
+      const next = typeof value === 'function' ? value(stored) : value;
+      stored = feature.data ? feature.data.validate(next) : next;
       return stored;
     },
     share(kind, data) {

@@ -103,9 +103,14 @@ export async function boot(win = globalThis) {
       sharing: (kind) => descriptor.shares.includes(kind) && isShared(settings, kind),
       /** The feature's own saved data (its descriptor's `data`), checked on load. */
       data: () => settings.featureData?.[descriptor.id],
-      /** Saves the feature's own data; returns it as stored, after its checks. */
+      /**
+       * Saves the feature's own data; returns it as stored, after its checks. Given a
+       * function, it is applied to the data as storage holds it now, so a save made in
+       * another tab since this one loaded is kept.
+       */
       saveData: async (value) => {
-        settings = normalize({ ...settings, featureData: { ...settings.featureData, [descriptor.id]: value } }, registry);
+        const next = typeof value === 'function' ? value((await load(registry)).featureData?.[descriptor.id]) : value;
+        settings = normalize({ ...settings, featureData: { ...settings.featureData, [descriptor.id]: next } }, registry);
         await save(settings, registry);
         return settings.featureData[descriptor.id];
       },
