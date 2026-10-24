@@ -365,7 +365,7 @@ export function mountPanel({
     } else if (typeof value === 'number') {
       input = h('input', { type: 'number', inputmode: 'decimal', ...data, value, min: option.min, max: option.max });
     } else {
-      input = h('input', { type: 'text', ...data, value });
+      input = h('input', { type: 'text', ...data, value, maxlength: option.maxLength });
     }
     return h('label', { class: `${P}-field ${P}-option` }, h('span', null, option.label), input);
   }

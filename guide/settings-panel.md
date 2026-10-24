@@ -56,7 +56,8 @@ without saving throws them away. After **Save** you stay on the page, and it say
 - **Keys:** your torn-tracker.com [script key](website:script-key.md). It isn't a Torn API
   key, it's kept only on this device, and it's never written to the console.
 - **Data:** what the companion keeps on this device, **Export** and **Import** for your
-  [player notes](player-notes.md) and racing templates, and [Forget me](forget-me.md).
+  [player notes](player-notes.md), racing templates and
+  [message templates](message-templates.md), and [Forget me](forget-me.md).
 - **Credits:** every script the companion took an idea from, with its licence and a link.
 - **Help:** the tours, this guide, troubleshooting, and where to report a problem.
 

@@ -105,6 +105,20 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     content: attr(data-${P}-shop-label); margin-left: 4px; font-weight: 700; font-size: .9em;
     white-space: nowrap; color: var(--${P}-shop-ink);
   }
+  /* Text the player is about to send, shown as it will read; a part it lacks is flagged. */
+  .${P}-ui-preview {
+    margin: 6px 0; padding: 6px 8px; border-radius: var(--radius); background: var(--muted); color: var(--foreground);
+    font: 12px/1.5 var(--tt-font-sans); white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .${P}-ui-flag { padding: 0 2px; border-radius: 3px; background: ${tint(INK.warn, 30)}; color: inherit; font-weight: 700; }
+  .${P}-ui-preview > strong:first-child { display: block; margin-bottom: 8px; }
+  .${P}-ui-strip :is(input[type="text"], textarea, select) {
+    box-sizing: border-box; max-width: 100%; padding: 3px 8px;
+    border: 1px solid var(--input); border-radius: var(--radius); background: var(--background); color: var(--foreground);
+    font: 12px/1.45 var(--tt-font-sans);
+  }
+  .${P}-ui-strip :is(textarea, input[type="text"]) { display: block; width: 100%; margin: 6px 0; }
+  .${P}-ui-strip :is(input[type="text"], select) { min-height: 28px; }
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
   }
@@ -172,6 +186,18 @@ export function note(doc, { cls, attrs = {} } = {}, ...children) {
 export function bar(doc, { cls, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
   return el('div', { class: classes(`${P}-ui-bar`, cls), ownerDocument: doc, ...attrs }, ...children);
+}
+
+/** Text shown as it will be sent, line breaks kept. */
+export function preview(doc, { cls, attrs = {} } = {}, ...children) {
+  ensureStyle(doc);
+  return el('div', { class: classes(`${P}-ui-preview`, cls), ownerDocument: doc, ...attrs }, ...children);
+}
+
+/** A part of a preview that needs the player's eye. */
+export function flag(doc, { cls, attrs = {} } = {}, ...children) {
+  ensureStyle(doc);
+  return el('mark', { class: classes(`${P}-ui-flag`, cls), ownerDocument: doc, ...attrs }, ...children);
 }
 
 /** One of our own small buttons; 44 px on touch screens. */

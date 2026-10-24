@@ -37,8 +37,9 @@ for the whole note. Players without a note get nothing.
 
 ## Keep a copy, or move them to another device
 
-In the [settings](settings-panel.md), under **Data**, **Export** puts your notes and your
-[racing templates](racing-templates.md) in a box as text. Copy it somewhere safe. On the
+In the [settings](settings-panel.md), under **Data**, **Export** puts your notes, your
+[racing templates](racing-templates.md) and your [message templates](message-templates.md)
+in a box as text. Copy it somewhere safe. On the
 other device, paste it into the same box and press **Import**. Importing replaces the
 notes that device has.
 
