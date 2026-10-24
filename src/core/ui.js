@@ -24,6 +24,8 @@ const INK = Object.freeze({
   bad: 'color-mix(in srgb, var(--destructive) 65%, var(--foreground))',
   info: 'var(--ring)',
 });
+/** The shop price highlighter's tiers and the token each is drawn in. */
+const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-ff-hard'], ['blue', 'ring']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
 
 const STYLE = `
@@ -89,6 +91,20 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
   [class*='row___']:has(.${P}-best) { outline: 2px solid ${TOKENS.light['tt-success']}; outline-offset: -2px; border-radius: 6px; }
   body.dark-mode [class*='row___']:has(.${P}-best) { outline-color: ${TOKENS.dark['tt-success']}; }
+  /* Item Market listings below a shop's price (CMP-109): attributes on Torn's own nodes,
+     an outline on the listing, a dot and the profit beside its price. */
+${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-shop-dot="${tier}"] { --${P}-shop-ink: ${TOKENS.light[token]}; }
+  body.dark-mode [data-${P}-shop="${tier}"], body.dark-mode [data-${P}-shop-dot="${tier}"] { --${P}-shop-ink: ${TOKENS.dark[token]}; }`).join('\n')}
+  [data-${P}-shop] { outline: 2px solid var(--${P}-shop-ink) !important; outline-offset: -2px; border-radius: 4px; }
+  [data-${P}-shop-hide] { display: none !important; }
+  [data-${P}-shop-dot]::before {
+    content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin: 0 4px 0 6px; vertical-align: middle; background: var(--${P}-shop-ink);
+  }
+  [data-${P}-shop-label]::after {
+    content: attr(data-${P}-shop-label); margin-left: 4px; font-weight: 700; font-size: .9em;
+    white-space: nowrap; color: var(--${P}-shop-ink);
+  }
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
   }

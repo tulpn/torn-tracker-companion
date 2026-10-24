@@ -7,6 +7,7 @@ import { JSDOM } from 'jsdom';
 
 import { BLOCK_ID, READ_EVERY_MS, askedItems, mountSidebarBlock } from '../../src/core/sidebar.js';
 import { readSidebar } from '../../src/core/site.js';
+import { setProfitable } from '../../src/core/shops.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults } from '../../src/core/settings.js';
 import * as dom from '../../src/core/dom.js';
@@ -227,6 +228,32 @@ describe('CMP-108 AC5 nothing to say, nothing shown', () => {
     const t = mount({ answer: { status: 'failed' } });
     await settle();
     assert.match(t.node().textContent, /Chain no data/);
+  });
+});
+
+describe('CMP-109 the shop price count', () => {
+  test('is local: never asked for, shown from this page whatever the read says, live', async () => {
+    const t = mount({
+      answer: { status: 'no_key' },
+      change: (s) => { s.sidebar.items.links = false; },
+    });
+    await settle();
+    assert.equal(t.asked.flat().includes('shops'), false);
+    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    setProfitable(3);
+    assert.match(t.node().textContent, /Shop price 3 listings below what a shop pays/);
+    setProfitable(0);
+    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    t.block.destroy();
+  });
+
+  test('switched off, it is not shown', async () => {
+    const t = mount({ change: (s) => { s.sidebar.items.shops = false; } });
+    await settle();
+    setProfitable(1);
+    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    setProfitable(0);
+    t.block.destroy();
   });
 });
 

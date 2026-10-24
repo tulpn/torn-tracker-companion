@@ -21,7 +21,7 @@ the module itself carries no notice. The panel's Credits tab is built from
 
 | Script | Author | Licence | What was taken | Where |
 |---|---|---|---|---|
-| _none yet_ | | | | |
+| [Torn Item Market - Shop Sell Price Highlighter](https://github.com/tulpn/torn-item-market-highlighter) v0.5.1 | ares313377 [4372940] | GPL-3.0, contributed by its author | finding Item Market listings by their item image and price, marking those below a shop's price with an outline, a dot and the profit, the tiers, and the table of shop prices that seeded `src/data/shops.js`; the undersell warning is its idea | `src/features/shop-highlighter/`, `src/features/undersell-warning/`, `src/data/shops.js` |
 
 ## Inspiration
 

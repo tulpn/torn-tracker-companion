@@ -10,6 +10,14 @@
 
 export const CREDITS = Object.freeze([
   {
+    name: 'Torn Item Market - Shop Sell Price Highlighter',
+    author: 'ares313377 [4372940]',
+    licence: 'GPL-3.0',
+    url: 'https://github.com/tulpn/torn-item-market-highlighter',
+    taken: "its code for finding Item Market listings and marking those below a shop's price, its tiers and profit labels, and its table of shop prices; the undersell warning is its idea",
+    merged: true,
+  },
+  {
     name: 'TornTools',
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',

@@ -11,10 +11,13 @@ import { page, runFeature } from '../feature-harness.js';
 const BAZAAR_ADD = 'https://www.torn.com/bazaar.php#/add';
 const MARKET_ADD = 'https://www.torn.com/page.php?sid=ItemMarket#/addListing';
 
-function fakeSite(prices = { 206: 800_000, 1: 50, 5: 9 }) {
+function fakeSite(prices = { 206: 800_000, 1: 50, 5: 9 }, shops = {}) {
   const lookups = [];
   return {
     lookups,
+    async shops() {
+      return new Map(Object.entries(shops).map(([id, entry]) => [Number(id), entry]));
+    },
     async prices(ids) {
       lookups.push([...ids]);
       return new Map(ids.filter((id) => id in prices).map((id) => [id, prices[id]]));
@@ -102,6 +105,24 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
     press(r, row.querySelector('.ttc-fill'));
     assert.equal(row.querySelector("[class^='priceInputWrapper___'] input").value, '799999');
     assert.equal(row.querySelector("[class^='amountInputWrapper___'] input").value, '1250');
+  });
+
+  test('CMP-109 AC3: never below the shop price, and the button says it stopped there', async () => {
+    const shop = { price: 1000, shop: "Big Al's Gun Shop", country: 'Torn' };
+    const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite({ 206: 800, 1: 50 }, { 206: shop }) });
+    await wait();
+    const button = r.doc.querySelector('.ttc-fill');
+    assert.equal(button.textContent, 'Fill $1,000 (shop price)');
+    assert.match(button.title, /^Stopped at the shop price: Big Al's Gun Shop pays \$1,000 each/);
+    press(r, button);
+    assert.equal(r.doc.querySelector('div.price input').value, '1000');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('a shop paying less than the market changes nothing', async () => {
+    const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite(undefined, { 206: { price: 10, shop: null, country: null } }) });
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $799,999');
   });
 
   test('re-renders do not add a second button', async () => {

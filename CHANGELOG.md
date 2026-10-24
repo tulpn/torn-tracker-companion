@@ -11,6 +11,18 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ### Added
 
+- **Shop price guard** (wave 1). On the Item Market, a listing priced below what a shop
+  in Torn pays for the item gets a coloured outline, a dot and its profit beside the
+  price, like "+12.5k", with the details on hover. Green, yellow, red and blue go by
+  profit per item or by margin; set the minimums, the listing total, and hiding the rest
+  in the settings. The sidebar block counts those listings in a new "Below shop price"
+  line. On your own sell forms (the Item Market's add-listing form and the bazaar's add
+  and manage pages), a price below a shop's shows a warning as you type, naming the shop
+  and what you'd lose; it never stops you listing. The price filler no longer fills below
+  a shop's price, and says so when it stopped there. The prices come once a day from
+  torn-tracker.com's public item catalogue, asked with no key, or from the table built
+  into the script. Based on Torn Item Market - Shop Sell Price Highlighter by ares313377
+  (GPLv3). Needs no script key.
 - The script is built from modules under `src/` by esbuild, into one readable file plus
   the small `.meta.js` that update checks fetch.
 - A lint that fails the build on anything Torn's scripting rules forbid, and a runtime

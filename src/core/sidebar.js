@@ -10,7 +10,8 @@
 // It's asked when the block is opened, then at most once a minute, and only while the
 // block is open and the tab is visible. Countdowns tick locally between reads. Every link
 // is plain navigation (a profile, an attack page, the site): the game action is still the
-// player's own click on Torn's page.
+// player's own click on Torn's page. A local item (the shop price highlighter's count)
+// is never asked for: it comes from this page and is shown whatever the read says.
 //
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
@@ -19,6 +20,7 @@ import { el, ownChange } from './dom.js';
 import { SITE } from '../hosts.js';
 import { OURS, SIDEBAR } from './entry.js';
 import { followTorn } from './tokens.js';
+import { onProfitable, profitableCount } from './shops.js';
 
 const P = 'ttc';
 export const BLOCK_ID = `${P}-sidebar-block`;
@@ -37,6 +39,7 @@ export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'loot', title: 'NPC loot', summary: 'The next loot level per NPC and when it comes, with the source credited.', on: false },
   { id: 'gym', title: 'Gym', summary: 'How far you are towards your next gym.', on: false },
   { id: 'stocks', title: 'Stock watches', summary: 'How many of your watched stocks crossed their line.', on: false },
+  { id: 'shops', title: 'Below shop price', summary: 'On the Item Market: how many listings on screen sell below what a shop pays.', on: true, local: true },
   { id: 'links', title: 'Quick links', summary: 'Your dashboard, the war room and the guide on torn-tracker.com.', on: true },
 ]);
 
@@ -113,11 +116,11 @@ const short = (n) => {
   return `$${n}`;
 };
 
-/** The items the read is asked for: switched on, and not the static quick links. */
+/** The items the read is asked for: switched on, not the static quick links, not local. */
 export function askedItems(settings) {
   const sb = settings?.sidebar;
   if (!sb?.enabled) return [];
-  return SIDEBAR_ITEMS.filter((item) => item.id !== 'links' && sb.items?.[item.id] === true).map((item) => item.id);
+  return SIDEBAR_ITEMS.filter((item) => item.id !== 'links' && !item.local && sb.items?.[item.id] === true).map((item) => item.id);
 }
 
 /** One of Torn's sidebar entries (Friends, Enemies, Targets under Lists). */
@@ -254,6 +257,10 @@ export function mountSidebarBlock({
         if (line) rows.push(line);
       }
     }
+    const below = profitableCount();
+    if (settings.sidebar.items.shops === true && below > 0) {
+      rows.push(row(h('b', null, 'Shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'} below what a shop pays`));
+    }
     if (showLinks) {
       const links = answer?.status === 'ok' && answer.links.length ? answer.links : LINKS;
       rows.push(h('div', { class: `${P}-sb-row ${P}-sb-links` }, ...links.map((l) => link(l.url, l.label, true))));
@@ -348,6 +355,7 @@ export function mountSidebarBlock({
     if (doc.visibilityState !== 'hidden') refreshSidebar();
   };
   doc.addEventListener('visibilitychange', onVisible);
+  const stopCounting = onProfitable(() => render());
   tick = timers.setInterval(() => {
     if (isOpen()) paint();
   }, 1000);
@@ -372,6 +380,7 @@ export function mountSidebarBlock({
     destroy() {
       stopped = true;
       stopWatching?.();
+      stopCounting();
       doc.removeEventListener('visibilitychange', onVisible);
       timers.clearTimeout(readTimer);
       timers.clearTimeout(placeTimer);
