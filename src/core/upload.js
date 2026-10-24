@@ -9,7 +9,7 @@
 //     another;
 //   - a flush is set off by the player's own page views (an observation being queued, or
 //     the page being left) and only ever talks to our host. Nothing here touches torn.com;
-//   - 429 waits out Retry-After, 401 pauses sharing until the player saves a new key,
+//   - 429 waits out Retry-After, 401 (or a 403 for a scope the key lacks) pauses sharing until the player saves a new key,
 //     426 stops that kind until the script is updated, and the panel says which.
 //
 // The queue and its state live in ttc_queue, so a page change does not lose them. Two
@@ -18,7 +18,7 @@
 
 import { SITE } from '../hosts.js';
 import { checkObservation, isKnownKind } from './kinds.js';
-import { request } from './net.js';
+import { keyRefused, request } from './net.js';
 import { KEYS, read, write } from './storage.js';
 import { log, warn } from './log.js';
 
@@ -250,7 +250,7 @@ export function createUploader({
       const accepted = Number.isInteger(result.data?.accepted) ? result.data.accepted : batch.length;
       outcome('sent', { accepted });
       log('uploaded', batch.length, kind, result.data);
-    } else if (result.status === 401 || result.status === 403) {
+    } else if (keyRefused(result)) {
       // The batch stays: it is the key that was wrong, not the observations.
       state.authFailed = true;
       outcome('key refused');

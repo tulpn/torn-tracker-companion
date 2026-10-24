@@ -40,11 +40,11 @@ describe('PRE-042 the strip', () => {
   });
 
   test('Pro: the compare, the headline and the link, under the heading', async () => {
-    const r = run({ site: fakeSite({ opponent: 678, compare: COMPARE, headline: "They're larger, older and won 4 of their last 5.", briefUrl: 'https://www.torn-tracker.com/war/1/brief/', pro: true }) });
+    const r = run({ site: fakeSite({ opponent: 678, compare: COMPARE, headline: "They're larger, older and won 4 of their last 5.", briefUrl: 'https://www.torn-tracker.com/war/prewar/', pro: true }) });
     await wait();
     assert.match(strip(r).textContent, /^Your next ranked war: They have 92 members/);
     assert.match(strip(r).textContent, /won 4 of their last 5/);
-    assert.equal(strip(r).querySelector('a').getAttribute('href'), 'https://www.torn-tracker.com/war/1/brief/');
+    assert.equal(strip(r).querySelector('a').getAttribute('href'), 'https://www.torn-tracker.com/war/prewar/');
     assert.equal(strip(r).previousElementSibling.className, 'content-title');
     assert.deepEqual(r.violations, []);
   });

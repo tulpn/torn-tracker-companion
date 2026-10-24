@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createCache } from '../../src/core/cache.js';
 import {
   SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
-  WAR_LOADOUTS_URL, createSite,
+  WAR_LOADOUTS_URL, createSite, siteUrl, validRoles,
 } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
@@ -115,6 +115,17 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
     r.setKey(`tt_feed_${'F'.repeat(43)}`);
     await r.site.ff([2]);
     assert.equal(r.calls.length, 2);
+  });
+
+  test('a 403 for a scope the key lacks refuses it; any other 403 answers one read only', async () => {
+    const scope = rig({ reply: () => ({ ok: false, status: 403, data: { detail: 'token lacks the feeds:read scope' } }) });
+    await scope.site.ff([1]);
+    assert.equal(scope.site.keyRefused(), true);
+    for (const data of [{ error: 'not_director' }, { detail: 'no faction' }, { error: 'pro_required' }, null]) {
+      const other = rig({ reply: () => ({ ok: false, status: 403, data }) });
+      await other.site.ff([1]);
+      assert.equal(other.site.keyRefused(), false, JSON.stringify(data));
+    }
   });
 });
 
@@ -299,7 +310,7 @@ describe('CMP-204 an OC read (CAPI-035, as accepted in hq #110)', () => {
   });
 
   test('roles that do not fit are no roles; a failure falls back to the cached ones', async () => {
-    for (const bad of [[], [{ position_id: 'P7', label: 'x', weight: 1 }], [{ position_id: 'P1', label: '', weight: 1 }], [{ position_id: 'P1', label: 'x', weight: 120 }]]) {
+    for (const bad of [[], [{ position_id: 'P7', label: 'x', weight: 1 }], [{ position_id: 'P1', label: 7, weight: 1 }], [{ position_id: 'P1', label: 'x', weight: 120 }]]) {
       assert.equal((await rig({ reply: reply({ roles: bad, crimes: [] }) }).site.oc('X')).roles, null);
     }
     let fail = false;
@@ -522,6 +533,13 @@ describe('PRE-042 the pre-war strip read (accepted in hq #136)', () => {
     assert.deepEqual(await odd.site.warBrief(), { opponent: 678, compare: null, headline: null, briefUrl: null, pro: false });
   });
 
+  test('the bare host the site sends is moved to www', async () => {
+    const r = rig({ reply: reply({ war: { opponent_faction_id: 678 }, brief_url: 'https://torn-tracker.com/war/prewar/', pro: false }) });
+    assert.equal((await r.site.warBrief()).briefUrl, 'https://www.torn-tracker.com/war/prewar/');
+    assert.equal(siteUrl('https://torn-tracker.com.evil.example/'), null);
+    assert.equal(siteUrl('http://torn-tracker.com/x'), null);
+  });
+
   test('no war, a failure or no key: nothing', async () => {
     assert.equal(await rig({ reply: reply({ war: null }) }).site.warBrief(), null);
     assert.equal(await rig({ reply: reply(null, 503) }).site.warBrief(), null);
@@ -565,7 +583,7 @@ describe('CMP-304 stock signals (companion-api section 6.4)', () => {
 describe('TRV-050 your travel runs (accepted in hq #78)', () => {
   const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
   const good = { country: 'mexico', item_id: 258, item_name: 'Jaguar Plushie', quantity: 29, cash_needed: 290000, profit: 58000,
-    profit_per_hour: 13500, hours: 4.3, lands_at: '2026-10-22T14:20:00Z', accuracy: '±10 min', data_age_s: 240 };
+    profit_per_hour: 13500, hours: 4.3, lands_at: '2026-10-22T14:20:00Z', accuracy: '92% within 5 min', data_age_s: 240 };
 
   test('the runs, each checked; a multi-stop run keeps its stops; kept five minutes', async () => {
     let clock = 0;
@@ -596,6 +614,20 @@ describe('CMP-108 the sidebar read', () => {
     assert.equal(calls[0].headers.Authorization, `Bearer ${KEY}`);
     assert.equal(answer.status, 'ok');
     assert.equal(answer.items.get('chain'), null);
+  });
+
+  test('the last gym, and a dibs target the site has no name for yet', async () => {
+    const data = {
+      gym: { next_gym: null, percent: null, energy_to_next: null },
+      dibs: [{ target_id: 5, target_name: '', expires_at: '2026-10-20T12:05:00Z' }],
+    };
+    const answer = await rig({ reply: () => ({ ok: true, status: 200, data }) }).site.sidebar(['gym', 'dibs']);
+    assert.deepEqual(answer.items.get('gym'), { nextGym: null, percent: null, energy: null });
+    assert.equal(answer.items.get('dibs')[0].name, '#5');
+  });
+
+  test('an OC role the site has no label for keeps the others', () => {
+    assert.equal(validRoles([{ position_id: 'P1', label: '', weight: null }, { position_id: 'P2', label: 'Hacker', weight: 40 }]), true);
   });
 
   test('no key asks nothing; a refusal, a 429 and a failure each say what happened', async () => {

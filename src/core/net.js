@@ -13,6 +13,16 @@ import { log, warn } from './log.js';
 import { onPda } from './keys.js';
 import { VERSION } from './version.js';
 
+/**
+ * Whether torn-tracker.com refused the script key itself: a 401, or a 403 because the key
+ * lacks a scope (CAPI-020). Every other 403 (not a director, no faction, Pro only) answers
+ * one read and says nothing about the key.
+ */
+export function keyRefused(result) {
+  if (result?.status === 401) return true;
+  return result?.status === 403 && /\blacks the \S+ scope\b/.test(String(result.data?.detail ?? ''));
+}
+
 export class HostNotAllowedError extends Error {
   constructor(url) {
     super(`refusing a request to a host outside @connect: ${url}`);
