@@ -224,6 +224,24 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     assert.match(t.text(), /3 waiting to be sent/);
   });
 
+  test('ADM-068 Q-ADM-5 a banned account sees the neutral notice, with no reason', () => {
+    const t = mount({ queue: { queued: 0, hasKey: true, authFailed: true, banned: true, retryAt: 0, blocked: {}, last: null } });
+    t.open('sharing');
+    const notice = t.$('.ttc-banned');
+    assert.equal(notice.hidden, false);
+    assert.equal(notice.getAttribute('role'), 'alert');
+    assert.match(notice.textContent, /This account can't use torn-tracker\.com\./);
+    assert.match(notice.textContent, /If you think this is a mistake/);
+    assert.match(t.text(), /Sharing is off for this account/);
+    assert.doesNotMatch(t.text(), /did not accept your script key/);
+  });
+
+  test('no notice for an account that is not banned', () => {
+    const t = mount({ queue: { queued: 0, hasKey: true, authFailed: true, retryAt: 0, blocked: {}, last: null } });
+    t.open('sharing');
+    assert.equal(t.$('.ttc-banned').hidden, true);
+  });
+
   test('a switch that is on without a key asks for the key', () => {
     const settings = defaults(createRegistry([descriptor()]));
     settings.shares.loadout = true;

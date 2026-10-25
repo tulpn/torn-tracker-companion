@@ -216,6 +216,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   written. Either way you check it and press Send yourself. Seven starter templates
   (trade offer, buying, recruitment, faction welcome, war call-up, armory return, job
   offer) to edit or delete. Kept only on this device; nothing is sent.
+- When torn-tracker.com no longer serves an account, the settings page says so in one
+  neutral notice, with where to ask if it's a mistake, and the script stops using the
+  script key for reads and sharing. Features that work on this device alone carry on.
 
 ### Fixed
 

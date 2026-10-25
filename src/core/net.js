@@ -14,12 +14,20 @@ import { onPda } from './keys.js';
 import { VERSION } from './version.js';
 
 /**
- * Whether torn-tracker.com refused the script key itself: a 401, or a 403 because the key
- * lacks a scope (CAPI-020). Every other 403 (not a director, no faction, Pro only) answers
- * one read and says nothing about the key.
+ * Whether torn-tracker.com refused the player's account: a ban (ADM-061, ADM-068). The
+ * site says no more than that, and the script shows no more.
+ */
+export function accountBanned(result) {
+  return result?.status === 403 && result.data?.error === 'account_banned';
+}
+
+/**
+ * Whether torn-tracker.com refused the script key itself: a 401, a 403 because the key
+ * lacks a scope (CAPI-020), or a ban. Every other 403 (not a director, no faction, Pro
+ * only) answers one read and says nothing about the key.
  */
 export function keyRefused(result) {
-  if (result?.status === 401) return true;
+  if (result?.status === 401 || accountBanned(result)) return true;
   return result?.status === 403 && /\blacks the \S+ scope\b/.test(String(result.data?.detail ?? ''));
 }
 

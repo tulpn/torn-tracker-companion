@@ -13,7 +13,7 @@
 
 import { SITE } from '../hosts.js';
 import { createCache } from './cache.js';
-import { keyRefused, request } from './net.js';
+import { accountBanned, keyRefused, request } from './net.js';
 import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
 
 export const FF_URL = `${SITE}/api/feeds/ff`;
@@ -398,9 +398,10 @@ export const SPACES = Object.freeze({
  * @param {() => string} opts.getKey
  * @param {typeof request} [opts.send]
  * @param {ReturnType<typeof createCache>} [opts.cache]
+ * @param {() => void} [opts.onBanned]  the site refused the account itself (a ban)
  */
 export function createSite({
-  getKey, send = request, cache = createCache(SPACES), now = Date.now,
+  getKey, send = request, cache = createCache(SPACES), now = Date.now, onBanned = () => {},
 }) {
   /** Set when the site refuses the key; reads stop until the key changes. */
   let refusedKey = null;
@@ -427,6 +428,7 @@ export function createSite({
   async function exchange(url, opts) {
     const result = await send(url, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
     if (keyRefused(result)) refusedKey = getKey();
+    if (accountBanned(result)) onBanned();
     return result;
   }
 

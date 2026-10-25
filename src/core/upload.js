@@ -18,7 +18,7 @@
 
 import { SITE } from '../hosts.js';
 import { checkObservation, isKnownKind } from './kinds.js';
-import { keyRefused, request } from './net.js';
+import { accountBanned, keyRefused, request } from './net.js';
 import { KEYS, read, write } from './storage.js';
 import { log, warn } from './log.js';
 
@@ -44,6 +44,8 @@ function emptyState() {
     retryAt: 0,
     /** the site refused the script key; nothing is sent until a new one is saved */
     authFailed: false,
+    /** the site refused the account itself (a ban); the panel shows its notice */
+    banned: false,
     /** kind -> the minimum script version the site asked for (426) */
     blocked: {},
     /** server clock minus device clock, from the last reply that carried server_time */
@@ -65,6 +67,7 @@ export function normalizeState(raw) {
   }
   if (Number.isFinite(given.retryAt) && given.retryAt > 0) state.retryAt = given.retryAt;
   state.authFailed = given.authFailed === true;
+  state.banned = state.authFailed && given.banned === true;
   if (given.blocked && typeof given.blocked === 'object') {
     for (const [kind, version] of Object.entries(given.blocked)) {
       if (isKnownKind(kind) && typeof version === 'string' && (SEMVER.test(version) || version === '?')) {
@@ -157,6 +160,7 @@ export function createUploader({
       queued: state.items.length,
       hasKey: Boolean(getKey()),
       authFailed: state.authFailed,
+      banned: state.banned,
       retryAt: state.retryAt > now() ? state.retryAt : 0,
       blocked: { ...state.blocked },
       last: state.last,
@@ -253,6 +257,7 @@ export function createUploader({
     } else if (keyRefused(result)) {
       // The batch stays: it is the key that was wrong, not the observations.
       state.authFailed = true;
+      state.banned = accountBanned(result);
       outcome('key refused');
       warn('the site refused the script key; sharing is paused until a new one is saved');
     } else if (result.status === 426) {
@@ -306,9 +311,18 @@ export function createUploader({
     status,
     serverNow,
 
+    /** A read was refused because of a ban: nothing is sent either, and the panel says so. */
+    banned() {
+      if (state.banned) return;
+      state.authFailed = true;
+      state.banned = true;
+      changed();
+    },
+
     /** The player saved a new script key: try again with it. */
     keyChanged() {
       state.authFailed = false;
+      state.banned = false;
       changed();
       schedule();
     },

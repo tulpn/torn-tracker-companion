@@ -24,7 +24,7 @@ afterEach(() => {
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-function rig({ key = KEY, reply = () => ({ ok: true, status: 200, data: {} }), now = () => 0, clock } = {}) {
+function rig({ key = KEY, reply = () => ({ ok: true, status: 200, data: {} }), now = () => 0, clock, onBanned } = {}) {
   const calls = [];
   let currentKey = key;
   const site = createSite({
@@ -35,6 +35,7 @@ function rig({ key = KEY, reply = () => ({ ok: true, status: 200, data: {} }), n
     },
     cache: createCache(SPACES, { now }),
     now: clock,
+    onBanned,
   });
   return { site, calls, setKey: (k) => { currentKey = k; } };
 }
@@ -126,6 +127,16 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
       await other.site.ff([1]);
       assert.equal(other.site.keyRefused(), false, JSON.stringify(data));
     }
+  });
+
+  test('ADM-068 a banned account: reads stop and the script is told, with nothing more', async () => {
+    let told = 0;
+    const r = rig({ reply: () => ({ ok: false, status: 403, data: { error: 'account_banned' } }), onBanned: () => { told += 1; } });
+    await r.site.ff([1]);
+    assert.equal(r.site.keyRefused(), true);
+    assert.equal(told, 1);
+    await r.site.ff([2]);
+    assert.equal(r.calls.length, 1, 'nothing more is asked with that key');
   });
 });
 
