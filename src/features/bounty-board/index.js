@@ -10,6 +10,7 @@
 // The filter is kept for the tab in sessionStorage, checked field by field.
 
 import { el, ownChange } from '../../core/dom.js';
+import { idFromHref } from '../../core/players.js';
 import { badge, bar as uiBar, setTone } from '../../core/ui.js';
 import { describe as ffLook, textColourFor } from '../ff-badges/view.js';
 import { LEVEL, LISTER, LIST, REWARD, ROWS, STATUS, TARGET } from './selectors.js';
@@ -43,11 +44,7 @@ export function validFilter(raw) {
   return out;
 }
 
-/** The player id in a profile link, or null. */
-export function idFromHref(href) {
-  const m = /[?&]XID=(\d+)/.exec(String(href || ''));
-  return m ? Number(m[1]) : null;
-}
+export { idFromHref };
 
 /** How long a timer on the page has left, in ms: "1:02:03", "12:30", "1h 20m", "45s". Null if none. */
 export function timerMs(text) {

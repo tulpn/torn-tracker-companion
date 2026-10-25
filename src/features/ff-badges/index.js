@@ -10,6 +10,7 @@
 // https://github.com/xentac/FFScouter): the idea, where the rows are, and the colour
 // scale. No code was taken.
 
+import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../core/players.js';
 import { badge, setTone } from '../../core/ui.js';
 import { HEADING, ROWS, ROW_LINK } from './selectors.js';
 import { describe, textColourFor } from './view.js';
@@ -24,18 +25,7 @@ let timers = globalThis;
 let page = null;
 let alive = false;
 
-/** The player id in a profile link, or null. */
-export function idFromHref(href) {
-  const m = /[?&]XID=(\d+)/.exec(String(href || ''));
-  return m ? Number(m[1]) : null;
-}
-
-/** The player a profile or attack page is about. */
-function pageSubject(loc) {
-  const params = new URLSearchParams(String(loc?.search || ''));
-  const id = Number(params.get('XID') || params.get('user2ID'));
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
+export { idFromHref };
 
 /**
  * Places that need a badge and do not have one yet.
@@ -50,8 +40,7 @@ export function findSpots(doc, loc) {
     if (id) spots.push({ id, after: link });
   }
   const subject = pageSubject(loc);
-  const page = String(loc?.pathname || '').split('/').pop();
-  if (subject && (page === 'profiles.php' || page === 'page.php')) {
+  if (subject && onSubjectPage(loc)) {
     const heading = doc.querySelector(HEADING);
     if (heading && !heading.parentNode?.querySelector(`:scope > .${MARK}`)) spots.push({ id: subject, after: heading });
   }
@@ -73,7 +62,7 @@ export default {
   area: 'war',
   guide: 'ff-badges',
   summary: 'A fair-fight badge beside every player on profiles, faction lists, wars and attacks.',
-  routes: ['profiles.php', 'factions.php', 'page.php?sid=attack'],
+  routes: ['profiles.php', 'factions.php', ...ATTACK_ROUTES],
   defaults: { enabled: true },
   shares: [],
   needs: { apiKey: false, scriptKey: true },

@@ -9,21 +9,14 @@
 // The read is the one accepted on hq #368. Until the site serves it, there is no answer
 // and nothing shows.
 
+import { ATTACK_ROUTES, onSubjectPage, pageSubject } from '../../core/players.js';
 import { badge } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 
 const MARK = 'ttc-mugger';
 const SETTLE_MS = 250;
-const PAGES = ['profiles.php', 'page.php', 'loader.php'];
 
 let state = null;
-
-/** The player a profile or attack page is about. */
-function pageSubject(loc) {
-  const params = new URLSearchParams(String(loc?.search || ''));
-  const id = Number(params.get('XID') || params.get('user2ID'));
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
@@ -47,7 +40,7 @@ export default {
   area: 'market',
   guide: 'mugger-badge',
   summary: 'A badge on the profile and attack page of a player listed for mugging sellers just after a sale.',
-  routes: ['profiles.php', 'page.php?sid=attack', 'loader.php?sid=attack'],
+  routes: ['profiles.php', ...ATTACK_ROUTES],
   defaults: { enabled: true },
   shares: [],
   needs: { apiKey: false, scriptKey: true },
@@ -62,8 +55,7 @@ export default {
 
     async function look() {
       const id = pageSubject(win.location);
-      const page = String(win.location?.pathname || '').split('/').pop();
-      if (!id || !PAGES.includes(page)) return;
+      if (!id || !onSubjectPage(win.location)) return;
       const heading = doc.querySelector(HEADING);
       if (!heading || heading.parentNode?.querySelector(`:scope > .${MARK}`) || s.asked === id) return;
       s.asked = id;
