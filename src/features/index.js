@@ -28,6 +28,7 @@ import warBrief from './war-brief/index.js';
 import raceTemplates from './race-templates/index.js';
 import playerNotes from './player-notes/index.js';
 import messageTemplates from './message-templates/index.js';
+import bountyBoard from './bounty-board/index.js';
 import stockAdvisor from './stock-advisor/index.js';
 import travelPanel from './travel-panel/index.js';
 import bustSafety from './bust-safety/index.js';
@@ -58,6 +59,7 @@ export default [
   raceTemplates,
   playerNotes,
   messageTemplates,
+  bountyBoard,
   stockAdvisor,
   travelPanel,
   bustSafety,

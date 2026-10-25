@@ -97,6 +97,18 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   body.dark-mode [data-${P}-shop="${tier}"], body.dark-mode [data-${P}-shop-dot="${tier}"] { --${P}-shop-ink: ${TOKENS.dark[token]}; }`).join('\n')}
   [data-${P}-shop] { outline: 2px solid var(--${P}-shop-ink) !important; outline-offset: -2px; border-radius: 4px; }
   [data-${P}-shop-hide] { display: none !important; }
+  /* The bounty board (BNT-012): rows outside the filter, and hospital timers nearly up. */
+  [data-${P}-bounty-hide] { display: none !important; }
+  [data-${P}-bounty-soon] { outline: 2px solid ${TOKENS.light['tt-success']} !important; outline-offset: -2px; border-radius: 4px; }
+  body.dark-mode [data-${P}-bounty-soon] { outline-color: ${TOKENS.dark['tt-success']} !important; }
+  .${P}-ui-bar label { display: inline-flex; align-items: center; gap: 4px; }
+  .${P}-ui-bar input[type="number"] {
+    box-sizing: border-box; width: 110px; min-height: 26px; padding: 2px 6px;
+    border: 1px solid var(--input); border-radius: var(--radius); background: var(--background); color: var(--foreground);
+    font: 12px var(--tt-font-sans);
+  }
+  .${P}-ui-bar input.${P}-bounty-short { width: 58px; }
+  @media (pointer: coarse) { .${P}-ui-bar input[type="number"] { min-height: 44px; } }
   [data-${P}-shop-dot]::before {
     content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
     margin: 0 4px 0 6px; vertical-align: middle; background: var(--${P}-shop-ink);
