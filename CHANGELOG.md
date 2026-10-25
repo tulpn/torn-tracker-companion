@@ -210,7 +210,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   templates filled in for that player: their name, ID, faction and level from the
   profile, and your own name, links and buying price from the settings. A placeholder
   the page doesn't show stays as written and is marked, never guessed. **Copy message**
-  puts it on the clipboard; you paste it and send it yourself. Seven starter templates
+  puts it on the clipboard; you paste it and send it yourself. **Write message** opens
+  Torn's new-message page for that player with the subject and message already filled
+  in. On that page, a template picker and **Insert** add a template below what you've
+  written. Either way you check it and press Send yourself. Seven starter templates
   (trade offer, buying, recruitment, faction welcome, war call-up, armory return, job
   offer) to edit or delete. Kept only on this device; nothing is sent.
 
