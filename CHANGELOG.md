@@ -221,6 +221,10 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   range and anonymous bounties that hides rows at once and says how many it shows, and
   hospital timers within 10 minutes (set your own) outlined. Reads the page only; never
   attacks or claims anything.
+- **Wallet reminder** (wave 3). On the Item Market's add-listing form and your bazaar's
+  add and manage pages, when the cash in your sidebar is $1,000,000 or more (set your
+  own), a line above the form reminds you to bank it before you list: sellers are
+  sometimes mugged just after a sale. Reads the page only and sends nothing.
 - When torn-tracker.com no longer serves an account, the settings page says so in one
   neutral notice, with where to ask if it's a mistake, and the script stops using the
   script key for reads and sharing. Features that work on this device alone carry on.

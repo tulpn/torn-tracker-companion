@@ -108,6 +108,8 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     font: 12px var(--tt-font-sans);
   }
   .${P}-ui-bar input.${P}-bounty-short { width: 58px; }
+  /* The wallet reminder (TRU-025): its button keeps to one line. */
+  .${P}-wallet-dismiss { white-space: nowrap; }
   @media (pointer: coarse) { .${P}-ui-bar input[type="number"] { min-height: 44px; } }
   [data-${P}-shop-dot]::before {
     content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
