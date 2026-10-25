@@ -57,7 +57,7 @@ export async function boot(win = globalThis) {
     onChange: () => panel?.updateQueue(),
   });
   await uploader.load();
-  const site = createSite({ getKey: () => keys.script });
+  const site = createSite({ getKey: () => keys.script, onBanned: () => uploader.banned() });
   await site.cache.load();
   // Achievements (WP-UX-8): a toast when one is earned, the featured ones in the settings header.
   const unlocks = createUnlocks({

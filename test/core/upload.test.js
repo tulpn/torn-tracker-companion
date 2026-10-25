@@ -231,6 +231,29 @@ describe('CMP-014 the site\'s answers are respected', () => {
     assert.equal(r.uploader.status().authFailed, false);
   });
 
+  test('ADM-068 a banned account pauses sharing and says so; a new key clears it', async () => {
+    const r = rig({ replies: [{ ok: false, status: 403, data: { error: 'account_banned' } }] });
+    r.uploader.add(at(r));
+    await r.runDue();
+    assert.equal(r.uploader.status().authFailed, true);
+    assert.equal(r.uploader.status().banned, true);
+    r.uploader.keyChanged();
+    assert.equal(r.uploader.status().banned, false);
+  });
+
+  test('ADM-068 a ban seen by a read stops sharing too', () => {
+    const r = rig();
+    r.uploader.banned();
+    assert.equal(r.uploader.status().authFailed, true);
+    assert.equal(r.uploader.status().banned, true);
+  });
+
+  test('a stored ban counts only with the key refusal it came with', () => {
+    assert.equal(normalizeState({ authFailed: true, banned: true }).banned, true);
+    assert.equal(normalizeState({ authFailed: false, banned: true }).banned, false);
+    assert.equal(normalizeState({ authFailed: true, banned: 'yes' }).banned, false);
+  });
+
   test('CMP-023 426 stops that kind until the script is updated, others carry on', async () => {
     const r = rig({ replies: [{ ok: false, status: 426, data: { min_version: '1.4.0' } }] });
     r.uploader.add(at(r));

@@ -61,6 +61,11 @@ without saving throws them away. After **Save** you stay on the page, and it say
 - **Credits:** every script the companion took an idea from, with its licence and a link.
 - **Help:** the tours, this guide, troubleshooting, and where to report a problem.
 
+If torn-tracker.com no longer serves your account, a notice at the top of the settings
+page says so, and the companion stops using your script key. Features that work on this
+device alone carry on. If you think it's a mistake, say so in the companion's thread on
+the Torn forum.
+
 ## Your next guide step
 
 If you started the torn-tracker guide on the website, every section of the settings page

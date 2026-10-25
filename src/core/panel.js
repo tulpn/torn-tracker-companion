@@ -95,8 +95,8 @@ const STYLE = `
   #${P}-panel[hidden] { display: none; }
   #${P}-panel *, #${P}-panel *::before, #${P}-panel *::after { box-sizing: border-box; }
   #${P}-panel .${P}-sheet {
-    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
-    grid-template-areas: "head head" "nav main" "foot foot";
+    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
+    grid-template-areas: "head head" "banned banned" "nav main" "foot foot";
     width: 100%; min-width: 0; min-height: 70vh;
     background: var(--ttc-bg); border-radius: var(--radius); border: 1px solid var(--ttc-line);
   }
@@ -185,6 +185,9 @@ const STYLE = `
     background: var(--ttc-accent-soft); border-radius: 12px; padding: 12px 14px; margin: 10px 0; white-space: pre-line;
   }
   #${P}-panel .${P}-warn { color: var(--ttc-warn); margin-top: 6px; font-size: 13px; }
+  #${P}-panel .${P}-banned { grid-area: banned; border-left: 4px solid var(--ttc-warn); padding: 8px 12px; margin: 0 18px 8px; font-size: 13px; }
+  #${P}-panel .${P}-banned[hidden] { display: none; }
+  #${P}-panel .${P}-banned strong { display: block; }
   #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; font-size: 13px; }
   #${P}-panel .${P}-status[data-tone="good"] { color: var(--ttc-good); }
   #${P}-panel dl { margin: 6px 0; }
@@ -197,8 +200,8 @@ const STYLE = `
   #${P}-panel .${P}-tours a { display: inline-flex; align-items: center; min-height: 44px; }
   @container (max-width: 600px) {
     #${P}-panel .${P}-sheet {
-      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
-      grid-template-areas: "head" "nav" "main" "foot"; border-radius: 0;
+      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto;
+      grid-template-areas: "head" "banned" "nav" "main" "foot"; border-radius: 0;
     }
     #${P}-panel .${P}-head { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
     #${P}-panel .${P}-head input[type=search] { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
@@ -296,6 +299,7 @@ export function mountPanel({
   const nav = h('nav', { 'aria-label': 'Settings sections', 'data-tour': 'companion-sections' });
   const main = h('main');
   const status = h('div', { class: `${P}-status`, role: 'status' });
+  const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
   const featured = h('ul', { class: `${P}-featured`, 'aria-label': 'Your featured achievements' });
   panel.append(h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
@@ -309,6 +313,7 @@ export function mountPanel({
         'aria-label': 'Show me around this page', title: 'Show me around',
       }, '?')] : []),
       h('a', { href: CLOSE, class: `${P}-btn ${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close' }, '\u2715')),
+    banned,
     nav,
     main,
     h('div', { class: `${P}-foot` },
@@ -438,11 +443,30 @@ export function mountPanel({
 
   // ------------------------------------------------------------ Sharing
 
+  /** The neutral notice for a banned account (ADM-068, Q-ADM-5): no reason, a way to ask. */
+  function bannedLines() {
+    const thread = /\{\{/.test(META.supportURL) ? null : META.supportURL;
+    return [
+      h('strong', null, "This account can't use torn-tracker.com."),
+      h('div', null, 'If you think this is a mistake, say so in ',
+        thread ? h('a', { href: thread, target: '_blank', rel: 'noopener' }, "the companion's thread") : "the companion's thread",
+        ' on the Torn forum.'),
+    ];
+  }
+
+  function showBanned() {
+    const on = getQueue()?.banned === true;
+    banned.hidden = !on;
+    banned.replaceChildren(...(on ? bannedLines() : []));
+  }
+
   function queueLines(queue) {
     if (!queue) return [];
     const lines = [];
     const anyOn = Object.values(draft.settings.shares).some(Boolean);
-    if (queue.authFailed) {
+    if (queue.banned) {
+      lines.push(h('div', { class: `${P}-warn` }, 'Sharing is off for this account.'));
+    } else if (queue.authFailed) {
       lines.push(h('div', { class: `${P}-warn` },
         'torn-tracker.com did not accept your script key. Sharing is paused until you save a valid one.'));
     } else if (!queue.hasKey && anyOn) {
@@ -844,6 +868,7 @@ export function mountPanel({
     }
     query = '';
     search.value = '';
+    showBanned();
     render();
     // The first time the page opens (and for each new version), the settings tour.
     tours?.auto('settings', tourOptions());
@@ -883,6 +908,7 @@ export function mountPanel({
     updateQueue() {
       const box = active ? panel.querySelector(`#${P}-queue`) : null;
       if (box) box.replaceChildren(...queueLines(getQueue()));
+      if (active) showBanned();
     },
     destroy() {
       stopUnlocks?.();
