@@ -19,6 +19,7 @@ Saved Torn pages and the JSON responses Torn's own pages request, for feature te
 | `awards-merits.html` | the merits tab, `page.php?sid=awards&tab=merits`: the merits panel only | **Captured** by the owner on 2026-10-23. Torn's structure and class names as captured; every level, count and total made up, icons emptied |
 | `profile.html` | a player's profile, `profiles.php?XID=…`: the heading and the basic information table | **Synthetic**, classes as TornTools (GPLv3) reads them; the player and faction are made up. Replace with a capture. |
 | `attack-data-before.json` | the same before the fight starts, defender's items not shown | **Synthetic**, as above |
+| `bounties.html` | the bounty board, `bounties.php`: three bounties (one anonymous, two in hospital) | **Synthetic**, from the board's long-standing class names; targets and listers made up. Replace with a capture. |
 
 A capture replaces a synthetic file one for one. Strip anything about the player (name,
 id, money) before committing: this repository is public.

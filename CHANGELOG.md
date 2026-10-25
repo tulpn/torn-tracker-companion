@@ -216,6 +216,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   written. Either way you check it and press Send yourself. Seven starter templates
   (trade offer, buying, recruitment, faction welcome, war call-up, armory return, job
   offer) to edit or delete. Kept only on this device; nothing is sent.
+- **Bounty board** (wave 3). On Torn's bounty board, a fair-fight badge beside every
+  target (one batched read), a filter bar for minimum reward, highest fair fight, level
+  range and anonymous bounties that hides rows at once and says how many it shows, and
+  hospital timers within 10 minutes (set your own) outlined. Reads the page only; never
+  attacks or claims anything.
 - When torn-tracker.com no longer serves an account, the settings page says so in one
   neutral notice, with where to ask if it's a mistake, and the script stops using the
   script key for reads and sharing. Features that work on this device alone carry on.
