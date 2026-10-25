@@ -6,6 +6,9 @@ import assert from 'node:assert/strict';
 import feature, {
   BODY, MAX_TEMPLATES, NAME, STARTERS, fill, ownValues, readProfile, validateTemplates, withTemplate,
 } from '../../src/features/message-templates/index.js';
+import {
+  DRAFT_KEY, DRAFT_MS, composeHref, composeTarget, validDraft,
+} from '../../src/features/message-templates/compose.js';
 import { defaults, normalize } from '../../src/core/settings.js';
 import { createRegistry } from '../../src/core/registry.js';
 import features from '../../src/features/index.js';
@@ -184,5 +187,100 @@ describe('CMP-307 on the profile', () => {
     feature.stop();
     assert.equal(p.doc.querySelectorAll('.ttc-msg').length, 0);
     assert.deepEqual(p.violations, []);
+  });
+});
+
+const COMPOSE = 'https://www.torn.com/messages.php#/p=compose&XID=2000001';
+const FORM = '<form class="mailbox-compose"><input id="ac-search-0" type="text"><input type="text" name="subject"><textarea name="message"></textarea><button type="submit">Send</button></form>';
+const EDITOR_FORM = '<form><input type="text" name="subject"><div class="mce-content-body" contenteditable="true"><p><br></p></div><button type="submit">Send</button></form>';
+
+describe('CMP-307 the compose page', () => {
+  test('its address names the player; other mailbox pages are not compose', () => {
+    const at = (href) => {
+      const u = new URL(href);
+      return composeTarget({ pathname: u.pathname, hash: u.hash });
+    };
+    assert.equal(at(COMPOSE), 2000001);
+    assert.equal(at('https://www.torn.com/messages.php#/p=compose'), 0);
+    assert.equal(at('https://www.torn.com/messages.php#/p=inbox'), null);
+    assert.equal(at('https://www.torn.com/profiles.php?XID=1'), null);
+    assert.equal(composeHref(7), '/messages.php#/p=compose&XID=7');
+  });
+
+  test('a draft is used only for its player, while fresh, and within the limits', () => {
+    const now = 1_000_000_000;
+    const ok = { id: 7, subject: 'S', body: 'B', at: now - 1000 };
+    assert.deepEqual(validDraft(JSON.stringify(ok), 7, now), { id: 7, subject: 'S', body: 'B' });
+    assert.equal(validDraft(JSON.stringify(ok), 8, now), null);
+    assert.equal(validDraft(JSON.stringify({ ...ok, at: now - DRAFT_MS - 1 }), 7, now), null);
+    assert.equal(validDraft(JSON.stringify({ ...ok, body: 'x'.repeat(BODY + 1) }), 7, now), null);
+    assert.equal(validDraft('{not json', 7, now), null);
+    assert.equal(validDraft(null, 7, now), null);
+  });
+
+  test('Write message on the profile is a link to the compose page, leaving a draft', async () => {
+    const r = run({ url: PROFILE, html: page('profile.html'), settings: OWN, data: { templates: [T] } });
+    await wait();
+    press(r, 'Messages');
+    const link = r.doc.querySelector('a.ttc-msg-write');
+    assert.equal(link.getAttribute('href'), '/messages.php#/p=compose&XID=2000001');
+    r.doc.addEventListener('click', (event) => event.preventDefault());
+    link.dispatchEvent(new r.window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    const draft = JSON.parse(r.window.sessionStorage.getItem(DRAFT_KEY));
+    assert.equal(draft.id, 2000001);
+    assert.equal(draft.subject, 'Hi Example');
+    assert.equal(draft.body, 'Hi Example [2000001] of Example Faction, level 42. Me');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('AC1: the compose page fills itself in from the draft, and nothing is sent', async () => {
+    const r = run({ url: COMPOSE, html: FORM, data: { templates: [T] } });
+    r.window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ id: 2000001, subject: 'Hi Example', body: 'Hello {faction}', at: Date.now() }));
+    let sent = 0;
+    r.doc.addEventListener('submit', () => { sent += 1; });
+    await wait();
+    assert.equal(r.doc.querySelector('[name=subject]').value, 'Hi Example');
+    assert.equal(r.doc.querySelector('[name=message]').value, 'Hello {faction}');
+    assert.equal(r.window.sessionStorage.getItem(DRAFT_KEY), null, 'a draft is used once');
+    const said = [...r.doc.querySelectorAll('.ttc-msg-line')].map((n) => n.textContent);
+    assert.match(said[0], /press Send yourself/);
+    assert.match(said[1], /Still to fill in: \{faction\}/);
+    assert.equal(sent, 0);
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('a draft for another player is left alone', async () => {
+    const r = run({ url: COMPOSE, html: FORM });
+    r.window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ id: 5, subject: 'S', body: 'B', at: Date.now() }));
+    await wait();
+    assert.equal(r.doc.querySelector('[name=message]').value, '');
+  });
+
+  test('Insert adds a template below what is written; AC2: what is unknown stays and is named', async () => {
+    const r = run({ url: COMPOSE, html: FORM, settings: OWN, data: { templates: [T] } });
+    await wait();
+    r.doc.querySelector('[name=subject]').value = 'Mine';
+    r.doc.querySelector('[name=message]').value = 'Already here';
+    press(r, 'Insert');
+    assert.equal(r.doc.querySelector('[name=subject]').value, 'Mine', 'a subject the player wrote is kept');
+    assert.equal(r.doc.querySelector('[name=message]').value,
+      'Already here\n\nHi {name} [2000001] of {faction}, level {level}. Me');
+    const said = [...r.doc.querySelectorAll('.ttc-msg-line')].map((n) => n.textContent).join(' ');
+    assert.match(said, /Not on this page: \{name\}, \{faction\}, \{level\}/);
+  });
+
+  test('a rich-text editor gets one paragraph per line', async () => {
+    const r = run({ url: COMPOSE, html: EDITOR_FORM, data: { templates: [{ name: 'Two', subject: 'S', body: 'One\n\nTwo' }] } });
+    await wait();
+    press(r, 'Insert');
+    const paras = [...r.doc.querySelectorAll('.mce-content-body > p')].map((p) => p.textContent);
+    assert.deepEqual(paras, ['One', '', 'Two']);
+    assert.equal(r.doc.querySelector('[name=subject]').value, 'S');
+  });
+
+  test('no form on the page: nothing is added', async () => {
+    const r = run({ url: COMPOSE, html: '<div class="mailbox"></div>' });
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-msg'), null);
   });
 });

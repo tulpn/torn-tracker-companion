@@ -1,6 +1,6 @@
 ---
 title: Message templates
-summary: Keep the messages you send often, and fill one in for a player from their profile, ready to paste and send.
+summary: Keep the messages you send often, and fill one in for a player from their profile, ready to check and send.
 section: Guides
 group: features
 order: 316
@@ -20,9 +20,19 @@ keywords: torn message templates, torn mail templates, torn recruitment message,
 1. Open the player's profile.
 2. Beside their name, press **Messages**.
 3. Pick a template. The preview shows it filled in for that player.
-4. Press **Copy message**, then paste it into a Torn message or chat and send it yourself.
+4. Press **Write message**. Torn's new-message page opens for that player, with the
+   subject and the message filled in. Read it over, then press **Send** yourself.
+
+Or press **Copy message** and paste it into a Torn message or chat.
 
 The companion never sends anything for you, and it works one player at a time.
+
+## Add a template to a message you're writing
+
+On Torn's new-message page, above the form, pick a template and press **Insert**. It goes
+below what you've already written, and fills in the subject if that's still empty. The
+player's name, faction and level aren't on that page, so those placeholders stay as
+written, and the companion names them for you to fill in.
 
 ## Placeholders
 
@@ -62,6 +72,8 @@ box as text, along with your [player notes](player-notes.md) and racing template
 other device, paste it into the same box and press **Import**.
 
 > **What it reads and sends.** The profile you have open, for the player's name, ID,
-> faction and level. Your templates and your own values are kept only on this device, in
+> faction and level, and the new-message page you have open, to write into its subject
+> and message. Between the two pages, the filled-in message waits in this browser tab
+> for ten minutes at most, and is removed once used. Your templates and your own values are kept only on this device, in
 > the companion's settings. Nothing is sent anywhere. **Forget me** deletes them, along
 > with everything else the script keeps.

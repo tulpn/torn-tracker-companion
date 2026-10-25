@@ -16,12 +16,19 @@ import {
   bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, strip as uiStrip,
 } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
+import {
+  BODY, MAX_TEMPLATES, NAME, SUBJECT,
+} from './limits.js';
+import {
+  DRAFT_KEY, bodyText, composeHref, composeTarget, findCompose, validDraft, writeBody, writeSubject,
+} from './compose.js';
 
 const MARK = 'ttc-msg';
-export const MAX_TEMPLATES = 20;
-export const NAME = 30;
-export const SUBJECT = 80;
-export const BODY = 2000;
+/** Our button look, on a link to Torn's own page. */
+const UI_BUTTON = 'ttc-ui-button';
+export {
+  BODY, MAX_TEMPLATES, NAME, SUBJECT,
+} from './limits.js';
 const SETTLE_MS = 250;
 
 /** The profile's detail rows: a label, and its value beside it. */
@@ -174,8 +181,8 @@ export default {
   title: 'Message templates',
   area: 'other',
   guide: 'message-templates',
-  summary: 'Your own messages on any profile, filled in with that player\'s name and details, ready to copy.',
-  routes: ['profiles.php'],
+  summary: 'Your own messages on any profile, filled in with that player\'s name and details, ready to copy or to open in a new message.',
+  routes: ['profiles.php', 'messages.php'],
   defaults: {
     enabled: true, myName: '', myBuylist: '', myCalc: '', pct: 90,
   },
@@ -250,6 +257,18 @@ export default {
         show();
       });
       const copyButton = uiButton(doc, { tone: 'good' }, 'Copy message');
+      // A plain link to Torn's own compose page: the player opens it, and the page they
+      // open fills itself in from the draft left here. Nothing is sent.
+      const write = h('a', { class: `${UI_BUTTON} ${MARK}-write`, href: composeHref(id) }, 'Write message');
+      write.addEventListener('click', () => {
+        const t = current();
+        if (!t) return;
+        const known = values(id);
+        const draft = { id, subject: fill(t.subject, known).text, body: fill(t.body, known).text, at: Date.now() };
+        try {
+          win.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch { /* no storage: the compose page opens empty, and Copy still works */ }
+      });
       const edit = uiButton(doc, {}, 'Edit');
       const add = uiButton(doc, {}, 'New template');
       const body = h('div', { class: `${MARK}-body` });
@@ -341,8 +360,8 @@ export default {
       });
 
       node.append(h('strong', null, 'Message templates'),
-        uiBar(doc, {}, ...(list.length ? [pick, copyButton, edit] : []), add), body,
-        uiNote(doc, {}, 'Copy, then paste it into a message or chat and send it yourself.'));
+        uiBar(doc, {}, ...(list.length ? [pick, copyButton, write, edit] : []), add), body,
+        uiNote(doc, {}, 'Copy it, or open it in a new message. Either way, you check it and send it yourself.'));
       show();
       return node;
     }
@@ -357,7 +376,59 @@ export default {
       if (heading && s.open) place(id, heading);
     }
 
+    /** The compose page: fill in a draft from a profile, and offer every template. */
+    function compose(id) {
+      if (doc.querySelector(`.${MARK}-insert`)) return;
+      const found = findCompose(doc);
+      const anchor = found.anchor || found.subject;
+      if (!anchor) return;
+      const known = () => ({ id: id ? String(id) : null, ...ownValues(ctx.settings) });
+      const say = h('div', { class: `${MARK}-say`, role: 'status' });
+      const lines = (...texts) => say.replaceChildren(...texts.map((t) => uiNote(doc, { cls: `${MARK}-line` }, t)));
+      const list = templates();
+      const pick = h('select', { class: `${MARK}-pick`, 'aria-label': 'Template' },
+        ...list.map((t) => h('option', { value: t.name }, t.name)));
+      const insert = uiButton(doc, { tone: 'good' }, 'Insert');
+      insert.addEventListener('click', (event) => {
+        stop(event);
+        const t = templates().find((x) => x.name === pick.value);
+        const now = findCompose(doc);
+        if (!t || !(now.anchor || now.subject)) return;
+        if (now.subject && !now.subject.value.trim()) writeSubject(now, fill(t.subject, known()).text);
+        const text = fill(t.body, known()).text;
+        const before = bodyText(now);
+        writeBody(now, before ? `${before}\n\n${text}` : text);
+        lines('Inserted. Check it, then press Send yourself.', ...why(fill(`${t.subject}\n${t.body}`, known()).missing));
+      });
+      const node = uiStrip(doc, { cls: `${MARK} ${MARK}-insert`, tone: 'info' },
+        h('strong', null, 'Message templates'),
+        uiBar(doc, {}, ...(list.length ? [pick, insert] : [uiNote(doc, {}, 'No templates yet. Write one from any profile.')])),
+        say);
+      (anchor.closest('form') || anchor).before(node);
+
+      let raw = null;
+      try {
+        raw = win.sessionStorage.getItem(DRAFT_KEY);
+      } catch { /* no storage */ }
+      const draft = id ? validDraft(raw, id) : null;
+      if (!draft) return;
+      try {
+        win.sessionStorage.removeItem(DRAFT_KEY);
+      } catch { /* no storage */ }
+      writeSubject(found, draft.subject);
+      writeBody(found, draft.body);
+      // The draft was filled in on the profile; what it still lacks stays as written.
+      const left = fill(`${draft.subject}\n${draft.body}`, {}).missing;
+      lines('Filled in from your template. Check it, then press Send yourself.',
+        ...(left.length ? [`Still to fill in: ${left.join(', ')}.`] : []));
+    }
+
     function look() {
+      const target = composeTarget(win.location);
+      if (target !== null) {
+        compose(target);
+        return;
+      }
       const id = pageSubject(win.location);
       if (!id) return;
       const heading = doc.querySelector(HEADING);
