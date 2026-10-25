@@ -1,77 +1,82 @@
 <!-- Suggested thread title:
-[userscript] Torn Tracker Companion - <one-line benefit> (TornPDA ready)
+[userscript] Torn Tracker Companion - fair fight, war, travel, trading and crimes on the pages you use (TornPDA ready)
 
 Formatting: only the tags Torn's own editor produces (font color/size, center, hr, b/i, a, img, ul/li, table).
-Images: use the resized copies in pics/forum/ (tools/resize-pics.ps1), never the full-size screenshots.
-Post this AFTER the first push (raw image URLs must resolve) and BEFORE the Greasy Fork import
-(then edit the post to swap install links to Greasy Fork).
+Images: none yet. Where a screenshot belongs, an IMAGE comment says what it shows; add the
+resized copies under pics/forum/ (tools/resize-pics.ps1), never full-size screenshots.
+Install links point at GitHub releases until the Greasy Fork import; then swap them.
+Keep "What it reads and sends" and the terms table in step with the README.
 -->
 
 <center>
-<font size="5" color="#2ecc71"><b>{{HEADLINE}}</b></font><br>
-<font size="3">{{ONE_LINE_PITCH}}</font><br><br>
-<img src="https://raw.githubusercontent.com/tulpn/torn-tracker-companion/main/pics/forum/browser.png"><br>
-<font size="1" color="#999999">Browser (Tampermonkey)</font>
+<font size="5" color="#2ecc71"><b>Torn Tracker Companion</b></font><br>
+<font size="3">torn-tracker.com and the community's best tools, on the Torn pages you already use.</font><br><br>
+<!-- IMAGE: a profile with its fair-fight badge and loadout card, in a desktop browser -->
 </center>
 <br>
 
-<font size="4" color="#f1c40f"><b>&#9889; Install in 30 seconds</b></font><br>
+<font size="4" color="#f1c40f"><b>&#9889; Install</b></font><br>
+<font color="#e67e22"><b>Public test (0.x).</b></font> Things may change before version 1.0, and some features wait on torn-tracker.com or on Torn's page layout. Tell us here what breaks.<br>
 <ul>
-<li><b>Browser</b> (Tampermonkey / Violentmonkey): <a href="https://greasyfork.org/en/scripts/{{GREASYFORK_ID}}-{{GREASYFORK_SLUG}}"><b>&#9654; Install from Greasy Fork</b></a> - automatic updates</li>
-<li><b>Torn PDA</b>: Settings &gt; Userscripts &gt; Add, paste this URL, save:<br><font color="#3498db">https://update.greasyfork.org/scripts/{{GREASYFORK_ID}}/{{GREASYFORK_SLUG}}.user.js</font></li>
+<li><b>Browser</b> (Tampermonkey / Violentmonkey): open <a href="https://github.com/tulpn/torn-tracker-companion/releases/latest/download/torn-tracker-companion.user.js"><b>&#9654; the install link</b></a> and confirm. Your script manager checks for updates by itself.</li>
+<li><b>Torn PDA</b>: UserScripts &gt; Add, then add it <b>from this URL</b> (not by pasting the text, which gives a copy PDA can't update):<br><font color="#3498db">https://github.com/tulpn/torn-tracker-companion/releases/latest/download/torn-tracker-companion.user.js</font></li>
 </ul>
-<font color="#2ecc71"><b>No API key. No setup. No automation.</b></font> {{AFTER_INSTALL_SENTENCE}}<br><br>
+Then open <b>Torn Tracker</b> in Torn's sidebar (under Areas; in the slide-out menu on a phone or in PDA). The settings open as a page inside Torn, with a short tour the first time.<br><br>
 
 <hr>
 
 <font size="4" color="#f1c40f"><b>&#128142; What you see</b></font><br>
-{{WHAT_YOU_SEE}}<br><br>
+Every feature has its own switch.
+<ul>
+<li><b>Fair-fight badges</b> beside players on profiles, faction pages (the war page too), the attack page and the bounty board, from torn-tracker.com's estimates.</li>
+<li><b>War page</b>: sort the opponents and see your faction's dibs; a pre-war strip on the opponent's faction page.</li>
+<li><b>Travel</b>: foreign shop stock, the best buy abroad, and your best runs on the travel agency.</li>
+<li><b>Trading</b>: a shop price guard on the Item Market and your own sell forms, a price filler that never fills below a shop, trade value, auction value badges.</li>
+<li><b>Crimes</b>: morale, value per nerve and burglary targets; weights and success chances for organized crimes; bust safety on the jail page.</li>
+<li><b>Attacks</b>: loadouts on profiles and the attack page, and how often you mugged a player.</li>
+<li><b>Bounty board</b>: filter by reward, fair fight and level, and see which hospital timers are nearly up.</li>
+<li><b>Everyday</b>: gym progress, merit hints, stock signals, racing templates, private player notes and message templates.</li>
+<li><b>Your sidebar</b>: a Torn Tracker block under Lists with your chain, war, dibs, med-out partner and OC.</li>
+</ul>
+The guide has a page for every feature: <a href="https://www.torn-tracker.com/guide/companion/">torn-tracker.com/guide/companion</a>.<br><br>
 
 <center>
-<img src="https://raw.githubusercontent.com/tulpn/torn-tracker-companion/main/pics/forum/pda.png"> &nbsp; <img src="https://raw.githubusercontent.com/tulpn/torn-tracker-companion/main/pics/forum/settings.png"><br>
-<font size="1" color="#999999">Torn PDA &nbsp;|&nbsp; Settings panel</font>
+<!-- IMAGE: the war page with sorting and dibs, in Torn PDA -->
+<!-- IMAGE: the settings page, Features section -->
 </center>
 <br>
 
-<font size="4" color="#f1c40f"><b>&#9881; Make it yours</b></font><br>
-Tap the gear button (bottom right):<br>
-<ul>
-<li>{{SETTING_1}}</li>
-<li>{{SETTING_2}}</li>
-</ul>
-Settings stay on your device and survive updates (Torn PDA's own script storage on mobile, localStorage in the browser).<br><br>
-
 <hr>
 
-<font size="4" color="#f1c40f"><b>&#128737; Safe by design</b></font><br>
-It <b>never</b> makes a network request, never asks for an API key, and only reads the page you have open. It does not click, buy or sell anything, so it stays well inside the scripting rules. The code is open on <a href="https://github.com/tulpn/torn-tracker-companion">GitHub</a> with an automated test suite.<br><br>
+<font size="4" color="#f1c40f"><b>&#128737; What it reads and sends</b></font><br>
+<ul>
+<li>It reads <b>only the Torn pages you open yourself</b>: the page, and the replies Torn sends that page (it watches them, never changes or repeats them). It never loads torn.com pages in the background.</li>
+<li><b>One click is at most one game action.</b> It fills in fields for you but never submits them, and it never buys, sells, attacks or claims anything.</li>
+<li>It talks only to <b>torn-tracker.com</b>, with your torn-tracker.com script key (which is not a Torn API key). Features that need the site, like fair-fight badges, need that key; the rest work without it.</li>
+<li><b>Sharing starts off.</b> Under Sharing you can choose to send what Torn showed you, kind by kind: foreign stock, auction listings, item market prices, bazaar listings, loadouts, jail difficulty bands, and your own crime outcomes and gym progress. Each switch says exactly what it sends and what torn-tracker.com keeps and publishes; nothing goes until you agree. Nothing is ever sent from company or faction application pages.</li>
+<li>Every request to torn-tracker.com says the script's version and whether it runs in Torn PDA or a desktop browser. Nothing else about your device.</li>
+</ul>
+The code is open on <a href="https://github.com/tulpn/torn-tracker-companion">GitHub</a> (GPLv3), with a test suite and a lint that fails the build on anything Torn's scripting rules forbid.<br><br>
 
 <b>API Terms of Service</b><br>
 <table>
 <tr><th>Data Storage</th><th>Data Sharing</th><th>Purpose of Use</th><th>Key Storage &amp; Sharing</th><th>Key Access Level</th></tr>
 <tr>
-<td>Only locally. Your preferences are kept in Torn PDA's per-script storage or, in a browser, in localStorage. Nothing about your account, inventory or trades is stored, and nothing is uploaded anywhere.</td>
-<td>Nobody. No data is sent to the script author, other players or any third-party service.</td>
-<td>{{PURPOSE_OF_USE}}</td>
-<td>Not applicable. The script never asks for, stores or sends an API key.</td>
+<td>On your device: settings, notes and templates, in Torn PDA's script storage or the browser's. On torn-tracker.com: only the kinds you switch on under Sharing, kept as the README's table says.</td>
+<td>Only torn-tracker.com, and only the kinds you switch on. The site publishes combined data, never who sent it (except that a player can see who reported their own loadout).</td>
+<td>Bringing torn-tracker.com's estimates and community data onto the Torn pages you use.</td>
+<td>This version asks for no Torn API key. Your torn-tracker.com script key stays on your device and goes only to torn-tracker.com.</td>
 <td>None required.</td>
 </tr>
 </table>
-<font size="1">Removing your data: "Reset to defaults" in the settings panel, or uninstall the script and clear site data for torn.com.</font><br><br>
+<font size="1">Removing your data: "Forget me" under Settings &gt; Data clears everything on this device; uninstalling the script does too.</font><br><br>
 
 <hr>
 
-<center>
-<font size="4" color="#2ecc71"><b>&#11014; Like it? Upvote this thread and drop a comment.</b></font><br>
-It keeps the script visible so more players find it - and every reply bumps the post. Thank you!<br><br>
-<a href="https://greasyfork.org/en/scripts/{{GREASYFORK_ID}}-{{GREASYFORK_SLUG}}"><font size="4" color="#f1c40f"><b>&#9654; Install now on Greasy Fork</b></font></a>
-</center>
-<br>
-
 <font size="3" color="#f1c40f"><b>&#128295; Bugs, ideas, requests</b></font><br>
-Something off after a Torn update? <b>Reply in this thread</b> - fastest way to reach me, and it bumps the post for everyone.<br><br>
+Something off after a Torn update? <b>Reply in this thread</b>, with the page and what you expected. It's the quickest way to reach us.<br><br>
 
-<font size="3" color="#f1c40f"><b>&#128188; Custom scripts</b></font><br>
-Need something tailored to your faction, your trading routine or anything else in Torn? I build custom scripts to order, priced by scope. Details in my <a href="https://www.torn.com/forums.php#/p=threads&f=67&t=16611888&b=0&a=0">service thread</a>, or mail <a href="https://www.torn.com/profiles.php?XID=4372940">ares313377 [4372940]</a>. There is also a <a href="https://discord.gg/eBxAZF9qsJ">Discord</a> if you prefer chat.<br><br>
+<font size="3" color="#f1c40f"><b>&#128591; Credits</b></font><br>
+Some features build on other open scripts, credited by name under Settings &gt; Credits and in the README.<br><br>
 
-<font size="1" color="#999999">More scripts at <a href="https://www.torn-tracker.com/scripts">torn-tracker.com/scripts</a></font>
+<font size="1" color="#999999">Part of <a href="https://www.torn-tracker.com">torn-tracker.com</a>.</font>
