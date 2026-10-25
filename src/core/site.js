@@ -39,6 +39,9 @@ export const AUCTION_VALUE_URL = `${SITE}/api/feeds/auctions/value`;
 const AUCTION_VALUE_TTL = 10 * 60_000;
 const AUCTION_VALUE_MAX = 50;
 export const WAR_BRIEF_URL = `${SITE}/api/feeds/war/brief`;
+/** Players listed for mugging sellers after a sale (TRU-022, the companion's read on hq #368). */
+export const TRUST_MUGGERS_URL = `${SITE}/api/feeds/trust/muggers`;
+const TRUST_TTL = 10 * 60_000;
 const ME_MUGS_TTL = 10 * 60_000;
 /** Open data (public-api.md): asked anonymously, never with the script key. */
 export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
@@ -74,6 +77,18 @@ export function validFf(v) {
   return Boolean(v) && typeof v === 'object'
     && (v.ff === null || (typeof v.ff === 'number' && Number.isFinite(v.ff) && v.ff >= 1))
     && (v.band === null || (typeof v.band === 'string' && v.band.length <= BAND));
+}
+
+/**
+ * One trust answer: a listed player's after-sale mug counts and when they were last
+ * reported (local-clock ms, or null), or `{listed: false}` for anyone the site left out.
+ */
+export function validTrust(v) {
+  if (!v || typeof v !== 'object') return false;
+  if (v.listed === false) return Object.keys(v).length === 1;
+  return v.listed === true && Number.isInteger(v.mugs30) && v.mugs30 >= 0 && v.mugs30 <= 1e4
+    && Number.isInteger(v.mugs90) && v.mugs90 >= Math.max(1, v.mugs30) && v.mugs90 <= 1e4
+    && (v.lastAt === null || (Number.isFinite(v.lastAt) && v.lastAt > 0));
 }
 
 export function validPrice(v) {
@@ -388,6 +403,8 @@ export const SPACES = Object.freeze({
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
   guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
+  trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
+  trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && v.startsWith(`${SITE}/`) },
   shops: { ttlMs: DAY, max: 1, valid: validShopRows },
   // The site had no table: the built-in one serves for an hour before it is asked again.
   shopsMissed: { ttlMs: HOUR, max: 1, valid: (v) => v === true },
@@ -494,6 +511,47 @@ export function createSite({
         }
       }
       return found;
+    },
+
+    /**
+     * Which of these players are listed for mugging sellers shortly after a sale
+     * (TRU-022, TRU-023; the read accepted on hq #368). The site answers only for listed
+     * players, so a reply never says who was looked up below the threshold; everyone else
+     * asked is `{listed: false}`. Each answer is kept 10 minutes. Until the site serves
+     * the read, nothing is cached and every player is simply absent.
+     * @param {number[]} ids
+     * @returns {Promise<{players: Map<number, object>, safetyUrl: string|null}>}
+     */
+    async muggers(ids) {
+      const { found, missing } = split('trust', ids.filter(positiveInt));
+      const ask = missing.slice(0, MAX_IDS);
+      const link = () => cache.get('trustLink', 'url') ?? null;
+      if (ask.length === 0 || !usable()) return { players: found, safetyUrl: link() };
+
+      const data = await call(TRUST_MUGGERS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ask }),
+      });
+      if (!data || typeof data !== 'object' || !Array.isArray(data.results)) return { players: found, safetyUrl: link() };
+      const skew = skewOf(data);
+      // A path, or a link on our host (the bare host is moved to www, as for the war brief).
+      const safetyUrl = siteLink(data.safety_url) ?? siteUrl(data.safety_url);
+      if (safetyUrl) cache.set('trustLink', 'url', safetyUrl);
+      for (const row of data.results) {
+        if (!positiveInt(row?.id) || !ask.includes(row.id) || row.listed !== true) continue;
+        const last = row.last_reported_at == null ? null : time(row.last_reported_at, skew);
+        const value = { listed: true, mugs30: row.mugs_30d, mugs90: row.mugs_90d, lastAt: last };
+        if (!validTrust(value)) continue;
+        cache.set('trust', row.id, value);
+        found.set(row.id, value);
+      }
+      for (const id of ask) {
+        if (found.has(id)) continue;
+        cache.set('trust', id, { listed: false });
+        found.set(id, { listed: false });
+      }
+      return { players: found, safetyUrl: link() };
     },
 
     /**
