@@ -12,7 +12,7 @@
 import { el } from '../../core/dom.js';
 import { badge, bar as uiBar, button as uiButton, note as uiNote } from '../../core/ui.js';
 import { HEADING, ROWS, ROW_LINK } from '../ff-badges/selectors.js';
-import { idFromHref } from '../ff-badges/index.js';
+import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../core/players.js';
 
 const MARK = 'ttc-notes';
 /** Each tag and the tone its badge takes. */
@@ -63,13 +63,6 @@ export function badgeText(note) {
   return `${tag}: ${text.length > SHORT ? `${text.slice(0, SHORT - 1).trimEnd()}…` : text}`;
 }
 
-/** The player a profile or attack page is about. */
-function pageSubject(loc) {
-  const params = new URLSearchParams(String(loc?.search || ''));
-  const id = Number(params.get('XID') || params.get('user2ID'));
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
 export default {
   id: 'player-notes',
   wave: 3,
@@ -77,7 +70,7 @@ export default {
   area: 'other',
   guide: 'player-notes',
   summary: 'Your own note and tag on a player, shown on their profile, in faction lists and on the attack page.',
-  routes: ['profiles.php', 'factions.php', 'page.php?sid=attack', 'loader.php?sid=attack'],
+  routes: ['profiles.php', 'factions.php', ...ATTACK_ROUTES],
   defaults: { enabled: true },
   data: { empty: { notes: [] }, validate: validateNotes },
   shares: [],
@@ -167,7 +160,7 @@ export default {
       }
       const id = pageSubject(win.location);
       const page = String(win.location?.pathname || '').split('/').pop();
-      if (!id || !['profiles.php', 'page.php', 'loader.php'].includes(page)) return;
+      if (!id || !onSubjectPage(win.location)) return;
       const heading = doc.querySelector(HEADING);
       if (!heading || heading.parentNode?.querySelector(`:scope > .${MARK}`)) return;
       if (page === 'profiles.php') refresh(heading, id);

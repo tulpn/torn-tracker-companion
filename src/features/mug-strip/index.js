@@ -6,6 +6,7 @@
 // own, and on the attack page it fills nothing and clicks nothing.
 
 import { ago } from '../war-page/index.js';
+import { ATTACK_ROUTES, pageSubject } from '../../core/players.js';
 import { badge } from '../../core/ui.js';
 
 const MARK = 'ttc-mugs';
@@ -36,7 +37,7 @@ export default {
   area: 'war',
   guide: 'attack-page',
   summary: 'Your own mugs of a player, on their profile and the attack page.',
-  routes: ['profiles.php', 'page.php?sid=attack'],
+  routes: ['profiles.php', ...ATTACK_ROUTES],
   defaults: { enabled: true },
   shares: [],
   needs: { apiKey: false, scriptKey: true },
@@ -48,9 +49,8 @@ export default {
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
     const s = { doc, win, timer: null };
     state = s;
-    const params = new URLSearchParams(String(win.location?.search || ''));
-    const id = Number(params.get('XID') || params.get('user2ID'));
-    if (!Number.isInteger(id) || id <= 0 || !ctx.site?.myMugs) return;
+    const id = pageSubject(win.location);
+    if (!id || !ctx.site?.myMugs) return;
 
     s.timer = win.setTimeout(async () => {
       try {

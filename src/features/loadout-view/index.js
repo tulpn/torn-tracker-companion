@@ -9,6 +9,7 @@
 // The script never asks Torn for any of this, and never names who reported a loadout.
 
 import { el } from '../../core/dom.js';
+import { ATTACK_ROUTES, pageSubject } from '../../core/players.js';
 import { ago } from '../war-page/index.js';
 import { badge, strip } from '../../core/ui.js';
 
@@ -22,12 +23,6 @@ const FLAG_WORDS = { heavy_hitter: 'Heavy hitter', armoured: 'Armoured', temp_re
 const HEADING = '.content-title h4, h4';
 
 let state = null;
-
-function subjectOf(loc) {
-  const params = new URLSearchParams(String(loc?.search || ''));
-  const id = Number(params.get('XID') || params.get('user2ID'));
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
 
 /** One slot as a line: "Primary: ArmaLite M-15A4 (76.9 dmg, 54.4 acc, Penetrate 25)". */
 export function slotLine(name, slot) {
@@ -45,7 +40,7 @@ export default {
   area: 'war',
   guide: 'attack-page',
   summary: "A player's latest loadout on their profile, and opponents' flags when you attack.",
-  routes: ['profiles.php', 'page.php?sid=attack'],
+  routes: ['profiles.php', ...ATTACK_ROUTES],
   defaults: { enabled: true },
   shares: [],
   needs: { apiKey: false, scriptKey: false },
@@ -58,7 +53,7 @@ export default {
     const s = { doc };
     state = s;
     const alive = () => state === s;
-    const id = subjectOf(win.location);
+    const id = pageSubject(win.location);
     const page = String(win.location?.pathname || '').split('/').pop();
     if (!id || !ctx.site) return;
 
