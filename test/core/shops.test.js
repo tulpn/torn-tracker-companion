@@ -117,6 +117,15 @@ describe('the reply is checked field by field', () => {
     assert.equal(readShopReply(null), null);
   });
 
+  test('the open data envelope is ignored, and an empty list is no answer (hq #365)', () => {
+    const envelope = { observed_at: '2026-10-25T20:00:00Z', age_s: 12, reporters: null, source: 'api', server_time: 1792958400 };
+    const rows = readShopReply({ ...envelope, updated_at: '2026-10-25T20:00:00Z', items: [
+      { item_id: 1, sell_price: 50, shop: null, country: null },
+    ] });
+    assert.deepEqual(rows, [[1, 50, null, null]]);
+    assert.equal(readShopReply({ ...envelope, updated_at: null, items: [] }), null);
+  });
+
   test('what the cache keeps', () => {
     assert.equal(validShopRow([1, 5, null, null]), true);
     assert.equal(validShopRow([1, 5, 'Shop']), false);
