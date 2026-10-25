@@ -11,6 +11,7 @@ import ffBadges from './ff-badges/index.js';
 import priceFiller from './price-filler/index.js';
 import shopHighlighter from './shop-highlighter/index.js';
 import undersellWarning from './undersell-warning/index.js';
+import walletReminder from './wallet-reminder/index.js';
 import warPage from './war-page/index.js';
 import tradeValue from './trade-value/index.js';
 import bazaarCapture from './bazaar-capture/index.js';
@@ -42,6 +43,7 @@ export default [
   attackLoadout,
   priceFiller,
   undersellWarning,
+  walletReminder,
   shopHighlighter,
   tradeValue,
   bazaarCapture,
