@@ -225,6 +225,11 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   add and manage pages, when the cash in your sidebar is $1,000,000 or more (set your
   own), a line above the form reminds you to bank it before you list: sellers are
   sometimes mugged just after a sale. Reads the page only and sends nothing.
+- **After-sale mug badge** (wave 3). On a player's profile and the attack page, a badge
+  when torn-tracker.com lists them for mugging sellers shortly after a sale (three or more
+  sellers from two factions in 30 days), with the counts on hover and a link to the
+  seller-safety page. Never shows who reported it. Sends the player's id with your script
+  key; shows nothing until torn-tracker.com serves the list.
 - When torn-tracker.com no longer serves an account, the settings page says so in one
   neutral notice, with where to ask if it's a mistake, and the script stops using the
   script key for reads and sharing. Features that work on this device alone carry on.
