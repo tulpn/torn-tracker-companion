@@ -242,6 +242,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   target without a name yet by its id. The travel panel no longer names the first
   country twice on a multi-stop run, the OC helper keeps its weights when the site has no
   name for one role, and the pre-war strip's link to the full brief shows again.
+- The attack page works the same whichever address Torn opens it under
+  (`page.php?sid=attack` or `loader.php?sid=attack`): fair-fight badges, the loadout view,
+  the mug line and, if you share them, attack loadouts now run on both.
 
 ### Notes
 

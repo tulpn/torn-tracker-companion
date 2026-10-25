@@ -15,6 +15,7 @@
 // source.
 
 import { createGate, isVisible } from '../../core/capture.js';
+import { ATTACK_ROUTES } from '../../core/players.js';
 import { defenderInUrl, fromAttackData } from './read.js';
 import { isAttackData } from './selectors.js';
 
@@ -31,7 +32,7 @@ export default {
   area: 'war',
   guide: 'attack-page',
   summary: 'Lets you share the loadouts the attack page shows you (switch it on under Sharing).',
-  routes: ['page.php?sid=attack'],
+  routes: [...ATTACK_ROUTES],
   defaults: { enabled: true },
   shares: ['loadout'],
   needs: { apiKey: false, scriptKey: true },

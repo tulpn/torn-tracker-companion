@@ -7,6 +7,7 @@ import feature from '../../src/features/attack-loadout/index.js';
 import { defenderInUrl, fromAttackData } from '../../src/features/attack-loadout/read.js';
 import { isAttackData } from '../../src/features/attack-loadout/selectors.js';
 import { checkObservation } from '../../src/core/kinds.js';
+import { matchesAny } from '../../src/core/routes.js';
 import { json, runFeature } from '../feature-harness.js';
 
 const DATA_URL = 'https://www.torn.com/page.php?sid=attackData&mode=json';
@@ -71,6 +72,15 @@ describe('CMP-103 the defender\'s visible loadout is reported once the page show
     const ids = Object.values(r.shared[0].slots).map((slot) => slot.item_id);
     assert.equal(ids.includes(1), false, "the attacker's item 1 is not in the defender's loadout");
     assert.notEqual(r.shared[0].slots.primary.damage, 99);
+  });
+
+  test('the attack page under loader.php shares the same loadout (hq #384)', () => {
+    const loc = { pathname: '/loader.php', search: '?sid=attack&user2ID=2000001', hash: '' };
+    assert.equal(matchesAny(feature.routes, loc), true);
+    const r = run({ url: 'https://www.torn.com/loader.php?sid=attack&user2ID=2000001' });
+    r.respond('https://www.torn.com/loader.php?sid=attackData&mode=json', json('attack-data.json'));
+    assert.equal(r.shared.length, 1);
+    assert.equal(r.shared[0].player_id, 2000001);
   });
 
   test('a response about someone other than the player in the URL is ignored', () => {
