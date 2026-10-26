@@ -142,6 +142,25 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
     assert.equal(t.window.localStorage.getItem(`${PREFIX}_settings`), null);
   });
 
+  test('a second copy on the same page (PDA and a manager, or two installs) starts nothing (hq #406)', async () => {
+    const t = await boot(PAGE);
+    const warned = [];
+    t.window.console.warn = (...args) => warned.push(args.join(' '));
+    const marked = t.doc.documentElement.getAttribute('data-ttc-running');
+    assert.equal(marked, readPackage().version);
+    t.window.eval(readBuilt());
+    await t.tick();
+    for (const sel of [`#${PREFIX}-sidebar-link`, `#${PREFIX}-page-host`, `[id^="${PREFIX}-"]`]) {
+      const once = t.doc.querySelectorAll(sel).length;
+      t.window.eval(readBuilt());
+      await t.tick();
+      assert.equal(t.doc.querySelectorAll(sel).length, once, sel);
+    }
+    assert.ok(warned.some((w) => w.includes(`version ${marked} already runs on this page`)));
+    assert.equal(t.doc.documentElement.getAttribute('data-ttc-running'), marked);
+    assert.deepEqual(t.violations, []);
+  });
+
   test('the settings page is built for a thumb, and folds its menu on a phone', () => {
     const built = readBuilt();
     assert.match(built, /min-height: 44px; min-width: 44px/, 'every button is at least 44 px');

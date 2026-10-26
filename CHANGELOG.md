@@ -252,6 +252,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 - The attack page works the same whichever address Torn opens it under
   (`page.php?sid=attack` or `loader.php?sid=attack`): fair-fight badges, the loadout view,
   the mug line and, if you share them, attack loadouts now run on both.
+- Installed twice (from Greasy Fork and from GitHub, or added twice to Torn PDA), the
+  companion now runs once: the second copy starts nothing, so there's one entry, one
+  settings page, and no read asked twice.
 
 ### Notes
 

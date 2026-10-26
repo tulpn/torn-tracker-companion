@@ -38,6 +38,13 @@ The **Sharing** tab says why. The usual reasons:
 - your script key was refused: create a new one on torn-tracker.com and paste it in;
 - the script is too old for a kind: let it update.
 
+## Installed twice
+
+If the companion is installed twice, say once from Greasy Fork and once from GitHub, or
+added twice to Torn PDA's scripts, only the copy that starts first runs; the other does
+nothing. To know which one you're running, remove one: the version
+under **General** in the settings is the one that runs.
+
 ## Your key is refused
 
 Script keys can be revoked on torn-tracker.com. Create a new one, paste it in the **Keys**
