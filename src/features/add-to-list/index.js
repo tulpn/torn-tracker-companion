@@ -9,7 +9,8 @@
 // One click is one call to torn-tracker.com and never a game action. Nothing is read from
 // the profile but its id. The menu is read once per profile view and kept 5 minutes; a
 // change drops it, so the next opening reads it again. Without a script key with the
-// lists scope, the button says so and links to the settings.
+// lists scope, the button says so and links to the settings. When the first read gets no
+// answer (the site doesn't serve it yet, or is down), nothing shows on that profile view.
 
 import { SITE } from '../../hosts.js';
 import { el } from '../../core/dom.js';
@@ -96,6 +97,8 @@ export default {
     /** Builds the split button (or the key link) from what the site said. */
     function render(heading, id) {
       for (const node of doc.querySelectorAll(`.${MARK}`)) node.remove();
+      // Until the site serves the lists, or while it is down, the profile looks as it did.
+      if (s.menu?.quiet) return;
       if (s.menu?.status === 'no_key') {
         const link = el('a', { href: KEYS_HREF, class: `${MARK} ${MARK}-key ttc-ui-button`, title: 'Lists need a script key with the lists scope.', ownerDocument: doc },
           'Add your script key');
@@ -184,7 +187,7 @@ export default {
       const id = pageSubject(win.location);
       if (!id || !onSubjectPage(win.location)) return;
       const heading = doc.querySelector(HEADING);
-      if (!heading || doc.querySelector(`.${MARK}`) || s.asking === id) return;
+      if (!heading || doc.querySelector(`.${MARK}`) || s.asking === id || (s.menu?.id === id && s.menu.quiet)) return;
       if (s.menu?.id === id) {
         render(heading, id);
         return;
@@ -193,7 +196,7 @@ export default {
       const menu = await ctx.site.lists(id);
       s.asking = null;
       if (!alive()) return;
-      s.menu = { ...menu, id };
+      s.menu = { ...menu, id, quiet: menu.status === 'failed' };
       const now = doc.querySelector(HEADING);
       if (now && !doc.querySelector(`.${MARK}`)) render(now, id);
     }

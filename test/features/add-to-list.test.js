@@ -145,6 +145,30 @@ describe('CMP-110 the split button', () => {
     assert.equal(r.doc.querySelectorAll('.ttc-lists').length, 0);
   });
 
+  test('when the first read gets no answer, the profile looks as it did, even after Torn re-renders', async () => {
+    const site = fakeSite({ status: 'failed', lists: [], lastUsed: null });
+    const r = run({ html: HEADING, url: PROFILE, site });
+    await wait();
+    assert.equal(r.doc.querySelectorAll('.ttc-lists').length, 0);
+    r.doc.body.append(r.doc.createElement('div'));
+    await wait();
+    assert.equal(r.doc.querySelectorAll('.ttc-lists').length, 0);
+    assert.equal(site.reads.length, 1);
+  });
+
+  test('a busy site offers a retry, and the retry reads once', async () => {
+    let status = 'busy';
+    const site = fakeSite(() => ({ status, lists: status === 'ok' ? [chain()] : [], lastUsed: status === 'ok' ? A : null }));
+    const r = run({ html: HEADING, url: PROFILE, site });
+    await wait();
+    assert.equal(main(r).textContent, 'Lists: try again');
+    status = 'ok';
+    press(main(r));
+    await wait(50);
+    assert.equal(site.reads.length, 2);
+    assert.equal(main(r).textContent, 'Add to Chain targets');
+  });
+
   test('only profiles: the attack page gets nothing', () => {
     assert.deepEqual(feature.routes, ['profiles.php']);
   });

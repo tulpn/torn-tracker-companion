@@ -33,6 +33,10 @@ After a change the button says where the player is now, like "On 2 lists". If a 
 deleted, or a faction list became read-only for you, it says "That list isn't yours to
 change" and leaves it out of the menu.
 
+If torn-tracker.com can't be reached when the profile opens, the button stays away for
+that visit; open the profile again later. If the site is only busy, the button says
+**Lists: try again**.
+
 One click is one change on torn-tracker.com. It never attacks, and it does nothing in Torn
 itself.
 
