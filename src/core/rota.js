@@ -10,7 +10,8 @@
 //
 // When one of the member's slots starts while watch mode is off, a small notice says so,
 // with a button to turn it on (CHW-026). It never turns watch mode on by itself. It learns
-// the next slot from the sidebar read's `watch` item and from the rota.
+// the next slot from the sidebar read's `watch` item and from the rota. Like the unlock
+// toast, it stays quiet while the player's off switch on torn-tracker.com is on (HOOK-016).
 //
 // Times are TCT (UTC), with the member's local time beside them (CHW-001).
 
@@ -299,8 +300,9 @@ export const ROTA_STYLE = `
  * @param {object} opts.watch   core/watch.js's controller
  * @param {object} [opts.timers]
  * @param {() => number} [opts.now]
+ * @param {() => boolean} [opts.quiet]  true while pause all or companion toasts off (HOOK-016)
  */
-export function mountSlotNotice({ doc, watch, timers = doc.defaultView || globalThis, now = Date.now }) {
+export function mountSlotNotice({ doc, watch, timers = doc.defaultView || globalThis, now = Date.now, quiet = () => false }) {
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
   let timer = null;
   /** The slot the timer waits for: {startsAt (local ms), role}. */
@@ -316,7 +318,7 @@ export function mountSlotNotice({ doc, watch, timers = doc.defaultView || global
 
   function show(role, startsAt) {
     told.add(startsAt);
-    if (watch.isOn()) return;
+    if (watch.isOn() || quiet()) return;
     hide();
     const on = h('button', { type: 'button', class: `${P}-watch-notice-on` }, 'Turn on watch mode');
     const close = h('button', { type: 'button', class: `${P}-watch-notice-close`, 'aria-label': 'Dismiss' }, '✕');

@@ -326,7 +326,12 @@ function readAchievement(a) {
  * The achievements read's answer (WP-UX-8), checked field by field: what was earned after
  * `since`, oldest first, and the player's featured ones. `cursor` is the reply's own
  * server_time, as the site wrote it, for the next read's `since`.
- * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null}}
+ *
+ * `silenced` is the player's one off switch on torn-tracker.com (HOOK-016): true when
+ * their notification settings have `pause_all` on or `companion_toasts` off, false when
+ * the reply says neither, and null when it carries neither field (an older site), so the
+ * last answer stands. A featured entry the reply marks unearned is never shown (HOOK-032).
+ * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null, silenced: boolean|null}}
  */
 export function readAchievements(data) {
   const unlocked = (Array.isArray(data?.unlocked) ? data.unlocked : []).slice(0, UNLOCKED_MAX).map((a) => {
@@ -335,11 +340,14 @@ export function readAchievements(data) {
     const sentence = typeof a.sentence === 'string' && a.sentence.trim() && a.sentence.length <= SENTENCE ? a.sentence.trim() : null;
     return { ...base, sentence, hidden: a.hidden === true, points: count(a.points, 1000) ? a.points : 0 };
   }).filter(Boolean);
-  const featured = (Array.isArray(data?.featured) ? data.featured : []).slice(0, FEATURED_MAX).map(readAchievement).filter(Boolean);
+  const featured = (Array.isArray(data?.featured) ? data.featured : []).slice(0, FEATURED_MAX)
+    .filter((a) => a?.earned !== false).map(readAchievement).filter(Boolean);
   const url = typeof data?.url === 'string' && data.url.startsWith(`${SITE}/`) && data.url.length <= 200 ? data.url : ACHIEVEMENTS_PAGE;
   const cursor = typeof data?.server_time === 'string' && data.server_time.length <= 40 && Number.isFinite(Date.parse(data.server_time))
     ? data.server_time : null;
-  return { unlocked, featured, url, cursor };
+  const said = typeof data?.pause_all === 'boolean' || typeof data?.companion_toasts === 'boolean';
+  const silenced = said ? data.pause_all === true || data.companion_toasts === false : null;
+  return { unlocked, featured, url, cursor, silenced };
 }
 
 const trimmed = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);

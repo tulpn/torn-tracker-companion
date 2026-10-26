@@ -62,7 +62,9 @@ of sections and a search box. Nothing is added to Torn's header.
   achievements show at the top of the settings. For that, when you open a Torn page and at
   most once every five minutes, it asks torn-tracker.com with your script key for the
   achievements earned since it last asked; nothing else is sent, and never from the attack
-  page. Switch either off here; with both off, nothing is asked. Every section starts with
+  page. Switch either off here; with both off, nothing is asked. Pause all, or companion
+  toasts off, in your notification settings on torn-tracker.com also stops the toast and
+  the chain watch slot notice. Every section starts with
   your next step in the torn-tracker guide, if you started it: for that it asks
   torn-tracker.com with your script key at most once every 15 minutes, when you open a
   Torn page. It has its own switch here.

@@ -274,7 +274,7 @@ function fakeWatch(on = false) {
   return w;
 }
 
-function noticeRig({ on = false } = {}) {
+function noticeRig({ on = false, quiet } = {}) {
   const { window } = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://www.torn.com/' });
   windows.push(window);
   let clock = T0 - 10_000;
@@ -288,7 +288,7 @@ function noticeRig({ on = false } = {}) {
     clearTimeout: (n) => pending.delete(n),
   };
   const watch = fakeWatch(on);
-  const notice = mountSlotNotice({ doc: window.document, watch, timers, now: () => clock });
+  const notice = mountSlotNotice({ doc: window.document, watch, timers, now: () => clock, quiet });
   return {
     window, watch, notice, pending,
     fire(ms) {
@@ -335,5 +335,13 @@ describe('CHW-026 the slot-start notice', () => {
     t.watch.setOn(true);
     assert.equal(t.shown(), null);
     t.notice.destroy();
+  });
+
+  test('HOOK-016: with pause all or companion toasts off on torn-tracker.com, no notice', () => {
+    const t = noticeRig({ quiet: () => true });
+    t.notice.plan({ role: 'lead', startsAt: T0 });
+    t.fire(10_000);
+    assert.equal(t.shown(), null);
+    assert.equal(t.watch.isOn(), false);
   });
 });

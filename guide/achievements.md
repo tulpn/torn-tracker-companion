@@ -37,6 +37,11 @@ companion's [settings page](settings-panel.md).
 
 With both off, the companion stops asking torn-tracker.com about achievements.
 
+Your notification settings on torn-tracker.com have the same say. With **pause all** on,
+or **companion toasts** off, the companion shows no toast, whatever its own switch says,
+and General tells you why. Switch it back on there and the toasts come again from the
+next new achievement. Your featured achievements still show.
+
 ## Sharing is always your own press
 
 Nothing about your achievements is posted from the companion. **Share** is on
@@ -46,8 +51,9 @@ torn-tracker.com, and only ever happens when you press it there.
 > minutes, the companion asks torn-tracker.com, with your script key, for the achievements
 > you earned since it last asked. It sends nothing else. It never asks while you're on the
 > attack page or the tab is in the background, and the very first time it only notes the
-> time, so a new install doesn't show old achievements. It keeps your featured
-> achievements and when it last asked on this device; [Forget me](forget-me.md) clears
+> time, so a new install doesn't show old achievements. Each answer also says
+> whether your notification settings there pause the companion's toasts. It keeps your
+> featured achievements, when it last asked, and that answer on this device; [Forget me](forget-me.md) clears
 > them.
 
 ## If nothing shows

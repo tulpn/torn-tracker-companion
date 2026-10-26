@@ -12,8 +12,12 @@
 // attack page. There is no timer that asks by itself. The very first read only sets where
 // the next one starts, so an install never greets the player with old unlocks.
 //
+// The player's one off switch on torn-tracker.com (HOOK-016, D-146): with pause all on, or
+// companion toasts off, in their notification settings there, no toast is shown; the read
+// says which with each reply. The switch here stays as well: either one turns it off.
+//
 // What's kept on this device, under `ttc_unlocks`: the last reply's time, when it was
-// asked, and the featured achievements. It's checked field by field when read, and goes
+// asked, the featured achievements, and whether the site's off switch was on. It's checked field by field when read, and goes
 // with "Forget me" (CMP-008).
 
 import { el } from './dom.js';
@@ -75,7 +79,7 @@ export function cleanState(raw, now = Date.now()) {
   const given = raw && typeof raw === 'object' ? raw : {};
   const cursor = typeof given.cursor === 'string' && given.cursor.length <= 40 && Number.isFinite(Date.parse(given.cursor)) ? given.cursor : null;
   const readAt = Number.isFinite(given.readAt) && given.readAt > 0 && given.readAt <= now ? given.readAt : 0;
-  return { cursor, readAt, featured: featuredOf(given.featured) };
+  return { cursor, readAt, featured: featuredOf(given.featured), silenced: given.silenced === true };
 }
 
 const tierName = (tier) => (tier ? tier[0].toUpperCase() + tier.slice(1) : null);
@@ -147,11 +151,13 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     }
     if (result.status !== 'ok') return;
     const first = state.cursor === null;
-    state = { cursor: result.cursor ?? state.cursor, readAt: now(), featured: result.featured };
+    const silenced = typeof result.silenced === 'boolean' ? result.silenced : state.silenced;
+    state = { cursor: result.cursor ?? state.cursor, readAt: now(), featured: result.featured, silenced };
+    if (silenced) hide();
     save();
     changed.forEach((fn) => fn());
     // The first read only marks where the next one starts.
-    if (!first && result.unlocked.length && switches().toast && !NEVER.some((route) => matchRoute(route, loc))) {
+    if (!first && !silenced && result.unlocked.length && switches().toast && !NEVER.some((route) => matchRoute(route, loc))) {
       show(result.unlocked, result.url);
     }
   }
@@ -173,6 +179,8 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
       if (now() - state.readAt < READ_EVERY_MS || now() < notBefore) return;
       asking = ask(loc).catch(() => {}).finally(() => { asking = null; });
     },
+    /** Whether the player's off switch on torn-tracker.com silences the companion's toasts. */
+    silenced: () => state.silenced,
     /** The featured achievements for the settings header; empty when switched off. */
     featured: () => (switches().featured ? state.featured : []),
     /** Called when the featured list changes, so the settings header can redraw. */

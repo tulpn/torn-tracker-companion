@@ -87,7 +87,7 @@ export async function boot(win = globalThis) {
   // The faction's rota (CHW-011): read only when the member asks for it in the settings.
   const rota = createRota({ site });
   // CHW-026: "Your chain watch (Lead) starts now", never turning watch mode on by itself.
-  const notice = mountSlotNotice({ doc: win.document, watch, timers: win });
+  const notice = mountSlotNotice({ doc: win.document, watch, timers: win, quiet: () => unlocks.silenced() });
   const stopRotaNotice = rota.onChange(() => notice.fromRota(rota));
   // Leaving the page is the player's own action; whatever is waiting goes with it.
   const onPageHide = () => uploader.flush({ keepalive: true });
