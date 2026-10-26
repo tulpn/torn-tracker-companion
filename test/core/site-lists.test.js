@@ -137,16 +137,18 @@ describe('CMP-110 AC1 one press is one POST', () => {
   });
 
   test('the backend\'s named refusals: someone else\'s entry, and a player who can\'t be listed', async () => {
-    const entry = rig({ reply: refuse(403, { error: 'not_your_entry' }) });
+    const entry = rig({ reply: refuse(403, { detail: 'not_your_entry' }) });
     assert.equal((await entry.site.listEntry(B, 55, 'remove')).error, 'not_your_entry');
-    const ro = rig({ reply: refuse(403, { error: 'list_read_only' }) });
+    const ro = rig({ reply: refuse(403, { detail: 'list_read_only' }) });
     assert.equal((await ro.site.listEntry(B, 55, 'add')).error, 'not_yours');
-    const gone = rig({ reply: refuse(404, { error: 'list_not_found' }) });
+    const gone = rig({ reply: refuse(404, { detail: 'list_not_found' }) });
     assert.equal((await gone.site.listEntry(B, 55, 'add')).error, 'not_yours');
-    const ares = rig({ reply: refuse(400, { error: 'on_ares_list' }) });
+    const ares = rig({ reply: refuse(400, { detail: 'on_ares_list' }) });
     assert.equal((await ares.site.listEntry(B, 55, 'add')).error, 'not_allowed');
     const scope = rig({ reply: refuse(403, { detail: 'token lacks the lists scope' }) });
     assert.equal((await scope.site.listEntry(B, 55, 'add')).error, 'no_key');
+    const keyed = rig({ reply: refuse(403, { error: 'not_your_entry' }) });
+    assert.equal((await keyed.site.listEntry(B, 55, 'remove')).error, 'not_your_entry', 'the code under `error` reads the same');
   });
 
   test('a scope-less key is no_key, a 429 busy; a bad request sends nothing', async () => {
