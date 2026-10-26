@@ -142,7 +142,7 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
     assert.equal(t.window.localStorage.getItem(`${PREFIX}_settings`), null);
   });
 
-  test('a second copy on the same page (PDA and a manager, or two installs) starts nothing (hq #406)', async () => {
+  test('a second copy on the same page (two installs, or added twice to PDA) starts nothing (hq #407)', async () => {
     const t = await boot(PAGE);
     const warned = [];
     t.window.console.warn = (...args) => warned.push(args.join(' '));
