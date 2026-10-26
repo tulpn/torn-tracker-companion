@@ -249,7 +249,7 @@ export async function boot(win = globalThis) {
 const RUNNING = 'data-ttc-running';
 
 /**
- * One copy per page (hq #406). Installed in Torn PDA and in a manager too, or twice, the
+ * One copy per page (hq #407). Installed twice (Greasy Fork and GitHub, or twice in PDA), the
  * script would start twice: two entries, two panels, every read asked twice. The first
  * copy marks <html>, which every manager's sandbox shares; a later one starts nothing.
  * @returns {string|null} null when the page is ours, else the version already running
