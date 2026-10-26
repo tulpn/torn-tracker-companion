@@ -24,7 +24,7 @@ import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
 import { defaults, isEnabled, isShared, load, normalize, save } from './core/settings.js';
 import { KEYS, forget, read, write } from './core/storage.js';
-import { error, log, setDebug } from './core/log.js';
+import { error, log, setDebug, warn } from './core/log.js';
 import * as dom from './core/dom.js';
 import * as net from './core/net.js';
 import * as intercept from './core/intercept.js';
@@ -246,7 +246,24 @@ export async function boot(win = globalThis) {
   };
 }
 
+const RUNNING = 'data-ttc-running';
+
+/**
+ * One copy per page (hq #406). Installed in Torn PDA and in a manager too, or twice, the
+ * script would start twice: two entries, two panels, every read asked twice. The first
+ * copy marks <html>, which every manager's sandbox shares; a later one starts nothing.
+ * @returns {string|null} null when the page is ours, else the version already running
+ */
+export function claimPage(doc) {
+  const root = doc.documentElement;
+  if (root.hasAttribute(RUNNING)) return root.getAttribute(RUNNING) || '?';
+  root.setAttribute(RUNNING, VERSION);
+  return null;
+}
+
 // The bundle runs as soon as the manager injects it; tests import boot() instead.
 if (globalThis.document) {
-  boot(globalThis).catch((err) => error('failed to start', err));
+  const running = claimPage(globalThis.document);
+  if (running) warn(`version ${running} already runs on this page; this copy starts nothing. Remove one install.`);
+  else boot(globalThis).catch((err) => error('failed to start', err));
 }
