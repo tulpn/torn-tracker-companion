@@ -650,10 +650,12 @@ export function createSite({
         const state = ['on', 'off'].includes(data.state) ? data.state : (action === 'add' ? 'on' : 'off');
         return { ok: true, state, error: null };
       }
+      // tc-targets#360 names its refusals in `detail`; `error` is the other endpoints' key.
+      const code = [data.detail, data.error].find((v) => typeof v === 'string') ?? '';
       let error = 'failed';
       if (lacksScope(result) || result.status === 401) error = 'no_key';
-      else if (result.status === 403 && data.error === 'not_your_entry') error = 'not_your_entry';
-      else if (result.status === 400 && data.error === 'on_ares_list') error = 'not_allowed';
+      else if (result.status === 403 && code === 'not_your_entry') error = 'not_your_entry';
+      else if (result.status === 400 && code === 'on_ares_list') error = 'not_allowed';
       else if (result.status === 403 || result.status === 404) error = 'not_yours';
       else if (result.status === 429) error = 'busy';
       return { ok: false, state: null, error };
