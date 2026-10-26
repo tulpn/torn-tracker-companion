@@ -60,7 +60,7 @@ function fakeTimers() {
   };
 }
 
-function mount({ html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open } = {}) {
+function mount({ html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null } = {}) {
   dom.resetObserver();
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, { url: 'https://www.torn.com/' });
   windows.push(window);
@@ -84,6 +84,8 @@ function mount({ html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, O
     store: { read: async () => (open === undefined ? null : { open }), write: async (v) => saved.push(v) },
     timers,
     now: () => clock,
+    watch,
+    onWatch,
   });
   const node = () => window.document.getElementById(BLOCK_ID);
   return {
@@ -134,8 +136,8 @@ describe('CMP-108 AC1 the switches', () => {
     assert.doesNotMatch(t.node().textContent, /Chain/);
   });
 
-  test('the defaults ask for the spec’s eight on-items, quick links being local', () => {
-    assert.deepEqual(askedItems(defaults(createRegistry([]))), ['chain', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide']);
+  test('the defaults ask for the spec’s nine on-items, quick links being local', () => {
+    assert.deepEqual(askedItems(defaults(createRegistry([]))), ['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide']);
   });
 });
 
@@ -278,5 +280,34 @@ describe('the sidebar read is checked field by field', () => {
     const npc = [{ npc_id: 4, name: 'Duke', level: 3, next_level_at: SOON }];
     assert.equal(readSidebar({ loot: npc }, ['loot']).items.get('loot'), null);
     assert.equal(readSidebar({ loot: npc, source: 'loot.example' }, ['loot']).items.get('loot').source, 'loot.example');
+  });
+});
+
+describe('CHW-011, CHW-021 the watch line', () => {
+  const NEXT = { now: null, next: { slot_start: '2026-10-24T03:00:00.000Z', role: 'lead' }, gaps_24h: 2 };
+  function fakeWatch() {
+    const listeners = new Set();
+    const w = { on: false, isOn: () => w.on, toggle() { w.on = !w.on; listeners.forEach((fn) => fn()); }, onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
+    return w;
+  }
+
+  test('the next slot, the gaps, and a switch that is only the player’s click', async () => {
+    const watch = fakeWatch();
+    const seen = [];
+    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: NEXT }, ['watch'], 0) }, watch, onWatch: (item) => seen.push(item) });
+    await settle();
+    assert.match(t.node().textContent, /Watch Next watch 03:00 TCT · Lead · 2 without a Lead/);
+    assert.equal(seen.length, 1, 'the slot notice hears of the next slot');
+    const sw = t.node().querySelector('.ttc-sb-switch');
+    assert.equal(sw.getAttribute('aria-pressed'), 'false');
+    sw.dispatchEvent(new t.window.MouseEvent('click', { bubbles: true }));
+    assert.equal(watch.isOn(), true);
+    assert.equal(t.node().querySelector('.ttc-sb-switch').getAttribute('aria-pressed'), 'true');
+  });
+
+  test('no slot: a way to sign up', async () => {
+    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0 } }, ['watch'], 0) } });
+    await settle();
+    assert.match(t.node().textContent, /Sign up to watch/);
   });
 });

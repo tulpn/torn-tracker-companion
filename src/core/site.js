@@ -30,6 +30,8 @@ export const TRAVEL_RUNS_URL = `${SITE}/api/feeds/me/travel/runs`;
 export const SIDEBAR_URL = `${SITE}/api/feeds/me/sidebar`;
 export const ACHIEVEMENTS_URL = `${SITE}/api/feeds/me/achievements`;
 export const GUIDE_URL = `${SITE}/api/feeds/me/guide`;
+/** The faction's chain watch rota (CHW-040 to CHW-042). */
+export const CHAIN_WATCH_URL = `${SITE}/api/feeds/me/chain-watch`;
 const GUIDE_TTL = 15 * 60_000;
 const GUIDE_PAGE = `${SITE}/guide/`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
@@ -169,7 +171,7 @@ export function readRun(r, skew = 0) {
 }
 
 /** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
-export const SIDEBAR_KEYS = Object.freeze(['chain', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks']);
+export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks']);
 const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
 const count = (v, max = 1e9) => Number.isInteger(v) && v >= 0 && v <= max;
 const score = (v) => count(v, 1e7);
@@ -177,6 +179,39 @@ const time = (v, skew) => {
   const at = typeof v === 'string' ? Date.parse(v) : NaN;
   return Number.isFinite(at) ? at - skew : null;
 };
+
+/** The rota's three roles, in order, as the API names them (CHW-002). */
+export const WATCH_ROLES = Object.freeze(['lead', 'backup_1', 'backup_2']);
+const roleOf = (v) => (typeof v === 'string' && WATCH_ROLES.includes(v) ? v : null);
+const SLOT_MS = 1_800_000;
+/** A slot's start as the site sent it (UTC ms), on :00 or :30 only. */
+const slotTime = (v) => {
+  const at = typeof v === 'string' ? Date.parse(v) : NaN;
+  return Number.isFinite(at) && at % SLOT_MS === 0 ? at : null;
+};
+
+/** One row of the rota, or null when it doesn't fit. */
+function readWatchSlot(row) {
+  const slotStart = slotTime(row?.slot_start);
+  const role = roleOf(row?.role);
+  if (slotStart === null || !role || !positiveInt(row.torn_id) || !validName(row.name)) return null;
+  return { slotStart, role, id: row.torn_id, name: row.name, mine: row.mine === true };
+}
+
+/** The 409's clashes and the roles still free per slot (CHW-041). */
+function readClash(data) {
+  const clashes = (Array.isArray(data?.clashes) ? data.clashes : []).slice(0, 72).map((c) => ({
+    slotStart: slotTime(c?.slot_start), role: roleOf(c?.role), name: validName(c?.name) ? c.name : null,
+  })).filter((c) => c.slotStart !== null && c.role);
+  const free = new Map();
+  const given = data?.free && typeof data.free === 'object' ? data.free : {};
+  for (const [at, roles] of Object.entries(given).slice(0, 48)) {
+    const slot = slotTime(at);
+    if (slot === null || !Array.isArray(roles)) continue;
+    free.set(slot, WATCH_ROLES.filter((r) => roles.includes(r)));
+  }
+  return { clashes, free };
+}
 
 /** Each sidebar item's reader: the checked value, or null when it doesn't fit. */
 const SIDEBAR_READERS = {
@@ -186,6 +221,19 @@ const SIDEBAR_READERS = {
       current: v.current, max: v.max, timeoutAt: v.timeout_at === null ? null : time(v.timeout_at, skew),
       // When the site last saw the chain: watch mode's "up to N s old" (CHW-020).
       asOf: v.as_of == null ? null : time(v.as_of, skew),
+    };
+  },
+  // CHW-043: the member's watch now, their next one, and the slots with no Lead.
+  watch(v, skew) {
+    if (typeof v !== 'object') return null;
+    const now = v.now == null ? null : roleOf(v.now.role);
+    const nextRole = v.next ? roleOf(v.next.role) : null;
+    const nextAt = v.next ? slotTime(v.next.slot_start) : null;
+    if ((v.now && !now) || (v.next && (!nextRole || nextAt === null))) return null;
+    return {
+      now,
+      next: v.next ? { role: nextRole, slotStart: nextAt, startsAt: nextAt - skew } : null,
+      gaps: count(v.gaps_24h, 48) ? v.gaps_24h : 0,
     };
   },
   war(v, skew) {
@@ -449,6 +497,18 @@ export const SPACES = Object.freeze({
   // The site had no table: the built-in one serves for an hour before it is asked again.
   shopsMissed: { ttlMs: HOUR, max: 1, valid: (v) => v === true },
 });
+
+/** What a chain watch reply that isn't an answer means, or null when it is one. */
+function watchFailure(result) {
+  if (keyRefused(result)) return { status: 'refused' };
+  if (result?.status === 404 && result.data?.reason === 'no_faction') return { status: 'no_faction' };
+  if (result?.status === 429) {
+    const seconds = Number(result.retryAfter);
+    return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
+  }
+  if (!result || result.status === 0) return { status: 'failed' };
+  return null;
+}
 
 /**
  * @param {object} opts
@@ -1103,6 +1163,78 @@ export function createSite({
       }
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       return { status: 'ok', ...readSidebar(result.data, ask, skewOf(result.data)) };
+    },
+
+    /**
+     * The faction's chain watch rota (CHW-040): `hours` from the slot `from` is in.
+     * @param {number} from    a time in the first slot (UTC ms)
+     * @param {number} hours   1 to 168
+     * @returns {Promise<{status: 'ok', slots: object[], gaps: number[], skew: number}
+     *   | {status: 'no_key'|'refused'|'no_faction'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async chainWatch(from, hours = 24) {
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const start = new Date(Math.floor(from / SLOT_MS) * SLOT_MS).toISOString();
+      const span = Math.min(168, Math.max(1, Math.round(hours)));
+      const result = await exchange(`${CHAIN_WATCH_URL}?from=${encodeURIComponent(start)}&hours=${span}`, { method: 'GET' });
+      const failed = watchFailure(result);
+      if (failed) return failed;
+      const data = result.data && typeof result.data === 'object' ? result.data : null;
+      if (!result.ok || !data || !Array.isArray(data.slots)) return { status: 'failed' };
+      return {
+        status: 'ok',
+        slots: data.slots.slice(0, 168 * 2 * 3).map(readWatchSlot).filter(Boolean),
+        gaps: (Array.isArray(data.gaps) ? data.gaps : []).slice(0, 336).map(slotTime).filter((g) => g !== null),
+        skew: skewOf(data),
+      };
+    },
+
+    /**
+     * Signs the member up for a stretch in one role, all or nothing (CHW-041).
+     * @param {{start: number, slots: number, role: string}} ask  start in UTC ms, on :00 or :30
+     * @returns {Promise<{status: 'saved', slots: object[]} | {status: 'clash', clashes: object[], free: Map}
+     *   | {status: 'invalid', detail: string|null} | {status: 'no_key'|'refused'|'no_faction'|'failed'}
+     *   | {status: 'wait', retryMs: number}>}
+     */
+    async watchSignUp({ start, slots, role }) {
+      if (!Number.isInteger(start) || start % SLOT_MS !== 0 || !Number.isInteger(slots) || slots < 1 || slots > 24 || !roleOf(role)) {
+        return { status: 'invalid', detail: null };
+      }
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const result = await exchange(CHAIN_WATCH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: new Date(start).toISOString(), slots, role }),
+      });
+      if (result.status === 409) return { status: 'clash', ...readClash(result.data) };
+      if (result.status === 400) {
+        const detail = typeof result.data?.detail === 'string' && result.data.detail.length <= 200 ? result.data.detail : null;
+        return { status: 'invalid', detail };
+      }
+      const failed = watchFailure(result);
+      if (failed) return failed;
+      if (!result.ok) return { status: 'failed' };
+      const rows = Array.isArray(result.data) ? result.data : result.data?.slots;
+      return { status: 'saved', slots: (Array.isArray(rows) ? rows : []).slice(0, 24).map(readWatchSlot).filter(Boolean) };
+    },
+
+    /**
+     * Drops the member's own slots in a stretch (CHW-042). Torn PDA's helpers send only GET
+     * and POST, so from PDA it answers 'pda' and asks nothing.
+     * @returns {Promise<{status: 'dropped'|'pda'|'no_key'|'refused'|'no_faction'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async watchDrop({ start, slots }) {
+      if (!Number.isInteger(start) || start % SLOT_MS !== 0 || !Number.isInteger(slots) || slots < 1 || slots > 24) return { status: 'failed' };
+      if (typeof globalThis.PDA_httpGet === 'function' || typeof globalThis.PDA_httpPost === 'function') return { status: 'pda' };
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const at = encodeURIComponent(new Date(start).toISOString());
+      const result = await exchange(`${CHAIN_WATCH_URL}?start=${at}&slots=${slots}`, { method: 'DELETE' });
+      const failed = watchFailure(result);
+      if (failed) return failed;
+      return { status: result.ok ? 'dropped' : 'failed' };
     },
 
     /**

@@ -21,6 +21,7 @@ import { SITE } from '../hosts.js';
 import { OURS, SIDEBAR } from './entry.js';
 import { followTorn } from './tokens.js';
 import { onProfitable, profitableCount } from './shops.js';
+import { watchLine } from './rota.js';
 
 const P = 'ttc';
 export const BLOCK_ID = `${P}-sidebar-block`;
@@ -29,6 +30,7 @@ export const READ_EVERY_MS = 60_000;
 /** The items, in the order the block shows them, with the spec's defaults. All Core. */
 export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'chain', title: 'Chain', summary: 'Your faction’s chain count and its timeout, counting down.', on: true },
+  { id: 'watch', title: 'Chain watch', summary: 'Your chain watch now or next, and a switch for watch mode.', on: true },
   { id: 'war', title: 'Ranked war', summary: 'The score, the target and when the war should end. Only during a war.', on: true },
   { id: 'terms', title: 'War terms', summary: 'The terms your faction agreed for this war, or “NOT TERMED”. Only during a war.', on: true },
   { id: 'partner', title: 'Med-out partner', summary: 'Your partner, linking to their profile. Hidden when you have none.', on: true },
@@ -80,9 +82,15 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-muted { color: var(--muted-foreground); }
   #${BLOCK_ID} .${P}-sb-alert { color: color-mix(in srgb, var(--destructive) 65%, var(--foreground)); font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-links a { margin-right: 10px; }
+  #${BLOCK_ID} .${P}-sb-switch {
+    margin-left: 6px; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+    background: transparent; color: inherit; font: 600 11px/1.6 var(--tt-font-sans);
+  }
+  #${BLOCK_ID} .${P}-sb-switch[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
   @media (pointer: coarse) {
     #${BLOCK_ID} .${P}-sb-head { min-height: 44px; }
     #${BLOCK_ID} .${P}-sb-links a { display: inline-flex; align-items: center; min-height: 44px; }
+    #${BLOCK_ID} .${P}-sb-switch { min-height: 44px; }
   }
 `;
 
@@ -165,9 +173,12 @@ export function anchorOf(doc) {
  * @param {{read: Function, write: Function}} opts.store  the block's open state on this device
  * @param {object} [opts.timers]
  * @param {() => number} [opts.now]
+ * @param {object} [opts.watch]               core/watch.js's controller, for the line's switch
+ * @param {(item: object|null) => void} [opts.onWatch]  each answer's `watch` item (CHW-026)
  */
 export function mountSidebarBlock({
   doc = globalThis.document, site, getSettings, onMutation, store, timers = doc.defaultView || globalThis, now = Date.now,
+  watch = null, onWatch = null,
 }) {
   addStyle(doc);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -216,6 +227,15 @@ export function mountSidebarBlock({
         ` · ${thousands(w.ours)} / ${thousands(w.target)}`,
         ...(w.finishAt ? [` · ends in ~${roughly(w.finishAt - now())}`] : []));
     },
+    // CHW-011, CHW-021: "Watching now · Lead", the next slot, or a way to sign up; and the
+    // switch for watch mode, which any member may use, slot or not.
+    watch(w) {
+      const text = watchLine(w);
+      const words = w.now || w.next ? h('span', { class: w.now ? `${P}-sb-alert` : '' }, ` ${text}`)
+        : [' ', link('/index.php#/torn-tracker/watch', text)];
+      const gaps = w.gaps ? h('span', { class: `${P}-sb-muted` }, ` · ${w.gaps} without a Lead`) : null;
+      return row(h('b', null, 'Watch'), ...[words].flat(), gaps, watchSwitch());
+    },
     terms: (t) => row(h('b', null, 'Terms'), ` ${t.label}`),
     partner: (p) => row(h('b', null, 'Med-out partner'), ' ', link(`/profiles.php?XID=${p.id}`, p.name)),
     dibs: (rows) => row(h('b', null, 'My dibs'), ...rows.flatMap((d, i) => [
@@ -235,6 +255,16 @@ export function mountSidebarBlock({
     gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
     stocks: (s) => row(link(STOCKS_URL, `${s.crossed} of ${s.watched} watched stocks crossed`, true)),
   };
+
+  /** Watch mode's switch on the line (CHW-021): the player's own click, nothing else. */
+  function watchSwitch() {
+    if (!watch) return null;
+    const on = watch.isOn();
+    const button = h('button', { type: 'button', class: `${P}-sb-switch`, 'aria-pressed': String(on), title: 'Watch mode: a big chain timer over the page' },
+      on ? 'Watch mode on' : 'Watch mode off');
+    button.addEventListener('click', () => watch.toggle());
+    return button;
+  }
 
   function body() {
     const settings = getSettings();
@@ -301,6 +331,7 @@ export function mountSidebarBlock({
       if (!answer) answer = { status: 'failed' };
     } else {
       answer = result;
+      if (result.status === 'ok' && result.items.has('watch')) onWatch?.(result.items.get('watch'));
     }
     render();
   }
@@ -356,6 +387,7 @@ export function mountSidebarBlock({
   };
   doc.addEventListener('visibilitychange', onVisible);
   const stopCounting = onProfitable(() => render());
+  const stopWatchMode = watch?.onChange(() => render());
   tick = timers.setInterval(() => {
     if (isOpen()) paint();
   }, 1000);
@@ -381,6 +413,7 @@ export function mountSidebarBlock({
       stopped = true;
       stopWatching?.();
       stopCounting();
+      stopWatchMode?.();
       doc.removeEventListener('visibilitychange', onVisible);
       timers.clearTimeout(readTimer);
       timers.clearTimeout(placeTimer);

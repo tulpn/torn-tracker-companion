@@ -40,6 +40,7 @@ import { shareKinds } from './registry.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
 import { KEYS, backendName, read, write } from './storage.js';
 import { syncWatchSection, watchSection } from './watch-panel.js';
+import { ROTA_STYLE, rotaSection, syncRota } from './rota.js';
 
 const P = 'ttc';
 const RELEASES = 'https://github.com/tulpn/torn-tracker-companion/releases/latest';
@@ -63,7 +64,7 @@ const INTROS = Object.freeze({
   general: 'Your version, updates, and help when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Changes apply when you press Save.',
   sidebar: 'A Torn Tracker block in Torn’s sidebar, under Lists, with a few live facts. Choose what it shows. All of it is Core (free).',
-  watch: 'A big chain timer over Torn’s page, so a watcher never misses it. These settings apply at once, without Save. Core (free).',
+  watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Watch mode’s settings apply at once, without Save. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
   data: 'What the companion keeps on this device, and how to clear it.',
@@ -232,7 +233,7 @@ function addStyle(doc, root) {
   const into = root.nodeType === 11 ? root : doc.head;
   if (into.querySelector(`#${P}-style`)) return;
   const style = el('style', { id: `${P}-style`, ownerDocument: doc });
-  style.textContent = STYLE;
+  style.textContent = STYLE + ROTA_STYLE;
   into.appendChild(style);
 }
 
@@ -300,6 +301,7 @@ export function mountPanel({
   unlocks = null,
   guide = null,
   watch = null,
+  rota = null,
 }) {
   addStyle(doc, root);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -690,7 +692,8 @@ export function mountPanel({
 
   function watchBody() {
     if (!watch) return [h('div', { class: `${P}-muted` }, 'Chain watch isn’t in this build.')];
-    return watchSection(h, watch, { guide: GUIDE });
+    return [...watchSection(h, watch, { guide: GUIDE }),
+      ...(rota ? [h('h4', null, 'Your faction’s rota'), rotaSection(h, rota)] : [])];
   }
 
   const BODIES = {
@@ -915,6 +918,10 @@ export function mountPanel({
     else if (fresh) main.prepend(fresh);
   });
   // Watch mode changed elsewhere (the box's close, a drag): the controls follow.
+  // The rota answered, or a sign-up or drop did: only the rota part is redrawn.
+  const stopRota = rota?.onChange(() => {
+    if (active && !query) syncRota(h, main, rota);
+  });
   const stopWatch = watch?.onChange(() => {
     if (active) syncWatchSection(main, watch);
   });
@@ -942,6 +949,7 @@ export function mountPanel({
       stopGuide?.();
       stopTours?.();
       stopWatch?.();
+      stopRota?.();
       panel.remove();
     },
   };

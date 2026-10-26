@@ -68,8 +68,9 @@ of sections and a search box. Nothing is added to Torn's header.
   Torn page. It has its own switch here.
 - **Features**: every feature, grouped by area, with its switch, one line on what it does,
   its options and a link to its guide page.
-- **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, war,
-  dibs, med-out partner and OC. Switch it off, or choose which lines it shows. While it is
+- **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, your
+  chain watch (now, next, or a way to sign up, with a switch for watch mode), war, dibs,
+  med-out partner and OC. Switch it off, or choose which lines it shows. While it is
   open and the tab is visible, it asks torn-tracker.com once a minute for those lines,
   with your script key; nothing else is sent. Its "Below shop price" line is counted on
   the Item Market page itself and asks nothing.
@@ -78,7 +79,11 @@ of sections and a search box. Nothing is added to Torn's header.
   an optional beep. It reads Torn's chain bar when the page shows it. When it doesn't,
   and only while watch mode is on and the tab is visible, it asks torn-tracker.com for
   your faction's chain with your script key, at most once every 30 seconds; nothing else
-  is sent. Its settings are kept on this device only.
+  is sent. Its settings are kept on this device only. Below them is your faction's chain
+  watch rota: press "Show the next 24 hours" to read it from torn-tracker.com with your
+  script key, then sign up for 30-minute slots as Lead, Backup 1 or Backup 2, or drop your
+  own. When one of your slots starts and watch mode is off, a small notice offers to turn
+  it on; it never turns on by itself.
 - **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
   starts off, switching a feature on never switches sharing on, and nothing is shared
   until you press "Share the kinds I picked". If the wording of what is shared changes
@@ -118,6 +123,13 @@ is switched on.
 
 The panel shows the same lines beside each switch. If they change in an update, sharing
 stops until you have read the new ones and agreed again.
+
+**Chain watch sign-ups** are not a sharing kind: each is sent only when you press Sign up,
+Take or Drop under Settings → Chain watch. A sign-up sends torn-tracker.com the slot's start,
+how many slots, and the role, with your script key. Every member of your faction can see
+your name, the slot and the role, on the site, in the bot and in this script. Your
+sign-ups are deleted 7 days after the slot ends. Reading the rota sends nothing about you
+beyond your script key.
 
 ## API Terms of Service
 
