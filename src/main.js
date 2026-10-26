@@ -16,6 +16,7 @@ import { mountPanel } from './core/panel.js';
 import { mountEntry } from './core/entry.js';
 import { mountPage } from './core/page.js';
 import { mountSidebarBlock } from './core/sidebar.js';
+import { makeBeep, mountWatch } from './core/watch.js';
 import { createTours } from './core/tours.js';
 import { createUnlocks } from './core/unlocks.js';
 import { createGuide } from './core/guide.js';
@@ -71,6 +72,17 @@ export async function boot(win = globalThis) {
   await unlocks.load();
   // The guide's next step on the settings page (GDE-007).
   const guide = createGuide({ doc: win.document, site, getSettings: () => settings });
+  // Watch mode (CHW-020 to CHW-028): the big chain timer, on any Torn page while it's on.
+  const watch = mountWatch({
+    win,
+    site,
+    hasKey: () => Boolean(keys.script),
+    store: { read: () => read(KEYS.watch), write: (value) => write(KEYS.watch, value) },
+    timers: win,
+    // The local clock: the site's times arrive already moved onto it (site.js, skewOf).
+    onMutation: dom.onMutation,
+    beep: makeBeep(win),
+  });
   // Leaving the page is the player's own action; whatever is waiting goes with it.
   const onPageHide = () => uploader.flush({ keepalive: true });
   win.addEventListener('pagehide', onPageHide);
@@ -148,6 +160,7 @@ export async function boot(win = globalThis) {
     tours,
     unlocks,
     guide,
+    watch,
     onSave: async (nextSettings, nextKeys) => {
       const savedKeys = await applyKeys(nextKeys);
       const wasOn = new Set(registry.filter((d) => isEnabled(settings, d.id)).map((d) => d.id));
@@ -164,6 +177,7 @@ export async function boot(win = globalThis) {
       tours.reset();
       unlocks.reset();
       const ok = await forget();
+      watch.forgotten();
       settings = defaults(registry);
       keys = emptyKeys();
       setDebug(false);
@@ -223,6 +237,7 @@ export async function boot(win = globalThis) {
     page,
     entry,
     block,
+    watch,
     tours,
     unlocks,
     uploader,
@@ -234,6 +249,7 @@ export async function boot(win = globalThis) {
       tours.destroy();
       unlocks.destroy();
       guide.destroy();
+      watch.destroy();
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();

@@ -23,6 +23,8 @@ export const KEYS = Object.freeze({
   tours: 'ttc_tours',
   /** where the next achievements read starts, and the featured ones (core/unlocks.js) */
   unlocks: 'ttc_unlocks',
+  /** watch mode: on or off, the box's size, spot and colours, the beep (core/watch.js) */
+  watch: 'ttc_watch',
 });
 
 const ALL = Object.freeze(Object.values(KEYS));

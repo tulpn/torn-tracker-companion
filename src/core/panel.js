@@ -11,6 +11,8 @@
 //   Features  each feature with its switch, one line on what it does, its options and a
 //             "Learn more" link to its knowledge base page, grouped by area
 //   Sidebar   the Torn Tracker sidebar block's master switch and one switch per item
+//   Chain watch  watch mode's switch, size, colours, preview and beep (core/watch-panel.js);
+//             these act at once and are kept on the device, outside the draft
 //   Sharing   the notice, a switch per kind with its "what is shared" line, the queue
 //   Keys      the script key, and the optional Torn API key behind Torn's terms table
 //   Data      what is kept on this device, and "Forget me"
@@ -37,6 +39,7 @@ import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
 import { KEYS, backendName, read, write } from './storage.js';
+import { syncWatchSection, watchSection } from './watch-panel.js';
 
 const P = 'ttc';
 const RELEASES = 'https://github.com/tulpn/torn-tracker-companion/releases/latest';
@@ -47,6 +50,7 @@ export const SECTIONS = Object.freeze([
   ['general', 'General'],
   ['features', 'Features'],
   ['sidebar', 'Sidebar'],
+  ['watch', 'Chain watch'],
   ['sharing', 'Sharing'],
   ['keys', 'Keys'],
   ['data', 'Data'],
@@ -59,6 +63,7 @@ const INTROS = Object.freeze({
   general: 'Your version, updates, and help when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Changes apply when you press Save.',
   sidebar: 'A Torn Tracker block in Torn’s sidebar, under Lists, with a few live facts. Choose what it shows. All of it is Core (free).',
+  watch: 'A big chain timer over Torn’s page, so a watcher never misses it. These settings apply at once, without Save. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
   data: 'What the companion keeps on this device, and how to clear it.',
@@ -198,6 +203,14 @@ const STYLE = `
   #${P}-panel .${P}-tours { list-style: none; margin: 8px 0 0; padding: 0; }
   #${P}-panel .${P}-tours li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0; }
   #${P}-panel .${P}-tours a { display: inline-flex; align-items: center; min-height: 44px; }
+  #${P}-panel input[type=range] { display: block; width: 100%; min-height: 44px; margin: 0; accent-color: var(--ttc-accent); }
+  #${P}-panel .${P}-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 14px; }
+  #${P}-panel label.${P}-swatch { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-weight: 600; }
+  #${P}-panel label.${P}-swatch small { font-weight: 400; color: var(--ttc-muted); }
+  #${P}-panel input[type=color] {
+    flex: none; width: 52px; height: 44px; padding: 2px; border: 1px solid var(--ttc-field-line); border-radius: var(--radius);
+    background: var(--ttc-field); cursor: pointer;
+  }
   @container (max-width: 600px) {
     #${P}-panel .${P}-sheet {
       grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto;
@@ -286,6 +299,7 @@ export function mountPanel({
   tours = null,
   unlocks = null,
   guide = null,
+  watch = null,
 }) {
   addStyle(doc, root);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -602,6 +616,7 @@ export function mountPanel({
           h('li', null, 'reports waiting to be sent, kept at most ten minutes'),
           h('li', null, 'which tours you\u2019ve seen'),
           h('li', null, 'your featured achievements, and when it last asked for new ones'),
+          h('li', null, 'whether watch mode is on, and its size, place, colours and beep'),
           h('li', null, 'answers from torn-tracker.com, kept a short while so pages ask less'))),
       ...(kept.length ? [
         h('h4', null, 'Export and import'),
@@ -673,8 +688,13 @@ export function mountPanel({
 
   // ------------------------------------------------------------ frame
 
+  function watchBody() {
+    if (!watch) return [h('div', { class: `${P}-muted` }, 'Chain watch isn’t in this build.')];
+    return watchSection(h, watch, { guide: GUIDE });
+  }
+
   const BODIES = {
-    general: generalBody, features: featuresBody, sidebar: sidebarBody, sharing: sharingBody, keys: keysBody,
+    general: generalBody, features: featuresBody, sidebar: sidebarBody, watch: watchBody, sharing: sharingBody, keys: keysBody,
     data: dataBody, credits: creditsBody, help: helpBody,
   };
 
@@ -894,6 +914,10 @@ export function mountPanel({
     else if (old) old.remove();
     else if (fresh) main.prepend(fresh);
   });
+  // Watch mode changed elsewhere (the box's close, a drag): the controls follow.
+  const stopWatch = watch?.onChange(() => {
+    if (active) syncWatchSection(main, watch);
+  });
   const stopTours = tours?.onChange(() => {
     const box = active ? panel.querySelector(`#${P}-tours`) : null;
     if (box) box.replaceWith(toursCard());
@@ -917,6 +941,7 @@ export function mountPanel({
       stopUnlocks?.();
       stopGuide?.();
       stopTours?.();
+      stopWatch?.();
       panel.remove();
     },
   };

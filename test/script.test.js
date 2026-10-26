@@ -311,10 +311,32 @@ describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
       calls.push(String(args[0]));
       return guarded(...args);
     };
-    for (const section of ['', 'general', 'features', 'sidebar', 'sharing', 'keys', 'data', 'credits', 'help']) {
+    for (const section of ['', 'general', 'features', 'sidebar', 'watch', 'sharing', 'keys', 'data', 'credits', 'help']) {
       await t.go(`#/torn-tracker${section ? `/${section}` : ''}`);
     }
     assert.deepEqual(calls, []);
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('CHW-022 watch mode and its preview: a box over the page, no request, no click', async () => {
+    const t = await boot(PAGE);
+    const calls = [];
+    const guarded = t.window.fetch;
+    t.window.fetch = (...args) => {
+      calls.push(String(args[0]));
+      return guarded(...args);
+    };
+    await openOn(t, 'watch');
+    const panel = t.panel();
+    t.userClick(panel.querySelector('[data-watch-act="preview"]'));
+    const box = t.doc.getElementById('ttc-watch');
+    assert.ok(box, 'the preview shows the box');
+    assert.equal(box.dataset.preview, 'true');
+    assert.equal(t.window.getComputedStyle(box).pointerEvents, 'none');
+    userCheck(t, panel.querySelector('[data-watch="on"]'));
+    await t.tick();
+    assert.equal(JSON.parse(t.window.localStorage.getItem('ttc_watch')).on, true, 'kept on this device');
+    assert.ok(calls.every((url) => !/torn\.com\//.test(url) || url.startsWith('https://api.torn.com/')), calls.join());
     assert.deepEqual(t.violations, []);
   });
 
