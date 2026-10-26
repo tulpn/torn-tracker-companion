@@ -70,8 +70,44 @@ Under **Chain watch** in the settings:
 - **Sound:** a short beep once each time the box turns Danger. Off to start with. Your
   browser may keep it quiet until you've clicked on the page.
 
+## Your faction's rota
+
+Below watch mode's settings is your faction's chain watch rota: 30-minute slots, each with
+a Lead and two backups. It asks nothing until you press **Show the next 24 hours**; then it
+reads the rota from torn-tracker.com with your script key, and again after each change or
+when you press **Refresh**.
+
+- **The table:** the next 24 hours, in TCT with your own time beside it. Your slots are
+  highlighted with a **Drop** button, other members show by name, and a free role has a
+  **Take** button. A slot with no Lead is flagged "no Lead".
+- **Sign up:** pick a start, a length (30 minutes to 12 hours) and a role, and press
+  **Sign up**. It's all or nothing: if any slot in that stretch is already taken, nothing
+  is saved, and the reply says who has which slot and which roles are still free.
+- **Drop** gives back one of your own slots. In Torn PDA, drop it on
+  [the chain board](https://www.torn-tracker.com/faction/chains/) instead.
+
+Your faction's leaders manage the rota on torn-tracker.com.
+
+## When your slot starts
+
+When one of your slots starts and watch mode is off, a small notice at the bottom of the
+page says "Your chain watch (Lead) starts now", with a **Turn on watch mode** button and a
+✕. It never turns watch mode on by itself, and each slot is announced once.
+
+## In the sidebar
+
+The Torn Tracker block in Torn's sidebar has a **Watch** line: "Watching now · Lead", your
+next slot like "Next watch 03:00 TCT · Backup 1", or "Sign up to watch". It adds how many
+slots in the next 24 hours have no Lead, and has a switch for watch mode. You can hide the
+line under Settings → Sidebar.
+
 > **What it reads and sends.** It reads Torn's chain bar on the page you're on. When
 > there's none, it asks torn-tracker.com for your faction's chain with your script key,
 > at most every 30 seconds while watch mode is on and the tab is on screen. It sends
 > nothing else. Its settings are kept on this device only and sent nowhere; "Forget me"
 > clears them.
+>
+> **The rota.** Reading it sends your script key only. A sign-up sends the slot's start,
+> how many slots and the role, with your script key, and only when you press Sign up or
+> Take. Every member of your faction sees your name, the slot and the role. Sign-ups are
+> deleted 7 days after the slot ends.

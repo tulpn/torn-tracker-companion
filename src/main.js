@@ -17,6 +17,7 @@ import { mountEntry } from './core/entry.js';
 import { mountPage } from './core/page.js';
 import { mountSidebarBlock } from './core/sidebar.js';
 import { makeBeep, mountWatch } from './core/watch.js';
+import { createRota, mountSlotNotice } from './core/rota.js';
 import { createTours } from './core/tours.js';
 import { createUnlocks } from './core/unlocks.js';
 import { createGuide } from './core/guide.js';
@@ -83,6 +84,11 @@ export async function boot(win = globalThis) {
     onMutation: dom.onMutation,
     beep: makeBeep(win),
   });
+  // The faction's rota (CHW-011): read only when the member asks for it in the settings.
+  const rota = createRota({ site });
+  // CHW-026: "Your chain watch (Lead) starts now", never turning watch mode on by itself.
+  const notice = mountSlotNotice({ doc: win.document, watch, timers: win });
+  const stopRotaNotice = rota.onChange(() => notice.fromRota(rota));
   // Leaving the page is the player's own action; whatever is waiting goes with it.
   const onPageHide = () => uploader.flush({ keepalive: true });
   win.addEventListener('pagehide', onPageHide);
@@ -161,6 +167,7 @@ export async function boot(win = globalThis) {
     unlocks,
     guide,
     watch,
+    rota,
     onSave: async (nextSettings, nextKeys) => {
       const savedKeys = await applyKeys(nextKeys);
       const wasOn = new Set(registry.filter((d) => isEnabled(settings, d.id)).map((d) => d.id));
@@ -178,6 +185,7 @@ export async function boot(win = globalThis) {
       unlocks.reset();
       const ok = await forget();
       watch.forgotten();
+      rota.forgotten();
       settings = defaults(registry);
       keys = emptyKeys();
       setDebug(false);
@@ -218,6 +226,8 @@ export async function boot(win = globalThis) {
     store: { read: () => read(KEYS.sidebar), write: (value) => write(KEYS.sidebar, value) },
     timers: win,
     now: uploader.serverNow,
+    watch,
+    onWatch: (item) => notice.fromSidebar(item),
   });
 
   const stopRouter = startRouter((loc) => {
@@ -250,6 +260,8 @@ export async function boot(win = globalThis) {
       unlocks.destroy();
       guide.destroy();
       watch.destroy();
+      stopRotaNotice();
+      notice.destroy();
       uploader.stop();
       win.removeEventListener('pagehide', onPageHide);
       runner.reset();

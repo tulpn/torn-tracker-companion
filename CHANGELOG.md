@@ -20,6 +20,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   through it to the page. Size, place, colours, a preview and an optional beep are under
   Settings → Chain watch, kept on this device only. The flash is fixed at once every 2
   seconds.
+- **Chain watch: the rota.** Under Settings → Chain watch, your faction's next 24 hours of
+  30-minute watch slots (Lead, Backup 1, Backup 2), read from torn-tracker.com only when
+  you ask. Sign up for a stretch, take a free role, or drop your own slot; a clash saves
+  nothing and says what's still free. Your faction sees your name, slot and role; sign-ups
+  are deleted 7 days after the slot ends. When your slot starts with watch mode off, a
+  notice offers to turn it on. The sidebar gains a Watch line with your slot now or next
+  and a watch mode switch.
 - **Shop price guard** (wave 1). On the Item Market, a listing priced below what a shop
   in Torn pays for the item gets a coloured outline, a dot and its profit beside the
   price, like "+12.5k", with the details on hover. Green, yellow, red and blue go by
