@@ -257,6 +257,7 @@ describe('CMP-011 CMP-012 the keys', () => {
     t.open('keys');
     assert.equal(t.$('#ttc-key-script').type, 'password');
     assert.match(t.text(), /It is not a Torn API key/);
+    assert.match(t.text(), /also needs the key’s lists scope/);
   });
 
   test('a mistyped key is not saved; the panel says what is wrong', async () => {

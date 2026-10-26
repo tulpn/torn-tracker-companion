@@ -530,6 +530,9 @@ export function mountPanel({
           type: 'password', id: `${P}-key-script`, 'data-key': 'script', value: keys.script,
           placeholder: 'tt_feed_…', autocomplete: 'off', spellcheck: 'false',
         })),
+      h('p', { class: `${P}-muted` },
+        'Add to list, on profiles, also needs the key’s lists scope: it lets the companion add players to your target lists, '
+        + 'and take them off, when you press its button. Tick it when you make the key on torn-tracker.com.'),
       h('h4', null, 'Torn API key (optional)'),
     ];
     if (hasTosTable(disclosure)) {

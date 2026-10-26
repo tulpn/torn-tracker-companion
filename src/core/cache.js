@@ -77,6 +77,14 @@ export function createCache(spaces, { now = Date.now } = {}) {
       return true;
     },
 
+    /** Drops one entry, so the next read asks again. */
+    drop(name, key) {
+      if (!spaces[name]) throw new Error(`cache: no space "${name}"`);
+      if (!data[name] || !Object.hasOwn(data[name], String(key))) return;
+      delete data[name][String(key)];
+      persist();
+    },
+
     /** "Forget me": storage is cleared by the caller; this drops what is in memory. */
     clear() {
       generation += 1;

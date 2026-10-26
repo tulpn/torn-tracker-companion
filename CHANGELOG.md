@@ -230,6 +230,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
   sellers from two factions in 30 days), with the counts on hover and a link to the
   seller-safety page. Never shows who reported it. Sends the player's id with your script
   key; shows nothing until torn-tracker.com serves the list.
+- **Add to list** (wave 3). On a player's profile, a split button beside the name adds
+  them to the torn-tracker.com target list you last used ("Add to Chain targets"); its
+  arrow opens your lists and the faction lists you may edit, ticked where they already
+  are, and "Manage lists". A click adds them, or takes them off a ticked list, and the
+  button then says "On 2 lists". One click is one call to torn-tracker.com and never a
+  game action. Sends the player's id, and for a change the list, with your script key,
+  which needs the lists scope; without it the button says "Add your script key".
 - When torn-tracker.com no longer serves an account, the settings page says so in one
   neutral notice, with where to ask if it's a mistake, and the script stops using the
   script key for reads and sharing. Features that work on this device alone carry on.

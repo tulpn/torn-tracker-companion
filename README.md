@@ -78,7 +78,10 @@ of sections and a search box. Nothing is added to Torn's header.
   until you press "Share the kinds I picked". If the wording of what is shared changes
   in an update, you are asked again. It also shows what is waiting to be sent and, if
   sharing has stopped, why.
-- **Keys**: your torn-tracker.com script key, which is not a Torn API key. An optional
+- **Keys**: your torn-tracker.com script key, which is not a Torn API key. Add to list,
+  on profiles, also needs the key's lists scope: with it, the companion reads your target
+  lists with the profile's player id, to tick the ones they are on, and adds or removes
+  them only when you press its button. Nothing else about the profile is read or sent. An optional
   Torn API key field will appear here, below Torn's terms table, for features that need
   your own data.
 - **Data**: what the script keeps on this device, export and import for your player notes,

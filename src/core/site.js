@@ -40,6 +40,11 @@ const AUCTION_VALUE_TTL = 10 * 60_000;
 const AUCTION_VALUE_MAX = 50;
 export const WAR_BRIEF_URL = `${SITE}/api/feeds/war/brief`;
 /** Players listed for mugging sellers after a sale (TRU-022, the companion's read on hq #368). */
+export const LISTS_URL = `${SITE}/api/feeds/lists`;
+const LISTS_TTL = 5 * 60_000;
+const LISTS_MAX = 100;
+const LIST_NAME = 100;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const TRUST_MUGGERS_URL = `${SITE}/api/feeds/trust/muggers`;
 const TRUST_TTL = 10 * 60_000;
 const ME_MUGS_TTL = 10 * 60_000;
@@ -397,6 +402,36 @@ function readSlot(v) {
   return { item_id: v.item_id, name: v.name, damage: v.damage ?? null, accuracy: v.accuracy ?? null, bonuses };
 }
 
+/** One target list as the profile menu shows it (CAPI-037). */
+const validList = (l) => l !== null && typeof l === 'object' && typeof l.uuid === 'string' && UUID.test(l.uuid)
+  && typeof l.name === 'string' && l.name.trim().length > 0 && l.name.length <= LIST_NAME
+  && typeof l.shared === 'boolean' && typeof l.contains === 'boolean';
+
+/** A player's menu: the lists and the one last added to, which must be one of them. */
+export function validLists(v) {
+  return v !== null && typeof v === 'object' && Array.isArray(v.lists) && v.lists.length <= LISTS_MAX
+    && v.lists.every(validList) && (v.lastUsed === null || v.lists.some((l) => l.uuid === v.lastUsed));
+}
+
+/** The lists read (CAPI-037), field by field; a list that does not fit is left out. */
+export function readLists(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.lists)) return null;
+  const lists = [];
+  const seen = new Set();
+  for (const row of data.lists) {
+    const list = { uuid: row?.uuid, name: typeof row?.name === 'string' ? row.name.trim() : row?.name, shared: row?.shared, contains: row?.contains };
+    if (!validList(list) || seen.has(list.uuid.toLowerCase())) continue;
+    seen.add(list.uuid.toLowerCase());
+    lists.push(list);
+    if (lists.length === LISTS_MAX) break;
+  }
+  const lastUsed = lists.find((l) => typeof data.last_used === 'string' && l.uuid.toLowerCase() === data.last_used.toLowerCase())?.uuid ?? null;
+  return { lists, lastUsed };
+}
+
+/** A 403 because the key lacks a scope (CAPI-020), as opposed to one refusing the read. */
+const lacksScope = (result) => result?.status === 403 && /\blacks the \S+ scope\b/.test(String(result.data?.detail ?? ''));
+
 export const SPACES = Object.freeze({
   ff: { ttlMs: HOUR, max: 2_000, valid: validFf },
   prices: { ttlMs: 10 * 60_000, max: 2_000, valid: validPrice },
@@ -404,6 +439,7 @@ export const SPACES = Object.freeze({
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
   guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
   trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
+  lists: { ttlMs: LISTS_TTL, max: 200, valid: validLists },
   trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && v.startsWith(`${SITE}/`) },
   shops: { ttlMs: DAY, max: 1, valid: validShopRows },
   // The site had no table: the built-in one serves for an hour before it is asked again.
@@ -447,6 +483,17 @@ export function createSite({
     if (keyRefused(result)) refusedKey = getKey();
     if (accountBanned(result)) onBanned();
     return result;
+  }
+
+  /**
+   * The lists calls: a 401 or a ban counts as for every read, but a key lacking the lists
+   * scope only answers this feature (the player may have left it off on purpose).
+   */
+  async function listsExchange(url, opts) {
+    const result = await send(url, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+    if (result?.status === 401) refusedKey = getKey();
+    if (accountBanned(result)) onBanned();
+    return result || { ok: false, status: 0, data: null };
   }
 
   async function call(url, opts) {
@@ -552,6 +599,60 @@ export function createSite({
         found.set(id, { listed: false });
       }
       return { players: found, safetyUrl: link() };
+    },
+
+    /**
+     * The player's target lists, and whether one player is on each (CAPI-037, CMP-110):
+     * own lists first, then the faction lists they may edit. Kept 5 minutes per player,
+     * and dropped after a change. A key without the lists scope reads as no key; it does
+     * not stop the other reads.
+     * @param {number} playerId  the profile's player
+     * @returns {Promise<{status: 'ok'|'no_key'|'busy'|'failed', lists: object[], lastUsed: string|null}>}
+     */
+    async lists(playerId) {
+      const none = (status) => ({ status, lists: [], lastUsed: null });
+      if (!positiveInt(playerId)) return none('failed');
+      const hit = cache.get('lists', playerId);
+      if (hit) return { status: 'ok', ...hit };
+      if (!usable()) return none('no_key');
+      const result = await listsExchange(`${LISTS_URL}?player=${playerId}`, { method: 'GET' });
+      if (lacksScope(result) || result.status === 401) return none('no_key');
+      if (result.status === 429) return none('busy');
+      const value = result.ok ? readLists(result.data) : null;
+      if (!value) return none('failed');
+      cache.set('lists', playerId, value);
+      return { status: 'ok', ...value };
+    },
+
+    /**
+     * Adds a player to one list, or takes them off it (CAPI-037). One press is one call.
+     * The player's menu is read again afterwards, whatever the answer.
+     * @param {string} uuid
+     * @param {number} playerId
+     * @param {'add'|'remove'} action
+     * @returns {Promise<{ok: boolean, state: 'on'|'off'|null, error: null|'invalid'|'no_key'|'not_yours'|'busy'|'failed'}>}
+     */
+    async listEntry(uuid, playerId, action) {
+      if (typeof uuid !== 'string' || !UUID.test(uuid) || !positiveInt(playerId) || !['add', 'remove'].includes(action)) {
+        return { ok: false, state: null, error: 'invalid' };
+      }
+      if (!usable()) return { ok: false, state: null, error: 'no_key' };
+      const result = await listsExchange(`${LISTS_URL}/${encodeURIComponent(uuid)}/entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_id: playerId, action }),
+      });
+      cache.drop('lists', playerId);
+      const data = result.data && typeof result.data === 'object' ? result.data : {};
+      if (result.ok) {
+        const state = ['on', 'off'].includes(data.state) ? data.state : (action === 'add' ? 'on' : 'off');
+        return { ok: true, state, error: null };
+      }
+      let error = 'failed';
+      if (lacksScope(result) || result.status === 401) error = 'no_key';
+      else if (result.status === 403 || result.status === 404) error = 'not_yours';
+      else if (result.status === 429) error = 'busy';
+      return { ok: false, state: null, error };
     },
 
     /**
