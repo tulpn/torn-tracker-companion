@@ -26,6 +26,8 @@ const SETTLE_MS = 250;
 /** What each refusal tells the player. */
 export const SAY = Object.freeze({
   not_yours: 'That list isn\'t yours to change.',
+  not_your_entry: 'Only whoever added them, or the list\'s owner, can take them off.',
+  not_allowed: 'This player can\'t be added to a list.',
   busy: 'torn-tracker.com is busy. Try again in a minute.',
   failed: 'That didn\'t work. Try again later.',
   no_key: 'Your script key can\'t change lists. Add a key with the lists scope.',

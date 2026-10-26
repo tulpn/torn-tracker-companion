@@ -630,7 +630,9 @@ export function createSite({
      * @param {string} uuid
      * @param {number} playerId
      * @param {'add'|'remove'} action
-     * @returns {Promise<{ok: boolean, state: 'on'|'off'|null, error: null|'invalid'|'no_key'|'not_yours'|'busy'|'failed'}>}
+     * @returns {Promise<{ok: boolean, state: 'on'|'off'|null, error: null|'invalid'|'no_key'|'not_yours'|'not_your_entry'|'not_allowed'|'busy'|'failed'}>}
+     *          not_yours: the list is gone or read-only (404, 403); not_your_entry: on a shared
+     *          list only whoever added the player, or the list's owner, takes them off
      */
     async listEntry(uuid, playerId, action) {
       if (typeof uuid !== 'string' || !UUID.test(uuid) || !positiveInt(playerId) || !['add', 'remove'].includes(action)) {
@@ -650,6 +652,8 @@ export function createSite({
       }
       let error = 'failed';
       if (lacksScope(result) || result.status === 401) error = 'no_key';
+      else if (result.status === 403 && data.error === 'not_your_entry') error = 'not_your_entry';
+      else if (result.status === 400 && data.error === 'on_ares_list') error = 'not_allowed';
       else if (result.status === 403 || result.status === 404) error = 'not_yours';
       else if (result.status === 429) error = 'busy';
       return { ok: false, state: null, error };

@@ -136,6 +136,19 @@ describe('CMP-110 AC1 one press is one POST', () => {
     }
   });
 
+  test('the backend\'s named refusals: someone else\'s entry, and a player who can\'t be listed', async () => {
+    const entry = rig({ reply: refuse(403, { error: 'not_your_entry' }) });
+    assert.equal((await entry.site.listEntry(B, 55, 'remove')).error, 'not_your_entry');
+    const ro = rig({ reply: refuse(403, { error: 'list_read_only' }) });
+    assert.equal((await ro.site.listEntry(B, 55, 'add')).error, 'not_yours');
+    const gone = rig({ reply: refuse(404, { error: 'list_not_found' }) });
+    assert.equal((await gone.site.listEntry(B, 55, 'add')).error, 'not_yours');
+    const ares = rig({ reply: refuse(400, { error: 'on_ares_list' }) });
+    assert.equal((await ares.site.listEntry(B, 55, 'add')).error, 'not_allowed');
+    const scope = rig({ reply: refuse(403, { detail: 'token lacks the lists scope' }) });
+    assert.equal((await scope.site.listEntry(B, 55, 'add')).error, 'no_key');
+  });
+
   test('a scope-less key is no_key, a 429 busy; a bad request sends nothing', async () => {
     const scope = rig({ reply: refuse(403, { detail: 'This key lacks the lists scope.' }) });
     assert.equal((await scope.site.listEntry(A, 55, 'add')).error, 'no_key');
