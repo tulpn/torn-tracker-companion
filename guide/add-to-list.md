@@ -31,7 +31,8 @@ On a player's profile, beside their name, a button with an arrow:
 
 After a change the button says where the player is now, like "On 2 lists". If a list was
 deleted, or a faction list became read-only for you, it says "That list isn't yours to
-change" and leaves it out of the menu.
+change" and leaves it out of the menu. On a faction list, only whoever added a player, or
+the list's owner, can take them off again.
 
 If torn-tracker.com can't be reached when the profile opens, the button stays away for
 that visit; open the profile again later. If the site is only busy, the button says

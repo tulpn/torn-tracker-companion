@@ -123,6 +123,18 @@ describe('CMP-110 the split button', () => {
     assert.deepEqual(items(r).map((n) => n.textContent), ['Chain targets']);
   });
 
+  test('someone else\'s entry on a shared list says who can take it off, and the list stays', async () => {
+    const site = fakeSite({ status: 'ok', lists: [chain(), hits(true)], lastUsed: B }, () => ({ ok: false, state: null, error: 'not_your_entry' }));
+    const r = run({ html: HEADING, url: PROFILE, site });
+    await wait();
+    press(arrow(r));
+    await wait(50);
+    press(items(r)[1]);
+    await wait(50);
+    assert.equal(r.doc.querySelector('.ttc-lists-note').textContent, 'Only whoever added them, or the list\'s owner, can take them off.');
+    assert.deepEqual(items(r).map((n) => n.textContent), ['Chain targets', '✓ Faction hits (faction)']);
+  });
+
   test('without a key with the lists scope, the button links to the keys settings', async () => {
     const site = fakeSite({ status: 'no_key', lists: [], lastUsed: null });
     const r = run({ html: HEADING, url: PROFILE, site });
