@@ -77,11 +77,11 @@ function mount({
 }
 
 describe('CMP-107 the settings page has a section for each job', () => {
-  test('General, Features, Sidebar, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
+  test('General, Features, Sidebar, Chain watch, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
     const t = mount();
     t.open();
     const tabs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((b) => b.textContent);
-    assert.deepEqual(tabs, ['General', 'Features', 'Sidebar', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
+    assert.deepEqual(tabs, ['General', 'Features', 'Sidebar', 'Chain watch', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
     assert.equal(t.$('[aria-selected=true]').textContent, 'Features');
   });
 

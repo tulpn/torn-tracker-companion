@@ -11,6 +11,15 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ### Added
 
+- **Chain watch: watch mode.** A large chain timer over the Torn page you're on, so a
+  watcher in another window can't miss it: green above 1:00, orange to 0:30, red
+  flashing "HIT NOW" below, grey for no chain, and grey stripes for "No data" when no
+  timer has come for 90 seconds. It reads Torn's chain bar when the page shows it, and
+  otherwise asks torn-tracker.com for the faction's chain with the script key, at most
+  every 30 seconds while on and visible. It never hits or clicks for you, and clicks go
+  through it to the page. Size, place, colours, a preview and an optional beep are under
+  Settings → Chain watch, kept on this device only. The flash is fixed at once every 2
+  seconds.
 - **Shop price guard** (wave 1). On the Item Market, a listing priced below what a shop
   in Torn pays for the item gets a coloured outline, a dot and its profit beside the
   price, like "+12.5k", with the details on hover. Green, yellow, red and blue go by

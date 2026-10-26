@@ -182,7 +182,11 @@ const time = (v, skew) => {
 const SIDEBAR_READERS = {
   chain(v, skew) {
     if (!count(v?.current, 1e5) || !count(v.max, 1e5)) return null;
-    return { current: v.current, max: v.max, timeoutAt: v.timeout_at === null ? null : time(v.timeout_at, skew) };
+    return {
+      current: v.current, max: v.max, timeoutAt: v.timeout_at === null ? null : time(v.timeout_at, skew),
+      // When the site last saw the chain: watch mode's "up to N s old" (CHW-020).
+      asOf: v.as_of == null ? null : time(v.as_of, skew),
+    };
   },
   war(v, skew) {
     if (!validName(v?.opponent_name) || !score(v.our_score) || !score(v.their_score) || !score(v.target)) return null;
