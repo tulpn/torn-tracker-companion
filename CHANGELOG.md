@@ -11,6 +11,9 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ### Added
 
+- **One off switch for toasts.** Pause all, or companion toasts off, in your notification
+  settings on torn-tracker.com now also stops the companion's achievement toast; General
+  says why while it's off. The toast's own switch in the companion stays.
 - **Chain watch: watch mode.** A large chain timer over the Torn page you're on, so a
   watcher in another window can't miss it: green above 1:00, orange to 0:30, red
   flashing "HIT NOW" below, grey for no chain, and grey stripes for "No data" when no

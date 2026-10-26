@@ -241,8 +241,8 @@ describe('WP-UX-8 the unlock toast', () => {
 
   test('what’s stored is checked field by field, and "Forget me" clears it', async () => {
     assert.deepEqual(cleanState({ cursor: 'soon', readAt: T0 + 1, featured: [{ id: 'X Y', name: 'n', tier: null }, { id: 'ok', name: 'Fine', tier: 'gold' }] }, T0),
-      { cursor: null, readAt: 0, featured: [{ id: 'ok', name: 'Fine', tier: 'gold' }] });
-    assert.deepEqual(cleanState('junk'), { cursor: null, readAt: 0, featured: [] });
+      { cursor: null, readAt: 0, featured: [{ id: 'ok', name: 'Fine', tier: 'gold' }], silenced: false });
+    assert.deepEqual(cleanState('junk'), { cursor: null, readAt: 0, featured: [], silenced: false });
     const r = rig({ stored: { cursor: iso(T0), featured: [{ id: 'ok', name: 'Fine', tier: 'gold' }] } });
     await r.unlocks.load();
     assert.equal(r.unlocks.featured().length, 1);
@@ -295,5 +295,71 @@ describe('WP-UX-8 the switches and the settings header', () => {
     await new Promise((resolve) => setImmediate(resolve));
     assert.deepEqual(saves.at(-1).achievements, { toast: false, featured: true });
     panel.destroy();
+  });
+});
+
+describe('HOOK-016 the one off switch on torn-tracker.com', () => {
+  test('the read says whether pause all or companion toasts silence the companion', () => {
+    assert.equal(readAchievements({ pause_all: true, companion_toasts: true }).silenced, true);
+    assert.equal(readAchievements({ pause_all: false, companion_toasts: false }).silenced, true);
+    assert.equal(readAchievements({ pause_all: false, companion_toasts: true }).silenced, false);
+    assert.equal(readAchievements({}).silenced, null, 'an older site says nothing, and the last answer stands');
+  });
+
+  test('acceptance test 6: with pause all on, no unlock toast; it is kept for the next page', async () => {
+    const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
+    const r = rig({
+      stored: { cursor: iso(T0 - 1000) },
+      replies: [ok({ unlocked, silenced: true }), ok({ unlocked, silenced: null })],
+    });
+    await r.unlocks.load();
+    await r.visit();
+    assert.equal(r.toast(), null);
+    assert.equal(r.unlocks.silenced(), true);
+    assert.equal(r.writes.at(-1).silenced, true);
+    r.tick(READ_EVERY_MS);
+    await r.visit();
+    assert.equal(r.toast(), null, 'a reply without the fields keeps the last answer');
+  });
+
+  test('switched back on, toasts come again', async () => {
+    const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
+    const r = rig({ stored: { cursor: iso(T0 - 1000), silenced: true }, replies: [ok({ unlocked, silenced: false })] });
+    await r.unlocks.load();
+    assert.equal(r.unlocks.silenced(), true);
+    await r.visit();
+    assert.ok(r.toast());
+  });
+
+  test('acceptance test 1: an entry marked unearned never reaches the settings header', () => {
+    const read = readAchievements({
+      featured: [{ id: 'sharing-cartographer', name: 'Cartographer', tier: null, category: 'sharing', earned: false }, { id: 'ok', name: 'Fine', tier: 'gold' }],
+    });
+    assert.deepEqual(read.featured, [{ id: 'ok', name: 'Fine', tier: 'gold' }]);
+  });
+});
+
+describe('HOOK-016 in Settings → General', () => {
+  test('a silenced player is told why toasts stopped, and where to switch them back', () => {
+    const { window } = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://www.torn.com/' });
+    windows.push(window);
+    const registry = createRegistry([]);
+    let silenced = true;
+    const panel = mountPanel({
+      doc: window.document,
+      registry,
+      version: '9.9.9',
+      getSettings: () => defaults(registry),
+      getKeys: () => emptyKeys(),
+      onSave: async () => true,
+      onReset: async () => {},
+      onForget: async () => true,
+      credits: [],
+      unlocks: { featured: () => [], silenced: () => silenced, onChange: () => () => {} },
+    });
+    panel.open('general');
+    assert.match(panel.panel.querySelector('[data-achievements-quiet]').textContent, /pause all is on, or companion toasts are off/);
+    panel.destroy?.();
+    silenced = false;
   });
 });

@@ -594,6 +594,10 @@ export function mountPanel({
         'Show my featured achievements at the top of this page'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion asks torn-tracker.com for new ones when you open a Torn page, at most every five minutes. Sharing one is only ever your own press, on torn-tracker.com.'),
+      unlocks?.silenced?.()
+        ? h('div', { class: `${P}-notice`, 'data-achievements-quiet': '' },
+          'No toasts for now: pause all is on, or companion toasts are off, in your notification settings on torn-tracker.com.')
+        : null,
       h('h4', null, 'Guide'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-setting': 'guideStrip', checked: draft.settings.guideStrip !== false }),
