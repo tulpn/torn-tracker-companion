@@ -29,6 +29,7 @@ import auctionValues from './auction-values/index.js';
 import warBrief from './war-brief/index.js';
 import raceTemplates from './race-templates/index.js';
 import playerNotes from './player-notes/index.js';
+import addToList from './add-to-list/index.js';
 import messageTemplates from './message-templates/index.js';
 import bountyBoard from './bounty-board/index.js';
 import stockAdvisor from './stock-advisor/index.js';
@@ -39,6 +40,7 @@ import meritHints from './merit-hints/index.js';
 export default [
   ffBadges,
   warPage,
+  addToList,
   foreignStock,
   bestBuy,
   attackLoadout,
