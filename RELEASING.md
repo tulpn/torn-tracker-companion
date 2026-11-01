@@ -18,13 +18,32 @@ two URLs never change and never need to be edited in the header.
 The sources on `main` are **not** an update channel. An unreleased commit must never reach
 a player.
 
+## Branches
+
+From v0.9.0 the work moves through three branches (hq #447):
+
+- `development`: every feature and fix PR targets it, with auto-merge.
+- `testing`: what the next release will be. `development` is merged into it by a PR
+  when an update is ready.
+- `main`: what is released. `testing` is merged into it by a PR, and the tag is cut there.
+
+Promotion PRs (`development` → `testing`, `testing` → `main`) wait for the owner's go.
+All three branches require the `test` and `author-check` checks.
+
 ## Cutting one
 
+Once `development` has been promoted to `testing`, cut the release on a branch from
+`testing`. Nobody pushes to `main` directly, so the release commit reaches it by PR:
+
 ```bash
-git checkout main && git pull
+git fetch origin && git checkout -b chore/release-vX.Y.Z origin/testing
 npm ci && npm test && npm run lint:rules
-npm run release -- patch      # or minor, major, beta, or an explicit 1.2.3
+npm run release -- patch --allow-branch   # or minor, major, beta, or an explicit 1.2.3
+git push -u origin chore/release-vX.Y.Z   # the branch only, never the tag yet
 ```
+
+Open its PR into `testing` and merge it with `--merge`, then the promotion PR `testing` →
+`main`, also with `--merge`, so the tagged commit reaches `main` unchanged.
 
 That bumps `package.json`, moves everything under `## Unreleased` in the CHANGELOG into a
 dated section, rebuilds so the header's `@version` follows, commits `chore(release): vX.Y.Z`
@@ -43,9 +62,15 @@ and tags it. Nothing is published yet.
 - [ ] The CHANGELOG section reads like something a player would want to know.
 - [ ] The forum post is updated for anything that changed in what the script does.
 
+Check that the tagged commit is on `main`
+(`git merge-base --is-ancestor vX.Y.Z origin/main`), then push the tag alone:
+
 ```bash
-git push origin main vX.Y.Z
+git push origin vX.Y.Z
 ```
+
+Afterwards, merge `main` back into `development` by a PR, so the version bump and the
+dated CHANGELOG section are there for the next round.
 
 Pushing the tag is the publish. The workflow builds from the tagged commit, checks that the
 tag, `package.json` and the built header all say the same version, runs the tests and the

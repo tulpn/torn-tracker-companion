@@ -235,7 +235,7 @@ async function cut(kind, { allowBranch = false } = {}) {
     '  - the README terms table matching the kinds this version can share;',
     '  - the forum post updated.',
     '',
-    `Then: git push origin main ${tag}`,
+    `Then, once the release commit has reached main by PR: git push origin ${tag}`,
     isPrerelease(version)
       ? 'This is a prerelease: it will not be "latest", so stable installs stay where they are.'
       : 'This becomes "latest", and installs will update themselves to it.',
