@@ -11,7 +11,7 @@
 // accepted in hq #97, dibs in #104, the OC read in #110). The roster's key and shape are the companion's
 // proposal on #104, mirroring Torn's UserStatus, until the spec names them.
 
-import { SITE } from '../hosts.js';
+import { SITE, SITE_ORIGINS } from '../hosts.js';
 import { createCache } from './cache.js';
 import { accountBanned, keyRefused, request } from './net.js';
 import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
@@ -351,11 +351,13 @@ export function readAchievements(data) {
 }
 
 const trimmed = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
-/** A link on our site: an absolute one on our host, or a path on it. */
+const onSite = (v) => SITE_ORIGINS.some((origin) => v.startsWith(`${origin}/`));
+
+/** A link on our site: an absolute one on either spelling of our host, or a path on it. */
 function siteLink(v) {
   if (typeof v !== 'string' || v.length > 200) return null;
   if (/^\/(?!\/)/.test(v)) return `${SITE}${v}`;
-  return v.startsWith(`${SITE}/`) ? v : null;
+  return onSite(v) ? v : null;
 }
 
 /**
@@ -400,13 +402,10 @@ const LABEL = 40;
 export const WEIGHTS_SOURCE = 'tornprobability.com';
 const OC_NAME = 100;
 
-const BARE_SITE = SITE.replace('://www.', '://');
-
-/** A link on torn-tracker.com, or null; the bare host is moved to www, the one @connect names. */
+/** A link on torn-tracker.com, either spelling of the host, or null (D-162). */
 export function siteUrl(v) {
   if (typeof v !== 'string' || v.length > 500) return null;
-  if (v.startsWith(`${SITE}/`)) return v;
-  return v.startsWith(`${BARE_SITE}/`) ? `${SITE}${v.slice(BARE_SITE.length)}` : null;
+  return onSite(v) ? v : null;
 }
 
 const percent_ = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100;
@@ -654,7 +653,7 @@ export function createSite({
       });
       if (!data || typeof data !== 'object' || !Array.isArray(data.results)) return { players: found, safetyUrl: link() };
       const skew = skewOf(data);
-      // A path, or a link on our host (the bare host is moved to www, as for the war brief).
+      // A path, or a link on either spelling of our host.
       const safetyUrl = siteLink(data.safety_url) ?? siteUrl(data.safety_url);
       if (safetyUrl) cache.set('trustLink', 'url', safetyUrl);
       for (const row of data.results) {

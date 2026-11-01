@@ -62,7 +62,7 @@ describe('CHW-040 reading the rota', () => {
     assert.equal(r.calls.length, 1);
     assert.equal(r.calls[0].method, 'GET');
     assert.equal(r.calls[0].url, `${CHAIN_WATCH_URL}?from=${encodeURIComponent(iso(T0))}&hours=24`);
-    assert.ok(r.calls[0].url.startsWith('https://www.torn-tracker.com/'));
+    assert.ok(r.calls[0].url.startsWith('https://torn-tracker.com/'));
     assert.equal(got.status, 'ok');
     assert.deepEqual(got.slots, [
       { slotStart: T0, role: 'lead', id: 7, name: 'Medic', mine: true },

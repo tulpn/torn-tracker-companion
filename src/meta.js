@@ -4,7 +4,7 @@
 // files. @version is never written here: it comes from package.json so the two cannot
 // disagree. @connect comes from hosts.js for the same reason.
 
-import { HOSTS } from './hosts.js';
+import { HOSTS, SITE } from './hosts.js';
 
 const RELEASE = 'https://github.com/tulpn/torn-tracker-companion/releases/latest/download';
 
@@ -15,7 +15,7 @@ export default {
     'Brings torn-tracker.com and the best community tools onto the Torn pages you use: '
     + 'estimates, war, travel, trading, crimes and more.',
   author: 'ares313377',
-  homepageURL: 'https://www.torn-tracker.com/scripts',
+  homepageURL: `${SITE}/scripts`,
   supportURL: 'https://www.torn.com/forums.php#/p=threads&f=67&t={{THREAD_ID}}&b=0&a=0',
   license: 'GPL-3.0-or-later',
   match: ['https://www.torn.com/*'],
