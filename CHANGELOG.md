@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.2 — 2026-11-01
+
 ### Fixed
 
 - 0.9.0 and 0.9.1 could not reach torn-tracker.com from a browser: the site moved to
