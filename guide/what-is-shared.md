@@ -1,7 +1,7 @@
 ---
 title: Choose what to share
 seo_title: Choose what the Torn Tracker Companion shares
-summary: Every kind of sharing starts off; switch on the ones you want, then press Share the kinds I picked.
+summary: Every kind of sharing starts off; switch on the ones you want, then press Save.
 section: Guides
 group: settings
 order: 120
@@ -26,9 +26,17 @@ keywords: companion sharing, what does the torn userscript send, crowd data torn
 1. Open the settings (the **Torn Tracker** link in the sidebar) and go to **Sharing**.
 2. Read the notice at the top, and the line beside each kind saying what it sends.
 3. Switch on the kinds you're happy to share.
-4. Press **Share the kinds I picked**. Until you do, nothing is sent.
+4. Press **Save**. Until you do, nothing is sent; the line under the switches says so.
 
 Every kind is explained in [Sharing kinds, one by one](sharing-kinds.md).
+
+## Seeing what goes
+
+Under the switches, a queue line shows how many reports are waiting, when the last upload
+went and what torn-tracker.com answered. For more, switch on **Log what the script does to
+the browser console** under **General**: the console then says, for every report, why it was
+or wasn't shared (a kind that's off, an item the site didn't ask for, a repeat within the
+window), and what each upload sent and got back. Your keys are never written there.
 
 ## Why share
 
@@ -46,4 +54,5 @@ reported their own loadout.**
 
 Switch a kind off at any time and press **Save**: it stops being shared from then on. If
 the explanation of what a kind sends changes in an update, sharing pauses until you've
-read the new one and pressed **Share the kinds I picked** again.
+read the new one and pressed **Share the kinds I picked**, the button that then appears
+under the switches.

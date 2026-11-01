@@ -14,6 +14,7 @@
 import { SITE, SITE_ORIGINS } from '../hosts.js';
 import { createCache } from './cache.js';
 import { accountBanned, keyRefused, request } from './net.js';
+import { log } from './log.js';
 import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
 
 export const FF_URL = `${SITE}/api/feeds/ff`;
@@ -33,6 +34,10 @@ export const GUIDE_URL = `${SITE}/api/feeds/me/guide`;
 /** The faction's chain watch rota (CHW-040 to CHW-042). */
 export const CHAIN_WATCH_URL = `${SITE}/api/feeds/me/chain-watch`;
 const GUIDE_TTL = 15 * 60_000;
+// The sidebar block's answer, kept just under its minute (hq #452): a Torn page load
+// shows the last rows at once instead of asking again. Under 60 s, so the block's own
+// once-a-minute read never lands on a cached copy that a slow reply made look fresh.
+const SIDEBAR_TTL = 55_000;
 const GUIDE_PAGE = `${SITE}/guide/`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
@@ -488,6 +493,24 @@ export function readLists(data) {
   return { lists, lastUsed };
 }
 
+/**
+ * What the sidebar cache keeps: the asked items' raw fields, the links and the loot
+ * source, with the skew of the reply they came in. readSidebar checks each field again
+ * when it is used, as it does a reply.
+ */
+function sidebarCopy(data, asked, skew) {
+  const kept = {};
+  for (const key of [...asked, 'links', 'source']) {
+    if (Object.hasOwn(data, key)) kept[key] = data[key];
+  }
+  return { data: kept, skew };
+}
+
+function validSidebarCopy(v) {
+  return Boolean(v) && typeof v === 'object' && Boolean(v.data) && typeof v.data === 'object'
+    && !Array.isArray(v.data) && Number.isFinite(v.skew) && Math.abs(v.skew) <= DAY;
+}
+
 /** A 403 because the key lacks a scope (CAPI-020), as opposed to one refusing the read. */
 const lacksScope = (result) => result?.status === 403 && /\blacks the \S+ scope\b/.test(String(result.data?.detail ?? ''));
 
@@ -497,6 +520,7 @@ export const SPACES = Object.freeze({
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
   guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
+  sidebar: { ttlMs: SIDEBAR_TTL, max: 1, valid: validSidebarCopy },
   trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
   lists: { ttlMs: LISTS_TTL, max: 200, valid: validLists },
   trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && v.startsWith(`${SITE}/`) },
@@ -1139,7 +1163,10 @@ export function createSite({
     async demand() {
       if (demandMemo && now() - demandMemo.at < DEMAND_TTL) return demandMemo.value;
       const value = new Map();
-      if (!usable()) return value;
+      if (!usable()) {
+        log('demand: not asked (no usable script key)');
+        return value;
+      }
       const data = await call(DEMAND_URL, { method: 'GET' });
       const wanted = data?.demand && typeof data.demand === 'object' ? data.demand : {};
       for (const [kind, ids] of Object.entries(wanted)) {
@@ -1147,13 +1174,17 @@ export function createSite({
         value.set(kind, new Set(ids.filter(positiveInt).slice(0, DEMAND_MAX)));
       }
       demandMemo = { at: now(), value };
+      const counts = [...value].map(([kind, ids]) => `${kind} ${ids.size}`).join(', ');
+      log(data ? `demand: asked, ${[...value.values()].reduce((n, ids) => n + ids.size, 0)} ids${counts ? ` (${counts})` : ''}`
+        : 'demand: asked, no answer; nothing is wanted until the next ask');
       return value;
     },
 
     /**
      * The sidebar block's one read (CMP-108, companion-api §6.4): only the items asked
-     * for. Never cached: the block asks at most once a minute, and only while it's open
-     * and the tab is visible.
+     * for. The block asks at most once a minute, and only while it's open and the tab is
+     * visible; the answer is kept 55 s, so a Torn page load inside that minute shows it
+     * again without a request (hq #452).
      * @param {string[]} asked
      * @returns {Promise<{status: 'ok', items: Map<string, object|null>, links: object[]}
      *   | {status: 'no_key'|'refused'|'failed'} | {status: 'wait', retryMs: number}>}
@@ -1162,14 +1193,22 @@ export function createSite({
       const ask = SIDEBAR_KEYS.filter((key) => asked.includes(key));
       if (!getKey()) return { status: 'no_key' };
       if (!usable()) return { status: 'refused' };
-      const result = await exchange(`${SIDEBAR_URL}?items=${ask.join(',')}`, { method: 'GET' });
-      if (keyRefused(result)) return { status: 'refused' };
+      const id = ask.join(',');
+      const kept = cache.get('sidebar', id);
+      if (kept) return { status: 'ok', ...readSidebar(kept.data, ask, kept.skew), cached: true };
+      const result = await exchange(`${SIDEBAR_URL}?items=${id}`, { method: 'GET' });
+      if (keyRefused(result)) {
+        cache.drop('sidebar', id);
+        return { status: 'refused' };
+      }
       if (result.status === 429) {
         const seconds = Number(result.retryAfter);
         return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
       }
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
-      return { status: 'ok', ...readSidebar(result.data, ask, skewOf(result.data)) };
+      const skew = skewOf(result.data);
+      cache.set('sidebar', id, sidebarCopy(result.data, ask, skew));
+      return { status: 'ok', ...readSidebar(result.data, ask, skew) };
     },
 
     /**

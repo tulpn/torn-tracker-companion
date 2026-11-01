@@ -24,7 +24,7 @@ import { createGuide } from './core/guide.js';
 import { tornTheme } from './core/tokens.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
-import { defaults, isEnabled, isShared, load, normalize, save } from './core/settings.js';
+import { defaults, isEnabled, load, normalize, save, shareRefusal } from './core/settings.js';
 import { KEYS, forget, read, write } from './core/storage.js';
 import { error, log, setDebug, warn } from './core/log.js';
 import * as dom from './core/dom.js';
@@ -96,43 +96,59 @@ export async function boot(win = globalThis) {
   const runner = new FeatureRunner({
     registry,
     getSettings: () => settings,
-    makeContext: (descriptor) => ({
-      id: descriptor.id,
-      version: VERSION,
-      settings: settings.features[descriptor.id],
-      // Features read the page through these rather than globals, so a test can hand
-      // them a saved page.
-      win,
-      doc: win.document,
-      now: uploader.serverNow,
-      site,
-      dom,
-      net,
-      intercept,
-      log,
-      share: createSharer({
-        descriptor,
-        getSettings: () => settings,
-        sink: (observation) => uploader.add(observation),
+    makeContext: (descriptor) => {
+      /** kind -> the refusal the debug log last gave for it (see sharing below). */
+      const told = new Map();
+      return {
+        id: descriptor.id,
+        version: VERSION,
+        settings: settings.features[descriptor.id],
+        // Features read the page through these rather than globals, so a test can hand
+        // them a saved page.
+        win,
+        doc: win.document,
         now: uploader.serverNow,
-        getLocation: () => win.location,
-      }),
-      /** Whether the player shares this kind now; features ask before costly work for it. */
-      sharing: (kind) => descriptor.shares.includes(kind) && isShared(settings, kind),
-      /** The feature's own saved data (its descriptor's `data`), checked on load. */
-      data: () => settings.featureData?.[descriptor.id],
-      /**
-       * Saves the feature's own data; returns it as stored, after its checks. Given a
-       * function, it is applied to the data as storage holds it now, so a save made in
-       * another tab since this one loaded is kept.
-       */
-      saveData: async (value) => {
-        const next = typeof value === 'function' ? value((await load(registry)).featureData?.[descriptor.id]) : value;
-        settings = normalize({ ...settings, featureData: { ...settings.featureData, [descriptor.id]: next } }, registry);
-        await save(settings, registry);
-        return settings.featureData[descriptor.id];
-      },
-    }),
+        site,
+        dom,
+        net,
+        intercept,
+        log,
+        share: createSharer({
+          descriptor,
+          getSettings: () => settings,
+          sink: (observation) => uploader.add(observation),
+          now: uploader.serverNow,
+          getLocation: () => win.location,
+          queueSize: () => uploader.status().queued,
+        }),
+        /**
+         * Whether the player shares this kind now; features ask before costly work for it.
+         * With debug on, a refusal is logged once per kind, until the reason changes: a
+         * feature may ask on every page change (hq #454).
+         */
+        sharing: (kind) => {
+          if (!descriptor.shares.includes(kind)) return false;
+          const why = shareRefusal(settings, kind);
+          if (why && told.get(kind) !== why) log(`share ${kind}: refused (${why})`);
+          if (why) told.set(kind, why);
+          else told.delete(kind);
+          return why === null;
+        },
+        /** The feature's own saved data (its descriptor's `data`), checked on load. */
+        data: () => settings.featureData?.[descriptor.id],
+        /**
+         * Saves the feature's own data; returns it as stored, after its checks. Given a
+         * function, it is applied to the data as storage holds it now, so a save made in
+         * another tab since this one loaded is kept.
+         */
+        saveData: async (value) => {
+          const next = typeof value === 'function' ? value((await load(registry)).featureData?.[descriptor.id]) : value;
+          settings = normalize({ ...settings, featureData: { ...settings.featureData, [descriptor.id]: next } }, registry);
+          await save(settings, registry);
+          return settings.featureData[descriptor.id];
+        },
+      };
+    },
   });
 
   const restart = () => {

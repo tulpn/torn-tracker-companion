@@ -62,18 +62,41 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { win, timer: null, stopWatching: null, gate: createGate({ windowMs: WINDOW_MS, now: ctx.now }) };
+    const s = { win, timer: null, stopWatching: null, told: '', gate: createGate({ windowMs: WINDOW_MS, now: ctx.now }) };
     state = s;
+
+    /** With debug on, why nothing was shared, once per reason: the page redraws often (hq #454). */
+    function note(text) {
+      if (s.told === text) return;
+      s.told = text;
+      ctx.log(text);
+    }
 
     async function look() {
       if (state !== s || !isVisible(doc) || !ctx.site?.demand) return;
       // Nothing is asked of the site unless the player shares this kind.
       if (typeof ctx.sharing === 'function' && !ctx.sharing(KIND)) return;
       const item = itemOf(doc, win.location?.hash);
-      const listings = item ? listingsOf(doc) : [];
-      if (!item || listings.length === 0) return;
+      if (!item) {
+        note('market_snapshot: no item id in the hash or beside the list');
+        return;
+      }
+      const listings = listingsOf(doc);
+      if (listings.length === 0) {
+        note(`market_snapshot: no listings matched (${doc.querySelectorAll(ROW).length} rows) for item ${item}`);
+        return;
+      }
       const wanted = (await ctx.site.demand()).get(KIND);
-      if (state !== s || !wanted?.has(item) || !s.gate.allow(String(item))) return;
+      if (state !== s) return;
+      if (!wanted?.has(item)) {
+        note(`share ${KIND}: refused (not demanded: item ${item})`);
+        return;
+      }
+      if (!s.gate.allow(String(item))) {
+        note(`share ${KIND}: deduped (item ${item} went within the last five minutes)`);
+        return;
+      }
+      s.told = '';
       ctx.share(KIND, { item_id: item, listings });
     }
 
