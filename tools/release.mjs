@@ -3,10 +3,10 @@
 //   npm run release -- patch|minor|major|1.2.3|beta
 //
 // Bumps package.json, moves what is under "Unreleased" in the CHANGELOG into a dated
-// section, rebuilds so the header's @version follows, commits and tags. Pushing the tag
-// is the publish: the release workflow builds, checks that the tag, package.json and the
-// built header all say the same thing, runs the tests and the lint, and attaches the two
-// files that installs point at.
+// section, rebuilds so the header's @version follows, and commits. It does not tag: the
+// merge into main is the publish (hq D-163). The release workflow sees a version with no
+// tag yet, builds, checks that package.json and the built header say the same thing, runs
+// the tests and the lint, tags the commit and attaches the two files installs point at.
 //
 // The workflow also calls this file:
 //   --verify v1.2.3   the tag, package.json and dist all agree, and no feature in the
@@ -211,6 +211,7 @@ async function cut(kind, { allowBranch = false } = {}) {
   for (const notice of wording.notices) console.log(`note: ${notice}`);
   const tag = `v${version}`;
   if (git('tag', '--list', tag)) throw new Error(`${tag} already exists`);
+  if (git('ls-remote', '--tags', 'origin', `refs/tags/${tag}`)) throw new Error(`${tag} is already on origin`);
 
   const changelog = promoteUnreleased(
     await readFile(CHANGELOG, 'utf8'),
@@ -225,17 +226,15 @@ async function cut(kind, { allowBranch = false } = {}) {
 
   git('add', 'package.json', 'CHANGELOG.md');
   git('commit', '-m', `chore(release): ${tag}`);
-  git('tag', '-a', tag, '-m', tag);
 
   console.log([
-    `${tag} is committed and tagged.`,
+    `${tag} is committed, not tagged: the release workflow tags it on main.`,
     '',
-    'Before you push the tag, the release checklist in RELEASING.md:',
-    '  - the script installed from dist/ and smoke-tested in Torn PDA on a device;',
-    '  - the README terms table matching the kinds this version can share;',
-    '  - the forum post updated.',
+    'Before it reaches main, the release checklist in RELEASING.md:',
+    '  - the script installed from dist/ and smoke-tested where it changed;',
+    '  - the README terms table matching the kinds this version can share.',
     '',
-    `Then, once the release commit has reached main by PR: git push origin ${tag}`,
+    `Push this branch, open its PR into development and promote it: the merge into main publishes ${tag}.`,
     isPrerelease(version)
       ? 'This is a prerelease: it will not be "latest", so stable installs stay where they are.'
       : 'This becomes "latest", and installs will update themselves to it.',
