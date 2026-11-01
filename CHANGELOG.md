@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.4 — 2026-11-01
+
 ### Fixed
 
 - The Contract's link in Torn's Areas list still showed the Torn Tracker "TT" icon. It
