@@ -9,6 +9,13 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ## Unreleased
 
+### Fixed
+
+- Site calls now go through the script manager; the previous build could not reach
+  torn-tracker.com from a browser. Installing or updating asks to allow web requests to
+  `api.torn.com` and `www.torn-tracker.com`, the two sites the script has always talked
+  to. Torn PDA is unchanged.
+
 ## 0.9.0 — 2026-11-01
 
 ### Added

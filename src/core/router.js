@@ -5,6 +5,8 @@
 // calls pushState itself and never changes the location. It is the only file allowed to
 // wrap history.pushState, and the rules lint enforces that by path (CMP-030).
 
+import { pageWindow } from './page-window.js';
+
 const EVENTS = ['hashchange', 'popstate'];
 
 /**
@@ -14,7 +16,8 @@ const EVENTS = ['hashchange', 'popstate'];
  * @returns {() => void} stop
  */
 export function startRouter(onNavigate, win = globalThis) {
-  const history = win.history;
+  // Torn calls pushState on the page's window, not on the script manager's wrapper.
+  const history = pageWindow(win).history;
   const wrapped = [];
   let timer = null;
   let stopped = false;

@@ -26,6 +26,10 @@ export default {
   downloadURL: `${RELEASE}/torn-tracker-companion.user.js`,
   updateURL: `${RELEASE}/torn-tracker-companion.meta.js`,
   runAt: 'document-idle',
-  // No GM_* functions anywhere: that is what lets the same file run in Torn PDA (CMP-007).
-  grant: ['none'],
+  // Only the manager's request (D-161, hq #448): torn.com's Content Security Policy refuses
+  // the page's own fetch to torn-tracker.com, and the manager's request is held to
+  // @connect instead. unsafeWindow is the page's window, which the interceptor and the
+  // router need once a grant puts the script in the manager's sandbox. Torn PDA ignores
+  // grants and has its own helpers, so the same file still runs there (CMP-007).
+  grant: ['GM.xmlHttpRequest', 'GM_xmlhttpRequest', 'unsafeWindow'],
 };

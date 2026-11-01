@@ -25,12 +25,15 @@ repository's [`guide/`](guide/) folder, so you can read them here too.
 
 ## Installing it
 
-There is no release yet, so these are the instructions that will apply from v1.0.0.
-
 **In a browser**, with [Tampermonkey](https://www.tampermonkey.net) or
 [Violentmonkey](https://violentmonkey.github.io) installed, open the install link on the
 [latest release](https://github.com/tulpn/torn-tracker-companion/releases/latest) and
 confirm. Your script manager then checks for updates by itself.
+
+The install page asks to let the script make web requests to `api.torn.com` and
+`www.torn-tracker.com`, and to no other site. Torn's pages block requests to other sites,
+so the script asks your script manager to make them; the manager allows only the two
+sites listed. What each site is sent is in the terms table below.
 
 **In [Torn PDA](https://github.com/Manuito83/torn-pda)**, add the script **from its URL**,
 not by pasting its text:
