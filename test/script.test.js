@@ -230,6 +230,40 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
   });
 });
 
+describe('hq #448 in a browser the site is reached through the script manager', () => {
+  const KEY = `tt_feed_${'E'.repeat(43)}`;
+
+  test('with nothing switched on, the manager is not called either', async () => {
+    const t = await boot(PAGE, { gm: true });
+    t.window.dispatchEvent(new t.window.Event('pagehide'));
+    await t.tick(10);
+    assert.deepEqual(t.gmCalls, []);
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('a script key saved: the site call goes through GM_xmlhttpRequest, not the page fetch', async () => {
+    const t = await boot(PAGE, { gm: true });
+    const fetched = [];
+    const guarded = t.window.fetch;
+    t.window.fetch = (...args) => {
+      fetched.push(String(args[0]));
+      return guarded(...args);
+    };
+    await openOn(t, 'keys');
+    const field = t.panel().querySelector(`#${PREFIX}-key-script`);
+    field.value = KEY;
+    field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    await t.tick(10);
+    for (const section of ['sidebar', 'sharing', 'data']) await t.go(`#/torn-tracker/${section}`);
+    await t.tick(10);
+    assert.deepEqual(fetched.filter((url) => url.includes('torn-tracker.com')), []);
+    assert.ok(t.gmCalls.every((url) => url.startsWith('https://www.torn-tracker.com/') || url.startsWith('https://api.torn.com/')), t.gmCalls.join());
+    assert.ok(t.gmCalls.length > 0, 'the saved key starts the site reads');
+    assert.deepEqual(t.violations, []);
+  });
+});
+
 describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
   const HEADER = '<div id="topHeaderBanner"><div class="header-wrapper-top"><div class="menu"><a class="avatar___h1" href="/profiles.php?XID=1"><img src="/avatar.png"></a></div></div></div>';
 

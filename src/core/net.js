@@ -1,9 +1,13 @@
 // Every request the script makes goes through here (CMP-007, CMP-010, CMP-013).
 //
 // Two hosts, and no others: hosts.js holds the list that the header's @connect is built
-// from. On Torn PDA the cross-origin helpers are used when present, because the WebView's
-// own fetch is subject to the page's CORS; in a browser it is fetch. Callers do not care
-// which.
+// from. Three transports, in this order (D-161, hq #448):
+//   - Torn PDA's cross-origin helpers, when PDA provides them (PDA ignores grants);
+//   - the script manager's request (GM_xmlhttpRequest or GM.xmlHttpRequest), which the
+//     manager makes outside the page, so torn.com's Content Security Policy, whose
+//     connect-src names only torn.com and api.torn.com, does not apply; @connect does;
+//   - the page's fetch, only when neither exists (it is refused on torn.com itself).
+// Callers do not care which.
 //
 // Nothing here ever reaches www.torn.com. The page's own requests are observed in
 // intercept.js and never repeated.
@@ -89,6 +93,19 @@ export function tagged(url, win = globalThis) {
   return `${url}${join}ttc_v=${encodeURIComponent(VERSION)}&ttc_p=${platform(win)}`;
 }
 
+/* global GM, GM_xmlhttpRequest */
+
+/** The script manager's request function, or null outside a manager that granted it. */
+export function gmTransport(scope = globalThis) {
+  try {
+    const legacy = typeof GM_xmlhttpRequest === 'function' ? GM_xmlhttpRequest : scope.GM_xmlhttpRequest;
+    if (typeof legacy === 'function') return legacy;
+    const gm = typeof GM !== 'undefined' ? GM : scope.GM;
+    if (gm && typeof gm.xmlHttpRequest === 'function') return (details) => gm.xmlHttpRequest(details);
+  } catch { /* a manager that throws on the lookup has none to give */ }
+  return null;
+}
+
 function pdaTransport(method) {
   const fn = method === 'GET' ? globalThis.PDA_httpGet : globalThis.PDA_httpPost;
   return typeof fn === 'function' ? fn : null;
@@ -113,7 +130,8 @@ function normalizePda(res) {
  * @param {string} url  absolute, on an allowed host
  * @param {object} [opts]
  * @param {boolean} [opts.keepalive]  let the request outlive the page (the pagehide flush);
- *        browsers only, PDA's helpers have no such thing
+ *        for the page's fetch only: the manager's request outlives the page by itself,
+ *        and PDA's helpers have no such thing
  * @returns {Promise<{ok: boolean, status: number, text: string, data: unknown,
  *          retryAfter: string|null, error: string|null}>}
  *          Network trouble is a result, never a throw: a feature must keep working when
@@ -133,9 +151,13 @@ export async function request(url, {
   const verb = String(method).toUpperCase();
   const sent = tagged(url);
   try {
-    const { status, text, retryAfter } = pdaTransport(verb)
-      ? normalizePda(await pdaTransport(verb)(sent, headers, body))
-      : await viaFetch(sent, { method: verb, headers, body, timeout, keepalive });
+    const pda = pdaTransport(verb);
+    const gm = pda ? null : gmTransport();
+    let reply;
+    if (pda) reply = normalizePda(await pda(sent, headers, body));
+    else if (gm) reply = await viaGm(gm, sent, { method: verb, headers, body, timeout });
+    else reply = await viaFetch(sent, { method: verb, headers, body, timeout, keepalive });
+    const { status, text, retryAfter } = reply;
 
     let data = null;
     try {
@@ -148,6 +170,47 @@ export async function request(url, {
     warn('request failed', url, err && err.name);
     return { ok: false, status: 0, text: '', data: null, retryAfter: null, error: err?.name || 'error' };
   }
+}
+
+/** Retry-After out of the raw header block the manager hands back. */
+export function retryAfterOf(rawHeaders) {
+  const match = /^retry-after:\s*(.+?)\s*$/im.exec(String(rawHeaders ?? ''));
+  return match ? match[1] : null;
+}
+
+// The manager's request outlives the page by itself, so the pagehide flush needs no
+// keepalive here. `anonymous` is the manager's word for credentials: 'omit'.
+function viaGm(gm, url, { method, headers, body, timeout }) {
+  return new Promise((resolve, reject) => {
+    const fail = (name) => () => {
+      const err = new Error(`the request ${name}`);
+      err.name = name === 'timed out' ? 'TimeoutError' : 'NetworkError';
+      reject(err);
+    };
+    try {
+      const pending = gm({
+        method,
+        url,
+        headers,
+        data: body ?? undefined,
+        timeout,
+        anonymous: true,
+        responseType: 'text',
+        onload: (res) => resolve({
+          status: Number(res?.status) || 0,
+          text: typeof res?.responseText === 'string' ? res.responseText : '',
+          retryAfter: retryAfterOf(res?.responseHeaders),
+        }),
+        onerror: fail('failed'),
+        ontimeout: fail('timed out'),
+        onabort: fail('was aborted'),
+      });
+      // GM.xmlHttpRequest also returns a promise; its rejection is the onerror above.
+      pending?.catch?.(() => {});
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 async function viaFetch(url, { method, headers, body, timeout, keepalive }) {

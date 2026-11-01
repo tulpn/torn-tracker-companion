@@ -187,3 +187,32 @@ describe('CMP-030 the interceptor only observes', () => {
     assert.ok(!/sendBeacon|new Image/.test(source));
   });
 });
+
+describe('hq #448 under a script manager the page window is the one wrapped', () => {
+  afterEach(() => {
+    delete globalThis.unsafeWindow;
+  });
+
+  test('with no window named, install() and onJson() wrap unsafeWindow, not the sandbox', async () => {
+    const page = fakeWindow();
+    const sandboxFetch = globalThis.fetch;
+    globalThis.unsafeWindow = page;
+    const pageFetch = page.fetch;
+
+    const seen = [];
+    onJson(() => true, ({ data }) => seen.push(data));
+    assert.notEqual(page.fetch, pageFetch, 'the page window fetch is wrapped');
+    assert.equal(globalThis.fetch, sandboxFetch, 'the sandbox fetch is left alone');
+
+    await page.fetch('https://www.torn.com/page.php?sid=travel');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(seen, [JSON.parse(BODY)]);
+  });
+
+  test('outside a manager it is the global window, as before', async () => {
+    const { pageWindow } = await import('../../src/core/page-window.js');
+    assert.equal(pageWindow(), globalThis);
+    globalThis.unsafeWindow = fakeWindow();
+    assert.equal(pageWindow(), globalThis.unsafeWindow);
+  });
+});
