@@ -15,6 +15,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   separate "Share the kinds I picked" button, easy to miss below the switches. The first
   Save with a kind ticked now counts as your agreement to the wording on that screen; the
   button stays only for when that wording changes in an update.
+- The Torn Tracker block in the sidebar went empty when you moved to another Torn page,
+  until you pressed Save again. It now keeps its rows across pages, asks torn-tracker.com
+  at most once a minute, and keeps showing the last rows when the site says "wait".
 
 ### Added
 

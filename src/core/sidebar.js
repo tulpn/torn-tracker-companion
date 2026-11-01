@@ -8,7 +8,9 @@
 //
 // One read feeds it: GET /api/feeds/me/sidebar with the items switched on (site.sidebar).
 // It's asked when the block is opened, then at most once a minute, and only while the
-// block is open and the tab is visible. Countdowns tick locally between reads. Every link
+// block is open and the tab is visible. Countdowns tick locally between reads. A redraw of
+// Torn's sidebar, a 429 or a failed read never blanks it: the last rows are shown again,
+// and a page load inside the minute gets them from the read cache (hq #452). Every link
 // is plain navigation (a profile, an attack page, the site): the game action is still the
 // player's own click on Torn's page. A local item (the shop price highlighter's count)
 // is never asked for: it comes from this page and is shown whatever the read says.
@@ -326,9 +328,10 @@ export function mountSidebarBlock({
     lastAsked = now();
     const result = await site.sidebar(want);
     if (stopped) return;
-    if (result.status === 'wait') {
-      notBefore = now() + result.retryMs;
-      if (!answer) answer = { status: 'failed' };
+    if (result.status === 'wait' || result.status === 'failed') {
+      // A 429 or a failed read says nothing new: the rows already shown stay (hq #452).
+      if (result.status === 'wait') notBefore = now() + result.retryMs;
+      if (answer?.status !== 'ok') answer = { status: 'failed' };
     } else {
       answer = result;
       if (result.status === 'ok' && result.items.has('watch')) onWatch?.(result.items.get('watch'));
@@ -372,13 +375,19 @@ export function mountSidebarBlock({
     const anchor = anchorOf(doc);
     if (!anchor) return;
     if (!block) block = build();
+    // A copy left behind by a redraw of Torn's sidebar holds old rows and a dead button.
+    for (const copy of doc.querySelectorAll(`#${BLOCK_ID}`)) {
+      if (copy !== block) copy.remove();
+    }
     if (anchor.nextElementSibling !== block) anchor.after(block);
     render();
     if (isOpen()) refreshSidebar();
   }
 
+  // A redraw that only takes our block out reads as our own change, so a block that is
+  // gone is put back whatever the records say. It comes back with the rows it had.
   const stopWatching = onMutation((records) => {
-    if (records.every((r) => ownChange(r, OURS))) return;
+    if (records.every((r) => ownChange(r, OURS)) && (!block || block.isConnected || !enabled())) return;
     timers.clearTimeout(placeTimer);
     placeTimer = timers.setTimeout(place, 200);
   }, doc);
