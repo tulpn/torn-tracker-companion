@@ -31,6 +31,7 @@
 
 import META from '../meta.js';
 import { CREDITS, CREDITS_URL } from '../credits.js';
+import { SITE } from '../hosts.js';
 import { DISCLOSURE, TOS_COLUMNS, hasTosTable, kindOffered, sharingOffered } from './disclosure.js';
 import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
@@ -45,7 +46,7 @@ import { ROTA_STYLE, rotaSection, syncRota } from './rota.js';
 const P = 'ttc';
 const RELEASES = 'https://github.com/tulpn/torn-tracker-companion/releases/latest';
 const ISSUES = 'https://github.com/tulpn/torn-tracker-companion/issues';
-export const GUIDE = 'https://www.torn-tracker.com/guide/companion/';
+export const GUIDE = `${SITE}/guide/companion/`;
 
 export const SECTIONS = Object.freeze([
   ['general', 'General'],

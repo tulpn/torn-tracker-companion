@@ -511,7 +511,7 @@ describe('JOB-072 applicant cards (accepted in hq #79)', () => {
 
   test('board and ids in one post; each card checked; links only to our own site', async () => {
     const r = rig({ reply: reply({ cards: [
-      { id: 1, merits: 10, job_points: 1234, fit: 'good', card_url: 'https://www.torn-tracker.com/jobs/c/1/' },
+      { id: 1, merits: 10, job_points: 1234, fit: 'good', card_url: 'https://torn-tracker.com/jobs/c/1/' },
       { id: 2, merits: null, job_points: null, fit: null, card_url: 'https://evil.example/' },
       { id: 3, merits: 11, job_points: 1, fit: 'good' },
       { id: 4, merits: 1, job_points: 1, fit: 'great' },
@@ -537,16 +537,19 @@ describe('PRE-042 the pre-war strip read (accepted in hq #136)', () => {
   const reply = (data, status = 200) => () => ({ ok: status < 300, status, data });
 
   test('Pro: compare, headline and a link to our own site only', async () => {
-    const r = rig({ reply: reply({ war: { id: 1, opponent_faction_id: 678, starts_at: '…' }, compare: 'A line.', headline: 'Big.', brief_url: 'https://www.torn-tracker.com/war/1/', pro: true }) });
-    assert.deepEqual(await r.site.warBrief(), { opponent: 678, compare: 'A line.', headline: 'Big.', briefUrl: 'https://www.torn-tracker.com/war/1/', pro: true });
+    const r = rig({ reply: reply({ war: { id: 1, opponent_faction_id: 678, starts_at: '…' }, compare: 'A line.', headline: 'Big.', brief_url: 'https://torn-tracker.com/war/1/', pro: true }) });
+    assert.deepEqual(await r.site.warBrief(), { opponent: 678, compare: 'A line.', headline: 'Big.', briefUrl: 'https://torn-tracker.com/war/1/', pro: true });
     assert.equal(r.calls[0].url, WAR_BRIEF_URL);
     const odd = rig({ reply: reply({ war: { opponent_faction_id: 678 }, compare: 'x'.repeat(201), headline: 'Big.', brief_url: 'https://evil.example/', pro: false }) });
     assert.deepEqual(await odd.site.warBrief(), { opponent: 678, compare: null, headline: null, briefUrl: null, pro: false });
   });
 
-  test('the bare host the site sends is moved to www', async () => {
+  test('a link on either spelling of the host is ours, kept as sent (D-162, hq #450)', async () => {
     const r = rig({ reply: reply({ war: { opponent_faction_id: 678 }, brief_url: 'https://torn-tracker.com/war/prewar/', pro: false }) });
-    assert.equal((await r.site.warBrief()).briefUrl, 'https://www.torn-tracker.com/war/prewar/');
+    assert.equal((await r.site.warBrief()).briefUrl, 'https://torn-tracker.com/war/prewar/');
+    const www = rig({ reply: reply({ war: { opponent_faction_id: 678 }, brief_url: 'https://www.torn-tracker.com/war/prewar/', pro: false }) });
+    assert.equal((await www.site.warBrief()).briefUrl, 'https://www.torn-tracker.com/war/prewar/');
+    assert.equal(siteUrl('https://evil.torn-tracker.com/x'), null);
     assert.equal(siteUrl('https://torn-tracker.com.evil.example/'), null);
     assert.equal(siteUrl('http://torn-tracker.com/x'), null);
   });

@@ -18,8 +18,8 @@ const HTML = `<div id="sidebar"><a href="/profiles.php?XID=9">Me in the sidebar<
 </ul></div>`;
 
 function fakeSite({ allowed = true, cards = {
-  101: { merits: 10, job_points: 1234, fit: 'good', card_url: 'https://www.torn-tracker.com/jobs/c/1/' },
-  102: { merits: null, job_points: null, fit: 'poor', card_url: 'https://www.torn-tracker.com/jobs/c/2/' },
+  101: { merits: 10, job_points: 1234, fit: 'good', card_url: 'https://torn-tracker.com/jobs/c/1/' },
+  102: { merits: null, job_points: null, fit: 'poor', card_url: 'https://torn-tracker.com/jobs/c/2/' },
 } } = {}) {
   const calls = [];
   return {
@@ -64,7 +64,7 @@ describe('JOB-072 on the list', () => {
     await wait();
     assert.deepEqual(site.calls, [['company', [101, 102, 103]]]);
     assert.equal(badge(r, 101).textContent, '10 merits · 1,234 job points · good fit');
-    assert.equal(badge(r, 101).getAttribute('href'), 'https://www.torn-tracker.com/jobs/c/1/');
+    assert.equal(badge(r, 101).getAttribute('href'), 'https://torn-tracker.com/jobs/c/1/');
     assert.equal(badge(r, 102).textContent, 'poor fit');
     assert.equal(badge(r, 103), null);
     assert.deepEqual(r.shared, [], 'nothing from application pages is ever shared');

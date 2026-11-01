@@ -7,7 +7,7 @@ import { createCache } from '../../src/core/cache.js';
 import { SPACES, TRUST_MUGGERS_URL, createSite } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
-const SAFETY = 'https://www.torn-tracker.com/trust/safety/';
+const SAFETY = 'https://torn-tracker.com/trust/safety/';
 const LISTED = { id: 1, listed: true, mugs_30d: 3, mugs_90d: 5, last_reported_at: '2026-10-20T12:00:00Z' };
 
 beforeEach(() => {

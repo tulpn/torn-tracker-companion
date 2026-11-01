@@ -342,7 +342,7 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.deepEqual([...t.panel.panel.querySelectorAll('main h4')].map((n) => n.textContent), ['War and attacks', 'Gym']);
     const learn = t.$('[data-card="gym-thing"] a');
     assert.equal(learn.textContent, 'Learn more');
-    assert.equal(learn.getAttribute('href'), 'https://www.torn-tracker.com/guide/companion/gym-progress/');
+    assert.equal(learn.getAttribute('href'), 'https://torn-tracker.com/guide/companion/gym-progress/');
     assert.match(t.$('[data-card="gym-thing"]').textContent, /Shows gym progress\./);
   });
 
@@ -471,7 +471,7 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     const t = mount();
     t.open('help');
     const hrefs = [...t.panel.panel.querySelectorAll('main a')].map((a) => a.getAttribute('href'));
-    assert.ok(hrefs.includes('https://www.torn-tracker.com/guide/companion/'));
+    assert.ok(hrefs.includes('https://torn-tracker.com/guide/companion/'));
     assert.ok(hrefs.some((h) => h.endsWith('/issues')));
   });
 
