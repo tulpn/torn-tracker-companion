@@ -4,14 +4,14 @@
 
 **Status: in development. There is no release yet.**
 
-One userscript for [Torn](https://www.torn.com) that brings [torn-tracker.com](https://www.torn-tracker.com) and the best of the community's tools onto the pages you already use: fair-fight estimates, the war page, travel and foreign stock, trading and pricing, crimes, organised crimes and more. Every feature can be switched on or off on its own.
+One userscript for [Torn](https://www.torn.com) that brings [torn-tracker.com](https://torn-tracker.com) and the best of the community's tools onto the pages you already use: fair-fight estimates, the war page, travel and foreign stock, trading and pricing, crimes, organised crimes and more. Every feature can be switched on or off on its own.
 
 It is planned to run in the browser with Tampermonkey or Violentmonkey, and on the phone in [Torn PDA](https://github.com/Manuito83/torn-pda).
 
 ## How to use it
 
 The full guide is the Companion section of the torn-tracker.com knowledge base,
-<https://www.torn-tracker.com/guide/companion/>: installing it, the settings panel, what
+<https://torn-tracker.com/guide/companion/>: installing it, the settings panel, what
 each kind of sharing sends, every feature, and troubleshooting. Its pages live in this
 repository's [`guide/`](guide/) folder, so you can read them here too.
 
@@ -31,9 +31,10 @@ repository's [`guide/`](guide/) folder, so you can read them here too.
 confirm. Your script manager then checks for updates by itself.
 
 The install page asks to let the script make web requests to `api.torn.com` and
-`www.torn-tracker.com`, and to no other site. Torn's pages block requests to other sites,
-so the script asks your script manager to make them; the manager allows only the two
-sites listed. What each site is sent is in the terms table below.
+`torn-tracker.com` (listed twice, as `torn-tracker.com` and `www.torn-tracker.com`, the
+same site), and to no other site. Torn's pages block requests to other sites, so the
+script asks your script manager to make them; the manager allows only the sites listed.
+What each site is sent is in the terms table below.
 
 **In [Torn PDA](https://github.com/Manuito83/torn-pda)**, add the script **from its URL**,
 not by pasting its text:
@@ -181,4 +182,4 @@ This script brings together ideas and, where licences allow, code from many comm
 ## Contact
 
 - In game: [ares313377 [4372940]](https://www.torn.com/profiles.php?XID=4372940)
-- More scripts: [www.torn-tracker.com/scripts](https://www.torn-tracker.com/scripts)
+- More scripts: [torn-tracker.com/scripts](https://torn-tracker.com/scripts)

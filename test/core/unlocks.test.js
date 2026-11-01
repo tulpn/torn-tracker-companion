@@ -85,7 +85,7 @@ function rig({ replies = [], settings = defaults(createRegistry([])), stored = n
   };
 }
 
-const ok = (fields) => ({ status: 'ok', unlocked: [], featured: [], url: 'https://www.torn-tracker.com/me/achievements/', cursor: iso(T0), ...fields });
+const ok = (fields) => ({ status: 'ok', unlocked: [], featured: [], url: 'https://torn-tracker.com/me/achievements/', cursor: iso(T0), ...fields });
 
 describe('WP-UX-8 the achievements read', () => {
   test('only what fits is kept, field by field', () => {
@@ -107,7 +107,7 @@ describe('WP-UX-8 the achievements read', () => {
     assert.equal(read.unlocked[1].tier, 'silver');
     assert.equal(read.unlocked[2].sentence, null, 'too long a sentence is dropped, not cut');
     assert.deepEqual(read.featured, [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }]);
-    assert.equal(read.url, 'https://www.torn-tracker.com/me/achievements/', 'a link off our site is replaced');
+    assert.equal(read.url, 'https://torn-tracker.com/me/achievements/', 'a link off our site is replaced');
     assert.equal(read.cursor, iso(T0));
     assert.equal(readAchievements({ server_time: 'yesterday' }).cursor, null);
     assert.deepEqual(readAchievements(null).unlocked, []);
@@ -160,7 +160,7 @@ describe('WP-UX-8 the unlock toast', () => {
     assert.equal(toast.getAttribute('role'), 'status');
     assert.match(toast.textContent, /Achievement unlocked.*Chain tracker.*Silver.*Tracked 25 chains\..*See it and share/s);
     const link = toast.querySelector('a');
-    assert.equal(link.getAttribute('href'), 'https://www.torn-tracker.com/me/achievements/');
+    assert.equal(link.getAttribute('href'), 'https://torn-tracker.com/me/achievements/');
     assert.equal(link.getAttribute('target'), '_blank');
     assert.equal(r.writes.at(-1).cursor, iso(T0 + 5), 'the next read starts at this reply');
   });

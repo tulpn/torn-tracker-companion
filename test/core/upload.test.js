@@ -81,7 +81,7 @@ describe('CMP-014 observations are sent in batches, at most once every 15 s', ()
     await r.runDue();
     assert.equal(r.sent.length, 1);
     assert.equal(r.sent[0].url, ENDPOINT);
-    assert.match(ENDPOINT, /^https:\/\/www\.torn-tracker\.com\//);
+    assert.match(ENDPOINT, /^https:\/\/torn-tracker\.com\//);
     assert.equal(r.sent[0].method, 'POST');
     assert.equal(r.sent[0].headers.Authorization, `Bearer ${KEY}`);
     assert.equal(r.uploader.status().queued, 0);

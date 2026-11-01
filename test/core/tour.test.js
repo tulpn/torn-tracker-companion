@@ -171,7 +171,7 @@ describe('the engine', () => {
   test('UXT-002 an example is marked as one; a link opens in a new tab', () => {
     const win = page(ANCHORS);
     runTour(win.document, tour([step('a', {
-      example: { lines: ['Ares · level 74'] }, cta: { label: 'Read more', href: 'https://www.torn-tracker.com/guide/' },
+      example: { lines: ['Ares · level 74'] }, cta: { label: 'Read more', href: 'https://torn-tracker.com/guide/' },
     })]));
     const example = win.document.querySelector(`#${LAYER_ID} [role=note]`);
     assert.equal(example.getAttribute('aria-label'), 'Example with sample data');

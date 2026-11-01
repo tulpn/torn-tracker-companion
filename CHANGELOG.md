@@ -9,6 +9,14 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ## Unreleased
 
+### Fixed
+
+- 0.9.0 and 0.9.1 could not reach torn-tracker.com from a browser: the site moved to
+  `torn-tracker.com` without the `www.`, and the script manager refused to follow the
+  redirect to a site the script hadn't named. The script now talks to `torn-tracker.com`
+  directly. Installing or updating asks to allow `torn-tracker.com` too; `www.torn-tracker.com`
+  stays listed, as the same site. Torn PDA is unchanged.
+
 ## 0.9.1 — 2026-11-01
 
 ### Fixed

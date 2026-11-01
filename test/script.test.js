@@ -258,7 +258,7 @@ describe('hq #448 in a browser the site is reached through the script manager', 
     for (const section of ['sidebar', 'sharing', 'data']) await t.go(`#/torn-tracker/${section}`);
     await t.tick(10);
     assert.deepEqual(fetched.filter((url) => url.includes('torn-tracker.com')), []);
-    assert.ok(t.gmCalls.every((url) => url.startsWith('https://www.torn-tracker.com/') || url.startsWith('https://api.torn.com/')), t.gmCalls.join());
+    assert.ok(t.gmCalls.every((url) => url.startsWith('https://torn-tracker.com/') || url.startsWith('https://api.torn.com/')), t.gmCalls.join());
     assert.ok(t.gmCalls.length > 0, 'the saved key starts the site reads');
     assert.deepEqual(t.violations, []);
   });

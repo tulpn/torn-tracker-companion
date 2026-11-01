@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import feature, { badgeText, badgeTitle } from '../../src/features/mugger-badge/index.js';
 import { runFeature } from '../feature-harness.js';
 
-const SAFETY = 'https://www.torn-tracker.com/trust/safety/';
+const SAFETY = 'https://torn-tracker.com/trust/safety/';
 const HEADING = '<div class="content-title"><h4>Someone\'s profile</h4></div>';
 const LISTED = { listed: true, mugs30: 3, mugs90: 5, lastAt: Date.UTC(2026, 9, 20, 12) };
 

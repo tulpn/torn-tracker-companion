@@ -2,9 +2,9 @@ import { beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { HostNotAllowedError, budgetLeft, request, resetBudget, tagged } from '../../src/core/net.js';
-import { HOSTS, hostAllowed } from '../../src/hosts.js';
+import { HOSTS, SITE as SITE_ROOT, hostAllowed } from '../../src/hosts.js';
 
-const SITE = 'https://www.torn-tracker.com/api/feeds/prices?ids=1';
+const SITE = 'https://torn-tracker.com/api/feeds/prices?ids=1';
 const API = 'https://api.torn.com/user/?selections=profile';
 
 function stubFetch(handler) {
@@ -20,9 +20,9 @@ beforeEach(() => {
   stubFetch(async () => new Response('{"ok":true}', { status: 200 }));
 });
 
-describe('CMP-010 the script talks to two hosts and no others', () => {
-  test('the allowlist is exactly those two', () => {
-    assert.deepEqual([...HOSTS], ['api.torn.com', 'www.torn-tracker.com']);
+describe('CMP-010 the script talks to torn-tracker.com and the Torn API, and no others', () => {
+  test('the allowlist is the API and both spellings of the site (D-162)', () => {
+    assert.deepEqual([...HOSTS], ['api.torn.com', 'torn-tracker.com', 'www.torn-tracker.com']);
   });
 
   test('a request to www.torn.com is refused before it is made', async () => {
@@ -49,6 +49,29 @@ describe('CMP-010 the script talks to two hosts and no others', () => {
   });
 });
 
+describe('hq #450 requests go to the bare host, which www redirects to (D-162)', () => {
+  test('SITE is the bare host, and a request to it is sent there', async () => {
+    assert.equal(SITE_ROOT, 'https://torn-tracker.com');
+    const { gm, seen } = stubGm();
+    globalThis.GM_xmlhttpRequest = gm;
+    await request(`${SITE_ROOT}/api/feeds/me/sidebar`);
+    assert.equal(new URL(seen[0].url).host, 'torn-tracker.com');
+  });
+
+  test('www still passes @connect, and shares the site\'s budget', async () => {
+    assert.equal(hostAllowed('https://www.torn-tracker.com/guide/'), true);
+    const before = budgetLeft('torn-tracker.com');
+    await request('https://www.torn-tracker.com/api/feeds/prices?ids=1');
+    assert.equal(budgetLeft('torn-tracker.com'), before - 1);
+    assert.equal(budgetLeft('www.torn-tracker.com'), before - 1);
+  });
+
+  test('another subdomain is still refused', async () => {
+    assert.equal(hostAllowed('https://api.torn-tracker.com/x'), false);
+    await assert.rejects(() => request('https://evil.torn-tracker.com/x'), HostNotAllowedError);
+  });
+});
+
 describe('CMP-013 the Torn API budget stays well under 100 a minute', () => {
   test('api.torn.com is capped far below the limit', () => {
     const left = budgetLeft('api.torn.com');
@@ -71,9 +94,9 @@ describe('CMP-013 the Torn API budget stays well under 100 a minute', () => {
   });
 
   test('the two hosts have their own budgets', async () => {
-    const before = budgetLeft('www.torn-tracker.com');
+    const before = budgetLeft('torn-tracker.com');
     await request(API);
-    assert.equal(budgetLeft('www.torn-tracker.com'), before);
+    assert.equal(budgetLeft('torn-tracker.com'), before);
   });
 });
 
@@ -246,8 +269,8 @@ describe('hq #448 the script manager request carries the site calls in a browser
 
 describe('GDE-008 every torn-tracker.com request says the version and the platform (hq #233)', () => {
   test('desktop or PDA, and the script version, as query parameters', () => {
-    assert.equal(tagged('https://www.torn-tracker.com/api/feeds/me/sidebar', {}),
-      'https://www.torn-tracker.com/api/feeds/me/sidebar?ttc_v=0.0.0-dev&ttc_p=desktop');
+    assert.equal(tagged('https://torn-tracker.com/api/feeds/me/sidebar', {}),
+      'https://torn-tracker.com/api/feeds/me/sidebar?ttc_v=0.0.0-dev&ttc_p=desktop');
     assert.equal(tagged(SITE, { PDA_httpGet: () => {} }), `${SITE}&ttc_v=0.0.0-dev&ttc_p=pda`);
   });
 

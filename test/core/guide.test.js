@@ -23,7 +23,7 @@ const REPLY = {
   done: 6,
   total: 9,
   next: { key: 'alerts', title: 'Set your first alerts', outcome: 'Get told when your faction’s chain is about to drop.', cta_label: 'Set an alert', cta_url: '/alerts/new/' },
-  url: 'https://www.torn-tracker.com/guide/',
+  url: 'https://torn-tracker.com/guide/',
 };
 
 const at = (url) => {
@@ -50,12 +50,12 @@ describe('GDE-007 the guide read', () => {
     const read = readGuide(REPLY);
     assert.deepEqual(read.next, {
       title: 'Set your first alerts', outcome: 'Get told when your faction’s chain is about to drop.', cta: 'Set an alert',
-      href: 'https://www.torn-tracker.com/alerts/new/',
+      href: 'https://torn-tracker.com/alerts/new/',
     });
     assert.equal(validGuide(read), true);
     assert.equal(readGuide({ ...REPLY, next: { ...REPLY.next, cta_url: 'https://evil.example/' } }).next, null);
     assert.equal(readGuide({ ...REPLY, next: { ...REPLY.next, cta_url: '//evil.example/' } }).next, null);
-    assert.equal(readGuide({ ...REPLY, url: 'javascript:alert(1)' }).url, 'https://www.torn-tracker.com/guide/');
+    assert.equal(readGuide({ ...REPLY, url: 'javascript:alert(1)' }).url, 'https://torn-tracker.com/guide/');
     assert.equal(readGuide({ ...REPLY, done: 12 }).done, 9);
     assert.equal(readGuide({ ...REPLY, total: 0 }), null);
     assert.equal(readGuide({ done: 1, total: 9 }), null, 'started is required');
@@ -148,7 +148,7 @@ describe('GDE-007 the strip', () => {
     const box = panel.panel.querySelector('#ttc-guide');
     assert.match(box.textContent, /6 of 9 done.*Set your first alerts/s);
     const links = [...box.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]);
-    assert.deepEqual(links, [['Set an alert', 'https://www.torn-tracker.com/alerts/new/'], ['The whole guide', 'https://www.torn-tracker.com/guide/']]);
+    assert.deepEqual(links, [['Set an alert', 'https://torn-tracker.com/alerts/new/'], ['The whole guide', 'https://torn-tracker.com/guide/']]);
 
     strip = stripOf(readGuide({ ...REPLY, started: false, offer: true, next: null }));
     listeners.forEach((fn) => fn());

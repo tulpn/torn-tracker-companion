@@ -33,7 +33,7 @@ const FULL = {
   dibs: [{ target_id: 9, target_name: 'Target', expires_at: SOON }],
   oc: { crime_id: 3, name: 'Blast from the Past', state: 'planning', ready_at: null, needs_me: true },
   guide: { done: 6, total: 9, bonuses_unclaimed: 1, faction_bonuses_used: 0 },
-  links: [{ label: 'War room', url: 'https://www.torn-tracker.com/war/' }],
+  links: [{ label: 'War room', url: 'https://torn-tracker.com/war/' }],
 };
 
 function fakeTimers() {
@@ -194,9 +194,9 @@ describe('CMP-108 AC3 links are plain navigation', () => {
     const hrefs = [...t.node().querySelectorAll('a')].map((a) => a.getAttribute('href'));
     assert.ok(hrefs.includes('/profiles.php?XID=7'));
     assert.ok(hrefs.includes('/loader.php?sid=attack&user2ID=9'));
-    assert.ok(hrefs.includes('https://www.torn-tracker.com/war/'));
+    assert.ok(hrefs.includes('https://torn-tracker.com/war/'));
     for (const href of hrefs) {
-      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|https:\/\/www\.torn-tracker\.com\/)/, href);
+      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|https:\/\/torn-tracker\.com\/)/, href);
     }
   });
 });
