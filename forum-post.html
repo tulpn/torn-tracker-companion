@@ -31,12 +31,14 @@ Every feature has its own switch.
 <li><b>Fair-fight badges</b> beside players on profiles, faction pages (the war page too), the attack page and the bounty board, from torn-tracker.com's estimates.</li>
 <li><b>War page</b>: sort the opponents and see your faction's dibs; a pre-war strip on the opponent's faction page.</li>
 <li><b>Travel</b>: foreign shop stock, the best buy abroad, and your best runs on the travel agency.</li>
-<li><b>Trading</b>: a shop price guard on the Item Market and your own sell forms, a price filler that never fills below a shop, trade value, auction value badges.</li>
+<li><b>Trading</b>: a shop price guard on the Item Market and your own sell forms, a price filler that never fills below a shop, trade value, auction value badges, and a reminder to bank your cash before you list.</li>
 <li><b>Crimes</b>: morale, value per nerve and burglary targets; weights and success chances for organized crimes; bust safety on the jail page.</li>
-<li><b>Attacks</b>: loadouts on profiles and the attack page, and how often you mugged a player.</li>
+<li><b>Attacks</b>: loadouts on profiles and the attack page, how often you mugged a player, and a badge on players torn-tracker.com lists for mugging sellers just after a sale.</li>
+<li><b>Target lists</b>: <b>Add to list</b> on a player's profile puts them on your torn-tracker.com list in one press, or picks another list from its menu.</li>
+<li><b>Chain watch</b>: watch mode, a large chain timer over whatever Torn page you're on, green, orange or flashing red by how soon the chain needs a hit. It never hits for you. Your faction's watch rota is in the settings: sign up for 30-minute slots as Lead or Backup.</li>
 <li><b>Bounty board</b>: filter by reward, fair fight and level, and see which hospital timers are nearly up.</li>
 <li><b>Everyday</b>: gym progress, merit hints, stock signals, racing templates, private player notes and message templates.</li>
-<li><b>Your sidebar</b>: a Torn Tracker block under Lists with your chain, war, dibs, med-out partner and OC.</li>
+<li><b>Your sidebar</b>: a Torn Tracker block under Lists with your chain, your chain watch slot, war, dibs, med-out partner and OC.</li>
 </ul>
 The guide has a page for every feature: <a href="https://www.torn-tracker.com/guide/companion/">torn-tracker.com/guide/companion</a>.<br><br>
 
@@ -54,6 +56,7 @@ The guide has a page for every feature: <a href="https://www.torn-tracker.com/gu
 <li><b>One click is at most one game action.</b> It fills in fields for you but never submits them, and it never buys, sells, attacks or claims anything.</li>
 <li>It talks only to <b>torn-tracker.com</b>, with your torn-tracker.com script key (which is not a Torn API key). Features that need the site, like fair-fight badges, need that key; the rest work without it.</li>
 <li><b>Sharing starts off.</b> Under Sharing you can choose to send what Torn showed you, kind by kind: foreign stock, auction listings, item market prices, bazaar listings, loadouts, jail difficulty bands, and your own crime outcomes and gym progress. Each switch says exactly what it sends and what torn-tracker.com keeps and publishes; nothing goes until you agree. Nothing is ever sent from company or faction application pages.</li>
+<li><b>Some buttons send what you ask, and only when you press them.</b> Add to list adds or removes that player on your own lists. A chain watch sign-up sends your slot and role, which your faction can see; it is deleted 7 days after the slot ends.</li>
 <li>Every request to torn-tracker.com says the script's version and whether it runs in Torn PDA or a desktop browser. Nothing else about your device.</li>
 </ul>
 The code is open on <a href="https://github.com/tulpn/torn-tracker-companion">GitHub</a> (GPLv3), with a test suite and a lint that fails the build on anything Torn's scripting rules forbid.<br><br>
@@ -62,8 +65,8 @@ The code is open on <a href="https://github.com/tulpn/torn-tracker-companion">Gi
 <table>
 <tr><th>Data Storage</th><th>Data Sharing</th><th>Purpose of Use</th><th>Key Storage &amp; Sharing</th><th>Key Access Level</th></tr>
 <tr>
-<td>On your device: settings, notes and templates, in Torn PDA's script storage or the browser's. On torn-tracker.com: only the kinds you switch on under Sharing, kept as the README's table says.</td>
-<td>Only torn-tracker.com, and only the kinds you switch on. The site publishes combined data, never who sent it (except that a player can see who reported their own loadout).</td>
+<td>On your device: settings, notes and templates, in Torn PDA's script storage or the browser's. On torn-tracker.com: only the kinds you switch on under Sharing, kept as the README's table says, plus the list entries and chain watch sign-ups you make yourself.</td>
+<td>Only torn-tracker.com, and only the kinds you switch on. The site publishes combined data, never who sent it (except that a player can see who reported their own loadout). Your chain watch sign-ups are shown to your faction.</td>
 <td>Bringing torn-tracker.com's estimates and community data onto the Torn pages you use.</td>
 <td>This version asks for no Torn API key. Your torn-tracker.com script key stays on your device and goes only to torn-tracker.com.</td>
 <td>None required.</td>
