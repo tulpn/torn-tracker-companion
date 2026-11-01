@@ -38,6 +38,13 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
     assert.deepEqual(await rulesFor("fetch('https://yata.yt/api/v1/travel/export/');"), ['hosts-allowlist']);
   });
 
+  test('the script manager request to torn.com or a stray host (hq #448)', async () => {
+    assert.deepEqual(await rulesFor("GM_xmlhttpRequest({ method: 'GET', url: 'https://www.torn.com/sidebarInfo.php' });"),
+      ['no-torn-requests']);
+    assert.deepEqual(await rulesFor('GM.xmlHttpRequest({ url: `https://www.torn.com/${page}`, onload });'), ['no-torn-requests']);
+    assert.deepEqual(await rulesFor("GM.xmlHttpRequest({ url: 'https://yata.yt/api/v1/travel/export/' });"), ['hosts-allowlist']);
+  });
+
   test('a URL literal for a host nobody declared', async () => {
     assert.deepEqual(await rulesFor("const home = 'https://example.com/';"), ['hosts-allowlist']);
   });
@@ -128,6 +135,8 @@ describe('CMP-030 the lint leaves honest code alone', () => {
   test('the two allowed hosts pass', async () => {
     assert.deepEqual(await rulesFor("fetch('https://api.torn.com/user/?selections=profile');"), []);
     assert.deepEqual(await rulesFor("fetch('https://www.torn-tracker.com/api/feeds/observations');"), []);
+    assert.deepEqual(await rulesFor("GM_xmlhttpRequest({ url: 'https://www.torn-tracker.com/api/feeds/observations' });"), []);
+    assert.deepEqual(await rulesFor("GM.xmlHttpRequest({ url: 'https://api.torn.com/user/?selections=profile' });"), []);
   });
 
   test('a filler may tell Torn\'s form that a field changed', async () => {

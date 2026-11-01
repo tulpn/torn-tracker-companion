@@ -41,7 +41,11 @@ const NET = join('src', 'core', 'net.js');
 /** setTimeout/setInterval callbacks that are allowed to reach the network. */
 const TIMER_EXCEPTIONS = new Set(['flush', 'refreshDibs']);
 
-const REQUEST_CALLEES = new Set(['fetch', 'sendBeacon', 'PDA_httpGet', 'PDA_httpPost']);
+// GM_xmlhttpRequest and GM.xmlHttpRequest are the script manager's request (hq #448); their
+// URL is the `url` field of the one object they take.
+const REQUEST_CALLEES = new Set([
+  'fetch', 'sendBeacon', 'PDA_httpGet', 'PDA_httpPost', 'GM_xmlhttpRequest', 'xmlHttpRequest',
+]);
 
 // ---------------------------------------------------------------- helpers
 
@@ -120,6 +124,12 @@ function checkFile(relPath, source, report) {
     for (const argument of node.arguments || []) {
       const text = staticString(argument);
       if (text) checkUrlLiteral(argument, text, { asRequestTarget: true });
+      if (argument.type !== 'ObjectExpression') continue;
+      for (const prop of argument.properties) {
+        const key = prop.type === 'Property' && (prop.key.name ?? prop.key.value);
+        const target = key === 'url' ? staticString(prop.value) : null;
+        if (target) checkUrlLiteral(prop.value, target, { asRequestTarget: true });
+      }
     }
   };
 

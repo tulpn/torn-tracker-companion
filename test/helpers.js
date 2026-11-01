@@ -99,6 +99,8 @@ function installGuard(window, violations) {
  * @param {string} [opts.url]           the page the player is on
  * @param {string} [opts.savedSettings] JSON seeded into localStorage before boot
  * @param {object} [opts.pdaStorage]    exposed as window.PDA_storage
+ * @param {boolean} [opts.gm]           a script manager's GM_xmlhttpRequest, spied on like
+ *                                      fetch: every URL lands in `gmCalls` (hq #448)
  */
 export async function boot(bodyHtml = '', opts = {}) {
   const dom = new JSDOM(`<!doctype html><html><head></head><body>${bodyHtml}</body></html>`, {
@@ -115,6 +117,15 @@ export async function boot(bodyHtml = '', opts = {}) {
 
   const violations = [];
   const { nativeDispatch } = installGuard(window, violations);
+  const gmCalls = [];
+  if (opts.gm) {
+    window.GM_xmlhttpRequest = function guardedGm(details) {
+      const url = String(details?.url ?? '');
+      gmCalls.push(url);
+      if (isTornPage(url)) violations.push(`GM_xmlhttpRequest ${url}`);
+      window.setTimeout(() => details?.onerror?.({}), 0); // no network in tests
+    };
+  }
 
   window.eval(readBuilt());
   await tick(); // boot() reads storage asynchronously
@@ -125,6 +136,7 @@ export async function boot(bodyHtml = '', opts = {}) {
     window,
     doc,
     violations,
+    gmCalls,
     /** The one way into the settings page: the "Torn Tracker" entry in the sidebar. */
     entry: () => doc.getElementById(`${PREFIX}-sidebar-link`),
     /** The settings page, while the route shows it; null otherwise. */

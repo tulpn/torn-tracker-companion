@@ -46,9 +46,11 @@ describe('CMP-010 only two hosts are ever contacted', () => {
 });
 
 describe('CMP-007 the same file runs in Torn PDA', () => {
-  test('@grant is none, so there are no GM_* functions to miss', () => {
-    assert.deepEqual(header.grant, ['none']);
-    assert.ok(!/\bGM_\w+/.test(built), 'bundle uses a GM_* function');
+  test('@grant is the script manager request and the page window, nothing else (hq #448)', () => {
+    assert.deepEqual(header.grant, ['GM.xmlHttpRequest', 'GM_xmlhttpRequest', 'unsafeWindow']);
+    const used = new Set(built.match(/\bGM(?:_\w+|\.\w+)/g) ?? []);
+    assert.deepEqual([...used].filter((name) => !['GM_xmlhttpRequest', 'GM.xmlHttpRequest'].includes(name)), [],
+      'the bundle uses a GM function it has no grant for');
   });
 
   test('it runs on Torn only', () => {

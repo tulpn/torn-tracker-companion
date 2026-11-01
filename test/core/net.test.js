@@ -15,6 +15,8 @@ beforeEach(() => {
   resetBudget();
   delete globalThis.PDA_httpGet;
   delete globalThis.PDA_httpPost;
+  delete globalThis.GM_xmlhttpRequest;
+  delete globalThis.GM;
   stubFetch(async () => new Response('{"ok":true}', { status: 200 }));
 });
 
@@ -147,6 +149,98 @@ describe('CMP-007 Torn PDA\'s helpers are used when PDA provides them', () => {
     globalThis.PDA_httpGet = async () => ({ statusCode: 200, body: '{"via":"other"}' });
     const result = await request(SITE);
     assert.deepEqual(result.data, { via: 'other' });
+  });
+});
+
+/** A script manager request that answers every call with `reply` and records the details. */
+function stubGm(reply = { status: 200, responseText: '{"via":"gm"}', responseHeaders: '' }) {
+  const seen = [];
+  const gm = (details) => {
+    seen.push(details);
+    setTimeout(() => (typeof reply === 'function' ? reply(details) : details.onload(reply)), 0);
+  };
+  return { gm, seen };
+}
+
+describe('hq #448 the script manager request carries the site calls in a browser', () => {
+  test('GM_xmlhttpRequest is chosen over fetch when the manager grants it', async () => {
+    let fetched = false;
+    stubFetch(async () => {
+      fetched = true;
+      return new Response('{}');
+    });
+    const { gm, seen } = stubGm();
+    globalThis.GM_xmlhttpRequest = gm;
+
+    const result = await request(SITE, { method: 'post', headers: { Authorization: 'Bearer tt_feed_test' }, body: '{"batch":[]}' });
+    assert.equal(fetched, false);
+    assert.deepEqual(result.data, { via: 'gm' });
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0].method, 'POST');
+    assert.equal(seen[0].url, `${SITE}&ttc_v=0.0.0-dev&ttc_p=desktop`);
+    assert.equal(seen[0].headers.Authorization, 'Bearer tt_feed_test');
+    assert.equal(seen[0].data, '{"batch":[]}');
+    assert.equal(seen[0].anonymous, true, 'no torn.com cookies ride along: credentials omitted');
+    assert.equal(seen[0].timeout, 15_000);
+  });
+
+  test('GM.xmlHttpRequest (the promise flavour) works the same', async () => {
+    const { gm, seen } = stubGm();
+    globalThis.GM = { xmlHttpRequest: (details) => { gm(details); return new Promise(() => {}); } };
+    const result = await request(API);
+    assert.equal(result.ok, true);
+    assert.equal(seen[0].url.startsWith(API), true);
+  });
+
+  test('Retry-After comes out of the raw header block', async () => {
+    const { gm } = stubGm({ status: 429, responseText: '', responseHeaders: 'content-type: text/plain\r\nRetry-After: 30\r\n' });
+    globalThis.GM_xmlhttpRequest = gm;
+    const result = await request(SITE);
+    assert.equal(result.status, 429);
+    assert.equal(result.retryAfter, '30');
+  });
+
+  test('an error or a timeout is a result, not a throw', async () => {
+    globalThis.GM_xmlhttpRequest = stubGm((details) => details.ontimeout()).gm;
+    assert.equal((await request(SITE)).error, 'TimeoutError');
+    globalThis.GM_xmlhttpRequest = stubGm((details) => details.onerror({})).gm;
+    assert.equal((await request(SITE)).error, 'NetworkError');
+  });
+
+  test('PDA stays first on PDA, even where a GM function exists', async () => {
+    const { gm, seen } = stubGm();
+    globalThis.GM_xmlhttpRequest = gm;
+    globalThis.PDA_httpGet = async () => ({ status: 200, responseText: '{"via":"pda"}' });
+    const result = await request(SITE);
+    assert.deepEqual(result.data, { via: 'pda' });
+    assert.equal(seen.length, 0);
+  });
+
+  test('fetch only when there is neither PDA nor a manager', async () => {
+    let fetched = 0;
+    stubFetch(async () => {
+      fetched += 1;
+      return new Response('{"via":"fetch"}');
+    });
+    assert.deepEqual((await request(SITE)).data, { via: 'fetch' });
+    assert.equal(fetched, 1);
+  });
+
+  test('the budget counts the manager calls and refuses past it', async () => {
+    const { gm, seen } = stubGm();
+    globalThis.GM_xmlhttpRequest = gm;
+    const limit = budgetLeft('api.torn.com');
+    for (let i = 0; i < limit; i += 1) await request(API);
+    assert.equal(budgetLeft('api.torn.com'), 0);
+    assert.equal((await request(API)).error, 'budget');
+    assert.equal(seen.length, limit);
+  });
+
+  test('a host outside @connect still throws before the manager sees it', async () => {
+    const { gm, seen } = stubGm();
+    globalThis.GM_xmlhttpRequest = gm;
+    await assert.rejects(request('https://www.torn.com/sidebarInfo.php'), HostNotAllowedError);
+    assert.equal(seen.length, 0);
   });
 });
 
