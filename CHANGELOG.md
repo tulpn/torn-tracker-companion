@@ -9,6 +9,8 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ## Unreleased
 
+## 0.9.1 — 2026-11-01
+
 ### Fixed
 
 - Site calls now go through the script manager; the previous build could not reach
