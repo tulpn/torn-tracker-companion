@@ -127,7 +127,7 @@ describe('CMP-109 AC4 the built-in table', () => {
     const r = run({ html, url: BAZAAR_ADD, site: fakeSite(BUILT_IN) });
     await wait();
     type(r, r.doc.querySelector('div.price input'), String(entry.price - 1));
-    assert.match(r.doc.querySelector('.ttc-undersell').textContent, /^Below the shop price\. A shop pays/);
+    assert.match(r.doc.querySelector('.ttc-undersell').textContent, /^Below the shop price\. .+ pays \$/);
   });
 });
 
