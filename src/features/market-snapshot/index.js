@@ -73,9 +73,20 @@ export default {
     }
 
     async function look() {
-      if (state !== s || !isVisible(doc) || !ctx.site?.demand) return;
+      if (state !== s) return;
+      if (!isVisible(doc)) {
+        note('market_snapshot: the tab is hidden; looking again when the page changes');
+        return;
+      }
+      if (!ctx.site?.demand) {
+        note('market_snapshot: no script key, so nothing is asked of the site');
+        return;
+      }
       // Nothing is asked of the site unless the player shares this kind.
-      if (typeof ctx.sharing === 'function' && !ctx.sharing(KIND)) return;
+      if (typeof ctx.sharing === 'function' && !ctx.sharing(KIND)) {
+        note(`market_snapshot: ${KIND} is not switched on under Sharing`);
+        return;
+      }
       const item = itemOf(doc, win.location?.hash);
       if (!item) {
         note('market_snapshot: no item id in the hash or beside the list');
@@ -100,11 +111,19 @@ export default {
       ctx.share(KIND, { item_id: item, listings });
     }
 
-    s.stopWatching = ctx.dom.onMutation(() => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => look().catch((err) => ctx.log('market snapshot', err)), SETTLE_MS);
-    }, doc);
-    s.timer = win.setTimeout(() => look().catch((err) => ctx.log('market snapshot', err)), SETTLE_MS);
+    // A look runs SETTLE_MS after the first change, however busy the page stays: a timer
+    // pushed back on every change never fired on a market page other scripts keep
+    // redrawing (hq #454).
+    function schedule() {
+      if (s.timer) return;
+      s.timer = win.setTimeout(() => {
+        s.timer = null;
+        look().catch((err) => ctx.log('market snapshot', err));
+      }, SETTLE_MS);
+    }
+
+    s.stopWatching = ctx.dom.onMutation(schedule, doc);
+    schedule();
   },
 
   stop() {

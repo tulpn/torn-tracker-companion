@@ -296,7 +296,8 @@ describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
     const link = entry.querySelector('a');
     assert.equal(link.getAttribute('href'), '/index.php#/torn-tracker');
     assert.equal(link.querySelector('[class*="linkName"]').textContent, 'Torn Tracker');
-    assert.equal(entry.querySelector('svg'), null, 'our mark replaces Torn\u2019s icon');
+    assert.equal(entry.querySelectorAll('.ttc-mark').length, 1, 'our mark');
+    assert.ok(entry.querySelector('svg'), 'beside Torn\u2019s icon, which our stylesheet hides under our id (hq #453)');
     assert.equal(entry.querySelector('[class*="amount"]'), null);
     assert.equal(entry.querySelectorAll('[id]').length, 0);
     assert.equal(t.doc.querySelectorAll('#nav-home').length, 1, 'Torn\u2019s own entry is untouched');

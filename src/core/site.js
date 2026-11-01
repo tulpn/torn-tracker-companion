@@ -77,6 +77,12 @@ const DEMAND_MAX = 500;
 export const MAX_IDS = 100;
 
 const HOUR = 3_600_000;
+/** A read the site has no route for (404) rests 10 minutes (hq #368). */
+const REST_MISSING_MS = 600_000;
+/** A read that failed, or a 429 without Retry-After, rests a minute. */
+const RETRY_FAILED_MS = 60_000;
+/** The longest a 429's Retry-After is honoured. */
+const REST_MAX_MS = HOUR;
 const BAND = 40;
 
 const positiveInt = (v) => Number.isInteger(v) && v > 0;
@@ -591,9 +597,41 @@ export function createSite({
     return result || { ok: false, status: 0, data: null };
   }
 
+  /**
+   * Reads the site couldn't answer, by method and address, and until when they rest. A
+   * feature asks again on the next page change; without the rest a missing route (404)
+   * or a busy site would be asked on every mutation (hq #368: the mugger badge looped).
+   */
+  const resting = new Map();
+
+  /** How long a failed read rests, in ms; 0 for answers that say nothing about the route. */
+  function restFor(result) {
+    if (!result) return RETRY_FAILED_MS;
+    if (result.status === 404) return REST_MISSING_MS;
+    if (result.status === 429) {
+      const seconds = Number(result.retryAfter);
+      return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, REST_MAX_MS) : RETRY_FAILED_MS;
+    }
+    if (result.status >= 500 || (result.status === 0 && result.error !== 'budget')) return RETRY_FAILED_MS;
+    return 0;
+  }
+
   async function call(url, opts) {
+    const key = `${opts?.method || 'GET'} ${url}`;
+    const until = resting.get(key);
+    if (until !== undefined) {
+      if (now() < until) return null;
+      resting.delete(key);
+    }
     const result = await exchange(url, opts);
-    return result.ok ? result.data : null;
+    if (result?.ok) return result.data;
+    const rest = restFor(result);
+    if (rest > 0) {
+      for (const [k, t] of resting) if (t <= now()) resting.delete(k);
+      resting.set(key, now() + rest);
+      log(`site: ${key.split('?')[0]} answered ${result?.status ?? 0}; not asked again for ${Math.round(rest / 1000)} s`);
+    }
+    return null;
   }
 
   /** How far the site's clock is ahead of ours, from a reply's server_time; 0 if absent. */
