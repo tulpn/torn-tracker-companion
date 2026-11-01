@@ -105,3 +105,39 @@ describe('hq #313 the profile features on the captured profile', () => {
     untouched(r);
   });
 });
+
+// A player's profile (hq #313): the owner's capture of an ordinary player's page, name,
+// id, faction and numbers made up. Torn shows the level in the Level box beside the
+// picture, one digit per cell, not as a row of the basic information table.
+describe('hq #313 the profile features on a captured player\'s profile', () => {
+  const PLAYER = 'https://www.torn.com/profiles.php?XID=2000002';
+  const runPlayer = (feature) => {
+    site.calls = [];
+    const r = runFeature(feature, { html: page('profile-player.html'), url: PLAYER, now: () => NOW, site });
+    running.push(r);
+    return r;
+  };
+  const rows = (r) => r.doc.querySelectorAll('.basic-information .info-table > li').length;
+
+  test('readProfile reads the name, the faction and the level from the Level box', () => {
+    const r = runPlayer(playerNotes);
+    assert.deepEqual(readProfile(r.doc, 2000002), { name: 'Example', id: '2000002', faction: 'Example Faction', level: '27' });
+  });
+
+  test('readProfile gives no name when the address names another player', () => {
+    const r = runPlayer(playerNotes);
+    assert.equal(readProfile(r.doc, 2000003).name, null);
+  });
+
+  test('the mug line, the loadout card, the note toggle and the list button each go in once', async () => {
+    for (const feature of [mugStrip, loadoutView, playerNotes, addToList]) {
+      const r = runPlayer(feature);
+      await wait();
+      assert.equal(r.doc.querySelectorAll('.ttc-mugs, .ttc-loadout, .ttc-notes-toggle, .ttc-lists-main').length, 1, feature.id);
+      assert.ok(r.doc.querySelector('.content-title h4#skip-to-content'));
+      assert.equal(rows(r), 12);
+      assert.deepEqual(r.violations, []);
+      r.stop();
+    }
+  });
+});
