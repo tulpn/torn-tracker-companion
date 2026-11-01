@@ -11,6 +11,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Another script's link in Torn's Areas list (seen with The Contract) could end up with
+  the Torn Tracker "TT" icon. The Torn Tracker entry is now only ever copied from Torn's own
+  links, never changes another script's row, and takes its icon back out of any copy
+  another script makes of it.
 - Nothing was shared after ticking kinds under Sharing and pressing Save: agreement was a
   separate "Share the kinds I picked" button, easy to miss below the switches. The first
   Save with a kind ticked now counts as your agreement to the wording on that screen; the
