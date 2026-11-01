@@ -4,8 +4,8 @@ Everything worth knowing about each release. The newest is at the top. Versions 
 [semantic versioning](https://semver.org): the patch number changes for fixes, the minor
 for new features, the major when something you rely on changes.
 
-A release is made by tagging `vX.Y.Z`; the workflow publishes the built script and uses
-the section below for its notes. `## Unreleased` collects what is coming next.
+A release is published when its version reaches `main`; the workflow tags it, publishes the
+built script and uses the section below for its notes. `## Unreleased` collects what is coming next.
 
 ## Unreleased
 

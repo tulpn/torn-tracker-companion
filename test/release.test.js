@@ -144,6 +144,21 @@ describe('CMP-022 this repository is ready to cut a release', () => {
     assert.match(workflow, /lint:rules/);
     assert.match(workflow, /--prerelease/, 'a beta must not become the latest release');
   });
+
+  test('a merge into main publishes a new version, and only a new one (D-163)', () => {
+    const workflow = fs.readFileSync(join(ROOT, '.github', 'workflows', 'release.yml'), 'utf8');
+    assert.match(workflow, /branches: \[main\]/, 'a push to main starts the release');
+    assert.match(workflow, /tags: \['v\*'\]/, 'a tag pushed by hand still works');
+    assert.match(workflow, /require\('\.\/package\.json'\)\.version/, 'the version comes from package.json');
+    assert.match(workflow, /gh release view/, 'a version already released is skipped');
+    assert.match(workflow, /git ls-remote --exit-code --tags/, 'an already-tagged version on main is not a release');
+    assert.match(workflow, /--target "\$\{GITHUB_SHA\}"/, 'the tag lands on the commit that was built');
+    const steps = workflow.split(/\n {6}- /);
+    for (const command of ['npm test', 'npm run lint:rules', '--verify', 'gh release create']) {
+      const step = steps.find((s) => s.includes(command));
+      assert.ok(step?.includes("publish == 'true'"), `${command} runs only when the version is new`);
+    }
+  });
 });
 
 describe('a release never ships an unfilled table', () => {
