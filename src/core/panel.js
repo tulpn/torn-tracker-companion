@@ -240,6 +240,15 @@ function addStyle(doc, root) {
 
 
 const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+/** "just now", "40s ago", "3m ago", "2h ago": how long since. */
+export function ago(ms) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 5) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86_400)}d ago`;
+}
 const sectionIds = SECTIONS.map(([id]) => id);
 
 /**
@@ -496,11 +505,38 @@ export function mountPanel({
       lines.push(h('div', { class: `${P}-warn` },
         `Update the script to keep sharing ${kindTitle(kind).toLowerCase()}${min === '?' ? '' : ` (${min} or newer)`}.`));
     }
-    if (queue.queued) lines.push(h('div', { class: `${P}-muted` }, `${queue.queued} waiting to be sent.`));
-    if (queue.last?.outcome === 'sent') {
-      lines.push(h('div', { class: `${P}-muted` }, `Last sent at ${clock(queue.last.at)}: ${queue.last.accepted} accepted.`));
-    }
+    // The live state of the queue, in one line, so uploads can be seen without the console (hq #454).
+    const last = queue.last;
+    const upload = last
+      ? `${ago(Date.now() - last.at)}${last.outcome === 'sent' ? ` (${last.accepted} accepted)` : ''}`
+      : 'none yet';
+    const answer = last ? `${last.status || last.outcome}` : '—';
+    lines.push(h('div', { class: `${P}-muted`, id: `${P}-queue-line` },
+      `Queue: ${queue.queued} waiting · last upload ${upload} · last answer ${answer}`));
     return lines;
+  }
+
+  /** One line under the switches on where agreement stands; nothing when the kinds are shared. */
+  function consentLines(kinds) {
+    if (kinds.length === 0) return [];
+    const consent = draft.settings.sharingConsent;
+    if (consent === disclosure.version) {
+      return Object.values(draft.settings.shares).some(Boolean)
+        ? [h('div', { class: `${P}-muted`, id: `${P}-consent-state` }, 'Sharing is on for the kinds ticked above.')]
+        : [];
+    }
+    if (consent === 0) {
+      // Never agreed: the ticks are the choice and Save records it. The wording is on this screen.
+      return [h('div', { class: `${P}-notice`, id: `${P}-consent-state` },
+        'Nothing is shared yet. Tick the kinds you want to share and press Save: that is your agreement to the lines above.')];
+    }
+    // Agreed to an older wording: a separate press, so the new wording is read first.
+    return [
+      h('div', { class: `${P}-row` },
+        h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'consent' }, 'Share the kinds I picked')),
+      h('div', { class: `${P}-muted`, id: `${P}-consent-state` },
+        'What is shared is worded differently since you agreed. Until you press it, nothing is shared.'),
+    ];
   }
 
   function sharingBody() {
@@ -525,11 +561,7 @@ export function mountPanel({
         if (offered) card.append(h('div', { class: `${P}-muted ${P}-option` }, disclosure.kinds[kind]));
         rows.push(card);
       }
-      if (kinds.length && draft.settings.sharingConsent !== disclosure.version) {
-        rows.push(h('div', { class: `${P}-row` },
-          h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'consent' }, 'Share the kinds I picked')));
-        rows.push(h('div', { class: `${P}-muted` }, 'Until you press it, nothing is shared.'));
-      }
+      if (!query) rows.push(...consentLines(kinds));
     }
     if (!query) rows.push(h('div', { id: `${P}-queue` }, ...queueLines(getQueue())));
     return rows;
@@ -609,6 +641,8 @@ export function mountPanel({
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
         'Log what the script does to the browser console'),
+      h('div', { class: `${P}-muted` },
+        'Every request to torn-tracker.com, and for each report why it was or wasn’t shared, under [torn-tracker-companion]. Your keys are never written there.'),
     ];
   }
 
@@ -848,7 +882,12 @@ export function mountPanel({
     if (act !== 'forget') armedForget = false;
 
     if (act === 'save') {
-      await save(draft.settings);
+      // A first Save with a kind ticked is the agreement (hq #454): the wording is on the
+      // Sharing screen and the ticks are the choice. A changed wording keeps its own button.
+      const first = draft.settings.sharingConsent === 0 && sharingOffered(disclosure) && shareKinds(registry).length > 0
+        && Object.values(draft.settings.shares).some(Boolean);
+      if (first) await save({ ...draft.settings, sharingConsent: disclosure.version }, 'Saved. Sharing is on for the kinds you ticked.');
+      else await save(draft.settings);
     } else if (act === 'consent') {
       await save({ ...draft.settings, sharingConsent: disclosure.version });
     } else if (act === 'export') {

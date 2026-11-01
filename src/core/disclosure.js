@@ -11,9 +11,10 @@
 // only what the code and specs/companion-api.md say happens: what is read, when, what the
 // site keeps and for how long, and what it publishes. Change a line only with the facts.
 //
-// `version` goes up whenever any wording changes. A player who agreed to an older
-// version shares nothing until they have read the new one and pressed "Share the kinds
-// I picked" again.
+// `version` goes up whenever the wording of what is shared changes. A player who agreed
+// to an older version shares nothing until they have read the new one and pressed "Share
+// the kinds I picked" again. (The first-run notice's sentence on how to agree followed the
+// panel in hq #454 without a bump: what is shared did not change, only which button.)
 
 export const DISCLOSURE = Object.freeze({
   version: 8,
@@ -21,7 +22,7 @@ export const DISCLOSURE = Object.freeze({
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
     "publish what Torn's API doesn't: foreign stock, loadouts and more. Every kind is off until",
-    'you switch it on here and press "Share the kinds I picked". Each one sends only what its',
+    'you switch it on here and press Save. Each one sends only what its',
     'line below says, with the time you saw it, and never anything from company or faction',
     'application pages. It goes with your script key, so the site knows who sent each report and',
     'can catch false ones; it never publishes who sent anything, except that a player can see who',

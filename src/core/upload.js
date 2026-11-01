@@ -82,6 +82,8 @@ export function normalizeState(raw) {
       outcome: given.last.outcome.slice(0, 40),
       at: given.last.at,
       accepted: Number.isInteger(given.last.accepted) ? given.last.accepted : 0,
+      /** the HTTP status the site answered, 0 when it did not answer */
+      status: Number.isInteger(given.last.status) && given.last.status >= 0 ? given.last.status : 0,
     };
   }
   return state;
@@ -242,9 +244,12 @@ export function createUploader({
 
   function settle({ kind, batch }, result) {
     const at = now();
+    const status = Number.isInteger(result.status) && result.status > 0 ? result.status : 0;
     const outcome = (name, extra = {}) => {
-      state.last = { outcome: name, at, accepted: 0, ...extra };
+      state.last = { outcome: name, at, accepted: 0, status, ...extra };
     };
+    // With debug on, one line per flush says what went and what came back (hq #454).
+    const flushed = `flush: ${batch.length} ${kind} → POST ${status || `no answer (${result.error || 'unreachable'})`}`;
 
     if (result.ok) {
       remove(batch);
@@ -252,32 +257,38 @@ export function createUploader({
       if (offset !== null) state.offsetMs = offset;
       state.retryAt = 0;
       const accepted = Number.isInteger(result.data?.accepted) ? result.data.accepted : batch.length;
+      const rejected = Number.isInteger(result.data?.rejected) ? result.data.rejected : 0;
       outcome('sent', { accepted });
-      log('uploaded', batch.length, kind, result.data);
+      log(`${flushed} accepted ${accepted} rejected ${rejected}`);
     } else if (keyRefused(result)) {
       // The batch stays: it is the key that was wrong, not the observations.
       state.authFailed = true;
       state.banned = accountBanned(result);
       outcome('key refused');
+      log(`${flushed} key refused`);
       warn('the site refused the script key; sharing is paused until a new one is saved');
     } else if (result.status === 426) {
       const min = result.data?.min_version;
       state.blocked[kind] = typeof min === 'string' && SEMVER.test(min) ? min : '?';
       state.items = state.items.filter((item) => item.kind !== kind);
       outcome('update needed');
+      log(`${flushed} update needed (${state.blocked[kind]})`);
       warn(`the site needs a newer script to accept ${kind}`);
     } else if (result.status === 429) {
       state.retryAt = at + (retryAfterMs(result.retryAfter, at) ?? RETRY_MS);
       outcome('slowed down');
+      log(`${flushed} retry in ${Math.round((state.retryAt - at) / 1000)}s`);
     } else if (result.status >= 400 && result.status < 500) {
       // 400, 413, 422: sending the same batch again would get the same answer.
       remove(batch);
       outcome('refused');
+      log(`${flushed} refused, batch dropped`);
       warn(`the site refused a batch of ${kind} (${result.status}); it was dropped`);
     } else {
       // The site is down or unreachable: keep everything and try again later.
       state.retryAt = at + RETRY_MS;
       outcome('unreachable');
+      log(`${flushed} retry in ${Math.round(RETRY_MS / 1000)}s`);
     }
   }
 
