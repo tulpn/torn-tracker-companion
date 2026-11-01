@@ -9,6 +9,8 @@ the section below for its notes. `## Unreleased` collects what is coming next.
 
 ## Unreleased
 
+## 0.9.0 — 2026-11-01
+
 ### Added
 
 - **One off switch for toasts.** Pause all, or companion toasts off, in your notification
