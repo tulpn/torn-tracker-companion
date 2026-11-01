@@ -11,11 +11,18 @@
 // sidebar now and then; the entry is put back each time. Nothing is ever added to Torn's
 // top header, and there's no edge tab or floating button.
 //
+// The copy is only ever made from one of Torn's own entries, never from a row another
+// script added (hq #453: The Contract's row once carried our mark). The source is never
+// touched: it is cloned first and only the clone is edited. Our row carries `data-own`
+// so other scripts' clone logic can skip it, and a mark of ours found outside our entry
+// (another script copied our row) is taken out again.
+//
 // Facts, not code: where TornTools (GPLv3, features/settings-link) puts its own link and
 // the two places it looks for Areas; that The Contract (torncontracts.online) clones an
 // Areas entry and routes its page through the hash. No code was taken from either.
 
 import { el, ownChange } from './dom.js';
+import { log } from './log.js';
 import { followTorn } from './tokens.js';
 
 const P = 'ttc';
@@ -37,6 +44,11 @@ const COUNTERS = "[class*='amount'], [class*='Amount'], [class*='counter'], [cla
  */
 const AREA_ENTRY = "[id^='nav-'], [class*='area-desktop'], [class*='area-mobile']";
 const LINK_NAME = "[class*='linkName']";
+/** Attributes a copy keeps: Torn's look and the link. Everything else was the source's. */
+const KEEP = new Set(['class', 'href', 'role', 'aria-hidden']);
+/** Attributes that mark a node as ours or another script's: such a row is never copied. */
+const FOREIGN = /^data-(own|ttc|tc)(-|$)/;
+const TORN_HOSTS = new Set(['torn.com', 'www.torn.com']);
 /** Every node the entry, the page host and the sidebar block add. */
 export const OURS = '[data-ttc-open], [data-ttc-own]';
 
@@ -46,13 +58,13 @@ const STYLE = `
     display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none;
     border-radius: 4px; background: var(--primary); color: var(--primary-foreground); font: 700 9px/1 Arial, sans-serif; letter-spacing: -.02em;
   }
-  #${LINK_ID}[data-own] {
+  #${LINK_ID}[data-ttc-plain] {
     display: flex; align-items: center; gap: 6px; min-height: 23px; margin: 2px 0; padding: 0 6px;
     border-top-right-radius: 5px; border-bottom-right-radius: 5px; text-decoration: none;
     background-color: var(--default-bg-panel-color, #f2f2f2); color: var(--default-font-color, #333);
   }
   #${LINK_ID}[aria-current="page"], #${LINK_ID} [aria-current="page"] { font-weight: 700; }
-  #${LINK_ID}[data-own][aria-current="page"] { background-color: var(--default-bg-panel-active-color, #e4e4e4); }
+  #${LINK_ID}[data-ttc-plain][aria-current="page"] { background-color: var(--default-bg-panel-active-color, #e4e4e4); }
 `;
 
 function addStyle(doc) {
@@ -70,12 +82,47 @@ function tornToolsEntry(parent) {
   return [...parent.children].find((n) => n.id !== LINK_ID && /TornTools Settings/.test(n.textContent || ''));
 }
 
+/** A link to one of Torn's own pages: on torn.com, and not a script's `#/…` route. */
+export function tornHref(href, base = 'https://www.torn.com/') {
+  let url;
+  try {
+    url = new URL(href, base);
+  } catch {
+    return false;
+  }
+  return TORN_HOSTS.has(url.hostname) && !url.hash.startsWith('#/');
+}
+
+const nodesOf = (root) => [root, ...root.querySelectorAll('*')];
+const dataNames = (node) => node.getAttributeNames().filter((name) => name.startsWith('data-'));
+
+/**
+ * One of Torn's own Areas entries: Torn's shape, every link to a Torn page, and nothing
+ * on it that we or another script put there. A row without Torn's `nav-` id must carry
+ * no data attribute at all.
+ */
+export function nativeEntry(node) {
+  if (node.id === LINK_ID || !node.matches(AREA_ENTRY)) return false;
+  const links = node.matches('a[href]') ? [node] : [...node.querySelectorAll('a[href]')];
+  if (!links.length || !node.querySelector(LINK_NAME)) return false;
+  if (!links.every((a) => tornHref(a.getAttribute('href'), node.ownerDocument?.baseURI))) return false;
+  const nav = node.id.startsWith('nav-');
+  return nodesOf(node).every((n) => !n.classList.contains(`${P}-mark`)
+    && dataNames(n).every((name) => nav && !FOREIGN.test(name)));
+}
+
 /** Strips a copied node of everything that belongs to the entry it was copied from. */
 function scrub(root) {
   for (const node of root.querySelectorAll(COUNTERS)) node.remove();
-  for (const node of [root, ...root.querySelectorAll('*')]) {
+  // A child that carries data is a counter or another script's addition, never Torn's look.
+  for (const node of root.querySelectorAll('*')) if (dataNames(node).length) node.remove();
+  for (const node of nodesOf(root)) {
+    const inIcon = !!node.closest('svg');
     for (const name of node.getAttributeNames()) {
-      if (name === 'id' || name === 'aria-current' || name.startsWith('on') || name.startsWith('data-')) node.removeAttribute(name);
+      const drop = inIcon
+        ? name === 'id' || name.startsWith('on') || name.startsWith('data-')
+        : !KEEP.has(name);
+      if (drop) node.removeAttribute(name);
     }
     for (const token of [...node.classList]) if (STATE_CLASS.test(token)) node.classList.remove(token);
   }
@@ -86,8 +133,7 @@ function scrub(root) {
  * to copy (then the entry is drawn in Torn's panel colours instead).
  */
 export function copyEntry(parent, doc = parent.ownerDocument) {
-  const entries = [...parent.children].filter((n) => n.id !== LINK_ID && n.matches(AREA_ENTRY)
-    && n.querySelector('a[href]') && n.querySelector(LINK_NAME));
+  const entries = [...parent.children].filter(nativeEntry);
   const source = entries.find((n) => n.id === 'nav-home') || entries[0];
   if (!source) return null;
   const copy = source.cloneNode(true);
@@ -109,12 +155,13 @@ export function copyEntry(parent, doc = parent.ownerDocument) {
   }
   copy.id = LINK_ID;
   copy.dataset.ttcOpen = 'sidebar';
+  copy.dataset.own = '';
   return copy;
 }
 
 function ownEntry(doc) {
   return el('a', {
-    href: ROUTE_HREF, id: LINK_ID, 'data-ttc-open': 'sidebar', 'data-own': '', ownerDocument: doc,
+    href: ROUTE_HREF, id: LINK_ID, 'data-ttc-open': 'sidebar', 'data-own': '', 'data-ttc-plain': '', ownerDocument: doc,
   }, mark(doc), el('span', { ownerDocument: doc }, LABEL));
 }
 
@@ -126,8 +173,22 @@ function ownEntry(doc) {
  */
 export function mountEntry({ doc = globalThis.document, isCurrent = () => false, onMutation }) {
   addStyle(doc);
+  let toldStray = false;
+
+  /** Our mark outside our own nodes: another script copied our row. Take it back out. */
+  function removeStrayMarks() {
+    for (const node of doc.querySelectorAll(`.${P}-mark`)) {
+      if (node.closest(OURS)) continue;
+      node.remove();
+      if (!toldStray) {
+        toldStray = true;
+        log('entry: took our mark out of a node another script copied from our Areas entry');
+      }
+    }
+  }
 
   function place() {
+    removeStrayMarks();
     const parent = doc.querySelector(SIDEBAR);
     let entry = doc.getElementById(LINK_ID);
     if (!parent) return false;

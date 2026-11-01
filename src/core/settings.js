@@ -131,11 +131,18 @@ export function isEnabled(settings, id) {
 }
 
 /**
+ * Why a kind is not shared right now, in the words the debug log uses; null when it is.
  * A kind is shared only when its switch is on, its wording exists, and the player agreed
  * to the wording as it is now.
+ * @returns {'kind off'|'no wording'|'no consent'|'wording changed'|null}
  */
+export function shareRefusal(settings, kind, disclosure = DISCLOSURE) {
+  if (settings?.shares?.[kind] !== true) return 'kind off';
+  if (!kindOffered(kind, disclosure)) return 'no wording';
+  if (settings.sharingConsent !== disclosure.version) return settings.sharingConsent > 0 ? 'wording changed' : 'no consent';
+  return null;
+}
+
 export function isShared(settings, kind, disclosure = DISCLOSURE) {
-  return settings?.shares?.[kind] === true
-    && kindOffered(kind, disclosure)
-    && settings.sharingConsent === disclosure.version;
+  return shareRefusal(settings, kind, disclosure) === null;
 }

@@ -45,6 +45,13 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
     assert.deepEqual(await rulesFor("GM.xmlHttpRequest({ url: 'https://yata.yt/api/v1/travel/export/' });"), ['hosts-allowlist']);
   });
 
+  test('either spelling of the site passes, a lookalike or other subdomain does not (hq #450)', async () => {
+    assert.deepEqual(await rulesFor("fetch('https://torn-tracker.com/api/feeds/observations');"), []);
+    assert.deepEqual(await rulesFor("fetch('https://www.torn-tracker.com/api/feeds/observations');"), []);
+    assert.deepEqual(await rulesFor("fetch('https://api.torn-tracker.com/api/feeds/observations');"), ['hosts-allowlist']);
+    assert.deepEqual(await rulesFor("GM_xmlhttpRequest({ url: 'https://torn-tracker.com.example/x' });"), ['hosts-allowlist']);
+  });
+
   test('a URL literal for a host nobody declared', async () => {
     assert.deepEqual(await rulesFor("const home = 'https://example.com/';"), ['hosts-allowlist']);
   });
@@ -68,7 +75,7 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
   });
 
   test('navigating for the player', async () => {
-    assert.deepEqual(await rulesFor("location.href = 'https://www.torn-tracker.com/';"), ['no-navigation']);
+    assert.deepEqual(await rulesFor("location.href = 'https://torn-tracker.com/';"), ['no-navigation']);
     assert.deepEqual(await rulesFor("window.location.assign('/item.php');"), ['no-navigation']);
     assert.deepEqual(await rulesFor("window.open('https://www.torn.com/item.php');"), ['no-navigation']);
     assert.deepEqual(await rulesFor("history.pushState({}, '', '/item.php');"), ['no-navigation']);
@@ -88,7 +95,7 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
   test('a timer that reaches the network', async () => {
     const source = [
       "import { request } from '../../core/net.js';",
-      "setInterval(() => request('https://www.torn-tracker.com/api/feeds/demand'), 1000);",
+      "setInterval(() => request('https://torn-tracker.com/api/feeds/demand'), 1000);",
     ].join('\n');
     assert.deepEqual(await rulesFor(source), ['no-loops-to-network']);
   });
@@ -134,8 +141,8 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
 describe('CMP-030 the lint leaves honest code alone', () => {
   test('the two allowed hosts pass', async () => {
     assert.deepEqual(await rulesFor("fetch('https://api.torn.com/user/?selections=profile');"), []);
-    assert.deepEqual(await rulesFor("fetch('https://www.torn-tracker.com/api/feeds/observations');"), []);
-    assert.deepEqual(await rulesFor("GM_xmlhttpRequest({ url: 'https://www.torn-tracker.com/api/feeds/observations' });"), []);
+    assert.deepEqual(await rulesFor("fetch('https://torn-tracker.com/api/feeds/observations');"), []);
+    assert.deepEqual(await rulesFor("GM_xmlhttpRequest({ url: 'https://torn-tracker.com/api/feeds/observations' });"), []);
     assert.deepEqual(await rulesFor("GM.xmlHttpRequest({ url: 'https://api.torn.com/user/?selections=profile' });"), []);
   });
 
@@ -158,7 +165,7 @@ describe('CMP-030 the lint leaves honest code alone', () => {
     const source = [
       "import { request } from '../core/net.js';",
       'export function flush() {',
-      "  setTimeout(() => request('https://www.torn-tracker.com/api/feeds/observations'), 15000);",
+      "  setTimeout(() => request('https://torn-tracker.com/api/feeds/observations'), 15000);",
       '}',
     ].join('\n');
     assert.deepEqual(await rulesFor(source, 'src/core/upload.js'), []);

@@ -84,7 +84,7 @@ when you press **Refresh**.
   **Sign up**. It's all or nothing: if any slot in that stretch is already taken, nothing
   is saved, and the reply says who has which slot and which roles are still free.
 - **Drop** gives back one of your own slots. In Torn PDA, drop it on
-  [the chain board](https://www.torn-tracker.com/faction/chains/) instead.
+  [the chain board](https://torn-tracker.com/faction/chains/) instead.
 
 Your faction's leaders manage the rota on torn-tracker.com.
 

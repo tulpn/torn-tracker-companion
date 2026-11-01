@@ -4,10 +4,44 @@ Everything worth knowing about each release. The newest is at the top. Versions 
 [semantic versioning](https://semver.org): the patch number changes for fixes, the minor
 for new features, the major when something you rely on changes.
 
-A release is made by tagging `vX.Y.Z`; the workflow publishes the built script and uses
-the section below for its notes. `## Unreleased` collects what is coming next.
+A release is published when its version reaches `main`; the workflow tags it, publishes the
+built script and uses the section below for its notes. `## Unreleased` collects what is coming next.
 
 ## Unreleased
+
+## 0.9.3 — 2026-11-01
+
+### Fixed
+
+- Another script's link in Torn's Areas list (seen with The Contract) could end up with
+  the Torn Tracker "TT" icon. The Torn Tracker entry is now only ever copied from Torn's own
+  links, never changes another script's row, and takes its icon back out of any copy
+  another script makes of it.
+- Nothing was shared after ticking kinds under Sharing and pressing Save: agreement was a
+  separate "Share the kinds I picked" button, easy to miss below the switches. The first
+  Save with a kind ticked now counts as your agreement to the wording on that screen; the
+  button stays only for when that wording changes in an update.
+- The Torn Tracker block in the sidebar went empty when you moved to another Torn page,
+  until you pressed Save again. It now keeps its rows across pages, asks torn-tracker.com
+  at most once a minute, and keeps showing the last rows when the site says "wait".
+
+### Added
+
+- Sharing shows a queue line: how many reports are waiting, when the last upload went and
+  what torn-tracker.com answered.
+- With "Log what the script does to the browser console" on (General), every report says
+  in one line why it was or wasn't shared, what each upload sent and what came back, and
+  what torn-tracker.com asked for. Off, nothing new is printed.
+
+## 0.9.2 — 2026-11-01
+
+### Fixed
+
+- 0.9.0 and 0.9.1 could not reach torn-tracker.com from a browser: the site moved to
+  `torn-tracker.com` without the `www.`, and the script manager refused to follow the
+  redirect to a site the script hadn't named. The script now talks to `torn-tracker.com`
+  directly. Installing or updating asks to allow `torn-tracker.com` too; `www.torn-tracker.com`
+  stays listed, as the same site. Torn PDA is unchanged.
 
 ## 0.9.1 — 2026-11-01
 

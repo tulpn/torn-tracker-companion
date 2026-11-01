@@ -5,11 +5,12 @@
 // time) and how sure the restock estimate is. It links to the full planner on the site.
 // It takes no game action: nothing is booked, bought or clicked.
 
+import { SITE } from '../../hosts.js';
 import { el } from '../../core/dom.js';
 import { strip } from '../../core/ui.js';
 
 const MARK = 'ttc-runs';
-export const PLANNER = 'https://www.torn-tracker.com/travel/';
+export const PLANNER = `${SITE}/travel/`;
 const SETTLE_MS = 300;
 
 const COUNTRY = {

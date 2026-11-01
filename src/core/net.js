@@ -46,8 +46,11 @@ export class HostNotAllowedError extends Error {
 // under half of it and leave room for the player's other tools (CMP-013).
 const BUDGETS = {
   'api.torn.com': { limit: 40, windowMs: 60_000 },
-  'www.torn-tracker.com': { limit: 120, windowMs: 60_000 },
+  'torn-tracker.com': { limit: 120, windowMs: 60_000 },
 };
+
+// The site's two spellings share one budget: they are one server (D-162).
+const bucket = (host) => (host === 'www.torn-tracker.com' ? 'torn-tracker.com' : host);
 
 /** @type {Map<string, number[]>} host -> timestamps of recent calls */
 const recent = new Map();
@@ -59,12 +62,14 @@ function prune(host, now) {
   return times;
 }
 
-export function budgetLeft(host, now = Date.now()) {
+export function budgetLeft(name, now = Date.now()) {
+  const host = bucket(name);
   if (!BUDGETS[host]) return 0;
   return BUDGETS[host].limit - prune(host, now).length;
 }
 
-function take(host, now = Date.now()) {
+function take(name, now = Date.now()) {
+  const host = bucket(name);
   if (budgetLeft(host, now) <= 0) return false;
   recent.get(host).push(now);
   return true;

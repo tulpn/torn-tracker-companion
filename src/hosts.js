@@ -6,11 +6,18 @@
 //
 // www.torn.com is deliberately absent: the script reads the page the player opened and
 // never requests a torn.com page of its own (CMP-030).
+//
+// torn-tracker.com's canonical host is the bare one (D-162, hq #450): www answers every
+// path, the API included, with a 301 to it, and a script manager refuses a redirect to a
+// host outside @connect. Requests go to the bare host. www stays in the list so an old
+// link or a stray redirect still passes, and links on either host are ours.
 
-export const HOSTS = Object.freeze(['api.torn.com', 'www.torn-tracker.com']);
+export const HOSTS = Object.freeze(['api.torn.com', 'torn-tracker.com', 'www.torn-tracker.com']);
 
 export const TORN_API = 'https://api.torn.com';
-export const SITE = 'https://www.torn-tracker.com';
+export const SITE = 'https://torn-tracker.com';
+/** Both spellings of the site, for recognising its links; requests use SITE. */
+export const SITE_ORIGINS = Object.freeze([SITE, 'https://www.torn-tracker.com']);
 
 /**
  * True when the URL's host is one we are allowed to contact. The URL must be absolute:

@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { PREFIX, ROOT, boot, closeAll, fakePdaStorage, readBuilt, readPackage } from './helpers.js';
+import { DISCLOSURE } from '../src/core/disclosure.js';
 
 const { version } = readPackage();
 
@@ -226,7 +227,7 @@ describe('CMP-014 CMP-015 the built file sends nothing on its own', () => {
     const switches = [...t.panel().querySelectorAll('[data-share]')];
     assert.deepEqual(switches.map((s) => s.dataset.share).sort(), ['auction_listing', 'bazaar_listing', 'crime_outcome', 'foreign_stock', 'gym_progress', 'gym_train', 'item_market_snapshot', 'jail_difficulty', 'loadout']);
     assert.ok(switches.every((s) => !s.checked && !s.disabled));
-    assert.match(t.panel().textContent, /Share the kinds I picked/);
+    assert.match(t.panel().textContent, /Nothing is shared yet/);
   });
 });
 
@@ -258,7 +259,7 @@ describe('hq #448 in a browser the site is reached through the script manager', 
     for (const section of ['sidebar', 'sharing', 'data']) await t.go(`#/torn-tracker/${section}`);
     await t.tick(10);
     assert.deepEqual(fetched.filter((url) => url.includes('torn-tracker.com')), []);
-    assert.ok(t.gmCalls.every((url) => url.startsWith('https://www.torn-tracker.com/') || url.startsWith('https://api.torn.com/')), t.gmCalls.join());
+    assert.ok(t.gmCalls.every((url) => url.startsWith('https://torn-tracker.com/') || url.startsWith('https://api.torn.com/')), t.gmCalls.join());
     assert.ok(t.gmCalls.length > 0, 'the saved key starts the site reads');
     assert.deepEqual(t.violations, []);
   });
@@ -432,5 +433,38 @@ describe('on Torn’s real sidebar (the owner’s capture, 2026-10-23)', () => {
       .observe(t.doc.body, { childList: true, subtree: true, characterData: true });
     await t.tick(1200);
     assert.equal(changes, 0, 'our own re-renders must not wake us again');
+  });
+});
+
+describe('hq #454 the built script: ticking a kind and pressing Save is the agreement', () => {
+  test('a fresh install ticks a kind, presses Save, and the saved settings agree to the wording shipped', async () => {
+    const t = await boot(PAGE);
+    await openOn(t, 'sharing');
+    assert.match(t.panel().textContent, /Nothing is shared yet/);
+    assert.match(t.panel().textContent, /Queue: 0 waiting · last upload none yet/);
+    userCheck(t, t.panel().querySelector(`#${PREFIX}-share-foreign_stock`));
+    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    await t.tick();
+    const saved = JSON.parse(t.window.localStorage.getItem(`${PREFIX}_settings`));
+    assert.equal(saved.shares.foreign_stock, true);
+    assert.equal(saved.sharingConsent, DISCLOSURE.version);
+    assert.match(t.panel().textContent, /Sharing is on for the kinds ticked above/);
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('with debug off, booting and saving print nothing to console.log', async () => {
+    const seen = [];
+    const original = console.log;
+    console.log = (...args) => seen.push(args.map(String).join(' '));
+    try {
+      const t = await boot(PAGE);
+      await openOn(t, 'sharing');
+      userCheck(t, t.panel().querySelector(`#${PREFIX}-share-foreign_stock`));
+      t.userClick(t.panel().querySelector('button[data-act="save"]'));
+      await t.tick(10);
+    } finally {
+      console.log = original;
+    }
+    assert.deepEqual(seen, []);
   });
 });

@@ -5,6 +5,7 @@ import { createRegistry } from '../../src/core/registry.js';
 import { createSharer, isApplicationPage } from '../../src/core/share.js';
 import { defaults } from '../../src/core/settings.js';
 import { DISCLOSURE } from '../../src/core/disclosure.js';
+import { setDebug } from '../../src/core/log.js';
 import { UNWORDED, WORDED, descriptor, loadoutData } from '../fixtures.js';
 
 function sharerFor({
@@ -136,5 +137,60 @@ describe("D-056 nothing is recorded on Torn's application pages", () => {
     }
     assert.equal(isApplicationPage(new URL('https://www.torn.com/profiles.php?XID=1#applications')), false,
       'only company, faction and job pages');
+  });
+});
+
+describe('hq #454 with debug on, every share says in one line what became of it', () => {
+  /** console.log captured while fn runs; the logger is put back after. */
+  async function captured(fn) {
+    const seen = [];
+    const original = console.log;
+    console.log = (...args) => seen.push(args.map(String).join(' '));
+    try {
+      await fn();
+    } finally {
+      console.log = original;
+      setDebug(false);
+    }
+    return seen;
+  }
+
+  test('refused: the kind off, no agreement, a changed wording, an application page', async () => {
+    const lines = await captured(() => {
+      setDebug(true);
+      sharerFor().share('loadout', loadoutData());
+      sharerFor({ on: ['loadout'], consent: 0 }).share('loadout', loadoutData());
+      sharerFor({ on: ['loadout'], consent: WORDED.version - 1 }).share('loadout', loadoutData());
+      sharerFor({ on: ['loadout'], at: 'https://www.torn.com/companies.php?step=applications' }).share('loadout', loadoutData());
+    });
+    assert.deepEqual(lines, [
+      '[torn-tracker-companion] share loadout: refused (kind off)',
+      '[torn-tracker-companion] share loadout: refused (no consent)',
+      '[torn-tracker-companion] share loadout: refused (wording changed)',
+      '[torn-tracker-companion] share loadout: refused (application page)',
+    ]);
+  });
+
+  test('queued, with the queue size when the sink says it', async () => {
+    const lines = await captured(() => {
+      setDebug(true);
+      const d = descriptor();
+      const settings = { ...defaults(createRegistry([d])), sharingConsent: WORDED.version };
+      settings.shares.loadout = true;
+      const share = createSharer({
+        descriptor: d, getSettings: () => settings, sink: () => true, disclosure: WORDED, queueSize: () => 3,
+        getLocation: () => new URL('https://www.torn.com/page.php?sid=attack'),
+      });
+      share('loadout', loadoutData());
+    });
+    assert.deepEqual(lines, ['[torn-tracker-companion] share loadout: queued (3 in queue) from war-enhancer']);
+  });
+
+  test('with debug off, nothing is printed', async () => {
+    const lines = await captured(() => {
+      sharerFor().share('loadout', loadoutData());
+      sharerFor({ on: ['loadout'] }).share('loadout', loadoutData());
+    });
+    assert.deepEqual(lines, []);
   });
 });

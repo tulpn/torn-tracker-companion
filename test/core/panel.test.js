@@ -184,8 +184,8 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     assert.match(t.text(), /TEST loadout line\./);
   });
 
-  test('"Share the kinds I picked" records agreement to this wording with the picks', async () => {
-    const t = mount();
+  test('"Share the kinds I picked" records agreement to a changed wording with the picks', async () => {
+    const t = mount({ settings: { ...defaults(createRegistry([descriptor()])), sharingConsent: WORDED.version - 1 } });
     t.open('sharing');
     t.change(t.$('#ttc-share-loadout'), true);
     t.click(t.$('button[data-act="consent"]'));
@@ -197,20 +197,53 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     assert.equal(t.$('button[data-act="consent"]'), null, 'asked once per wording');
   });
 
-  test('plain Save does not count as agreement', async () => {
+  test('hq #454: the first Save with a kind ticked is the agreement, and the tab says so', async () => {
     const t = mount();
     t.open('sharing');
+    assert.equal(t.$('button[data-act="consent"]'), null, 'no separate button before any agreement');
+    assert.match(t.$('#ttc-consent-state').textContent, /Nothing is shared yet.*press Save/);
     t.change(t.$('#ttc-share-loadout'), true);
     t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].settings.sharingConsent, 0);
+    assert.equal(t.saves[0].settings.shares.loadout, true);
+    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version);
+    assert.match(t.text(), /Saved\. Sharing is on for the kinds you ticked\./);
+    assert.equal(t.$('#ttc-consent-state').textContent, 'Sharing is on for the kinds ticked above.');
   });
 
-  test('new wording asks again', () => {
+  test('Save with no kind ticked agrees to nothing', async () => {
+    const t = mount();
+    t.open('sharing');
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    assert.equal(t.saves[0].settings.sharingConsent, 0);
+    assert.match(t.$('#ttc-consent-state').textContent, /Nothing is shared yet/);
+  });
+
+  test('a kind ticked earlier without agreement: the next Save records it', async () => {
+    const settings = defaults(createRegistry([descriptor()]));
+    settings.shares.loadout = true;
+    const t = mount({ settings });
+    t.open('features');
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version);
+  });
+
+  test('new wording asks again, with its own button; plain Save keeps the old agreement', async () => {
     const settings = { ...defaults(createRegistry([descriptor()])), sharingConsent: WORDED.version - 1 };
+    settings.shares.loadout = true;
     const t = mount({ settings });
     t.open('sharing');
     assert.ok(t.$('button[data-act="consent"]'));
+    assert.match(t.$('#ttc-consent-state').textContent, /worded differently.*nothing is shared/);
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version - 1);
+    assert.ok(t.$('button[data-act="consent"]'), 'still asked');
+    t.click(t.$('button[data-act="consent"]'));
+    await settle();
+    assert.equal(t.saves[1].settings.sharingConsent, WORDED.version);
   });
 
   test('the queue\'s trouble is spelled out', () => {
@@ -221,7 +254,27 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     assert.match(t.text(), /did not accept your script key/);
     assert.match(t.text(), /asked the script to wait/);
     assert.match(t.text(), /Update the script to keep sharing loadouts \(1\.4\.0 or newer\)/);
-    assert.match(t.text(), /3 waiting to be sent/);
+    assert.match(t.text(), /Queue: 3 waiting · last upload none yet · last answer —/);
+  });
+
+  test('hq #454: the queue line shows waiting, the last upload and the last answer, live', () => {
+    const queue = {
+      queued: 2, hasKey: true, authFailed: false, retryAt: 0, blocked: {},
+      last: { outcome: 'sent', at: Date.now() - 125_000, accepted: 5, status: 200 },
+    };
+    const t = mount({ queue });
+    t.open('sharing');
+    assert.equal(t.$('#ttc-queue-line').textContent, 'Queue: 2 waiting · last upload 2m ago (5 accepted) · last answer 200');
+    // A flush answered 429: updateQueue redraws the line without touching the draft.
+    t.change(t.$('#ttc-share-loadout'), true);
+    Object.assign(queue, { queued: 0, retryAt: Date.now() + 60_000, last: { outcome: 'slowed down', at: Date.now() - 1000, accepted: 0, status: 429 } });
+    t.panel.updateQueue();
+    assert.equal(t.$('#ttc-queue-line').textContent, 'Queue: 0 waiting · last upload just now · last answer 429');
+    assert.equal(t.$('#ttc-share-loadout').checked, true);
+    // No answer at all: the outcome stands in for the status.
+    Object.assign(queue, { last: { outcome: 'unreachable', at: Date.now() - 3_600_000, accepted: 0, status: 0 } });
+    t.panel.updateQueue();
+    assert.match(t.$('#ttc-queue-line').textContent, /last upload 1h ago · last answer unreachable$/);
   });
 
   test('ADM-068 Q-ADM-5 a banned account sees the neutral notice, with no reason', () => {
@@ -342,7 +395,7 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.deepEqual([...t.panel.panel.querySelectorAll('main h4')].map((n) => n.textContent), ['War and attacks', 'Gym']);
     const learn = t.$('[data-card="gym-thing"] a');
     assert.equal(learn.textContent, 'Learn more');
-    assert.equal(learn.getAttribute('href'), 'https://www.torn-tracker.com/guide/companion/gym-progress/');
+    assert.equal(learn.getAttribute('href'), 'https://torn-tracker.com/guide/companion/gym-progress/');
     assert.match(t.$('[data-card="gym-thing"]').textContent, /Shows gym progress\./);
   });
 
@@ -471,7 +524,7 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     const t = mount();
     t.open('help');
     const hrefs = [...t.panel.panel.querySelectorAll('main a')].map((a) => a.getAttribute('href'));
-    assert.ok(hrefs.includes('https://www.torn-tracker.com/guide/companion/'));
+    assert.ok(hrefs.includes('https://torn-tracker.com/guide/companion/'));
     assert.ok(hrefs.some((h) => h.endsWith('/issues')));
   });
 

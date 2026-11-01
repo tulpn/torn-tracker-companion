@@ -26,8 +26,8 @@ Install [Tampermonkey](https://www.tampermonkey.net) or
 
 1. Open the [latest release](https://github.com/tulpn/torn-tracker-companion/releases/latest).
 2. Click **torn-tracker-companion.user.js**. Your script manager opens an install page.
-3. Check that it lists two hosts it may talk to, `www.torn-tracker.com` and
-   `api.torn.com`, and press **Install**.
+3. Check that it lists the hosts it may talk to, `api.torn.com`, `torn-tracker.com` and
+   `www.torn-tracker.com` (the same site under both names), and press **Install**.
 
 ## Check it works
 

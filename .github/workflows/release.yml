@@ -1,9 +1,14 @@
-# Pushing a vX.Y.Z tag publishes that release (CMP-022).
+# A merge into main publishes the version in package.json (CMP-022, hq D-163).
 #
 # The release assets are what every install points at: Tampermonkey, Violentmonkey and
 # Torn PDA all poll the small .meta.js under releases/latest/download, compare @version,
-# and fetch the .user.js when it is newer. So the assets must be built from the tagged
+# and fetch the .user.js when it is newer. So the assets must be built from the released
 # commit, and the tag, package.json and the built header must all say the same version.
+#
+# On a push to main the workflow reads package.json. If v<version> is already tagged, the
+# push is not a release (a back-merge, a docs fix) and nothing is published. Otherwise it
+# builds, tests and lints, then tags that commit and publishes. A tag pushed by hand still
+# publishes, once: a version that already has a release is skipped.
 #
 # A prerelease (vX.Y.Z-beta.N) is published as a GitHub prerelease, which never becomes
 # "latest" — stable installs do not see it, and beta testers install by URL.
@@ -11,41 +16,79 @@ name: release
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci --no-audit --no-fund
 
-      # Builds dist/ as a side effect, which the next steps check and publish.
-      - run: npm test
-      - run: npm run lint:rules
-
-      - name: The tag, package.json and the built header must agree
-        run: node tools/release.mjs --verify "${GITHUB_REF_NAME}"
-
-      - name: Release notes from the CHANGELOG
-        run: node tools/release.mjs --notes "${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/notes.md"
-
-      - name: Publish the release
+      - name: Which version, and is it new
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="v$(node -p "require('./package.json').version")"
+          fi
+          publish=true
+          if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "${tag} is already released: nothing to publish."
+            publish=false
+          elif [ "${GITHUB_REF_TYPE}" = "branch" ] && git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null; then
+            echo "${tag} is already tagged: this push is not a release."
+            publish=false
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "publish=${publish}" >> "${GITHUB_OUTPUT}"
+
+      - if: steps.version.outputs.publish == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: steps.version.outputs.publish == 'true'
+        run: npm ci --no-audit --no-fund
+
+      # Builds dist/ as a side effect, which the next steps check and publish.
+      - if: steps.version.outputs.publish == 'true'
+        run: npm test
+      - if: steps.version.outputs.publish == 'true'
+        run: npm run lint:rules
+
+      - name: The tag, package.json and the built header must agree
+        if: steps.version.outputs.publish == 'true'
+        run: node tools/release.mjs --verify "${{ steps.version.outputs.tag }}"
+
+      - name: Release notes from the CHANGELOG
+        if: steps.version.outputs.publish == 'true'
+        run: node tools/release.mjs --notes "${{ steps.version.outputs.tag }}" > "${RUNNER_TEMP}/notes.md"
+
+      # On a push to main, gh creates the tag on this commit as it publishes. A tag made
+      # with the workflow's token starts no further workflow, so this runs once.
+      - name: Publish the release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
           prerelease=""
-          case "${GITHUB_REF_NAME}" in *-*) prerelease="--prerelease" ;; esac
-          gh release create "${GITHUB_REF_NAME}" \
+          case "${TAG}" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "${TAG}" \
             dist/torn-tracker-companion.user.js \
             dist/torn-tracker-companion.meta.js \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "${GITHUB_REF_NAME}" \
+            --target "${GITHUB_SHA}" \
+            --title "${TAG}" \
             --notes-file "${RUNNER_TEMP}/notes.md" \
             ${prerelease}

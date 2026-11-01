@@ -36,7 +36,7 @@ apply here (decisions D-039 to D-041 in the hq repo). These do:
 - Commit as `tulpn <1031452+tulpn@users.noreply.github.com>` (repo-local). Never the global identity.
 - Bump `@version` on every release; run `npm test` before every push.
 - **Branches:** feature and fix PRs go into `development`. `development` → `testing` →
-  `main` by promotion PRs on the owner's go; releases are tagged on `main` (RELEASING.md).
+  `main` by promotion PRs on the owner's go; the merge into `main` publishes the release (RELEASING.md).
 
 ## Decisions log
 
@@ -49,3 +49,6 @@ apply here (decisions D-039 to D-041 in the hq repo). These do:
   `tools/` script when a feature needs them (WP-CMP-5).
 - 2026-11-01: v0.9.0, the first public release. From here the work goes into `development`
   and is promoted to `testing`, then `main` (hq #447).
+- 2026-11-02: hq D-163. The release workflow runs on pushes to `main`: a version with no tag
+  yet is tested, tagged and published; `npm run release` no longer tags. No forum post
+  until the public launch.

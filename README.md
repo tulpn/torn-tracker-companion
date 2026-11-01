@@ -4,14 +4,14 @@
 
 **Status: in development. There is no release yet.**
 
-One userscript for [Torn](https://www.torn.com) that brings [torn-tracker.com](https://www.torn-tracker.com) and the best of the community's tools onto the pages you already use: fair-fight estimates, the war page, travel and foreign stock, trading and pricing, crimes, organised crimes and more. Every feature can be switched on or off on its own.
+One userscript for [Torn](https://www.torn.com) that brings [torn-tracker.com](https://torn-tracker.com) and the best of the community's tools onto the pages you already use: fair-fight estimates, the war page, travel and foreign stock, trading and pricing, crimes, organised crimes and more. Every feature can be switched on or off on its own.
 
 It is planned to run in the browser with Tampermonkey or Violentmonkey, and on the phone in [Torn PDA](https://github.com/Manuito83/torn-pda).
 
 ## How to use it
 
 The full guide is the Companion section of the torn-tracker.com knowledge base,
-<https://www.torn-tracker.com/guide/companion/>: installing it, the settings panel, what
+<https://torn-tracker.com/guide/companion/>: installing it, the settings panel, what
 each kind of sharing sends, every feature, and troubleshooting. Its pages live in this
 repository's [`guide/`](guide/) folder, so you can read them here too.
 
@@ -31,9 +31,10 @@ repository's [`guide/`](guide/) folder, so you can read them here too.
 confirm. Your script manager then checks for updates by itself.
 
 The install page asks to let the script make web requests to `api.torn.com` and
-`www.torn-tracker.com`, and to no other site. Torn's pages block requests to other sites,
-so the script asks your script manager to make them; the manager allows only the two
-sites listed. What each site is sent is in the terms table below.
+`torn-tracker.com` (listed twice, as `torn-tracker.com` and `www.torn-tracker.com`, the
+same site), and to no other site. Torn's pages block requests to other sites, so the
+script asks your script manager to make them; the manager allows only the sites listed.
+What each site is sent is in the terms table below.
 
 **In [Torn PDA](https://github.com/Manuito83/torn-pda)**, add the script **from its URL**,
 not by pasting its text:
@@ -91,9 +92,11 @@ of sections and a search box. Nothing is added to Torn's header.
   it on; it never turns on by itself.
 - **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
   starts off, switching a feature on never switches sharing on, and nothing is shared
-  until you press "Share the kinds I picked". If the wording of what is shared changes
-  in an update, you are asked again. It also shows what is waiting to be sent and, if
-  sharing has stopped, why.
+  until you tick a kind and press Save. If the wording of what is shared changes in an
+  update, you are asked again with a "Share the kinds I picked" button. A queue line shows
+  how many reports are waiting, when the last upload went and what the site answered; if
+  sharing has stopped, it says why. For more, switch on "Log what the script does" under
+  General: the browser console then says, for every report, why it was or wasn't shared.
 - **Keys**: your torn-tracker.com script key, which is not a Torn API key. Add to list,
   on profiles, also needs the key's lists scope: with it, the companion reads your target
   lists with the profile's player id, to tick the ones they are on, and adds or removes
@@ -107,8 +110,8 @@ of sections and a search box. Nothing is added to Torn's header.
 
 ## What is shared
 
-Nothing, until you switch a kind on under Sharing in the settings and press "Share the kinds I
-picked". Each kind sends only what Torn showed you on a page you opened yourself, with the
+Nothing, until you switch a kind on under Sharing in the settings and press Save. Each kind
+sends only what Torn showed you on a page you opened yourself, with the
 time you saw it, to torn-tracker.com with your script key. The script key tells the site
 who sent each report, so it can catch false ones. The site never publishes who sent
 anything, with one exception: a player can see who reported their own loadout. Nothing is ever sent from Torn's company or faction application pages, whatever
@@ -181,4 +184,4 @@ This script brings together ideas and, where licences allow, code from many comm
 ## Contact
 
 - In game: [ares313377 [4372940]](https://www.torn.com/profiles.php?XID=4372940)
-- More scripts: [www.torn-tracker.com/scripts](https://www.torn-tracker.com/scripts)
+- More scripts: [torn-tracker.com/scripts](https://torn-tracker.com/scripts)

@@ -111,7 +111,7 @@ function checkFile(relPath, source, report) {
       add(
         mentionsTorn(text) ? 'no-torn-requests' : 'hosts-allowlist',
         node,
-        `a request to ${host}; only ${[...ALLOWED_HOSTS].join(' and ')} are in @connect`,
+        `a request to ${host}; only ${[...ALLOWED_HOSTS].join(', ')} are in @connect`,
       );
       return;
     }

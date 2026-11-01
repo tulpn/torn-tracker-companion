@@ -33,7 +33,7 @@ const FULL = {
   dibs: [{ target_id: 9, target_name: 'Target', expires_at: SOON }],
   oc: { crime_id: 3, name: 'Blast from the Past', state: 'planning', ready_at: null, needs_me: true },
   guide: { done: 6, total: 9, bonuses_unclaimed: 1, faction_bonuses_used: 0 },
-  links: [{ label: 'War room', url: 'https://www.torn-tracker.com/war/' }],
+  links: [{ label: 'War room', url: 'https://torn-tracker.com/war/' }],
 };
 
 function fakeTimers() {
@@ -187,6 +187,73 @@ describe('CMP-108 AC2 how often it asks', () => {
   });
 });
 
+describe('hq #452 the rows survive Torn redrawing its sidebar', () => {
+  /** Torn's SPA draws the sidebar again: every node is new, and ours is gone. */
+  function redraw(t) {
+    t.window.document.getElementById('sidebar').replaceWith(JSDOM.fragment(DESKTOP));
+  }
+
+  test('a re-place after a redraw shows the previous answer, without asking again', async () => {
+    const t = mount();
+    await settle();
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+    for (let page = 0; page < 5; page += 1) {
+      redraw(t);
+      await settle();
+      assert.equal(t.node(), null, 'the redraw took the block out');
+      t.advance(10_000);
+      t.timers.run();
+      await settle();
+      assert.equal(t.node()?.previousElementSibling.id, 'lists', `back after Lists, page ${page + 1}`);
+      assert.match(t.node().textContent, /Chain 412 \/ 500/);
+      assert.match(t.node().textContent, /My dibs/);
+    }
+    assert.equal(t.asked.length, 1, 'one read in the minute');
+    t.advance(READ_EVERY_MS);
+    t.timers.run();
+    await settle();
+    assert.equal(t.asked.length, 2, 'and the next once the minute has passed');
+  });
+
+  test('a redraw that only takes our block out still puts it back', async () => {
+    const t = mount();
+    await settle();
+    t.node().remove();
+    await settle();
+    t.timers.run();
+    await settle();
+    assert.ok(t.node(), 'back');
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+  });
+
+  test('a copy a redraw left behind is removed: one block, the live one', async () => {
+    const t = mount();
+    await settle();
+    const copy = t.node().cloneNode(true);
+    t.window.document.getElementById('sidebar').append(copy);
+    t.block.place();
+    assert.equal(t.window.document.querySelectorAll(`#${BLOCK_ID}`).length, 1);
+    assert.equal(t.node(), t.block.block);
+  });
+
+  test('a 429 or a failed read leaves the rows as they were', async () => {
+    for (const next of [{ status: 'wait', retryMs: 120_000 }, { status: 'failed' }]) {
+      let calls = 0;
+      const ok = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) };
+      const t = mount({ answer: () => (calls++ === 0 ? ok : next) });
+      await settle();
+      const before = t.node().textContent;
+      t.advance(READ_EVERY_MS);
+      t.timers.run();
+      await settle();
+      assert.equal(t.asked.length, 2, next.status);
+      // Every row is still there; only the countdowns moved on by the minute.
+      assert.equal(t.node().textContent, before.replaceAll('2:31', '1:31'), `${next.status} keeps the rows`);
+      assert.doesNotMatch(t.node().textContent, /no data/);
+    }
+  });
+});
+
 describe('CMP-108 AC3 links are plain navigation', () => {
   test('every link goes to a profile, an attack page or torn-tracker.com', async () => {
     const t = mount();
@@ -194,9 +261,9 @@ describe('CMP-108 AC3 links are plain navigation', () => {
     const hrefs = [...t.node().querySelectorAll('a')].map((a) => a.getAttribute('href'));
     assert.ok(hrefs.includes('/profiles.php?XID=7'));
     assert.ok(hrefs.includes('/loader.php?sid=attack&user2ID=9'));
-    assert.ok(hrefs.includes('https://www.torn-tracker.com/war/'));
+    assert.ok(hrefs.includes('https://torn-tracker.com/war/'));
     for (const href of hrefs) {
-      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|https:\/\/www\.torn-tracker\.com\/)/, href);
+      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|https:\/\/torn-tracker\.com\/)/, href);
     }
   });
 });

@@ -66,6 +66,8 @@ export function runFeature(feature, {
   };
 
   const shared = [];
+  /** What the feature said through ctx.log, one string per call. */
+  const logs = [];
   const ctx = {
     id: feature.id,
     version: '1.0.0',
@@ -76,7 +78,7 @@ export function runFeature(feature, {
     intercept,
     net: null,
     site,
-    log: () => {},
+    log: (...args) => logs.push(args.map(String).join(' ')),
     now,
     sharing: (kind) => feature.shares.includes(kind) && sharing(kind),
     data: () => stored,
@@ -98,6 +100,7 @@ export function runFeature(feature, {
     window,
     doc: window.document,
     shared,
+    logs,
     violations,
     /** What the feature has saved in its data. */
     stored: () => stored,

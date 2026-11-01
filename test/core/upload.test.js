@@ -6,6 +6,7 @@ import {
   createUploader, normalizeState, retryAfterMs,
 } from '../../src/core/upload.js';
 import { loadoutData, observation } from '../fixtures.js';
+import { setDebug } from '../../src/core/log.js';
 
 const KEY = `tt_feed_${'B'.repeat(43)}`;
 const T0 = Date.UTC(2026, 9, 19, 12);
@@ -81,7 +82,7 @@ describe('CMP-014 observations are sent in batches, at most once every 15 s', ()
     await r.runDue();
     assert.equal(r.sent.length, 1);
     assert.equal(r.sent[0].url, ENDPOINT);
-    assert.match(ENDPOINT, /^https:\/\/www\.torn-tracker\.com\//);
+    assert.match(ENDPOINT, /^https:\/\/torn-tracker\.com\//);
     assert.equal(r.sent[0].method, 'POST');
     assert.equal(r.sent[0].headers.Authorization, `Bearer ${KEY}`);
     assert.equal(r.uploader.status().queued, 0);
@@ -329,5 +330,62 @@ describe('CMP-008 "Forget me" leaves nothing behind', () => {
     await settle();
     assert.equal(store.has('ttc_queue'), false);
     assert.equal(r.uploader.status().queued, 0);
+  });
+});
+
+describe('hq #454 the queue says what each flush did', () => {
+  async function captured(fn) {
+    const seen = [];
+    const original = console.log;
+    console.log = (...args) => seen.push(args.map(String).join(' '));
+    try {
+      await fn();
+    } finally {
+      console.log = original;
+      setDebug(false);
+    }
+    return seen;
+  }
+
+  test('with debug on: what went, the status, accepted and rejected; a 429 says when it retries', async () => {
+    const lines = await captured(async () => {
+      setDebug(true);
+      const r = rig({ replies: [
+        { ok: true, status: 200, data: { accepted: 1, duplicates: 0, rejected: 0 } },
+        { ok: false, status: 429, retryAfter: '90', data: null },
+        { ok: false, status: 0, error: 'NetworkError', data: null },
+      ] });
+      r.uploader.add(at(r));
+      await r.runDue();
+      r.advance(FLUSH_GAP_MS);
+      r.uploader.add(at(r, { item_id: 2 }));
+      await r.runDue();
+      r.advance(90_000);
+      await r.runDue();
+    });
+    assert.deepEqual(lines, [
+      '[torn-tracker-companion] flush: 1 foreign_stock → POST 200 accepted 1 rejected 0',
+      '[torn-tracker-companion] flush: 1 foreign_stock → POST 429 retry in 90s',
+      '[torn-tracker-companion] flush: 1 foreign_stock → POST no answer (NetworkError) retry in 60s',
+    ]);
+  });
+
+  test('with debug off, a flush prints nothing', async () => {
+    const lines = await captured(async () => {
+      const r = rig();
+      r.uploader.add(at(r));
+      await r.runDue();
+    });
+    assert.deepEqual(lines, []);
+  });
+
+  test('the last answer\'s status is kept for the panel, and survives storage', async () => {
+    const r = rig({ replies: [{ ok: false, status: 429, retryAfter: '10', data: null }] });
+    r.uploader.add(at(r));
+    await r.runDue();
+    assert.deepEqual(r.uploader.status().last, { outcome: 'slowed down', at: T0, accepted: 0, status: 429 });
+    const kept = normalizeState(JSON.parse(JSON.stringify({ last: r.uploader.status().last })));
+    assert.equal(kept.last.status, 429);
+    assert.equal(normalizeState({ last: { outcome: 'sent', at: T0, status: 'ok' } }).last.status, 0);
   });
 });
