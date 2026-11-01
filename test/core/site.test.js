@@ -95,10 +95,14 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
   });
 
   test('CMP-023 an unreachable site gives no data and caches nothing', async () => {
-    const r = rig({ reply: () => ({ ok: false, status: 0, data: null }) });
+    let t = 0;
+    const r = rig({ reply: () => ({ ok: false, status: 0, data: null }), clock: () => t });
     assert.equal((await r.site.ff([1])).size, 0);
     await r.site.ff([1]);
-    assert.equal(r.calls.length, 2, 'tried again on the next page view');
+    assert.equal(r.calls.length, 1, 'not asked again on every page change (hq #368)');
+    t += 61_000;
+    await r.site.ff([1]);
+    assert.equal(r.calls.length, 2, 'tried again a minute later');
   });
 
   test('without a script key nothing is asked', async () => {
