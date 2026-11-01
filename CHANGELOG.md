@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.3 — 2026-11-01
+
 ### Fixed
 
 - Another script's link in Torn's Areas list (seen with The Contract) could end up with
