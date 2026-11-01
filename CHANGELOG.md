@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- Message templates never filled in `{level}` on a player's profile. Torn shows the level in
+  the Level box beside the picture, not in the Basic Information table; it is read from
+  there now.
+
 ## 0.9.4 — 2026-11-01
 
 ### Fixed
