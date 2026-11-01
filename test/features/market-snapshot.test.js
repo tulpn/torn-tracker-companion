@@ -90,3 +90,29 @@ describe('CMP-203 sending only what the site asks for', () => {
     assert.deepEqual(r.shared, []);
   });
 });
+
+describe('hq #454 the feature says why nothing was shared', () => {
+  test('an item the site did not ask for', async () => {
+    const r = run({ site: fakeSite([367]) });
+    await wait();
+    assert.deepEqual(r.logs, ['share item_market_snapshot: refused (not demanded: item 206)']);
+  });
+
+  test('a page whose rows no longer match the selectors, counted; said once however often the page redraws', async () => {
+    const r = run({ site: fakeSite(), html: `<div id="item-market-root"><div class="sellerListWrapper___d4"><ul class="sellerList___e5">
+      <li><div class="rowWrapper___a1"><div class="cost___zz">$1</div></div></li></ul></div></div>` });
+    await wait();
+    r.doc.querySelector('ul').insertAdjacentHTML('beforeend', '<li>redrawn</li>');
+    await wait();
+    assert.deepEqual(r.logs, ['market_snapshot: no listings matched (1 rows) for item 206']);
+  });
+
+  test('a repeat within five minutes', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    r.doc.querySelector('ul').insertAdjacentHTML('beforeend', row('900,000', 1));
+    await wait();
+    assert.equal(r.shared.length, 1);
+    assert.deepEqual(r.logs, ['share item_market_snapshot: deduped (item 206 went within the last five minutes)']);
+  });
+});

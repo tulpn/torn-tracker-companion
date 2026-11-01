@@ -10,7 +10,7 @@
 // kind, observed_at and script_version beside the kind's own fields.
 
 import { DISCLOSURE } from './disclosure.js';
-import { isShared } from './settings.js';
+import { shareRefusal } from './settings.js';
 import { VERSION } from './version.js';
 import { log, warn } from './log.js';
 
@@ -38,14 +38,23 @@ export function isApplicationPage(loc) {
  */
 export function createSharer({
   descriptor, getSettings, sink, now = Date.now, disclosure = DISCLOSURE, getLocation = () => globalThis.location,
+  queueSize = null,
 }) {
+  // With debug on, every call says in one line what became of it (hq #454).
   return function share(kind, data) {
     if (!descriptor.shares.includes(kind)) {
       warn(`feature "${descriptor.id}" tried to share "${kind}", which it does not declare`);
       return false;
     }
-    if (!isShared(getSettings(), kind, disclosure)) return false;
-    if (isApplicationPage(getLocation())) return false;
+    const refusal = shareRefusal(getSettings(), kind, disclosure);
+    if (refusal) {
+      log(`share ${kind}: refused (${refusal})`);
+      return false;
+    }
+    if (isApplicationPage(getLocation())) {
+      log(`share ${kind}: refused (application page)`);
+      return false;
+    }
 
     const queued = sink({
       ...data,
@@ -54,7 +63,8 @@ export function createSharer({
       observed_at: new Date(now()).toISOString(),
       script_version: VERSION,
     }) !== false;
-    if (queued) log('queued', kind, 'from', descriptor.id);
+    if (queued) log(`share ${kind}: queued${queueSize ? ` (${queueSize()} in queue)` : ''} from ${descriptor.id}`);
+    else log(`share ${kind}: not queued (dropped, or the kind is blocked until an update)`);
     return queued;
   };
 }

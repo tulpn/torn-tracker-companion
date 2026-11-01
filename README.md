@@ -92,9 +92,11 @@ of sections and a search box. Nothing is added to Torn's header.
   it on; it never turns on by itself.
 - **Sharing**: choose which kinds of data are shared with torn-tracker.com. Every kind
   starts off, switching a feature on never switches sharing on, and nothing is shared
-  until you press "Share the kinds I picked". If the wording of what is shared changes
-  in an update, you are asked again. It also shows what is waiting to be sent and, if
-  sharing has stopped, why.
+  until you tick a kind and press Save. If the wording of what is shared changes in an
+  update, you are asked again with a "Share the kinds I picked" button. A queue line shows
+  how many reports are waiting, when the last upload went and what the site answered; if
+  sharing has stopped, it says why. For more, switch on "Log what the script does" under
+  General: the browser console then says, for every report, why it was or wasn't shared.
 - **Keys**: your torn-tracker.com script key, which is not a Torn API key. Add to list,
   on profiles, also needs the key's lists scope: with it, the companion reads your target
   lists with the profile's player id, to tick the ones they are on, and adds or removes
@@ -108,8 +110,8 @@ of sections and a search box. Nothing is added to Torn's header.
 
 ## What is shared
 
-Nothing, until you switch a kind on under Sharing in the settings and press "Share the kinds I
-picked". Each kind sends only what Torn showed you on a page you opened yourself, with the
+Nothing, until you switch a kind on under Sharing in the settings and press Save. Each kind
+sends only what Torn showed you on a page you opened yourself, with the
 time you saw it, to torn-tracker.com with your script key. The script key tells the site
 who sent each report, so it can catch false ones. The site never publishes who sent
 anything, with one exception: a player can see who reported their own loadout. Nothing is ever sent from Torn's company or faction application pages, whatever

@@ -14,6 +14,7 @@
 import { SITE, SITE_ORIGINS } from '../hosts.js';
 import { createCache } from './cache.js';
 import { accountBanned, keyRefused, request } from './net.js';
+import { log } from './log.js';
 import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
 
 export const FF_URL = `${SITE}/api/feeds/ff`;
@@ -1139,7 +1140,10 @@ export function createSite({
     async demand() {
       if (demandMemo && now() - demandMemo.at < DEMAND_TTL) return demandMemo.value;
       const value = new Map();
-      if (!usable()) return value;
+      if (!usable()) {
+        log('demand: not asked (no usable script key)');
+        return value;
+      }
       const data = await call(DEMAND_URL, { method: 'GET' });
       const wanted = data?.demand && typeof data.demand === 'object' ? data.demand : {};
       for (const [kind, ids] of Object.entries(wanted)) {
@@ -1147,6 +1151,9 @@ export function createSite({
         value.set(kind, new Set(ids.filter(positiveInt).slice(0, DEMAND_MAX)));
       }
       demandMemo = { at: now(), value };
+      const counts = [...value].map(([kind, ids]) => `${kind} ${ids.size}`).join(', ');
+      log(data ? `demand: asked, ${[...value.values()].reduce((n, ids) => n + ids.size, 0)} ids${counts ? ` (${counts})` : ''}`
+        : 'demand: asked, no answer; nothing is wanted until the next ask');
       return value;
     },
 

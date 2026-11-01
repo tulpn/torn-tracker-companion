@@ -9,6 +9,21 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- Nothing was shared after ticking kinds under Sharing and pressing Save: agreement was a
+  separate "Share the kinds I picked" button, easy to miss below the switches. The first
+  Save with a kind ticked now counts as your agreement to the wording on that screen; the
+  button stays only for when that wording changes in an update.
+
+### Added
+
+- Sharing shows a queue line: how many reports are waiting, when the last upload went and
+  what torn-tracker.com answered.
+- With "Log what the script does to the browser console" on (General), every report says
+  in one line why it was or wasn't shared, what each upload sent and what came back, and
+  what torn-tracker.com asked for. Off, nothing new is printed.
+
 ## 0.9.2 — 2026-11-01
 
 ### Fixed
