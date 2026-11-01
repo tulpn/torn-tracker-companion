@@ -644,6 +644,49 @@ describe('CMP-108 the sidebar read', () => {
     assert.equal(validRoles([{ position_id: 'P1', label: '', weight: null }, { position_id: 'P2', label: 'Hacker', weight: 40 }]), true);
   });
 
+  test('hq #452 the answer is kept 55 s, so a page load inside the minute asks nothing', async () => {
+    let clock = 0;
+    const data = { server_time: new Date(0).toISOString(), chain: { current: 3, max: 10, timeout_at: null, as_of: null }, private_note: 'x' };
+    const r = rig({ now: () => clock, clock: () => clock, reply: () => ({ ok: true, status: 200, data }) });
+    const first = await r.site.sidebar(['chain']);
+    clock = 54_000;
+    const again = await r.site.sidebar(['chain']);
+    assert.equal(r.calls.length, 1);
+    assert.equal(again.cached, true);
+    assert.deepEqual(again.items, first.items);
+    await r.site.sidebar(['chain', 'oc']);
+    assert.equal(r.calls.length, 2, 'other items are another read');
+    clock = 54_000 + 55_000;
+    await r.site.sidebar(['chain', 'oc']);
+    assert.equal(r.calls.length, 3, 'past 55 s it asks again');
+  });
+
+  test('hq #452 the kept copy holds only what was asked for, and a refusal drops it', async () => {
+    let status = 200;
+    const data = { chain: { current: 3, max: 10, timeout_at: null, as_of: null }, war: { secret: 1 }, links: [] };
+    const cache = createCache(SPACES, { now: () => 0 });
+    const calls = [];
+    const site = createSite({
+      getKey: () => KEY,
+      send: async (url) => { calls.push(url); return status === 200 ? { ok: true, status, data } : { ok: false, status, data: null }; },
+      cache,
+      now: () => 0,
+    });
+    await site.sidebar(['chain']);
+    assert.deepEqual(Object.keys(cache.get('sidebar', 'chain').data).sort(), ['chain', 'links']);
+    cache.drop('sidebar', 'chain');
+    status = 401;
+    assert.equal((await site.sidebar(['chain'])).status, 'refused');
+    assert.equal(cache.get('sidebar', 'chain'), undefined);
+  });
+
+  test('a kept copy that does not fit is not used', () => {
+    for (const bad of [null, 'x', { data: [], skew: 0 }, { data: {}, skew: NaN }, { data: {}, skew: 1e12 }]) {
+      assert.equal(SPACES.sidebar.valid(bad), false);
+    }
+    assert.equal(SPACES.sidebar.valid({ data: {}, skew: 0 }), true);
+  });
+
   test('no key asks nothing; a refusal, a 429 and a failure each say what happened', async () => {
     assert.equal((await rig({ key: '' }).site.sidebar(['chain'])).status, 'no_key');
     assert.equal((await rig({ reply: () => ({ ok: false, status: 401, data: null }) }).site.sidebar(['chain'])).status, 'refused');
