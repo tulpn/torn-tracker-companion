@@ -6,6 +6,7 @@
 // and the rules lint and a byte-equal test both hold this file to that (CMP-030).
 
 import { warn } from './log.js';
+import { pageWindow } from './page-window.js';
 
 /** @type {Set<{test: (url: string) => boolean, handler: Function}>} */
 const subscribers = new Set();
@@ -58,7 +59,7 @@ function anyWants(url) {
   return false;
 }
 
-export function install(win = globalThis) {
+export function install(win = pageWindow()) {
   if (originals && target === win) return;
   target = win;
   originals = { fetch: win.fetch, open: win.XMLHttpRequest?.prototype?.open, send: win.XMLHttpRequest?.prototype?.send };
@@ -143,7 +144,7 @@ function urlOf(input) {
  * @param {(event: {url: string, method: string, data: unknown, form: URLSearchParams|null}) => void} handler
  * @returns {() => void} unsubscribe
  */
-export function onJson(test, handler, win = globalThis) {
+export function onJson(test, handler, win = pageWindow()) {
   install(win);
   const sub = { test, handler };
   subscribers.add(sub);
