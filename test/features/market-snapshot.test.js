@@ -115,4 +115,33 @@ describe('hq #454 the feature says why nothing was shared', () => {
     assert.equal(r.shared.length, 1);
     assert.deepEqual(r.logs, ['share item_market_snapshot: deduped (item 206 went within the last five minutes)']);
   });
+
+  test('not sharing this kind, a hidden tab: each said once', async () => {
+    const off = run({ site: fakeSite(), sharing: () => false });
+    await wait();
+    off.doc.querySelector('ul').insertAdjacentHTML('beforeend', row('900,000', 1));
+    await wait();
+    assert.deepEqual(off.logs, ['market_snapshot: item_market_snapshot is not switched on under Sharing']);
+    off.stop();
+    const hidden = run({ site: fakeSite(), visibility: 'hidden' });
+    await wait();
+    assert.deepEqual(hidden.logs, ['market_snapshot: the tab is hidden; looking again when the page changes']);
+  });
+
+  test('a page other scripts keep redrawing is still read within a second of the first change', async () => {
+    const r = run({ site: fakeSite() });
+    const ul = r.doc.querySelector('ul');
+    const started = Date.now();
+    // A change every 100 ms for two seconds: the old timer, pushed back each time, never fired.
+    const tick = r.doc.createElement('span');
+    ul.before(tick);
+    const busy = setInterval(() => { tick.textContent = String(Date.now()); }, 100);
+    try {
+      while (r.shared.length === 0 && Date.now() - started < 2_000) await wait(50);
+    } finally {
+      clearInterval(busy);
+    }
+    assert.equal(r.shared.length, 1);
+    assert.ok(Date.now() - started < 1_500, `shared after ${Date.now() - started} ms`);
+  });
 });

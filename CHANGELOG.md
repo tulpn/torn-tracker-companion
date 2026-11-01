@@ -9,6 +9,21 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The Contract's link in Torn's Areas list still showed the Torn Tracker "TT" icon. It
+  copies the Torn Tracker entry, and that entry no longer had Torn's icon to copy. The
+  entry now keeps Torn's icon (hidden only on the Torn Tracker entry itself), and the
+  "TT" mark shows only on the real entry, so a copy looks like Torn's own link.
+- On profile pages the script asked torn-tracker.com for the mug badge over and over while
+  the site didn't have that read yet. A read the site can't answer now rests: 10 minutes
+  when the site doesn't have it, as long as the site asks after "too many requests", and
+  a minute after any other failure.
+- Item market prices could go unshared on a busy market page: the script waited for the
+  page to stop changing, and with other scripts redrawing it that never happened. It now
+  looks within a second of the first change. With debug on it also says when nothing is
+  shared because the kind is off under Sharing, the tab is hidden, or there's no script key.
+
 ## 0.9.3 — 2026-11-01
 
 ### Fixed
