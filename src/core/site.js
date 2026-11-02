@@ -316,7 +316,10 @@ const onSite = (v) => SITE_ORIGINS.some((origin) => v.startsWith(`${origin}/`));
 /**
  * The sidebar read's answer, checked item by item. An item that was asked for and doesn't
  * fit is null, the same as nothing to show; one that wasn't asked for is left out.
- * @returns {{items: Map<string, object|null>, links: Array<{label: string, url: string}>}}
+ * `factionLinked` is false only when the site says the account has no faction it manages
+ * (hq #507), true when it says it has one, and null when it says nothing.
+ * @returns {{items: Map<string, object|null>, links: Array<{label: string, url: string}>,
+ *   factionLinked: boolean|null}}
  */
 export function readSidebar(data, asked, skew = 0) {
   const items = new Map();
@@ -338,7 +341,8 @@ export function readSidebar(data, asked, skew = 0) {
     .filter((l) => typeof l?.label === 'string' && l.label && l.label.length <= 30
       && typeof l.url === 'string' && onSite(l.url) && l.url.length <= 200)
     .map((l) => ({ label: l.label, url: l.url }));
-  return { items, links };
+  const factionLinked = typeof data?.faction_linked === 'boolean' ? data.faction_linked : null;
+  return { items, links, factionLinked };
 }
 
 export const TIERS = Object.freeze(['bronze', 'silver', 'gold']);
@@ -540,7 +544,7 @@ export function readLists(data) {
  */
 function sidebarCopy(data, asked, skew) {
   const kept = {};
-  for (const key of [...asked, 'links', 'source']) {
+  for (const key of [...asked, 'links', 'source', 'faction_linked']) {
     if (Object.hasOwn(data, key)) kept[key] = data[key];
   }
   return { data: kept, skew };

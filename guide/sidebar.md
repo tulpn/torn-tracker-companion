@@ -1,6 +1,6 @@
 ---
 title: The Torn Tracker sidebar block
-summary: A small block in Torn's sidebar, under Lists, with your chain, war, dibs, med-out partner and OC at a glance; choose what it shows.
+summary: A small block in Torn's sidebar, at the top or wherever you put it, with your chain, war, dibs, med-out partner and OC at a glance; choose what it shows.
 section: Guides
 group: features
 order: 200
@@ -17,8 +17,8 @@ keywords: torn sidebar chain timer, torn tracker sidebar, torn war score sidebar
 
 ## What you see
 
-A **Torn Tracker** block sits in Torn's sidebar, right under **Lists**. Press its title to
-open or close it; the companion remembers which on this device. On a desktop it starts
+A **Torn Tracker** block sits at the top of Torn's sidebar, above **Areas**; you can
+[move it](#choose-where-it-sits). Press its title to open or close it; the companion remembers which on this device. On a desktop it starts
 open. On a phone or in Torn PDA it sits in the slide-out menu and starts closed.
 
 Each line is one thing you'd otherwise open the website or Discord for:
@@ -42,6 +42,24 @@ Each line is one thing you'd otherwise open the website or Discord for:
 The war lines show only during a war. A line with nothing to say (no chain, no partner, no
 OC) is left out rather than showing "none", and when every line is empty the block hides
 itself.
+
+If your account has no faction linked on torn-tracker.com, the chain, war and dibs lines
+have nothing to show. The block then says **Link your faction on torn-tracker.com to see
+chain, war and dibs**, linking to the faction page on torn-tracker.com.
+
+## Choose where it sits
+
+1. Open the [settings](settings-panel.md) and go to **General → Sidebar block**.
+2. Pick a place: **At the top, above Areas** (the default), **After Areas**, **After
+   Lists** or **At the bottom**.
+3. Press **Save**. The choice is kept on this device, and holds on a phone too.
+
+A page whose sidebar has no such place (some pages have no Lists) shows the block at the
+next place down.
+
+Before 0.9.8 the block always sat under **Lists**. Version 0.9.8 moves it to the top once;
+the settings page says so under **General** until you save, and **After Lists** puts it
+back where it was.
 
 ## Choose what it shows
 

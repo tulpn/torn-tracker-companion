@@ -726,6 +726,22 @@ describe('CMP-108 the sidebar read', () => {
     assert.equal(cache.get('sidebar', 'chain'), undefined);
   });
 
+  test('hq #507 the site’s faction_linked comes through, and stays in the kept copy', async () => {
+    const reply = (data) => () => ({ ok: true, status: 200, data });
+    assert.equal((await rig({ reply: reply({ chain: null, faction_linked: false }) }).site.sidebar(['chain'])).factionLinked, false);
+    assert.equal((await rig({ reply: reply({ chain: null, faction_linked: true }) }).site.sidebar(['chain'])).factionLinked, true);
+    for (const odd of [undefined, 'false', 0, null]) {
+      assert.equal((await rig({ reply: reply({ chain: null, faction_linked: odd }) }).site.sidebar(['chain'])).factionLinked, null, String(odd));
+    }
+    let clock = 0;
+    const r = rig({ now: () => clock, clock: () => clock, reply: reply({ chain: null, faction_linked: false }) });
+    await r.site.sidebar(['chain']);
+    clock = 10_000;
+    const again = await r.site.sidebar(['chain']);
+    assert.equal(again.cached, true);
+    assert.equal(again.factionLinked, false);
+  });
+
   test('a kept copy that does not fit is not used', () => {
     for (const bad of [null, 'x', { data: [], skew: 0 }, { data: {}, skew: NaN }, { data: {}, skew: 1e12 }]) {
       assert.equal(SPACES.sidebar.valid(bad), false);
