@@ -12,6 +12,7 @@
 import { ATTACK_ROUTES, onSubjectPage, pageSubject } from '../../core/players.js';
 import { badge } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
+import { settler } from '../../core/dom.js';
 
 const MARK = 'ttc-mugger';
 const SETTLE_MS = 250;
@@ -49,7 +50,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, asked: null };
+    const s = { doc, win, settle: null, stopWatching: null, asked: null };
     state = s;
     const alive = () => state === s;
 
@@ -72,11 +73,10 @@ export default {
     }
 
     const later = () => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (alive()) look().catch((err) => ctx.log('mugger badge', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     };
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every((r) => ctx.dom.ownChange(r, `.${MARK}`))) return;
@@ -90,7 +90,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    if (s.timer !== null) s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

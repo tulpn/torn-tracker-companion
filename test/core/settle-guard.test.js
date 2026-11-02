@@ -10,8 +10,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 
 const FEATURES = new URL('../../src/features/', import.meta.url);
 const STILL_DEBOUNCED = new Set([
-  'ff-badges', 'merit-hints', 'message-templates', 'mugger-badge', 'oc-helper', 'player-notes',
-  'price-filler', 'race-templates', 'shop-highlighter', 'stock-advisor', 'trade-value',
+  'race-templates', 'shop-highlighter', 'stock-advisor', 'trade-value',
   'undersell-warning', 'wallet-reminder', 'war-page',
 ]);
 /** `x.clearTimeout(t);` followed by `t = x.setTimeout(`: the timer starts again on every change. */

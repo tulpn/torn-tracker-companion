@@ -11,8 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
-- Add to list, applicant badges, auction values, bazaar sharing, best buy, the bounty board
-  and the crime helper now look at the page within a second or two even while something
+- Add to list, applicant badges, auction values, bazaar sharing, best buy, the bounty board,
+  the crime helper, FF badges, merit hints, message templates, the mugger badge, the OC
+  helper, player notes and the price filler now look at the page within a second or two even while something
   else on it keeps changing (a clock, a chat, another script). Before, they waited for the
   page to go quiet and on a busy page never showed or shared anything.
 

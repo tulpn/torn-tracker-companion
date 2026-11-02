@@ -13,7 +13,7 @@
 // for setting a React field. No code was taken. Their "fill all" and their press of
 // Torn's mobile Manage button are deliberately not here (CMP-900).
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { shopName } from '../../core/shops.js';
 import { fillRow, itemIdOf, ownedOf, priceFrom } from './fill.js';
 import { FORMS, formFor } from './selectors.js';
@@ -22,7 +22,7 @@ const MARK = 'ttc-fill';
 const SETTLE_MS = 250;
 
 let stopWatching = null;
-let timer = null;
+let settle = null;
 let timers = globalThis;
 let page = null;
 let alive = false;
@@ -89,11 +89,10 @@ const feature = {
     };
 
     const later = () => {
-      timers.clearTimeout(timer);
-      timer = timers.setTimeout(() => {
-        timer = null;
+      settle ??= settler(() => {
         scan().catch((err) => ctx.log('price filler', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      settle.poke();
     };
     stopWatching = ctx.dom.onMutation((records) => {
       if (records.every((r) => [...r.addedNodes].every((n) => n.classList?.contains(MARK)))) return;
@@ -106,8 +105,8 @@ const feature = {
     alive = false;
     stopWatching?.();
     stopWatching = null;
-    if (timer !== null) timers.clearTimeout(timer);
-    timer = null;
+    settle?.cancel();
+    settle = null;
     for (const node of page?.querySelectorAll(`.${MARK}`) || []) node.remove();
     page = null;
   },
