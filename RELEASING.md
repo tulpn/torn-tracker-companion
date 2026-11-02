@@ -30,11 +30,19 @@ From v0.9.0 the work moves through three branches (hq #447):
   (hq D-163).
 
 Promotion PRs (`development` → `testing`, `testing` → `main`) wait for the owner's go.
-All three branches require the `test` and `author-check` checks.
+All three branches require the `test` and `author-check` checks; `testing` and `main` also
+require `version-check` (the `promotion-check` workflow).
+
+**Every promotion starts with the bump.** The merge into `main` publishes the version in
+`package.json`, and a version that is already tagged publishes nothing. So before a
+promotion PR is opened, the release commit (below) must have merged into `development`.
+`version-check` fails a promotion PR into `testing` or `main` whose version is already
+tagged: "bump the version on development before promoting (RELEASING.md)" (hq #506).
 
 ## Cutting one
 
-Cut the release on a branch from `development`, and ship it like any other PR:
+This is the first step of every promotion. Cut the release on a branch from
+`development`, and ship it like any other PR:
 
 ```bash
 git fetch origin && git checkout -b chore/release-vX.Y.Z origin/development
