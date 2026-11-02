@@ -18,14 +18,13 @@ keywords: torn bazaar price, fill price torn, item market undercut
 ## Fill a price
 
 On the bazaar's add and manage pages and on the item market's sell form, each item gets a
-small **Fill** button beside the price field, showing the price it will put in, short,
-like **Fill $1.2m**: torn-tracker.com's market value minus your undercut. Hover over it, or
-press and hold on a phone, to see the exact amount. One press fills that row's price and
-how many you own.
+small **Fill** button beside the price field. It puts in torn-tracker.com's market value
+minus your undercut; hover over it, or press and hold on a phone, to see the amount first.
+One press fills that row's price and how many you own.
 
 It never fills a price below what a shop in Torn pays for the item. When the market value
-minus your undercut would be lower, it fills the shop's price instead and the button says
-so, like **Fill $1k (shop)**; hover over it to see which shop. The
+minus your undercut would be lower, it fills the shop's price instead; hover over the
+button to see the price and which shop. The
 [shop price guard](shop-price-guard.md) also warns you when a price you type yourself is
 below a shop's.
 

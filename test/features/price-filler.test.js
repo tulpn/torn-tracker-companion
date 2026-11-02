@@ -3,7 +3,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { shortMoney } from '../../src/features/price-filler/index.js';
+import feature from '../../src/features/price-filler/index.js';
 import { itemIdOf, ownedOf, priceFrom } from '../../src/features/price-filler/fill.js';
 import { formFor } from '../../src/features/price-filler/selectors.js';
 import { page, runFeature } from '../feature-harness.js';
@@ -54,7 +54,8 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
     await wait();
     assert.deepEqual(site.lookups, [[206, 1, 999]]);
     const buttons = [...r.doc.querySelectorAll('.ttc-fill')];
-    assert.deepEqual(buttons.map((b) => b.textContent), ['Fill $800k', 'Fill $49', 'No price']);
+    assert.deepEqual(buttons.map((b) => b.textContent), ['Fill', 'Fill', 'Fill']);
+    assert.deepEqual(buttons.map((b) => b.title), ['Fill the price with $799,999', 'Fill the price with $49', 'No market value for this item yet']);
     assert.equal(buttons[2].disabled, true);
   });
 
@@ -93,7 +94,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
   test('the undercut comes from the player\'s setting', async () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite(), settings: { enabled: true, undercut: 1000 } });
     await wait();
-    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $799k');
+    assert.equal(r.doc.querySelector('.ttc-fill').title, 'Fill the price with $799,000');
   });
 
   test('the item market sell form: id from the info button, quantity from "x 1,250"', async () => {
@@ -112,7 +113,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite({ 206: 800, 1: 50 }, { 206: shop }) });
     await wait();
     const button = r.doc.querySelector('.ttc-fill');
-    assert.equal(button.textContent, 'Fill $1k (shop)');
+    assert.equal(button.textContent, 'Fill');
     assert.match(button.title, /^Stopped at the shop price: Big Al's Gun Shop pays \$1,000 each/);
     press(r, button);
     assert.equal(r.doc.querySelector('div.price input').value, '1000');
@@ -122,7 +123,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
   test('a shop paying less than the market changes nothing', async () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite(undefined, { 206: { price: 10, shop: null, country: null } }) });
     await wait();
-    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $800k');
+    assert.equal(r.doc.querySelector('.ttc-fill').title, 'Fill the price with $799,999');
   });
 
   test('re-renders do not add a second button', async () => {
@@ -166,8 +167,7 @@ describe('CMP-006 the readers', () => {
 });
 
 describe('hq #521 the fill button is small, inline and in our tokens', () => {
-  test('the amount is short; the full one is in its title and name', async () => {
-    assert.deepEqual([1_234_567, 799_999, 1_000, 49].map(shortMoney), ['$1.2m', '$800k', '$1k', '$49']);
+  test('it says just Fill; the price is in its title and name', async () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite() });
     await wait();
     const button = r.doc.querySelector('.ttc-fill');
@@ -187,7 +187,10 @@ describe('hq #521 the fill button is small, inline and in our tokens', () => {
     assert.match(rule, /height: 24px/);
     assert.match(rule, /white-space: nowrap/);
     assert.match(rule, /background: color-mix\(in srgb, var\(--primary\)/, 'our accent, not black');
-    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) \{ display: flex; flex-wrap: nowrap;/);
+    // Torn's cell rule sets display: block with a long selector, so ours is important,
+    // and the field shrinks to make room (a capture of the live bazaar, 2026-11-02).
+    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) \{ display: flex !important; flex-wrap: nowrap;/);
+    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) > :not\(\.ttc-ui-inline\.ttc-ui-inline\) \{ flex: 1 1 auto; min-width: 0; \}/);
   });
 
   test('the market sell form gets the same button', async () => {

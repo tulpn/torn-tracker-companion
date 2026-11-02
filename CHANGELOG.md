@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.9 — 2026-11-02
+
 ### Changed
 
 - Settings save as soon as you change them; there is no Save button any more. A short
@@ -20,24 +22,19 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
-- The OC helper's role weight and success figures are small badges beside the slot,
-  on one line, instead of large labels that broke the crime card's row. Hover or tap one
-  to read what it means.
-- The sidebar's **Watch** row shows only when you hold a chain watch slot or your faction has
-  a watch open to sign up for, instead of always saying "Sign up to watch".
-- The **Fill** button on the bazaar and item market sell forms is small again: the height of
-  the price field beside it, in the companion's green instead of black, with a short amount
-  like **Fill $1.2m**. Hover over it for the exact price.
-
-## 0.9.9 — 2026-11-02
-
-### Fixed
-
 - The companion now sees Torn's own page requests again under Tampermonkey and other script
   managers, so the observations you switched on in Sharing are captured and uploaded. Before,
   it watched its own sandbox instead of the page, and nothing was sent.
 - With **Debug** on, the console now shows each page response the companion read and how many
   features used it. On the gym page it also says when no gym in progress was found.
+- The OC helper's role weight and success figures are small badges beside the slot,
+  on one line, instead of large labels that broke the crime card's row. Hover or tap one
+  to read what it means.
+- The sidebar's **Watch** row shows only when you hold a chain watch slot or your faction has
+  a watch open to sign up for, instead of always saying "Sign up to watch".
+- The **Fill** button on the bazaar and item market sell forms is small again: it says just
+  **Fill**, sits on one line with the price field, and is in the companion's green instead of
+  black. Hover over it for the price it will fill.
 
 ## 0.9.8 — 2026-11-02
 
