@@ -13,7 +13,7 @@
 
 import { el } from '../../core/dom.js';
 import {
-  bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, strip as uiStrip,
+  bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, profileAction, strip as uiStrip,
 } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 import {
@@ -443,7 +443,7 @@ export default {
       const id = pageSubject(win.location);
       if (!id) return;
       const heading = doc.querySelector(HEADING);
-      if (!heading || heading.parentNode?.querySelector(`:scope > .${MARK}-toggle`)) return;
+      if (!heading || doc.querySelector(`.${MARK}-toggle`)) return;
       const toggle = uiButton(doc, { cls: `${MARK} ${MARK}-toggle`, attrs: { 'aria-expanded': String(s.open) } }, 'Messages');
       toggle.addEventListener('click', (event) => {
         stop(event);
@@ -452,7 +452,7 @@ export default {
         if (s.open) place(id, heading);
         else doc.querySelector(`.${MARK}-box`)?.remove();
       });
-      heading.after(toggle);
+      profileAction(doc, heading, 'messages', toggle);
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);

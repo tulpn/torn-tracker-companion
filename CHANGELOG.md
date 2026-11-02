@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Our buttons on a player's profile (Add to list, Messages, Add note) sit together in one
+  row below the name, drawn like Torn's own buttons in light and dark, and 44 px tall on a
+  phone. They were scattered around the title and lost their look to Torn's title styles.
 - Message templates never filled in `{level}` on a player's profile. Torn shows the level in
   the Level box beside the picture, not in the Basic Information table; it is read from
   there now.
