@@ -16,6 +16,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   education, chain, war and organized crime, with charts of your money and battle stats.
   It is off until you tick **Dashboard (preview)** under General, and it asks
   torn-tracker.com once each time you open it.
+- Trade value can price a trade at a buy list on torn-tracker.com: your own (the other
+  side's items, what you buy) or a trader's public list (your own items, what you sell).
+  Choose it under **Trade value** in the settings. An item the list doesn't buy shows as
+  "not on the list", never $0, and the receipt links to the list.
 
 ### Fixed
 
