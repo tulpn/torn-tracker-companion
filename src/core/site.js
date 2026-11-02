@@ -552,6 +552,50 @@ function watchFailure(result) {
   return null;
 }
 
+// ---- A trader's buy list (CMP-309, hq #335) ----
+
+export const BUYLIST_URL = `${SITE}/api/feeds/buylist`;
+/** Kept 5 minutes per list (CMP-309); the site allows six reads a minute. */
+const BUYLIST_TTL = 5 * 60_000;
+const BUYLIST_ITEMS = 5_000;
+const ITEM_ID = /^[1-9]\d{0,5}$/;
+/** Torn names are letters, digits, `_` and `-`; `me` is the player's own list. */
+const TRADER = /^(?:me|[1-9]\d{0,9}|[A-Za-z0-9_-]{1,32})$/;
+
+/** The trader to ask for, trimmed: `me`, a name or an id; null when it can't be one. */
+export function buylistTrader(v) {
+  const t = typeof v === 'string' ? v.trim() : '';
+  if (!TRADER.test(t)) return null;
+  return t.toLowerCase() === 'me' ? 'me' : t;
+}
+
+/**
+ * The buy list read's answer, checked (CMP-309). Prices are whole dollars per Torn item id;
+ * an item the list doesn't buy is absent, and a price that isn't a whole dollar amount
+ * above 0 is dropped, never read as 0 (AC2).
+ * @returns {{trader: {id: number, name: string}, prices: Map<number, number>,
+ *   pageUrl: string, calcUrl: string, receipts: number|null}|null}
+ */
+export function readBuylist(data) {
+  const t = data?.trader;
+  if (!positiveInt(t?.torn_id) || !validName(t.name)) return null;
+  if (!data.prices || typeof data.prices !== 'object' || Array.isArray(data.prices)) return null;
+  const prices = new Map();
+  for (const [id, price] of Object.entries(data.prices)) {
+    if (prices.size >= BUYLIST_ITEMS) break;
+    if (ITEM_ID.test(id) && positiveInt(price) && price <= 1e13) prices.set(Number(id), price);
+  }
+  const link = (v, fallback) => (typeof v === 'string' && v.length <= 200 && onSite(v) ? v : fallback);
+  const pageUrl = link(data.page_url, `${SITE}/traders/`);
+  return {
+    trader: { id: t.torn_id, name: t.name },
+    prices,
+    pageUrl,
+    calcUrl: link(data.calc_url, pageUrl),
+    receipts: count(data.receipts) ? data.receipts : null,
+  };
+}
+
 // ---- The dashboard inside Torn (hq #465, companion-api §6.4b) ----
 
 export const ME_DASHBOARD_URL = `${SITE}/api/feeds/me/dashboard`;
@@ -738,6 +782,9 @@ export function createSite({
   let runsMemo = null;
   /** The dashboard's answer and when it came, in memory only (hq #465: kept a minute). */
   let dashboardMemo = null;
+  /** Buy lists by trader (CMP-309: kept 5 minutes), in memory only; and when to ask again after a 429. */
+  const buylists = new Map();
+  let buylistWait = 0;
   /** The stock signals answer and when it came (CMP-304: kept 5 minutes). */
   let stockMemo = null;
   /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
@@ -1550,6 +1597,41 @@ export function createSite({
       const read = readDashboard(result.data, skew);
       dashboardMemo = { at: now(), data: result.data, skew };
       return { status: 'ok', ...read, skew };
+    },
+
+    /**
+     * A trader's buy list (CMP-309): `me`, a Torn name or an id. One GET, kept 5 minutes.
+     * @returns {Promise<{status: 'ok', list: NonNullable<ReturnType<typeof readBuylist>>}
+     *   | {status: 'no_key'|'refused'|'bad_name'|'not_found'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async buylist(trader) {
+      const who = buylistTrader(trader);
+      if (!who) return { status: 'bad_name' };
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const memoKey = who.toLowerCase();
+      const kept = buylists.get(memoKey);
+      if (kept && now() - kept.at < BUYLIST_TTL) return kept.answer;
+      if (now() < buylistWait) return { status: 'wait', retryMs: buylistWait - now() };
+      const result = await exchange(`${BUYLIST_URL}/${encodeURIComponent(who)}`, { method: 'GET' });
+      if (keyRefused(result)) return { status: 'refused' };
+      if (result?.status === 429) {
+        const seconds = Number(result.retryAfter);
+        const retryMs = Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000;
+        buylistWait = now() + retryMs;
+        return { status: 'wait', retryMs };
+      }
+      // An unknown or unpublished list is a 404 for everyone but its trader; kept like an answer.
+      let answer;
+      if (result?.status === 404) answer = { status: 'not_found' };
+      else {
+        const list = result?.ok ? readBuylist(result.data) : null;
+        if (!list) return { status: 'failed' };
+        answer = { status: 'ok', list };
+      }
+      if (buylists.size >= 20) buylists.delete(buylists.keys().next().value);
+      buylists.set(memoKey, { at: now(), answer });
+      return answer;
     },
 
     /** The guide as last read, without asking; null when there is none fresh. */
