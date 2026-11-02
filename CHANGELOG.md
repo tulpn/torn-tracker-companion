@@ -14,6 +14,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - Message templates never filled in `{level}` on a player's profile. Torn shows the level in
   the Level box beside the picture, not in the Basic Information table; it is read from
   there now.
+- The sidebar block's quick links (Dashboard, Chains, Travel planner) never showed. The site
+  writes its links on www.torn-tracker.com, and since 0.9.2 the script only accepted the
+  bare host. Links on either spelling of the host are kept again, in the sidebar, the
+  guide, the achievements page link, the trust link and applicant cards. The guide's answer
+  is kept for its 15 minutes again instead of being asked for on every check.
 
 ## 0.9.4 — 2026-11-01
 
