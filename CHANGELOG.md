@@ -9,6 +9,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- Add to list, applicant badges, auction values, bazaar sharing, best buy, the bounty board
+  and the crime helper now look at the page within a second or two even while something
+  else on it keeps changing (a clock, a chat, another script). Before, they waited for the
+  page to go quiet and on a busy page never showed or shared anything.
+
 ## 0.9.5 — 2026-11-02
 
 ### Fixed

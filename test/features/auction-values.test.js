@@ -82,3 +82,21 @@ describe('AUC-020 on the auction house', () => {
     assert.equal(r.doc.querySelectorAll('.ttc-auc').length, 0);
   });
 });
+
+describe('hq #454 a busy page', () => {
+  test('a page that never goes quiet still gets its badges', async () => {
+    const site = fakeSite();
+    const r = run({ site });
+    // Something else on the page changes every 50 ms, more often than the settle time.
+    let n = 0;
+    const ticking = setInterval(() => { r.doc.body.append(r.doc.createElement('i')); n += 1; }, 50);
+    try {
+      await wait(2_400);
+      assert.ok(n > 30);
+      assert.equal(site.calls.length >= 1, true, 'read by the deadline, not put off for ever');
+      assert.equal(badge(r, 579754).textContent, 'about $27.4m, 12 sales');
+    } finally {
+      clearInterval(ticking);
+    }
+  });
+});
