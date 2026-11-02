@@ -29,6 +29,8 @@ const ALLOWED_HOSTS = new Set(HOSTS);
  * that is checked separately, so www.torn.com being here does not weaken anything.
  */
 const LINK_HOSTS = new Set(['github.com', 'www.gnu.org', 'www.torn.com', 'greasyfork.org', 'torncontracts.online']);
+/** XML namespaces: names a DOM API takes, never a place anything is fetched from or linked to. */
+const NAMESPACES = new Set(['http://www.w3.org/2000/svg']);
 
 /** A filler may tell Torn's form that a field changed. It may do nothing else. */
 const ALLOWED_EVENTS = new Set(['input', 'change']);
@@ -99,6 +101,7 @@ function checkFile(relPath, source, report) {
 
   /** Every URL literal, wherever it is: a host we do not know has no business here. */
   const checkUrlLiteral = (node, text, { asRequestTarget = false } = {}) => {
+    if (NAMESPACES.has(text) && !asRequestTarget) return;
     const host = hostOf(text);
     if (!host) {
       if (asRequestTarget && mentionsTorn(text)) {

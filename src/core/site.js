@@ -552,6 +552,170 @@ function watchFailure(result) {
   return null;
 }
 
+// ---- The dashboard inside Torn (hq #465, companion-api §6.4b) ----
+
+export const ME_DASHBOARD_URL = `${SITE}/api/feeds/me/dashboard`;
+const DASHBOARD_TTL = 60_000;
+/** The dashboard's cards, in the order the page shows them. */
+export const DASHBOARD_CARDS = Object.freeze(['bars', 'money', 'gym', 'goals', 'achievements', 'guide', 'education', 'chain', 'war', 'oc', 'stats']);
+export const DASHBOARD_LINKS = Object.freeze(['dashboard', 'stats', 'achievements', 'finances', 'guide', 'war', 'oc', 'education']);
+const BAR_KEYS = Object.freeze(['energy', 'nerve', 'happy', 'life']);
+export const GYM_STATS = Object.freeze(['Strength', 'Defense', 'Speed', 'Dexterity']);
+export const EDU_STATS = Object.freeze(['Intelligence', 'Manual labor', 'Endurance']);
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+const MONEY_MAX = 1e15;
+const SERIES_MAX = 400;
+const words = (v, max = SENTENCE) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+const textOrNull = (v, max = NAME) => (words(v, max) ? v.trim() : null);
+const intOrNull = (v, max = 1e9) => (count(v, max) ? v : null);
+const money = (v) => (typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= MONEY_MAX ? Math.round(v) : null);
+const listOf = (v, max, read) => (Array.isArray(v) ? v.slice(0, max).map((x) => {
+  try {
+    return read(x);
+  } catch {
+    return null;
+  }
+}).filter(Boolean) : []);
+const dayOf = (v) => (typeof v === 'string' && DAY_KEY.test(v.slice(0, 10)) ? v.slice(0, 10) : null);
+
+/** The hero card: who the player is, their rank and at most two next steps. */
+function readHero(v) {
+  if (!v || typeof v !== 'object') return null;
+  const faction = positiveInt(v.faction?.id) && validName(v.faction.name) ? { id: v.faction.id, name: v.faction.name } : null;
+  const r = v.rank;
+  const rank = r && validName(r.name) && count(r.points, 1e9) ? {
+    name: r.name, points: r.points,
+    next: validName(r.next_name) && count(r.next_points, 1e9) ? { name: r.next_name, points: r.next_points } : null,
+  } : null;
+  const steps = listOf(v.steps, 2, (s) => {
+    const url = siteLink(s?.url);
+    if (!words(s?.title, 80) || !url || !count(s.value, 1e9) || !count(s.max, 1e9) || s.max === 0) return null;
+    return { title: s.title.trim(), detail: textOrNull(s.detail, SENTENCE) ?? '', value: Math.min(s.value, s.max), max: s.max, url };
+  });
+  return {
+    name: validName(v.name) ? v.name : null,
+    id: positiveInt(v.torn_id) ? v.torn_id : null,
+    level: count(v.level, 100) && v.level > 0 ? v.level : null,
+    faction, rank, steps,
+  };
+}
+
+/** Each of the dashboard's own cards' reader: the checked value, or null when it doesn't fit. */
+const DASHBOARD_READERS = {
+  bars(v, skew) {
+    const bars = listOf(v?.bars, 4, (b) => {
+      if (!BAR_KEYS.includes(b?.key) || !words(b.label, 30) || !count(b.current, 1e7)) return null;
+      const maximum = b.maximum == null ? null : intOrNull(b.maximum, 1e7);
+      if (b.maximum != null && maximum === null) return null;
+      const pct = count(b.pct, 1000) ? b.pct : (maximum ? Math.round((b.current / maximum) * 100) : 0);
+      return { key: b.key, label: b.label.trim(), current: b.current, maximum, pct, over: b.over === true };
+    });
+    const effects = listOf(v?.effects, 6, (e) => {
+      const until = time(e?.until, skew);
+      return words(e?.label, 40) && until !== null ? { label: e.label.trim(), until, note: textOrNull(e.note, SENTENCE) ?? '' } : null;
+    });
+    if (!bars.length) return null;
+    return { observedAt: v.observed_at == null ? null : time(v.observed_at, skew), bars, effects };
+  },
+  money(v) {
+    const series = listOf(v?.series, 31, (d) => {
+      const date = dayOf(d?.date);
+      if (!date) return null;
+      return { date, income: money(d.income), cost: money(d.cost), networth: money(d.networth) };
+    });
+    if (!series.some((d) => d.income !== null || d.cost !== null)) return null;
+    return { days: count(v.days, 400) && v.days > 0 ? v.days : series.length, series };
+  },
+  // An estimate, labelled one wherever it shows (D-073). At the last gym both are null.
+  gym(v) {
+    if (v?.next_gym === null && v.percent == null) return { nextGym: null, percent: null, energy: null };
+    if (!words(v?.next_gym, 40) || !percent_(v.percent)) return null;
+    return { nextGym: v.next_gym.trim(), percent: v.percent, energy: intOrNull(v.energy_to_next, 1e7) };
+  },
+  goals(v) {
+    const active = listOf(v?.active, 10, (g) => {
+      if (!positiveInt(g?.id) || !words(g.name, 100) || !count(g.amount, MONEY_MAX)) return null;
+      return {
+        id: g.id, name: g.name.trim(), amount: g.amount, known: g.known === true,
+        remaining: count(g.remaining, MONEY_MAX) ? g.remaining : g.amount,
+        pct: g.known === true && count(g.pct, 100) ? g.pct : null, reached: g.reached === true,
+      };
+    });
+    const saved = count(v?.saved, MONEY_MAX) ? v.saved : null;
+    return active.length || saved !== null ? { saved, active } : null;
+  },
+  achievements(v) {
+    const next = listOf(v?.next, 5, (a) => {
+      const base = readAchievement(a);
+      if (!base || !count(a.points, 1e6)) return null;
+      const p = a.progress;
+      const progress = p && count(p.value, 1e12) && count(p.target, 1e12) && p.target > 0
+        ? { value: Math.min(p.value, p.target), target: p.target } : null;
+      return { ...base, description: textOrNull(a.description, SENTENCE) ?? '', progress, points: a.points };
+    });
+    return next.length ? { next } : null;
+  },
+  guide(v) {
+    if (!['offer', 'started'].includes(v?.state) || !count(v.done, 100) || !count(v.total, 100) || v.total === 0) return null;
+    const steps = listOf(v.steps, 20, (s) => (typeof s?.key === 'string' && ACHIEVEMENT_ID.test(s.key) && words(s.title, 100)
+      ? { key: s.key, title: s.title.trim(), done: s.done === true } : null));
+    return {
+      state: v.state, done: Math.min(v.done, v.total), total: v.total,
+      bonuses: count(v.bonuses_unclaimed, 100) ? v.bonuses_unclaimed : 0, steps,
+    };
+  },
+  education(v) {
+    if (typeof v?.complete !== 'boolean') return null;
+    const n = v.next;
+    const next = n && words(n.to, 80) ? { to: n.to.trim(), job: textOrNull(n.job, 80), daysLeft: intOrNull(n.days_left, 10_000) } : null;
+    return { position: textOrNull(v.position, 80), next, complete: v.complete };
+  },
+  stats(v) {
+    const row = (keys) => (d) => {
+      const date = dayOf(d?.date);
+      if (!date) return null;
+      const out = { date };
+      for (const k of keys) out[k] = typeof d[k] === 'number' && Number.isFinite(d[k]) && d[k] >= 0 && d[k] <= MONEY_MAX ? d[k] : null;
+      return out;
+    };
+    const gym = listOf(v?.gym, SERIES_MAX, row(GYM_STATS));
+    const edu = listOf(v?.edu, SERIES_MAX, row(EDU_STATS));
+    if (gym.length < 2 && edu.length < 2) return null;
+    return { days: count(v.days, 10_000) ? v.days : gym.length, gym, edu };
+  },
+};
+
+/**
+ * The dashboard read's answer, checked card by card (hq #465). A card that doesn't fit is
+ * null, the same as nothing to show; the hero and the links are always there. The chain,
+ * war and OC cards are the sidebar read's own items, checked by the sidebar's readers.
+ * @returns {{hero: object, cards: Map<string, object|null>, links: Record<string, string>}}
+ */
+export function readDashboard(data, skew = 0) {
+  const hero = readHero(data?.hero) || { name: null, id: null, level: null, faction: null, rank: null, steps: [] };
+  const cards = new Map();
+  const sidebar = readSidebar(data, ['chain', 'war', 'oc'], skew).items;
+  for (const key of DASHBOARD_CARDS) {
+    if (sidebar.has(key)) {
+      cards.set(key, sidebar.get(key));
+      continue;
+    }
+    const raw = data?.[key];
+    let value = null;
+    if (raw && typeof raw === 'object') {
+      try {
+        value = DASHBOARD_READERS[key](raw, skew);
+      } catch {
+        value = null;
+      }
+    }
+    cards.set(key, value);
+  }
+  const links = {};
+  for (const key of DASHBOARD_LINKS) links[key] = siteLink(data?.links?.[key]) ?? `${SITE}/dashboard/`;
+  return { hero, cards, links };
+}
+
 /**
  * @param {object} opts
  * @param {() => string} opts.getKey
@@ -572,6 +736,8 @@ export function createSite({
   const openLoadouts = new Map();
   /** The player's own travel runs and when they came (TRV-050: kept 5 minutes). */
   let runsMemo = null;
+  /** The dashboard's answer and when it came, in memory only (hq #465: kept a minute). */
+  let dashboardMemo = null;
   /** The stock signals answer and when it came (CMP-304: kept 5 minutes). */
   let stockMemo = null;
   /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
@@ -1357,6 +1523,33 @@ export function createSite({
       const value = readGuide(await call(GUIDE_URL, { method: 'GET' }));
       if (value) cache.set('guide', 'me', value);
       return value;
+    },
+
+    /**
+     * The dashboard page's one read (hq #465, companion-api §6.4b). Asked once per open
+     * of the page; the answer is kept a minute, so going back and forth asks once.
+     * @returns {Promise<{status: 'ok', hero: object, cards: Map<string, object|null>, links: object, skew: number}
+     *   | {status: 'no_key'|'refused'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async dashboard() {
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const kept = dashboardMemo && now() - dashboardMemo.at < DASHBOARD_TTL ? dashboardMemo : null;
+      if (kept) return { status: 'ok', ...readDashboard(kept.data, kept.skew), skew: kept.skew, cached: true };
+      const result = await exchange(ME_DASHBOARD_URL, { method: 'GET' });
+      if (keyRefused(result)) {
+        dashboardMemo = null;
+        return { status: 'refused' };
+      }
+      if (result?.status === 429) {
+        const seconds = Number(result.retryAfter);
+        return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
+      }
+      if (!result?.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
+      const skew = skewOf(result.data);
+      const read = readDashboard(result.data, skew);
+      dashboardMemo = { at: now(), data: result.data, skew };
+      return { status: 'ok', ...read, skew };
     },
 
     /** The guide as last read, without asking; null when there is none fresh. */

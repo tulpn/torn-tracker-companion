@@ -23,6 +23,9 @@
 //
 // `guideStrip` is the switch for the guide's next step on the settings page (GDE-007,
 // core/guide.js). It starts on.
+//
+// `dashboard` is the preview switch for the dashboard page inside Torn (hq #465,
+// core/dashboard.js). It starts off until the site answers its read everywhere.
 
 import { KEYS, read, write } from './storage.js';
 import { SIDEBAR_ITEMS } from './sidebar.js';
@@ -38,6 +41,7 @@ export function defaults(registry) {
     sharingConsent: 0,
     achievements: { ...ACHIEVEMENT_DEFAULTS },
     guideStrip: true,
+    dashboard: false,
     features: Object.fromEntries(registry.map((d) => [d.id, { ...d.defaults }])),
     shares: Object.fromEntries(shareKinds(registry).map((kind) => [kind, false])),
     featureData: Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, d.data.empty])),
@@ -67,6 +71,7 @@ export function normalize(raw, registry) {
   const out = {
     debug: typeof given.debug === 'boolean' ? given.debug : base.debug,
     guideStrip: typeof given.guideStrip === 'boolean' ? given.guideStrip : base.guideStrip,
+    dashboard: typeof given.dashboard === 'boolean' ? given.dashboard : base.dashboard,
     look: LOOKS.includes(given.look) ? given.look : base.look,
     sharingConsent: Number.isInteger(given.sharingConsent) && given.sharingConsent > 0
       ? given.sharingConsent

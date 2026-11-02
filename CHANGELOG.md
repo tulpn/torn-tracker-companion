@@ -9,6 +9,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Added
+
+- A preview of your torn-tracker.com dashboard inside Torn, at
+  `index.php#/torn-tracker/dashboard`: your bars, money, gym, goals, achievements, guide,
+  education, chain, war and organized crime, with charts of your money and battle stats.
+  It is off until you tick **Dashboard (preview)** under General, and it asks
+  torn-tracker.com once each time you open it.
+
 ### Fixed
 
 - Every feature that waits for the page to settle (badges, helpers, templates, the war
