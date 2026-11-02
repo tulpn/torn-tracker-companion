@@ -14,6 +14,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The settings page no longer shows a stray "null" under General.
 - The search bar is easy to find: it's the first thing under the settings page's title,
   full width on a phone, with a **✕** to clear it.
+- The sidebar block on Torn's Home page: with debug on, the console now says where the
+  block went or why it isn't shown, and which items torn-tracker.com sent back empty.
 
 ### Changed
 
