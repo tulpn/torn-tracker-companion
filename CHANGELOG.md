@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.8 — 2026-11-02
+
 ### Added
 
 - Settings → General → **Sidebar block**: choose where the Torn Tracker block sits in
