@@ -17,12 +17,12 @@
 // panel in hq #454 without a bump: what is shared did not change, only which button.)
 
 export const DISCLOSURE = Object.freeze({
-  version: 8,
+  version: 9,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
     "publish what Torn's API doesn't: foreign stock, loadouts and more. Every kind is off until",
-    'you switch it on here and press Save. Each one sends only what its',
+    'you switch it on here. Each one sends only what its',
     'line below says, with the time you saw it, and never anything from company or faction',
     'application pages. It goes with your script key, so the site knows who sent each report and',
     'can catch false ones; it never publishes who sent anything, except that a player can see who',
