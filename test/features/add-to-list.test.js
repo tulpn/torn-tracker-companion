@@ -45,6 +45,8 @@ const wait = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const main = (r) => r.doc.querySelector('.ttc-lists-main');
 const arrow = (r) => r.doc.querySelector('.ttc-lists-arrow');
 const items = (r) => [...r.doc.querySelectorAll('.ttc-lists-item')];
+/** A menu row as the player reads it: the tick, the list's name, and its Faction tag. */
+const label = (n) => `${n.getAttribute('aria-pressed') === 'true' ? '✓ ' : ''}${n.querySelector('.ttc-lists-name').textContent}${n.querySelector('.ttc-lists-tag') ? ' (faction)' : ''}`;
 const press = (node) => node.dispatchEvent(new node.ownerDocument.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
 
 describe('CMP-110 the split button', () => {
@@ -71,9 +73,65 @@ describe('CMP-110 the split button', () => {
     assert.equal(main(r).textContent, 'Add to a list');
     press(main(r));
     await wait(50);
-    assert.deepEqual(items(r).map((n) => n.textContent), ['Chain targets', 'Faction hits (faction)']);
+    assert.deepEqual(items(r).map(label), ['Chain targets', 'Faction hits (faction)']);
     assert.equal(r.doc.querySelector('.ttc-lists-manage').getAttribute('href'), MANAGE_URL);
     assert.equal(site.calls.length, 0);
+  });
+
+  test('hq #487: the menu is a card of tick rows, the Faction tag, and Manage lists as its primary button', async () => {
+    const site = fakeSite({ status: 'ok', lists: [chain(true), hits()], lastUsed: A });
+    const r = run({ html: HEADING, url: PROFILE, site });
+    await wait();
+    press(arrow(r));
+    await wait(50);
+    const menu = r.doc.querySelector('.ttc-lists-menu');
+    assert.equal(menu.getAttribute('role'), 'group');
+    assert.equal(menu.getAttribute('aria-label'), 'Your lists');
+    assert.equal(menu.querySelector('.ttc-lists-head').textContent, 'Your lists');
+    const [own, faction] = items(r);
+    assert.equal(own.getAttribute('type'), 'button');
+    assert.equal(own.querySelector('.ttc-lists-box').getAttribute('aria-hidden'), 'true');
+    assert.equal(own.querySelector('.ttc-lists-name').textContent, 'Chain targets');
+    assert.equal(own.querySelector('.ttc-lists-tag'), null, 'only a faction list carries the tag');
+    assert.equal(own.getAttribute('title'), 'Untick to take them off this list');
+    assert.equal(faction.querySelector('.ttc-lists-tag').textContent, 'Faction');
+    assert.equal(faction.getAttribute('aria-pressed'), 'false');
+    const manage = menu.querySelector('.ttc-lists-foot > a.ttc-lists-manage');
+    assert.equal(manage.textContent, 'Manage lists');
+    assert.equal(manage.getAttribute('href'), MANAGE_URL);
+    assert.equal(manage.getAttribute('target'), '_blank');
+    assert.equal(manage.getAttribute('rel'), 'noopener noreferrer');
+    const style = [...r.doc.querySelectorAll('style')].map((n) => n.textContent).join('\n');
+    assert.match(style, /\.ttc-lists-menu\.ttc-lists-menu \.ttc-lists-item \{[^}]*min-height: 44px/, 'every row is a 44 px target');
+    assert.match(style, /\.ttc-lists-menu\.ttc-lists-menu a\.ttc-lists-manage \{[^}]*min-height: 44px[^}]*background: var\(--primary\)/);
+    assert.match(style, /body\.dark-mode \.ttc-lists-menu/, 'the menu takes the dark tokens on Torn\'s dark theme');
+  });
+
+  test('hq #487: no lists yet says so, and the rows wait while a change is on its way', async () => {
+    const empty = fakeSite({ status: 'ok', lists: [], lastUsed: null });
+    const r = run({ html: HEADING, url: PROFILE, site: empty });
+    await wait();
+    press(main(r));
+    await wait(50);
+    assert.equal(r.doc.querySelector('.ttc-lists-empty').textContent, 'You have no lists yet.');
+    assert.ok(r.doc.querySelector('.ttc-lists-manage'), 'Manage lists is still offered');
+    r.stop();
+
+    let answer;
+    const slow = fakeSite({ status: 'ok', lists: [chain(), hits()], lastUsed: null }, () => new Promise((resolve) => { answer = resolve; }));
+    const s = run({ html: HEADING, url: PROFILE, site: slow });
+    await wait();
+    press(main(s));
+    await wait(50);
+    press(items(s)[0]);
+    await wait(20);
+    assert.ok(items(s).every((n) => n.disabled), 'no second press while the first is answered');
+    press(items(s)[1]);
+    answer({ ok: true, state: 'on', error: null });
+    await wait(50);
+    assert.deepEqual(slow.calls, [[A, 55, 'add']]);
+    assert.ok(items(s).every((n) => !n.disabled));
+    assert.equal(label(items(s)[0]), '✓ Chain targets');
   });
 
   test('a ticked list takes the player off; an unticked one adds them; the button counts', async () => {
@@ -83,7 +141,7 @@ describe('CMP-110 the split button', () => {
     assert.equal(main(r).textContent, 'On 1 list');
     press(arrow(r));
     await wait(50);
-    assert.equal(items(r)[0].textContent, '✓ Chain targets');
+    assert.equal(label(items(r)[0]), '✓ Chain targets');
     assert.equal(items(r)[0].getAttribute('aria-pressed'), 'true');
     press(items(r)[1]);
     await wait(50);
@@ -120,7 +178,7 @@ describe('CMP-110 the split button', () => {
     press(items(r)[1]);
     await wait(50);
     assert.equal(r.doc.querySelector('.ttc-lists-note').textContent, 'That list isn\'t yours to change.');
-    assert.deepEqual(items(r).map((n) => n.textContent), ['Chain targets']);
+    assert.deepEqual(items(r).map(label), ['Chain targets']);
   });
 
   test('someone else\'s entry on a shared list says who can take it off, and the list stays', async () => {
@@ -132,7 +190,7 @@ describe('CMP-110 the split button', () => {
     press(items(r)[1]);
     await wait(50);
     assert.equal(r.doc.querySelector('.ttc-lists-note').textContent, 'Only whoever added them, or the list\'s owner, can take them off.');
-    assert.deepEqual(items(r).map((n) => n.textContent), ['Chain targets', '✓ Faction hits (faction)']);
+    assert.deepEqual(items(r).map(label), ['Chain targets', '✓ Faction hits (faction)']);
   });
 
   test('without a key with the lists scope, the button links to the keys settings', async () => {
