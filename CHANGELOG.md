@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.6 — 2026-11-02
+
 ### Added
 
 - A preview of your torn-tracker.com dashboard inside Torn, at
@@ -20,6 +22,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   side's items, what you buy) or a trader's public list (your own items, what you sell).
   Choose it under **Trade value** in the settings. An item the list doesn't buy shows as
   "not on the list", never $0, and the receipt links to the list.
+
+### Changed
+
+- Add to list: each list in the menu has an **Open** link to that list's own page on
+  torn-tracker.com, instead of only the general lists page.
+- The lists menu under **Add to list** looks like the settings panel, in light and dark:
+  one row per list with a tick box, 44 px tall on a phone, faction lists tagged **Faction**,
+  and **Manage lists** as a button at the bottom. Unticking a list takes the player off it.
 
 ### Fixed
 

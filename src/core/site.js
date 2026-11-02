@@ -479,10 +479,20 @@ function readSlot(v) {
   return { item_id: v.item_id, name: v.name, damage: v.damage ?? null, accuracy: v.accuracy ?? null, bonuses };
 }
 
-/** One target list as the profile menu shows it (CAPI-037). */
+/**
+ * A list's own page on the site (hq #486), as the site names it: exactly `/lists/<its uuid>/`.
+ * Anything else, or a site that doesn't send it yet, is null and the menu links nowhere.
+ */
+export function listPath(path, uuid) {
+  return typeof path === 'string' && typeof uuid === 'string' && path.toLowerCase() === `/lists/${uuid.toLowerCase()}/`
+    ? path : null;
+}
+
+/** One target list as the profile menu shows it (CAPI-037). A menu kept before hq #486 has no path. */
 const validList = (l) => l !== null && typeof l === 'object' && typeof l.uuid === 'string' && UUID.test(l.uuid)
   && typeof l.name === 'string' && l.name.trim().length > 0 && l.name.length <= LIST_NAME
-  && typeof l.shared === 'boolean' && typeof l.contains === 'boolean';
+  && typeof l.shared === 'boolean' && typeof l.contains === 'boolean'
+  && (l.path === undefined || l.path === null || listPath(l.path, l.uuid) === l.path);
 
 /** A player's menu: the lists and the one last added to, which must be one of them. */
 export function validLists(v) {
@@ -496,7 +506,10 @@ export function readLists(data) {
   const lists = [];
   const seen = new Set();
   for (const row of data.lists) {
-    const list = { uuid: row?.uuid, name: typeof row?.name === 'string' ? row.name.trim() : row?.name, shared: row?.shared, contains: row?.contains };
+    const list = {
+      uuid: row?.uuid, name: typeof row?.name === 'string' ? row.name.trim() : row?.name, shared: row?.shared, contains: row?.contains,
+      path: listPath(row?.path, row?.uuid),
+    };
     if (!validList(list) || seen.has(list.uuid.toLowerCase())) continue;
     seen.add(list.uuid.toLowerCase());
     lists.push(list);
@@ -1003,7 +1016,7 @@ export function createSite({
       const data = result.data && typeof result.data === 'object' ? result.data : {};
       if (result.ok) {
         const state = ['on', 'off'].includes(data.state) ? data.state : (action === 'add' ? 'on' : 'off');
-        return { ok: true, state, error: null };
+        return { ok: true, state, error: null, path: listPath(data.path, uuid) };
       }
       // tc-targets#360 names its refusals in `detail`; `error` is the other endpoints' key.
       const code = [data.detail, data.error].find((v) => typeof v === 'string') ?? '';

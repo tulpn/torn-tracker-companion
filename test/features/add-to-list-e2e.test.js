@@ -11,6 +11,7 @@ import feature, { KEYS_HREF, SAY } from '../../src/features/add-to-list/index.js
 import { createCache } from '../../src/core/cache.js';
 import { LISTS_URL, SPACES, createSite } from '../../src/core/site.js';
 import { page, runFeature } from '../feature-harness.js';
+import { SITE } from '../../src/hosts.js';
 import { ROOT } from '../helpers.js';
 
 const REPLIES = JSON.parse(fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'site', 'lists.json'), 'utf8'));
@@ -54,7 +55,9 @@ function profile(post) {
 
 const wait = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const press = (node) => node.dispatchEvent(new node.ownerDocument.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
-const items = (r) => [...r.doc.querySelectorAll('.ttc-lists-item')].map((n) => n.textContent);
+/** A menu row as the player reads it: the tick, the list's name, and its Faction tag. */
+const label = (n) => `${n.getAttribute('aria-pressed') === 'true' ? '✓ ' : ''}${n.querySelector('.ttc-lists-name').textContent}${n.querySelector('.ttc-lists-tag') ? ' (faction)' : ''}`;
+const items = (r) => [...r.doc.querySelectorAll('.ttc-lists-item')].map(label);
 const noteText = (r) => r.doc.querySelector('.ttc-lists-note')?.textContent;
 
 /** Opens the menu and presses the list with the given uuid's entry. */
@@ -78,6 +81,16 @@ describe('CMP-110 end to end: the backend\'s replies to what the player sees', (
       { url: `${LISTS_URL}/${CHAIN}/entries`, method: 'POST' },
     ]);
     assert.equal(noteText(r), 'Added to Chain targets. On 2 lists.');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('hq #486: the menu links each list to the page the site named for it', async () => {
+    const r = profile('added');
+    await wait();
+    press(r.doc.querySelector('.ttc-lists-arrow'));
+    await wait(50);
+    assert.deepEqual([...r.doc.querySelectorAll('.ttc-lists-open')].map((a) => a.getAttribute('href')),
+      REPLIES.read.data.lists.map((l) => `${SITE}${l.path}`));
     assert.deepEqual(r.violations, []);
   });
 
@@ -123,6 +136,57 @@ describe('CMP-110 end to end: the backend\'s replies to what the player sees', (
     await pressList(r, CHAIN);
     assert.equal(noteText(r), SAY.busy);
     assert.deepEqual(items(r), ['Chain targets', '✓ Faction hits (faction)']);
+  });
+
+  test('hq #487: add and remove the same player twice; each next page agrees with the site', async () => {
+    // The site as it holds the entries: a POST changes them, a GET reads them.
+    const on = new Set([HITS]);
+    const sent = [];
+    const send = async (url, opts) => {
+      sent.push({ url, method: opts.method, body: opts.body });
+      if (opts.method === 'GET') {
+        const data = structuredClone(REPLIES.read.data);
+        for (const l of data.lists) l.contains = on.has(l.uuid);
+        return { ok: true, status: 200, data };
+      }
+      const uuid = url.slice(LISTS_URL.length + 1).split('/')[0];
+      const { player_id: playerId, action } = JSON.parse(opts.body);
+      if (action === 'add') on.add(uuid); else on.delete(uuid);
+      return { ok: true, status: 200, data: { uuid, player_id: playerId, state: on.has(uuid) ? 'on' : 'off', server_time: '2026-10-26T00:00:01Z' } };
+    };
+    // One stored cache across pages, as on Torn, where every page change loads the script again.
+    const cache = createCache(SPACES);
+    const open = async () => {
+      const site = createSite({ getKey: () => KEY, send, cache, now: () => Date.parse('2026-10-26T00:00:00Z') });
+      const r = runFeature(feature, { html: page('profile.html'), url: PROFILE, site });
+      running.push(r);
+      await wait();
+      press(r.doc.querySelector('.ttc-lists-arrow'));
+      await wait(50);
+      return r;
+    };
+    const steps = [
+      ['add', 'Added to Chain targets. On 2 lists.', ['✓ Chain targets', '✓ Faction hits (faction)']],
+      ['remove', 'Taken off Chain targets. On 1 list.', ['Chain targets', '✓ Faction hits (faction)']],
+      ['add', 'Added to Chain targets. On 2 lists.', ['✓ Chain targets', '✓ Faction hits (faction)']],
+      ['remove', 'Taken off Chain targets. On 1 list.', ['Chain targets', '✓ Faction hits (faction)']],
+    ];
+    for (const [action, said, after] of steps) {
+      const r = await open();
+      press(r.doc.querySelectorAll('.ttc-lists-item')[0]);
+      await wait(50);
+      assert.equal(noteText(r), said, action);
+      assert.deepEqual(items(r), after, `${action}: the open menu`);
+      assert.deepEqual(JSON.parse(sent.at(-1).body), { player_id: 55, action });
+      r.stop();
+      const next = await open();
+      assert.deepEqual(items(next), after, `${action}: the next page reads the site again and agrees`);
+      next.stop();
+    }
+    assert.equal(sent.filter((s) => s.method === 'POST').length, 4);
+    // The first page reads; each change drops the stored read, so the page after it reads
+    // again; the page after that one is served from the 5-minute store. Presses never read.
+    assert.equal(sent.filter((s) => s.method === 'GET').length, 5);
   });
 
   test('every refusal is still one POST, never a second call or a Torn request', async () => {

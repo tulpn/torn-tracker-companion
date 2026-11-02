@@ -25,9 +25,10 @@ On a player's profile, beside their name, a button with an arrow:
 - **The button** adds the player to the list you last added someone to. The first time,
   when there is no such list yet, it opens your lists instead.
 - **The arrow** opens your lists: your own first, then the faction lists you may edit,
-  marked "(faction)". A tick shows the lists the player is already on. Click a list to
-  add them, or click a ticked one to take them off. **Manage lists** opens your lists on
-  torn-tracker.com.
+  tagged **Faction**. Each list has a tick box, ticked when the player is already on it.
+  Tick a list to add them; untick it to take them off. **Open** beside a list opens that
+  list's own page on torn-tracker.com in a new tab, under the name you see here.
+  **Manage lists** at the bottom opens all your lists there.
 
 After a change the button says where the player is now, like "On 2 lists". If a list was
 deleted, or a faction list became read-only for you, it says "That list isn't yours to
