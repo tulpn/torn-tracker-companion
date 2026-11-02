@@ -141,9 +141,12 @@ describe('CHW-043 the sidebar item', () => {
   test('now, next (on the local clock) and the gap count', () => {
     const data = { server_time: iso(T0), watch: { now: null, next: { slot_start: iso(T0 + SLOT), role: 'backup_1' }, gaps_24h: 3 } };
     assert.deepEqual(readSidebar(data, ['watch'], 2000).items.get('watch'),
-      { now: null, next: { role: 'backup_1', slotStart: T0 + SLOT, startsAt: T0 + SLOT - 2000 }, gaps: 3 });
+      { now: null, next: { role: 'backup_1', slotStart: T0 + SLOT, startsAt: T0 + SLOT - 2000 }, gaps: 3, open: false });
     assert.deepEqual(readSidebar({ watch: { now: { role: 'lead' }, next: null, gaps_24h: 0 } }, ['watch'], 0).items.get('watch'),
-      { now: 'lead', next: null, gaps: 0 });
+      { now: 'lead', next: null, gaps: 0, open: false });
+    // hq #523: only a true `open` is a watch open; anything else is none.
+    assert.equal(readSidebar({ watch: { now: null, next: null, gaps_24h: 0, open: true } }, ['watch'], 0).items.get('watch').open, true);
+    assert.equal(readSidebar({ watch: { now: null, next: null, gaps_24h: 0, open: 'yes' } }, ['watch'], 0).items.get('watch').open, false);
     assert.equal(readSidebar({ watch: { now: { role: 'boss' } } }, ['watch'], 0).items.get('watch'), null);
   });
 

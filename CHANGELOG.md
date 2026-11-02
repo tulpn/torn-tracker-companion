@@ -18,6 +18,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The sharing wording changed (version 9): if you share data, the Sharing tab asks you to
   agree again before anything more is sent.
 
+### Fixed
+
+- The sidebar's **Watch** row shows only when you hold a chain watch slot or your faction has
+  a watch open to sign up for, instead of always saying "Sign up to watch".
+
 ## 0.9.9 — 2026-11-02
 
 ### Fixed
