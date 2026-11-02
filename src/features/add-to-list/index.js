@@ -13,9 +13,9 @@
 // answer (the site doesn't serve it yet, or is down), nothing shows on that profile view.
 
 import { SITE } from '../../hosts.js';
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { onSubjectPage, pageSubject } from '../../core/players.js';
-import { bar, button, note } from '../../core/ui.js';
+import { bar, button, note, profileAction } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 
 const MARK = 'ttc-lists';
@@ -66,7 +66,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, asking: null, menu: null, open: false, stale: false, busy: false };
+    const s = { doc, win, settle: null, stopWatching: null, asking: null, menu: null, open: false, stale: false, busy: false };
     state = s;
     const alive = () => state === s;
     const stop = (event) => {
@@ -104,7 +104,7 @@ export default {
       if (s.menu?.status === 'no_key') {
         const link = el('a', { href: KEYS_HREF, class: `${MARK} ${MARK}-key ttc-ui-button`, title: 'Lists need a script key with the lists scope.', ownerDocument: doc },
           'Add your script key');
-        heading.after(link);
+        profileAction(doc, heading, 'lists', link);
         return;
       }
       const action = mainAction(s.menu);
@@ -123,7 +123,7 @@ export default {
       });
       const group = el('span', { class: `${MARK} ${MARK}-group`, ownerDocument: doc }, main, arrow, note(doc, { cls: `${MARK}-note` }));
       group.dataset.player = String(id);
-      heading.after(group);
+      profileAction(doc, heading, 'lists', group);
       if (s.open && s.menu?.status === 'ok') (heading.closest('.content-title') || heading).after(el('div', { class: MARK, ownerDocument: doc }, menuNode(id)));
     }
 
@@ -204,11 +204,10 @@ export default {
     }
 
     const later = () => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (alive()) look().catch((err) => ctx.log('add to list', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     };
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every((r) => ctx.dom.ownChange(r, `.${MARK}`))) return;
@@ -222,7 +221,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    if (s.timer !== null) s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

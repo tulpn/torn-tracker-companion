@@ -53,7 +53,7 @@ describe('CMP-110 the split button', () => {
     const r = run({ html: HEADING, url: PROFILE, site });
     await wait();
     assert.deepEqual(site.reads, [55]);
-    assert.equal(r.doc.querySelector('h4').nextElementSibling.classList.contains('ttc-lists'), true);
+    assert.equal(main(r).closest('.ttc-profile-actions')?.dataset.ttcOwn, '', 'in our row of profile buttons (hq #467)');
     assert.equal(main(r).textContent, 'Add to Chain targets');
     press(main(r));
     await wait(50);

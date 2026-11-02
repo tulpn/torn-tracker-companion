@@ -149,3 +149,19 @@ describe('CMP-006 players are found by their profile links', () => {
     assert.equal(findSpots(r.doc, r.window.location).length, 3);
   });
 });
+
+describe('hq #454 a busy page', () => {
+  test('a page that never goes quiet still gets its badges', async () => {
+    const site = fakeSite({ 101: { ff: 3.2, band: '10m–25m' } });
+    const r = run({ html: page('faction-war.html'), url: WAR, site });
+    // Something else on the page changes every 50 ms, more often than the settle time.
+    const ticking = setInterval(() => r.doc.body.append(r.doc.createElement('i')), 50);
+    try {
+      await wait(1_400);
+      assert.deepEqual(site.lookups, [[101, 102, 201]], 'read by the deadline, not put off for ever');
+      assert.equal(badges(r)[0].textContent, '3.20');
+    } finally {
+      clearInterval(ticking);
+    }
+  });
+});

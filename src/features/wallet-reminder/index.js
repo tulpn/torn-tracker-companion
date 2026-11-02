@@ -5,7 +5,7 @@
 // line above the form says so: buyers sometimes mug a seller just after a sale. It reads
 // the page only, asks nothing, and "Not now" hides it for this page view.
 
-import { el, readMoney } from '../../core/dom.js';
+import { el, readMoney, settler } from '../../core/dom.js';
 import { badge, button } from '../../core/ui.js';
 import { FORMS, formFor } from '../price-filler/selectors.js';
 import { MONEY } from './selectors.js';
@@ -49,7 +49,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const timers = ctx.win || globalThis;
-    const s = { doc, timers, timer: null, stopWatching: null, dismissed: false };
+    const s = { doc, timers, settle: null, stopWatching: null, dismissed: false };
     state = s;
     const minCash = () => {
       const n = Number(ctx.settings?.minCash);
@@ -84,11 +84,10 @@ export default {
     // Rows Torn renders later, and the sidebar's money changing.
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every((r) => ctx.dom.ownChange(r, `.${MARK}`))) return;
-      timers.clearTimeout(s.timer);
-      s.timer = timers.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (state === s) scan();
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      s.settle.poke();
     }, doc);
     scan();
   },
@@ -98,7 +97,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    if (s.timer !== null) s.timers.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

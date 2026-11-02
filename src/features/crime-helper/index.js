@@ -12,7 +12,7 @@
 // which found both fields, and the burglary helpers by NichtGersti and CowBoyCookie (MIT).
 // No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import {
   BURGLARY_ROW, BURGLARY_TITLE, HEADER, OPTION_ROW, OPTION_TITLE, isCrimesResponse,
 } from './selectors.js';
@@ -77,7 +77,7 @@ export default {
     const win = ctx.win || globalThis;
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
     const s = {
-      doc, win, morale: null, properties: new Map(), timer: null, stopWatching: null, unsubscribe: null,
+      doc, win, morale: null, properties: new Map(), settle: null, stopWatching: null, unsubscribe: null,
       typeId: null, values: [], asked: new Set(),
     };
     state = s;
@@ -167,11 +167,10 @@ export default {
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (state === s) paint();
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     }, doc);
   },
 
@@ -181,7 +180,7 @@ export default {
     if (!s) return;
     s.unsubscribe?.();
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

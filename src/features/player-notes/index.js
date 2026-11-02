@@ -9,8 +9,8 @@
 // The idea is common to Torn Player Notebook and Player Notepad; no code was taken. The
 // rows and headings are the fair-fight badges' (ff-badges/selectors.js).
 
-import { el } from '../../core/dom.js';
-import { badge, bar as uiBar, button as uiButton, note as uiNote } from '../../core/ui.js';
+import { el, settler } from '../../core/dom.js';
+import { badge, bar as uiBar, button as uiButton, note as uiNote, profileAction } from '../../core/ui.js';
 import { HEADING, ROWS, ROW_LINK } from '../ff-badges/selectors.js';
 import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../core/players.js';
 
@@ -80,7 +80,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, open: false };
+    const s = { doc, win, settle: null, stopWatching: null, open: false };
     state = s;
     const alive = () => state === s;
     const notes = () => (ctx.data?.() || { notes: [] }).notes;
@@ -135,7 +135,8 @@ export default {
 
     /** The profile's own badge and button, rebuilt after a save. */
     function refresh(heading, id) {
-      for (const node of heading.parentNode?.querySelectorAll(`:scope > .${MARK}-badge, :scope > .${MARK}-toggle`) || []) node.remove();
+      for (const node of heading.parentNode?.querySelectorAll(`:scope > .${MARK}-badge`) || []) node.remove();
+      doc.querySelector(`.${MARK}-toggle`)?.remove();
       const note = noteFor(id);
       const toggle = uiButton(doc, { cls: `${MARK} ${MARK}-toggle`, attrs: { 'aria-expanded': String(s.open) } }, note ? 'Edit note' : 'Add note');
       toggle.addEventListener('click', (event) => {
@@ -147,7 +148,8 @@ export default {
         if (s.open && !box) (heading.closest('.content-title') || heading).after(editor(id, heading));
         else if (!s.open) box?.remove();
       });
-      heading.after(...(note ? [makeBadge(id, note)] : []), toggle);
+      if (note) heading.after(makeBadge(id, note));
+      profileAction(doc, heading, 'notes', toggle);
     }
 
     function look() {
@@ -162,21 +164,21 @@ export default {
       const page = String(win.location?.pathname || '').split('/').pop();
       if (!id || !onSubjectPage(win.location)) return;
       const heading = doc.querySelector(HEADING);
-      if (!heading || heading.parentNode?.querySelector(`:scope > .${MARK}`)) return;
-      if (page === 'profiles.php') refresh(heading, id);
-      else {
+      if (!heading) return;
+      if (page === 'profiles.php') {
+        if (!doc.querySelector(`.${MARK}-toggle`)) refresh(heading, id);
+      } else if (!heading.parentNode?.querySelector(`:scope > .${MARK}`)) {
         const note = noteFor(id);
         if (note) heading.after(makeBadge(id, note));
       }
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    s.settle = settler(() => alive() && look(), SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
-      if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+      if (!records.every(ours)) s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -184,7 +186,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

@@ -9,7 +9,7 @@
 //
 // The filter is kept for the tab in sessionStorage, checked field by field.
 
-import { el, ownChange } from '../../core/dom.js';
+import { el, ownChange, settler } from '../../core/dom.js';
 import { idFromHref } from '../../core/players.js';
 import { badge, bar as uiBar, setTone } from '../../core/ui.js';
 import { describe as ffLook, textColourFor } from '../ff-badges/view.js';
@@ -114,7 +114,7 @@ export default {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
     const s = {
-      doc, win, timer: null, stop: null, alive: true, ff: new Map(), asked: new Set(),
+      doc, win, settle: null, stop: null, alive: true, ff: new Map(), asked: new Set(),
     };
     state = s;
     const soonMs = () => {
@@ -209,11 +209,10 @@ export default {
     }
 
     const later = () => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         scan().catch((err) => ctx.log('bounty board', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     };
     s.stop = ctx.dom.onMutation((records) => {
       if (records.every((r) => ownChange(r, `.${MARK}`))) return;
@@ -228,7 +227,7 @@ export default {
     if (!s) return;
     s.alive = false;
     s.stop?.();
-    if (s.timer !== null) s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
     for (const row of s.doc.querySelectorAll(`[${HIDE}], [${SOON}]`)) {
       row.removeAttribute(HIDE);

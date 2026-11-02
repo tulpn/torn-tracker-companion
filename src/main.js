@@ -15,6 +15,7 @@ import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
 import { mountPanel } from './core/panel.js';
 import { mountEntry } from './core/entry.js';
 import { mountPage } from './core/page.js';
+import { mountDashboard } from './core/dashboard.js';
 import { mountSidebarBlock } from './core/sidebar.js';
 import { makeBeep, mountWatch } from './core/watch.js';
 import { createRota, mountSlotNotice } from './core/rota.js';
@@ -213,18 +214,35 @@ export async function boot(win = globalThis) {
 
   // The settings route (CMP-107): the page lives in a Shadow DOM host in Torn's main
   // column while the location is /index.php#/torn-tracker.
+  // The dashboard (hq #465) shares the host: #/torn-tracker/dashboard while its setting is on.
   let entry = null;
+  let dashboard = null;
   const page = mountPage({
     doc: win.document,
     fill: (root) => {
       panel = mountPanel({ doc: win.document, root, ...panelOptions });
+      dashboard = mountDashboard({ doc: win.document, root, site, getSettings: () => settings, now: uploader.serverNow });
     },
     onEnter: (section) => {
-      panel.open(section);
+      // null: Torn redrew its column and the host went back in; the dashboard stays up.
+      if (section === null && dashboard.isOpen()) {
+        entry?.place();
+        return;
+      }
+      if (section === 'dashboard' && settings.dashboard === true) {
+        panel.close();
+        panel.panel.hidden = true;
+        dashboard.open();
+      } else {
+        dashboard.close();
+        panel.panel.hidden = false;
+        panel.open(section);
+      }
       entry?.place();
     },
     onLeave: () => {
       panel.close();
+      dashboard.close();
       entry?.place();
     },
   });

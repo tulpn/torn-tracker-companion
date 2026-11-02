@@ -8,6 +8,9 @@
 /** The other trader's side of the trade. */
 export const THEIR_SIDE = '.user.right';
 
+/** The player's own side: what they offer a trader who buys from them (CMP-309). */
+export const OWN_SIDE = '.user.left';
+
 /** Their name, above their side. */
 export const THEIR_NAME = '.title-black';
 

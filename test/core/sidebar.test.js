@@ -254,6 +254,31 @@ describe('hq #452 the rows survive Torn redrawing its sidebar', () => {
   });
 });
 
+describe('hq #466 a page that never goes quiet', () => {
+  test('a script that keeps changing the page does not keep the block from being placed and read', async () => {
+    const t = mount({ html: '<div id="root"></div>' });
+    await settle();
+    assert.equal(t.node(), null, 'no sidebar yet, no block');
+    const doc = t.window.document;
+    doc.getElementById('root').append(JSDOM.fragment(DESKTOP));
+    await settle();
+    const deadline = [...t.timers.pending.entries()].find(([, x]) => x.ms === 1_000)?.[0];
+    assert.ok(deadline, 'the first change starts the deadline');
+    // Another script changes the page every few ms, as The Contract did fighting us.
+    for (let i = 0; i < 30; i += 1) {
+      doc.body.append(doc.createElement('span'));
+      await settle();
+      assert.ok(t.timers.pending.has(deadline), `change ${i + 1} does not put the deadline off`);
+    }
+    assert.equal(t.node(), null);
+    t.timers.pending.get(deadline).fn();
+    await settle();
+    assert.equal(t.node()?.previousElementSibling.id, 'lists', 'placed by the deadline');
+    assert.equal(t.asked.length, 1, 'and read once');
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+  });
+});
+
 describe('CMP-108 AC3 links are plain navigation', () => {
   test('every link goes to a profile, an attack page or torn-tracker.com', async () => {
     const t = mount();

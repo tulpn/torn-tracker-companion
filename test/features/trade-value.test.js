@@ -127,6 +127,64 @@ describe('CMP-201 on the trade page', () => {
   });
 });
 
+describe('CMP-309 at a buy list', () => {
+  const LIST = { trader: { id: 2000001, name: 'ExampleTrader' }, prices: new Map([[206, 790_000]]), pageUrl: 'https://torn-tracker.com/traders/ExampleTrader/', calcUrl: '', receipts: null };
+  function listSite(answer = { status: 'ok', list: LIST }) {
+    const asked = [];
+    return { asked, prices: async () => assert.fail('no market lookup at a buy list'), async buylist(who) { asked.push(who); return answer; } };
+  }
+
+  test('your own list prices their items, never their money; an item off the list is "not on the list"', async () => {
+    const site = listSite();
+    const r = run({ site, settings: { enabled: true, priceAt: 'mine', trader: '' } });
+    await wait();
+    assert.deepEqual(site.asked, ['me']);
+    assert.ok(box(r).closest('.user.right'));
+    // 3 x $790,000; the coupon and the new item aren't on the list, the $1,000,000 isn't bought.
+    assert.equal(box(r).querySelector('strong').textContent, '$2,370,000');
+    assert.match(box(r).textContent, /Items at ExampleTrader's buy list/);
+    assert.match(box(r).textContent, /2 not on the list/);
+    assert.equal(box(r).querySelector('a').href, LIST.pageUrl);
+    assert.deepEqual(r.violations, []);
+  });
+
+  test("a trader's list prices your own side, and the receipt names the list", async () => {
+    const site = listSite();
+    const r = run({ site, settings: { enabled: true, priceAt: 'trader', trader: 'ExampleTrader' } });
+    let copied = null;
+    Object.defineProperty(r.window.navigator, 'clipboard', { value: { writeText: async (t) => { copied = t; } }, configurable: true });
+    await wait();
+    assert.deepEqual(site.asked, ['ExampleTrader']);
+    assert.ok(box(r).closest('.user.left'));
+    assert.equal(r.doc.querySelector('.user.right .ttc-trade'), null);
+    box(r).querySelector('button').dispatchEvent(new r.window.MouseEvent('click', { bubbles: true }));
+    await wait(10);
+    assert.equal(copied, [
+      "Trade with Trader, at ExampleTrader's buy list",
+      '1 x Xanax @ $790,000 = $790,000',
+      'Total: $790,000',
+      LIST.pageUrl,
+    ].join('\n'));
+  });
+
+  test('a list that cannot be read says why, and is asked again on the next change', async () => {
+    const site = listSite({ status: 'not_found' });
+    const r = run({ site, settings: { enabled: true, priceAt: 'trader', trader: 'Nobody' } });
+    await wait();
+    assert.match(box(r).textContent, /no public buy list/);
+    assert.equal(box(r).querySelector('strong'), null, 'never a $0 total');
+    r.doc.querySelector('.user.left .color2 .desc li .name').textContent = 'Xanax x2';
+    await wait();
+    assert.equal(site.asked.length, 2);
+  });
+
+  test('no script key: the line says where to add it', async () => {
+    const r = run({ site: listSite({ status: 'no_key' }), settings: { enabled: true, priceAt: 'mine', trader: '' } });
+    await wait();
+    assert.match(box(r).textContent, /add your script key under Keys/);
+  });
+});
+
 describe('tools/build-items.mjs', () => {
   test('tradable items only, by name; a name used twice is dropped', () => {
     const pairs = tableFrom({ items: [

@@ -92,6 +92,22 @@ describe('CMP-303 on the jail page', () => {
     assert.equal(hidden.shared.length, 0);
   });
 
+  test('hq #466: a page that never goes quiet is still read and shared', async () => {
+    const r = run();
+    // Something else on the page (a clock, a chat, another script) changes every 50 ms.
+    const clock = r.doc.createElement('span');
+    r.doc.body.append(clock);
+    let n = 0;
+    const ticking = setInterval(() => { clock.textContent = String(n += 1); r.doc.body.append(r.doc.createElement('i')); }, 50);
+    try {
+      await wait(1_300);
+      assert.equal(r.shared.length, 3, 'shared by the deadline, not put off for ever');
+      assert.equal(badge(r, 900001).textContent, '18');
+    } finally {
+      clearInterval(ticking);
+    }
+  });
+
   test('the thresholds come from the settings', async () => {
     const r = run({ settings: { enabled: true, easyUpTo: 200, hardFrom: 1000 } });
     await wait();

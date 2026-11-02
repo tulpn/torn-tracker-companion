@@ -14,6 +14,7 @@
 
 import { ownIdFrom } from '../bazaar-capture/read.js';
 import { badge as uiBadge } from '../../core/ui.js';
+import { settler } from '../../core/dom.js';
 
 const MARK = 'ttc-applicant';
 const CONTENT = '.content-wrapper';
@@ -58,7 +59,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, asked: new Set(), cards: new Map(), allowed: true };
+    const s = { doc, win, settle: null, stopWatching: null, asked: new Set(), cards: new Map(), allowed: true };
     state = s;
     const alive = () => state === s;
     const self = ownIdFrom(doc.cookie);
@@ -107,8 +108,8 @@ export default {
     }
 
     const later = () => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => look().catch((err) => ctx.log('applicant badges', err)), SETTLE_MS);
+      s.settle ??= settler(() => look().catch((err) => ctx.log('applicant badges', err)), SETTLE_MS, { timers: win });
+      s.settle.poke();
     };
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
     s.stopWatching = ctx.dom.onMutation((records) => {
@@ -125,7 +126,7 @@ export default {
     if (!s) return;
     s.stopWatching?.();
     s.win.removeEventListener('hashchange', s.onHash);
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

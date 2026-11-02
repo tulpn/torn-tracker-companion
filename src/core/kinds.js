@@ -279,7 +279,8 @@ export const KINDS = Object.freeze({
 });
 
 export function isKnownKind(kind) {
-  return Object.hasOwn(KINDS, kind);
+  // Only text names a kind; an object as the key could throw while it is turned into one.
+  return typeof kind === 'string' && Object.hasOwn(KINDS, kind);
 }
 
 export function kindTitle(kind) {
@@ -297,7 +298,9 @@ export function checkObservation(observation) {
   try {
     if (!observation || typeof observation !== 'object') throw new Invalid('not an object');
     const { kind } = observation;
-    if (!isKnownKind(kind)) throw new Invalid(`"${kind}" is not a kind this build can share`);
+    if (!isKnownKind(kind)) throw new Invalid(typeof kind === 'string'
+      ? `"${kind.slice(0, 40)}" is not a kind this build can share`
+      : 'kind must be text');
     const spec = KINDS[kind];
     object(observation, 'observation', [...ENVELOPE, ...spec.fields]);
 

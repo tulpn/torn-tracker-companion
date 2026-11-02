@@ -16,6 +16,7 @@
 import { setProfitable } from '../../core/shops.js';
 import { ensureStyle } from '../../core/ui.js';
 import { TIERS, findPrice, findRow, isChrome, itemIdOfImage, judge, parseQty, short, tierKey } from './scan.js';
+import { settler } from '../../core/dom.js';
 
 const SETTLE_MS = 150;
 const ROW = 'data-ttc-shop';
@@ -114,7 +115,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const timers = ctx.win || globalThis;
-    const s = { doc, timers, table: null, rev: 0, timer: null, stopWatching: null };
+    const s = { doc, timers, table: null, rev: 0, settle: null, stopWatching: null };
     state = s;
     const alive = () => state === s;
     ensureStyle(doc);
@@ -141,11 +142,10 @@ export default {
     }
 
     const later = () => {
-      timers.clearTimeout(s.timer);
-      s.timer = timers.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (alive()) scan();
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      s.settle.poke();
     };
 
     // Our marks are attributes, which the shared observer doesn't watch, so they never
@@ -170,7 +170,7 @@ export default {
     setProfitable(0);
     if (!s) return;
     s.stopWatching?.();
-    if (s.timer !== null) s.timers.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const row of s.doc.querySelectorAll(`[${ROW}], [${HIDE}], [data-ttc-shop-sig]`)) {
       clearRow(row);
       delete row.dataset.ttcShopSig;

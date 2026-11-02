@@ -11,9 +11,9 @@
 // Where the profile keeps its details is a fact from TornTools (GPLv3, profile page): the
 // "basic information" table, one labelled row each. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import {
-  bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, strip as uiStrip,
+  bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, profileAction, strip as uiStrip,
 } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 import {
@@ -211,7 +211,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, open: false, chosen: null };
+    const s = { doc, win, settle: null, stopWatching: null, open: false, chosen: null };
     state = s;
     const alive = () => state === s;
     const templates = () => validateTemplates(ctx.data?.()).templates;
@@ -443,7 +443,7 @@ export default {
       const id = pageSubject(win.location);
       if (!id) return;
       const heading = doc.querySelector(HEADING);
-      if (!heading || heading.parentNode?.querySelector(`:scope > .${MARK}-toggle`)) return;
+      if (!heading || doc.querySelector(`.${MARK}-toggle`)) return;
       const toggle = uiButton(doc, { cls: `${MARK} ${MARK}-toggle`, attrs: { 'aria-expanded': String(s.open) } }, 'Messages');
       toggle.addEventListener('click', (event) => {
         stop(event);
@@ -452,16 +452,15 @@ export default {
         if (s.open) place(id, heading);
         else doc.querySelector(`.${MARK}-box`)?.remove();
       });
-      heading.after(toggle);
+      profileAction(doc, heading, 'messages', toggle);
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    s.settle = settler(() => alive() && look(), SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
-      if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+      if (!records.every(ours)) s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -469,7 +468,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

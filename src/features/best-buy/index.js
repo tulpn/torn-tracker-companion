@@ -13,7 +13,7 @@
 // Inspiration: TornTools (GPLv3, https://github.com/Mephiles/torntools_extension), whose
 // travel fill max and item profits read the same message and rows. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { fromPage, fromResponse, itemIdOf } from '../foreign-stock/read.js';
 import { INFO_CAPACITY, INFO_MONEY, ITEM_IMAGE, ITEM_NAME, ROWS, isShopResponse } from '../foreign-stock/selectors.js';
 import { bestBuy, readCapacity, readMoney } from './best.js';
@@ -60,7 +60,7 @@ export default {
     const timers = ctx.win || globalThis;
     const s = {
       doc, timers, items: null, responseMoney: null, market: new Map(), pick: null,
-      unsubscribe: null, stopWatching: null, fallback: null, scanTimer: null,
+      unsubscribe: null, stopWatching: null, fallback: null, scan: null,
     };
     state = s;
     const alive = () => state === s;
@@ -115,11 +115,10 @@ export default {
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (!s.items || records.every(ours)) return;
-      timers.clearTimeout(s.scanTimer);
-      s.scanTimer = timers.setTimeout(() => {
-        s.scanTimer = null;
+      s.scan ??= settler(() => {
         if (alive()) paint();
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      s.scan.poke();
     }, doc);
   },
 
@@ -130,7 +129,7 @@ export default {
     s.unsubscribe?.();
     s.stopWatching?.();
     s.timers.clearTimeout(s.fallback);
-    s.timers.clearTimeout(s.scanTimer);
+    s.scan?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

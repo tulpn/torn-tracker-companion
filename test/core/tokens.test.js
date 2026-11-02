@@ -100,7 +100,7 @@ describe('the tokens as CSS', () => {
   test('no stylesheet of the companion picks a colour of its own', () => {
     // The scale badge's ink sits on a data colour; the sidebar entry copies Torn's own.
     const allowed = /color: #(fff|111);|var\(--default-[a-z-]+, #[0-9a-f]{3,6}\)/g;
-    for (const file of ['ui.js', 'panel.js', 'sidebar.js']) {
+    for (const file of ['ui.js', 'panel.js', 'sidebar.js', 'dashboard.js']) {
       const source = fs.readFileSync(path.join(ROOT, 'src', 'core', file), 'utf8').replace(allowed, '');
       const style = source.slice(source.indexOf('const STYLE = `'), source.indexOf('`;', source.indexOf('const STYLE = `')));
       assert.doesNotMatch(style, /#[0-9a-f]{3,6}\b|rgba?\(/i, file);
