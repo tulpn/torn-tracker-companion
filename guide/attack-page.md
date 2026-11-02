@@ -35,7 +35,8 @@ On anyone's profile, a card shows their latest loadout as torn-tracker.com last 
 each weapon and armour piece with damage, accuracy and bonuses, how long ago it was seen
 and by how many players, and its danger flags. It's open to everyone, so no key is needed.
 It never says who reported it. If the player asked for theirs to be hidden, the card says
-so.
+so. If nobody has reported their loadout yet, no card shows, and the companion doesn't ask
+about that player again for 30 minutes.
 
 ## Opponents' flags when you attack (Pro)
 
