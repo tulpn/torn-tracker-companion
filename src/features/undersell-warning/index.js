@@ -9,7 +9,7 @@
 // The idea is the owner's, from Torn Item Market - Shop Sell Price Highlighter (GPLv3);
 // the forms are the price filler's (CMP-105).
 
-import { readMoney, readInt } from '../../core/dom.js';
+import { readInt, readMoney, settler } from '../../core/dom.js';
 import { undersellText } from '../../core/shops.js';
 import { badge } from '../../core/ui.js';
 import { itemIdOf, ownedOf } from '../price-filler/fill.js';
@@ -54,7 +54,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const timers = ctx.win || globalThis;
-    const s = { doc, timers, table: null, timer: null, stopWatching: null, onInput: null };
+    const s = { doc, timers, table: null, settle: null, stopWatching: null, onInput: null };
     state = s;
     const alive = () => state === s;
 
@@ -97,11 +97,10 @@ export default {
     // Rows Torn renders later, and the manage page's prices already filled in.
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every((r) => ctx.dom.ownChange(r, OWN))) return;
-      timers.clearTimeout(s.timer);
-      s.timer = timers.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (alive()) scan();
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      s.settle.poke();
     }, doc);
 
     ctx.site.shops()
@@ -119,7 +118,7 @@ export default {
     if (!s) return;
     s.stopWatching?.();
     s.doc.removeEventListener('input', s.onInput, true);
-    if (s.timer !== null) s.timers.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

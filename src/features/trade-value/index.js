@@ -13,7 +13,7 @@
 // each side the same way, and Torn PDA (GPLv3, https://github.com/Manuito83/torn-pda)
 // copies the total. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { ITEM_IDS } from '../../data/items.js';
 import { money, priceOffer, readSide, receipt } from './read.js';
 import { STEPS, THEIR_NAME, THEIR_SIDE } from './selectors.js';
@@ -45,7 +45,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, seen: '', ids: ITEM_IDS };
+    const s = { doc, win, settle: null, stopWatching: null, seen: '', ids: ITEM_IDS };
     state = s;
     const alive = () => state === s;
 
@@ -106,11 +106,10 @@ export default {
     }
 
     function later() {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         scan().catch((err) => ctx.log('trade value', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
@@ -128,7 +127,7 @@ export default {
     if (!s) return;
     s.stopWatching?.();
     s.win.removeEventListener('hashchange', s.onHash);
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

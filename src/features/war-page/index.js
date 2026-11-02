@@ -22,7 +22,7 @@
 // its parent Torn War Stuff by tos (MIT): the idea, where the lists and status cells are,
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { badge, bar as uiBar, button as uiButton, setTone } from '../../core/ui.js';
 import { ENEMY_ROW, LISTS, MEMBER, STATUS } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
@@ -135,7 +135,7 @@ export default {
       loadouts: null,
       pending: new Set(),
       notes: new Map(),
-      scanTimer: null,
+      scan: null,
       dibsTimer: null,
       tick: null,
       stopWatching: null,
@@ -345,11 +345,10 @@ export default {
     }
 
     function later() {
-      timers.clearTimeout(s.scanTimer);
-      s.scanTimer = timers.setTimeout(() => {
-        s.scanTimer = null;
+      s.scan ??= settler(() => {
         scan().catch((err) => ctx.log('war page', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      s.scan.poke();
     }
 
     async function loadDibs() {
@@ -396,7 +395,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.timers.clearTimeout(s.scanTimer);
+    s.scan?.cancel();
     s.timers.clearTimeout(s.dibsTimer);
     s.timers.clearInterval(s.tick);
     if (s.onVisible) s.doc.removeEventListener('visibilitychange', s.onVisible);

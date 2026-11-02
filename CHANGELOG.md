@@ -11,11 +11,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
-- Add to list, applicant badges, auction values, bazaar sharing, best buy, the bounty board,
-  the crime helper, FF badges, merit hints, message templates, the mugger badge, the OC
-  helper, player notes and the price filler now look at the page within a second or two even while something
-  else on it keeps changing (a clock, a chat, another script). Before, they waited for the
-  page to go quiet and on a busy page never showed or shared anything.
+- Every feature that waits for the page to settle (badges, helpers, templates, the war
+  page, the shop and market helpers, bazaar sharing) now looks at the page within a second
+  or two even while something else on it keeps changing (a clock, a chat, another script).
+  Before, they waited for the page to go quiet, and on a busy page they never showed or
+  shared anything.
 
 ## 0.9.5 — 2026-11-02
 

@@ -10,7 +10,7 @@
 // f2404's torn-userscripts (GPLv3) and br41nslug's torn-brainscripts (MIT): the form's
 // field names and where it sits. Those scripts that press Create are not followed.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { bar as uiBar, button as uiButton, note as uiNote } from '../../core/ui.js';
 
 const MARK = 'ttc-race';
@@ -102,7 +102,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, told: new Set() };
+    const s = { doc, win, settle: null, stopWatching: null, told: new Set() };
     state = s;
     const alive = () => state === s;
     const templates = () => (ctx.data?.() || { templates: [] }).templates;
@@ -176,12 +176,11 @@ export default {
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    s.settle = settler(() => alive() && look(), SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
-      if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+      if (!records.every(ours)) s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -189,7 +188,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };
