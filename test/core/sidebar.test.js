@@ -406,10 +406,27 @@ describe('CHW-011, CHW-021 the watch line', () => {
     assert.equal(t.node().querySelector('.ttc-sb-switch').getAttribute('aria-pressed'), 'true');
   });
 
-  test('no slot: a way to sign up', async () => {
-    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0 } }, ['watch'], 0) } });
+  test('hq #523: no slot, and a watch open: a way to sign up', async () => {
+    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0, open: true } }, ['watch', 'war'], 0) } });
     await settle();
-    assert.match(t.node().textContent, /Sign up to watch/);
+    assert.match(t.node().textContent, /Watch Sign up to watch/);
+  });
+
+  test('hq #523: no slot and no watch open: no Watch row at all', async () => {
+    for (const watchItem of [{ now: null, next: null, gaps_24h: 48, open: false }, { now: null, next: null, gaps_24h: 48 }]) {
+      const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: watchItem, war: FULL.war }, ['watch', 'war'], 0) } });
+      await settle();
+      assert.match(t.node().textContent, /War vs/);
+      assert.doesNotMatch(t.node().textContent, /Watch|Sign up/);
+    }
+  });
+
+  test('hq #523: no watch open but watch mode on: the row stays, so it can be switched off', async () => {
+    const watch = fakeWatch();
+    watch.on = true;
+    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0 } }, ['watch'], 0) }, watch });
+    await settle();
+    assert.equal(t.node().querySelector('.ttc-sb-switch').getAttribute('aria-pressed'), 'true');
   });
 });
 
@@ -463,14 +480,14 @@ describe('hq #488 on Torn’s Home page', () => {
     assert.match(t.node().textContent, /Chain 412 \/ 500/);
   });
 
-  test('the site’s answer on the capture: Watch and the links show, and the console names what came back empty', async () => {
+  test('the site’s answer on the capture: the links show without a Watch row (hq #523), and the console names what came back empty', async () => {
     let t;
     const seen = await logged(async () => {
       t = mount({ html: HOME, answer: { status: 'ok', ...readSidebar(LIVE, Object.keys(LIVE), 0) } });
       await settle();
     });
     assert.equal(t.node().hidden, false);
-    assert.match(t.node().textContent, /Watch Sign up to watch · 48 without a Lead/);
+    assert.doesNotMatch(t.node().textContent, /Sign up to watch/, 'hq #523: no watch open, no sign-up row');
     assert.match(t.node().textContent, /Dashboard/);
     assert.ok(seen.some((l) => l.includes('sidebar: block placed after #nav-targets_list')), seen.join(' | '));
     assert.ok(seen.some((l) => /sidebar: read ok: watch to show; empty from the site: chain, war, .*oc/.test(l)), seen.join(' | '));

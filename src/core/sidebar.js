@@ -334,8 +334,10 @@ export function mountSidebarBlock({
         ...(w.finishAt ? [` · ends in ~${roughly(w.finishAt - now())}`] : []));
     },
     // CHW-011, CHW-021: "Watching now · Lead", the next slot, or a way to sign up; and the
-    // switch for watch mode, which any member may use, slot or not.
+    // switch for watch mode, which any member may use, slot or not. hq #523: with no slot
+    // held and no watch open, the row is left out, unless watch mode is on (its way off).
     watch(w) {
+      if (!w.now && !w.next && !w.open && !watch?.isOn()) return null;
       const text = watchLine(w);
       const words = w.now || w.next ? h('span', { class: w.now ? `${P}-sb-alert` : '' }, ` ${text}`)
         : [' ', link('/index.php#/torn-tracker/watch', text)];

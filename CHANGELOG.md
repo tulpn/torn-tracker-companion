@@ -20,6 +20,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The sidebar's **Watch** row shows only when you hold a chain watch slot or your faction has
+  a watch open to sign up for, instead of always saying "Sign up to watch".
 - The **Fill** button on the bazaar and item market sell forms is small again: the height of
   the price field beside it, in the companion's green instead of black, with a short amount
   like **Fill $1.2m**. Hover over it for the exact price.
