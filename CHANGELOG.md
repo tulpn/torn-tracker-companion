@@ -23,6 +23,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- On a profile, a loadout the player asked to hide now shows "Loadout hidden at the
+  player's request" instead of no card at all.
+- A player nobody has reported a loadout for isn't asked about on every visit to their
+  profile; the companion asks again after 30 minutes.
 - A shared observation whose kind isn't text is refused with a message instead of stopping
   the upload check.
 - Every feature that waits for the page to settle (badges, helpers, templates, the war

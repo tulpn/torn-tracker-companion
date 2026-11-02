@@ -61,6 +61,8 @@ export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
 export const LOADOUT_FLAGS = Object.freeze(['heavy_hitter', 'armoured', 'temp_ready']);
 const WAR_LOADOUTS_TTL = 60_000;
 const OPEN_LOADOUT_TTL = 10 * 60_000;
+/** How long "no sighting" of a loadout is kept across page loads (hq #468). */
+const LOADOUT_MISSED_TTL = 30 * 60_000;
 /**
  * The item catalogue's shop prices (CMP-109): public, asked anonymously, kept 24 hours.
  * The shape is the companion's proposal on hq #363 until companion-api.md names it.
@@ -538,6 +540,8 @@ export const SPACES = Object.freeze({
   shops: { ttlMs: DAY, max: 1, valid: validShopRows },
   // The site had no table: the built-in one serves for an hour before it is asked again.
   shopsMissed: { ttlMs: HOUR, max: 1, valid: (v) => v === true },
+  // No sighting of this player's loadout (hq #468): not asked again on every profile visit.
+  loadoutMissed: { ttlMs: LOADOUT_MISSED_TTL, max: 500, valid: (v) => v === true },
 });
 
 /** What a chain watch reply that isn't an answer means, or null when it is one. */
@@ -1213,7 +1217,10 @@ export function createSite({
 
     /**
      * One player's latest loadout, from the open data (LDT-032, D-053). Asked without any
-     * key, as anyone may. Kept 10 minutes.
+     * key, as anyone may. Kept 10 minutes; "no sighting" is kept 30 minutes across page
+     * loads, so a player nobody has reported isn't asked for on every visit (hq #468).
+     * The site answers both "no sighting" and "hidden at the player's request" with a 404;
+     * the body tells them apart (LDT-005).
      * @param {number} playerId
      * @returns {Promise<{seen: boolean, hidden?: boolean, slots?: object, flags?: object[], seen_at?: number|null, reporters?: number|null}|null>}
      *          seen false when the site has never seen this player's loadout; null on failure
@@ -1222,9 +1229,16 @@ export function createSite({
       if (!positiveInt(playerId)) return null;
       const memo = openLoadouts.get(playerId);
       if (memo && now() - memo.at < OPEN_LOADOUT_TTL) return memo.value;
+      if (cache.get('loadoutMissed', playerId)) return { seen: false };
       const result = await send(`${OPEN_LOADOUT_URL}/${playerId}`, { method: 'GET', headers: { Accept: 'application/json' } });
       let value = null;
-      if (result.status === 404) value = { seen: false };
+      if (result.status === 404) {
+        if (result.data?.hidden === true && result.data.player_id === playerId) value = { seen: true, hidden: true };
+        else {
+          value = { seen: false };
+          cache.set('loadoutMissed', playerId, true);
+        }
+      }
       else if (result.ok && result.data?.player_id === playerId) {
         const d = result.data;
         if (d.hidden === true) value = { seen: true, hidden: true };
