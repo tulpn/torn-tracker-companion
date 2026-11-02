@@ -1,6 +1,6 @@
 ---
 title: Your dashboard inside Torn
-summary: A preview of your torn-tracker.com dashboard on Torn's own page, with charts of your money and battle stats. Off until you switch it on.
+summary: A preview of your torn-tracker.com dashboard on Torn's own page, with what needs you now at the top. Off until you switch it on.
 section: Guides
 group: features
 order: 206
@@ -27,20 +27,19 @@ Torn's main column, at `torn.com/index.php#/torn-tracker/dashboard`.
 
 ## What you see
 
-The top card says who you are, your level and faction, your rank on torn-tracker.com and
-at most two next steps. Below it, one card for each thing torn-tracker.com knows about you:
+One card for each thing torn-tracker.com knows about you, with what needs you now at the
+top:
 
-- **Bars:** energy, nerve, happy and life as last read, with any cooldowns. They don't
-  count up on this page; Torn's own sidebar does that.
-- **Money, last 7 days:** income and costs per day, as a chart.
+- **Ranked war**, **Chain** and **Organized crime**, the same as the sidebar block shows.
+- **Education:** your course and what comes next.
 - **Next gym:** how far you are to the next gym. It's an estimate, not Torn's figure.
-- **Savings goals**, **Next achievements**, **Getting started** and **Education**.
-- **Chain**, **Ranked war** and **Organized crime**, the same as the sidebar block shows.
-- **Battle stats:** your stats over time, as a chart.
+- **Savings goals**, **Next achievements** and **Getting started**.
+- **Money, last 7 days:** income and costs per day, as a chart.
 
-A card with nothing to show is left out. Every chart has **Show the numbers** under it,
-with the same values as a table. Each card ends with **More on torn-tracker.com**, which
-opens the full page there in a new tab.
+A card with nothing to show is left out. The chart has **Show the numbers** under it, with
+the same values as a table. A card ends with **More on torn-tracker.com**, which opens that
+card's own page there in a new tab. **Open on torn-tracker.com** at the top opens your full
+dashboard.
 
 > **What it reads and sends.** Each time you open the dashboard, the companion asks
 > torn-tracker.com once, with your script key, for your dashboard, and keeps the answer

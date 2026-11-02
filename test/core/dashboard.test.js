@@ -1,5 +1,6 @@
 // The dashboard inside Torn (hq #465): the read, checked card by card, and the page that
-// shows it at /index.php#/torn-tracker/dashboard while its switch is on.
+// shows it at /index.php#/torn-tracker/dashboard while its switch is on. hq #491 (D-170):
+// the new order, no hero, bars or battle stats, and each card's link to its own page.
 
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -61,22 +62,42 @@ describe('hq #465 the dashboard read', () => {
     const read = readDashboard(copy());
     assert.deepEqual([...read.cards.keys()], DASHBOARD_CARDS);
     for (const key of DASHBOARD_CARDS) assert.notEqual(read.cards.get(key), null, key);
-    assert.equal(read.hero.name, 'ExamplePlayer');
-    assert.equal(read.hero.faction.name, 'Example Faction');
-    assert.equal(read.hero.steps.length, 2, 'at most two next steps');
     assert.equal(read.cards.get('gym').percent, 37.5);
-    assert.equal(read.cards.get('bars').bars.find((b) => b.key === 'happy').over, true);
     assert.equal(read.cards.get('chain').current, 412);
     assert.equal(read.cards.get('war').opponent, 'Other Example Faction');
   });
 
-  test('a link off the site falls back to the dashboard; a step off the site is dropped', () => {
-    const data = copy();
-    data.hero.steps[0].url = 'javascript:alert(1)';
-    const read = readDashboard(data);
-    assert.equal(read.links.war, 'https://torn-tracker.com/dashboard/');
+  test('hq #491: the order puts what needs the player now first; hero, bars and stats are gone', () => {
+    assert.deepEqual(DASHBOARD_CARDS.slice(0, 2), ['war', 'chain']);
+    for (const gone of ['hero', 'bars', 'stats']) assert.equal(DASHBOARD_CARDS.includes(gone), false, gone);
+    const read = readDashboard({ ...copy(), hero: { name: 'Someone' }, bars: { bars: [] }, stats: { gym: [] } });
+    assert.equal('hero' in read, false);
+    assert.equal(read.cards.has('bars'), false);
+    assert.equal(read.cards.has('stats'), false);
+  });
+
+  test('hq #491: a card links to its own url, else its page; a link off the site is none at all', () => {
+    const read = readDashboard(copy());
+    assert.equal(read.cardLinks.get('gym'), 'https://torn-tracker.com/gym/', 'the own url');
+    assert.equal(read.cardLinks.get('money'), 'https://torn-tracker.com/finances/', 'its page from the links');
+    assert.equal(read.links.war, null, 'off the site');
+    assert.equal(read.cardLinks.get('war'), null);
     assert.equal(read.links.stats, 'https://torn-tracker.com/stats/');
-    assert.deepEqual(read.hero.steps.map((s) => s.title), ['Set a savings goal']);
+  });
+
+  test('hq #491: no card link is ever the dashboard page, even when the read says so', () => {
+    const data = copy();
+    data.gym.url = 'https://torn-tracker.com/dashboard/';
+    data.goals.url = 'https://www.torn-tracker.com/dashboard?tab=goals';
+    data.links.finances = 'https://torn-tracker.com/dashboard/';
+    data.links.guide = 'javascript:alert(1)';
+    const read = readDashboard(data);
+    assert.equal(read.cardLinks.get('gym'), 'https://torn-tracker.com/stats/', 'falls back to its page');
+    assert.equal(read.cardLinks.get('goals'), null);
+    assert.equal(read.cardLinks.get('money'), null);
+    assert.equal(read.cardLinks.get('guide'), null);
+    for (const [key, url] of readDashboard(null).cardLinks) assert.equal(url, null, key);
+    assert.equal(read.links.dashboard, 'https://torn-tracker.com/dashboard/', 'the one link at the top stays');
   });
 
   test('a card that does not fit is off, the others stay', () => {
@@ -84,11 +105,9 @@ describe('hq #465 the dashboard read', () => {
     data.gym = { next_gym: 'Example gym', percent: 140 };
     data.money.series = [{ date: 'yesterday', income: 5 }];
     data.chain = { current: -1, max: 10 };
-    data.bars.bars = 'full';
-    data.stats.gym = data.stats.gym.slice(0, 1);
     delete data.education;
     const read = readDashboard(data);
-    for (const key of ['gym', 'money', 'chain', 'bars', 'stats', 'education']) assert.equal(read.cards.get(key), null, key);
+    for (const key of ['gym', 'money', 'chain', 'education']) assert.equal(read.cards.get(key), null, key);
     assert.notEqual(read.cards.get('goals'), null);
     assert.notEqual(read.cards.get('war'), null);
   });
@@ -99,9 +118,8 @@ describe('hq #465 the dashboard read', () => {
     assert.deepEqual(readDashboard(data).cards.get('gym'), { nextGym: null, percent: null, energy: null });
   });
 
-  test('nothing at all still gives a hero, links and no cards', () => {
+  test('nothing at all still gives the dashboard link and no cards', () => {
     const read = readDashboard(null);
-    assert.equal(read.hero.name, null);
     assert.ok([...read.cards.values()].every((v) => v === null));
     assert.equal(read.links.dashboard, 'https://torn-tracker.com/dashboard/');
   });
@@ -109,11 +127,9 @@ describe('hq #465 the dashboard read', () => {
   test('bad numbers are dropped field by field', () => {
     const data = copy();
     data.money.series[0].income = Infinity;
-    data.hero.level = 'forty';
     data.goals.active[0].pct = 500;
     const read = readDashboard(data);
     assert.equal(read.cards.get('money').series[0].income, null);
-    assert.equal(read.hero.level, null);
     assert.equal(read.cards.get('goals').active[0].pct, null);
   });
 });
@@ -149,15 +165,28 @@ describe('hq #465 the page', () => {
   test('every card renders, each with a link that stays on the site and opens a new tab', async () => {
     const { root } = await opened(siteRig().site);
     const cards = [...root.querySelectorAll('[data-card]')].map((n) => n.dataset.card);
-    assert.deepEqual(cards, ['hero', ...DASHBOARD_CARDS]);
+    assert.deepEqual(cards, DASHBOARD_CARDS);
     for (const a of root.querySelectorAll(`#${DASH_ID} a[target="_blank"]`)) {
       assert.match(a.href, /^https:\/\/(www\.)?torn-tracker\.com\//, a.href);
       assert.equal(a.rel, 'noopener noreferrer');
     }
     assert.match(root.querySelector('[data-card="gym"]').textContent, /estimate/);
-    assert.match(root.querySelector('[data-card="bars"]').textContent, /don't count up here/);
-    assert.equal(root.querySelectorAll('[data-card="stats"] svg').length, 1, 'no working-stats chart with no rows');
     assert.equal(root.getElementById(DASH_ID).dataset.theme, 'dark');
+  });
+
+  test('hq #491: no card link ends in /dashboard/; the one dashboard link is at the top', async () => {
+    const data = copy();
+    data.gym.url = 'https://torn-tracker.com/dashboard/';
+    data.links.finances = 'https://torn-tracker.com/dashboard/';
+    const { root } = await opened(siteRig({ reply: () => ({ ok: true, status: 200, data }) }).site);
+    const cardLinks = [...root.querySelectorAll('[data-card] a')];
+    assert.ok(cardLinks.length > 0);
+    for (const a of cardLinks) assert.doesNotMatch(new URL(a.href).pathname, /\/dashboard\/?$/, a.href);
+    assert.equal(root.querySelector('[data-card="war"] a'), null, 'a card with no page of its own has no link');
+    const top = [...root.querySelectorAll(`#${DASH_ID} a`)].filter((a) => /\/dashboard\/?$/.test(new URL(a.href).pathname));
+    assert.equal(top.length, 1);
+    assert.equal(top[0].closest('[data-card]'), null);
+    assert.equal(root.querySelector('[data-card="hero"]'), null);
   });
 
   test('a card that is off is not on the page', async () => {

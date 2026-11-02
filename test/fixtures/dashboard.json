@@ -1,25 +1,5 @@
 {
   "server_time": "2026-11-02T12:00:00Z",
-  "hero": {
-    "name": "ExamplePlayer", "torn_id": 2000001, "level": 42,
-    "faction": { "id": 9001, "name": "Example Faction" },
-    "rank": { "name": "Bronze", "points": 1200, "next_name": "Silver", "next_points": 2000 },
-    "steps": [
-      { "title": "Share your gym trains", "detail": "Two of four kinds on.", "value": 2, "max": 4, "url": "https://torn-tracker.com/settings/sharing/" },
-      { "title": "Set a savings goal", "value": 0, "max": 1, "url": "https://torn-tracker.com/finances/goals/" },
-      { "title": "A third step is never shown", "value": 0, "max": 1, "url": "https://torn-tracker.com/" }
-    ]
-  },
-  "bars": {
-    "observed_at": "2026-11-02T11:50:00Z",
-    "bars": [
-      { "key": "energy", "label": "Energy", "current": 150, "maximum": 150, "pct": 100, "over": false },
-      { "key": "nerve", "label": "Nerve", "current": 40, "maximum": 60, "pct": 66 },
-      { "key": "happy", "label": "Happy", "current": 5200, "maximum": 5025, "pct": 103, "over": true },
-      { "key": "life", "label": "Life", "current": 3000, "maximum": 3000, "pct": 100 }
-    ],
-    "effects": [{ "label": "Drug cooldown", "until": "2026-11-02T14:00:00Z", "note": "Xanax" }]
-  },
   "money": {
     "days": 3,
     "series": [
@@ -28,7 +8,7 @@
       { "date": "2026-11-02", "income": 0, "cost": null, "networth": null }
     ]
   },
-  "gym": { "next_gym": "George's", "percent": 37.5, "energy_to_next": 120000 },
+  "gym": { "next_gym": "George's", "percent": 37.5, "energy_to_next": 120000, "url": "https://torn-tracker.com/gym/" },
   "goals": {
     "saved": 25000000,
     "active": [{ "id": 1, "name": "Private island", "amount": 500000000, "known": true, "remaining": 475000000, "pct": 5, "reached": false }]
@@ -44,15 +24,6 @@
   "chain": { "current": 412, "max": 500, "timeout_at": "2026-11-02T12:04:00Z", "as_of": "2026-11-02T12:00:00Z" },
   "war": { "opponent_name": "Other Example Faction", "our_score": 1200, "their_score": 1000, "target": 5000, "finish_eta": null, "as_of": "2026-11-02T12:00:00Z" },
   "oc": { "crime_id": 3, "name": "Blast from the Past", "state": "planning", "ready_at": "2026-11-03T00:00:00Z", "needs_me": true },
-  "stats": {
-    "days": 3,
-    "gym": [
-      { "date": "2026-10-31", "Strength": 1000000, "Defense": 900000, "Speed": 800000, "Dexterity": 700000 },
-      { "date": "2026-11-01", "Strength": 1100000, "Defense": 950000, "Speed": 820000, "Dexterity": 720000 },
-      { "date": "2026-11-02", "Strength": 1200000, "Defense": 990000, "Speed": 850000, "Dexterity": 760000 }
-    ],
-    "edu": []
-  },
   "links": {
     "dashboard": "https://torn-tracker.com/dashboard/",
     "stats": "https://torn-tracker.com/stats/",

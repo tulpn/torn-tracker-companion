@@ -20,6 +20,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The settings page's title bar shows only the title, the version and whether a script key
   is saved. Your featured achievements no longer show there, and their switch is gone; the
   achievement toast switch stays under General.
+- The dashboard preview starts with what needs you now: ranked war, chain and organized
+  crime come first. The top card, the bars and the battle-stats chart are gone.
+- Each dashboard card's **More on torn-tracker.com** opens that card's own page; a card
+  with no page of its own has no link. The full dashboard is one link, at the top.
 
 ## 0.9.6 — 2026-11-02
 
