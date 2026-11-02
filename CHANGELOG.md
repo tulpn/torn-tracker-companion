@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.6 — 2026-11-02
+
 ### Added
 
 - A preview of your torn-tracker.com dashboard inside Torn, at
