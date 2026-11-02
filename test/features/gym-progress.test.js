@@ -99,6 +99,15 @@ describe('CMP-206 sharing, own view only', () => {
     r.respond(TRAIN, { success: true, stat: { name: 'speed', newValue: '800' } });
     assert.equal(r.shared.filter((o) => o.kind === 'gym_train').length, 0);
   });
+
+  test('hq #515: a gym page with no gym in progress says so once in the debug log', async () => {
+    const r = run({ site: fakeSite(), html: '<div id="gymroot"></div>' });
+    r.respond(INITIAL, INITIAL_ANSWER);
+    await wait();
+    const none = r.logs.filter((line) => line.startsWith('gym_progress: nothing captured'));
+    assert.equal(none.length, 1);
+    assert.equal(r.shared.filter((o) => o.kind === 'gym_progress').length, 0);
+  });
 });
 
 describe('CMP-206 the estimate beside the gym in progress', () => {
