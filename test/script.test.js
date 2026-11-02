@@ -78,12 +78,13 @@ describe('CMP-107 the panel tells the player where their settings live', () => {
     assert.equal(t.panel().querySelector(`#${PREFIX}-feature-foreign-stock`).checked, true);
   });
 
-  test('saving keeps the page open and says so', async () => {
+  test('hq #520: a change is saved at once; the page stays open and says so', async () => {
     const t = await boot(PAGE);
     await openOn(t, 'general');
-    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    assert.equal(t.panel().querySelector('button[data-act="save"]'), null, 'no Save button');
+    userCheck(t, t.panel().querySelector(`#${PREFIX}-debug`));
     await t.tick();
-    assert.match(t.panel().textContent, /Saved\./);
+    assert.match(t.panel().querySelector('[role=status]').textContent, /Saved\./);
   });
 });
 
@@ -92,7 +93,6 @@ describe('CMP-008 settings are kept on the device and validated on the way in', 
     const t = await boot(PAGE);
     await openOn(t, 'general');
     userCheck(t, t.panel().querySelector(`#${PREFIX}-debug`));
-    t.userClick(t.panel().querySelector('button[data-act="save"]'));
     await t.tick();
 
     assert.equal(JSON.parse(t.window.localStorage.getItem(`${PREFIX}_settings`)).debug, true);
@@ -137,7 +137,8 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
     await openOn(t, 'data');
     assert.match(t.panel().textContent, /PDA_storage/);
 
-    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    await openOn(t, 'general');
+    userCheck(t, t.panel().querySelector(`#${PREFIX}-debug`));
     await t.tick();
     assert.equal(pda.store.has(`${PREFIX}_settings`), true);
     assert.equal(t.window.localStorage.getItem(`${PREFIX}_settings`), null);
@@ -165,7 +166,8 @@ describe('CMP-007 the same file runs in Torn PDA', () => {
   test('the settings page is built for a thumb, and folds its menu on a phone', () => {
     const built = readBuilt();
     assert.match(built, /min-height: 44px; min-width: 44px/, 'every button is at least 44 px');
-    assert.match(built, /@container \(max-width: 600px\)/, 'the left menu becomes a top menu under 600 px');
+    assert.match(built, /@container \(max-width: 640px\)/, 'the left menu becomes a section menu under 640 px (hq #520)');
+    assert.match(built, /data-sections|dataset\.sections/, 'the section menu is a select');
     assert.doesNotMatch(built, /ttc-fab/, 'no floating button is left');
   });
 });
@@ -179,7 +181,7 @@ describe('CMP-011 the script key is kept on the device and never logged', () => 
     const field = t.panel().querySelector(`#${PREFIX}-key-script`);
     field.value = KEY;
     field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
-    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    field.dispatchEvent(new t.window.Event('change', { bubbles: true }));
     await t.tick();
     assert.equal(JSON.parse(t.window.localStorage.getItem(`${PREFIX}_keys`)).script, KEY);
     assert.deepEqual(t.violations, []);
@@ -196,7 +198,7 @@ describe('CMP-011 the script key is kept on the device and never logged', () => 
       const field = t.panel().querySelector(`#${PREFIX}-key-script`);
       field.value = KEY;
       field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
-      t.userClick(t.panel().querySelector('button[data-act="save"]'));
+      field.dispatchEvent(new t.window.Event('change', { bubbles: true }));
       await t.tick(10);
     } finally {
       Object.assign(console, original);
@@ -254,7 +256,7 @@ describe('hq #448 in a browser the site is reached through the script manager', 
     const field = t.panel().querySelector(`#${PREFIX}-key-script`);
     field.value = KEY;
     field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
-    t.userClick(t.panel().querySelector('button[data-act="save"]'));
+    field.dispatchEvent(new t.window.Event('change', { bubbles: true }));
     await t.tick(10);
     for (const section of ['sidebar', 'sharing', 'data']) await t.go(`#/torn-tracker/${section}`);
     await t.tick(10);
@@ -463,14 +465,13 @@ describe('hq #488 on Torn’s Home page (the owner’s capture, 2026-11-02)', ()
   });
 });
 
-describe('hq #454 the built script: ticking a kind and pressing Save is the agreement', () => {
-  test('a fresh install ticks a kind, presses Save, and the saved settings agree to the wording shipped', async () => {
+describe('hq #454 #520 the built script: ticking a kind is the agreement', () => {
+  test('a fresh install ticks a kind, and the saved settings agree to the wording shipped', async () => {
     const t = await boot(PAGE);
     await openOn(t, 'sharing');
     assert.match(t.panel().textContent, /Nothing is shared yet/);
     assert.match(t.panel().textContent, /Queue: 0 waiting · last upload none yet/);
     userCheck(t, t.panel().querySelector(`#${PREFIX}-share-foreign_stock`));
-    t.userClick(t.panel().querySelector('button[data-act="save"]'));
     await t.tick();
     const saved = JSON.parse(t.window.localStorage.getItem(`${PREFIX}_settings`));
     assert.equal(saved.shares.foreign_stock, true);
@@ -487,7 +488,6 @@ describe('hq #454 the built script: ticking a kind and pressing Save is the agre
       const t = await boot(PAGE);
       await openOn(t, 'sharing');
       userCheck(t, t.panel().querySelector(`#${PREFIX}-share-foreign_stock`));
-      t.userClick(t.panel().querySelector('button[data-act="save"]'));
       await t.tick(10);
     } finally {
       console.log = original;

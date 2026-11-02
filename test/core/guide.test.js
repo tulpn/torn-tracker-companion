@@ -162,7 +162,6 @@ describe('GDE-007 the strip', () => {
     const sw = panel.panel.querySelector('[data-setting=guideStrip]');
     sw.checked = false;
     sw.dispatchEvent(new window.Event('change', { bubbles: true }));
-    panel.panel.querySelector('[data-act=save]').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(saves.at(-1).guideStrip, false);
     panel.destroy();
