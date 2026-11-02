@@ -3,7 +3,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature from '../../src/features/price-filler/index.js';
+import feature, { shortMoney } from '../../src/features/price-filler/index.js';
 import { itemIdOf, ownedOf, priceFrom } from '../../src/features/price-filler/fill.js';
 import { formFor } from '../../src/features/price-filler/selectors.js';
 import { page, runFeature } from '../feature-harness.js';
@@ -54,7 +54,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
     await wait();
     assert.deepEqual(site.lookups, [[206, 1, 999]]);
     const buttons = [...r.doc.querySelectorAll('.ttc-fill')];
-    assert.deepEqual(buttons.map((b) => b.textContent), ['Fill $799,999', 'Fill $49', 'No price']);
+    assert.deepEqual(buttons.map((b) => b.textContent), ['Fill $800k', 'Fill $49', 'No price']);
     assert.equal(buttons[2].disabled, true);
   });
 
@@ -74,7 +74,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
     let submitted = false;
     r.doc.querySelector('form').addEventListener('submit', () => { submitted = true; });
     const seen = press(r, r.doc.querySelector('.ttc-fill'));
-    const fromScript = seen.filter((e) => !e.startsWith('click:ttc-fill'));
+    const fromScript = seen.filter((e) => !(e.startsWith('click:') && e.includes('ttc-fill')));
     assert.ok(fromScript.length > 0);
     assert.ok(fromScript.every((e) => e.startsWith('input:') || e.startsWith('change:')), fromScript.join(', '));
     assert.equal(submitted, false);
@@ -93,7 +93,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
   test('the undercut comes from the player\'s setting', async () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite(), settings: { enabled: true, undercut: 1000 } });
     await wait();
-    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $799,000');
+    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $799k');
   });
 
   test('the item market sell form: id from the info button, quantity from "x 1,250"', async () => {
@@ -112,7 +112,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite({ 206: 800, 1: 50 }, { 206: shop }) });
     await wait();
     const button = r.doc.querySelector('.ttc-fill');
-    assert.equal(button.textContent, 'Fill $1,000 (shop price)');
+    assert.equal(button.textContent, 'Fill $1k (shop)');
     assert.match(button.title, /^Stopped at the shop price: Big Al's Gun Shop pays \$1,000 each/);
     press(r, button);
     assert.equal(r.doc.querySelector('div.price input').value, '1000');
@@ -122,7 +122,7 @@ describe('CMP-105 a fill button per row; one press fills one row', () => {
   test('a shop paying less than the market changes nothing', async () => {
     const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite(undefined, { 206: { price: 10, shop: null, country: null } }) });
     await wait();
-    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $799,999');
+    assert.equal(r.doc.querySelector('.ttc-fill').textContent, 'Fill $800k');
   });
 
   test('re-renders do not add a second button', async () => {
@@ -162,5 +162,39 @@ describe('CMP-006 the readers', () => {
     const row = r.doc.querySelector('li');
     assert.equal(itemIdOf(row, 'bazaarAdd'), null);
     assert.equal(ownedOf(row, 'bazaarAdd'), null);
+  });
+});
+
+describe('hq #521 the fill button is small, inline and in our tokens', () => {
+  test('the amount is short; the full one is in its title and name', async () => {
+    assert.deepEqual([1_234_567, 799_999, 1_000, 49].map(shortMoney), ['$1.2m', '$800k', '$1k', '$49']);
+    const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite() });
+    await wait();
+    const button = r.doc.querySelector('.ttc-fill');
+    assert.equal(button.title, 'Fill the price with $799,999');
+    assert.equal(button.getAttribute('aria-label'), 'Fill the price with $799,999');
+  });
+
+  test('it is our inline button beside the field, with the style on the page', async () => {
+    const r = run({ html: page('bazaar-add.html'), url: BAZAAR_ADD, site: fakeSite() });
+    await wait();
+    const button = r.doc.querySelector('.ttc-fill');
+    assert.ok(button.classList.contains('ttc-ui-button') && button.classList.contains('ttc-ui-inline'));
+    assert.equal(button.type, 'button');
+    assert.ok(button.previousElementSibling.classList.contains('input-money-group'), 'right after the field');
+    const css = r.doc.getElementById('ttc-ui-style').textContent;
+    const rule = css.match(/\.ttc-ui-inline\.ttc-ui-inline \{[^}]*\}/)[0];
+    assert.match(rule, /height: 24px/);
+    assert.match(rule, /white-space: nowrap/);
+    assert.match(rule, /background: color-mix\(in srgb, var\(--primary\)/, 'our accent, not black');
+    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) \{ display: flex; flex-wrap: nowrap;/);
+  });
+
+  test('the market sell form gets the same button', async () => {
+    const r = run({ html: page('market-add.html'), url: MARKET_ADD, site: fakeSite() });
+    await wait();
+    const buttons = [...r.doc.querySelectorAll('.ttc-fill')];
+    assert.ok(buttons.length > 0);
+    assert.ok(buttons.every((b) => b.classList.contains('ttc-ui-inline')));
   });
 });
