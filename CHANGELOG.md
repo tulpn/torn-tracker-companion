@@ -9,6 +9,18 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The settings page no longer shows a stray "null" under General.
+- The search bar is easy to find: it's the first thing under the settings page's title,
+  full width on a phone, with a **✕** to clear it.
+
+### Changed
+
+- The settings page's title bar shows only the title, the version and whether a script key
+  is saved. Your featured achievements no longer show there, and their switch is gone; the
+  achievement toast switch stays under General.
+
 ## 0.9.6 — 2026-11-02
 
 ### Added

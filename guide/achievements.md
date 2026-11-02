@@ -1,6 +1,6 @@
 ---
 title: Achievements in the companion
-summary: A small toast on Torn's page when you earn a torn-tracker.com achievement, and your featured ones at the top of the settings page; both can be switched off.
+summary: A small toast on Torn's page when you earn a torn-tracker.com achievement; it can be switched off.
 section: Guides
 group: features
 order: 205
@@ -8,7 +8,7 @@ type: how-to
 audience: everyone
 icon: trophy
 tier: core
-keywords: torn tracker achievements, torn achievement toast, torn tracker unlocked, torn tracker featured achievements
+keywords: torn tracker achievements, torn achievement toast, torn tracker unlocked
 ---
 
 > **Test release.** The companion is in public testing. Things may change before version 1.
@@ -26,21 +26,18 @@ how many more.
 The toast goes by itself after a few seconds. It stays while your pointer or focus is on
 it, and **✕** closes it. **See it and share** opens your achievements on torn-tracker.com.
 
-Your **featured** achievements, the ones you picked for your card, show at the top of the
-companion's [settings page](settings-panel.md).
-
 ## Switch them off
 
 1. Open the [settings](settings-panel.md) and go to **General**.
-2. Under **Achievements**, switch off the toast, the featured ones, or both.
+2. Under **Achievements**, switch off the toast.
 3. Press **Save**.
 
-With both off, the companion stops asking torn-tracker.com about achievements.
+With the toast off, the companion stops asking torn-tracker.com about achievements.
 
 Your notification settings on torn-tracker.com have the same say. With **pause all** on,
 or **companion toasts** off, the companion shows no toast, whatever its own switch says,
 and General tells you why. Switch it back on there and the toasts come again from the
-next new achievement. Your featured achievements still show.
+next new achievement.
 
 ## Sharing is always your own press
 
