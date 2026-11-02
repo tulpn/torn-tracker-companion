@@ -1,0 +1,29 @@
+# A promotion must carry a version that isn't released yet (hq #506).
+#
+# The merge into main publishes the version in package.json, and an already-tagged
+# version is skipped (release.yml, hq D-163). So a promotion PR into testing or main whose
+# package.json still says a tagged version would merge and publish nothing. This check
+# turns that into a red PR instead. It is a required check on testing and main.
+name: promotion-check
+
+on:
+  pull_request:
+    branches: [main, testing]
+
+permissions:
+  contents: read
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The version is not tagged yet
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null; then
+            echo "::error file=package.json::${tag} is already tagged: bump the version on development before promoting (RELEASING.md)."
+            exit 1
+          fi
+          echo "${tag} is not tagged yet: this promotion publishes it."

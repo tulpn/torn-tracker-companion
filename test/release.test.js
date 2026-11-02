@@ -159,6 +159,15 @@ describe('CMP-022 this repository is ready to cut a release', () => {
       assert.ok(step?.includes("publish == 'true'"), `${command} runs only when the version is new`);
     }
   });
+
+  test('a promotion with an already-tagged version is a red PR, not a silent no-release (hq #506)', () => {
+    const workflow = fs.readFileSync(join(ROOT, '.github', 'workflows', 'promotion-check.yml'), 'utf8');
+    assert.match(workflow, /pull_request:\s*\n\s*branches: \[main, testing\]/, 'every PR into testing and main');
+    assert.match(workflow, /require\('\.\/package\.json'\)\.version/, 'the version comes from package.json');
+    assert.match(workflow, /git ls-remote --exit-code --tags origin "refs\/tags\/\$\{tag\}"/);
+    assert.match(workflow, /bump the version on development before promoting \(RELEASING\.md\)/);
+    assert.match(workflow, /exit 1/);
+  });
 });
 
 describe('a release never ships an unfilled table', () => {
