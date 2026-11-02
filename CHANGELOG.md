@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- Fair-fight badges: a player with no estimate shows **–** instead of **?**. A **?** now
+  means only a rough idea of their stats. Hovering over a badge says whose estimate it is
+  (FFScouter's are credited to them) and how old it is.
+
 ## 0.9.7 — 2026-11-02
 
 ### Fixed

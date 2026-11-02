@@ -89,14 +89,28 @@ const BAND = 40;
 
 const positiveInt = (v) => Number.isInteger(v) && v > 0;
 
+/** Whose FF figure it is: the site's own index, or FFScouter's estimate (hq #492, D-171). */
+export const FF_SOURCES = Object.freeze(['index', 'ffscouter']);
+
 /**
  * An FF result: a number of at least 1, or null when the site does not know the player.
  * The contract sets no upper bound (estimates above 10 exist); the badge clamps for display.
+ * `source` and `estimatedAt` (local-clock ms) say whose figure it is and how old; an
+ * answer kept from before hq #492 has neither.
  */
 export function validFf(v) {
   return Boolean(v) && typeof v === 'object'
     && (v.ff === null || (typeof v.ff === 'number' && Number.isFinite(v.ff) && v.ff >= 1))
-    && (v.band === null || (typeof v.band === 'string' && v.band.length <= BAND));
+    && (v.band === null || (typeof v.band === 'string' && v.band.length <= BAND))
+    && (v.source == null || FF_SOURCES.includes(v.source))
+    && (v.estimatedAt == null || (typeof v.estimatedAt === 'number' && Number.isFinite(v.estimatedAt)));
+}
+
+/** One CAPI-033 row as the badge keeps it; a bad source or time is dropped, not the row. */
+export function readFfRow(row, skew = 0) {
+  const source = FF_SOURCES.includes(row?.source) ? row.source : null;
+  const estimatedAt = typeof row?.estimated_at === 'string' && row.estimated_at.length <= 40 ? time(row.estimated_at, skew) : null;
+  return { ff: row?.ff ?? null, band: row?.band ?? null, source, estimatedAt };
 }
 
 /**
@@ -957,7 +971,7 @@ export function createSite({
     /**
      * Fair-fight estimates for players (CAPI-033).
      * @param {number[]} ids
-     * @returns {Promise<Map<number, {ff: number|null, band: string|null}>>}
+     * @returns {Promise<Map<number, {ff: number|null, band: string|null, source?: string|null, estimatedAt?: number|null}>>}
      */
     async ff(ids) {
       const { found, missing } = split('ff', ids.filter(positiveInt));
@@ -970,10 +984,11 @@ export function createSite({
         body: JSON.stringify({ ids: ask }),
       });
       const results = Array.isArray(data?.results) ? data.results : [];
+      const skew = data ? skewOf(data) : 0;
       const answered = new Set();
       for (const row of results) {
         if (!positiveInt(row?.id) || !ask.includes(row.id)) continue;
-        const value = { ff: row.ff ?? null, band: row.band ?? null };
+        const value = readFfRow(row, skew);
         if (!validFf(value)) continue;
         cache.set('ff', row.id, value);
         found.set(row.id, value);
@@ -983,7 +998,7 @@ export function createSite({
       if (data) {
         for (const id of ask) {
           if (!answered.has(id)) {
-            const unknown = { ff: null, band: null };
+            const unknown = { ff: null, band: null, source: null, estimatedAt: null };
             cache.set('ff', id, unknown);
             found.set(id, unknown);
           }
