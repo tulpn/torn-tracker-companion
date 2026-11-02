@@ -18,7 +18,7 @@
 // weights beside each slot. No code was taken; they get their weights from a third-party
 // service, this script only from torn-tracker.com.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { CARD, CARD_ID, NAME, SLOT, SLOT_HEADER, SLOT_TITLE } from './selectors.js';
 import { badge, note } from '../../core/ui.js';
 
@@ -54,7 +54,7 @@ export default {
     const win = ctx.win || globalThis;
     /** name -> promise of the site's answer, asked once per page view */
     const asked = new Map();
-    const s = { doc, win, timer: null, stopWatching: null };
+    const s = { doc, win, settle: null, stopWatching: null };
     state = s;
     const alive = () => state === s;
 
@@ -114,11 +114,10 @@ export default {
     }
 
     function later() {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         scan().catch((err) => ctx.log('oc helper', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
@@ -133,7 +132,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

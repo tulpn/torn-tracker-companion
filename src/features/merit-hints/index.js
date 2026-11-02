@@ -12,7 +12,7 @@
 // strip only scrolls to its merit; upgrading is still the player's own press on Torn's
 // row, and the script never presses it.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { badge, setTone, strip } from '../../core/ui.js';
 
 const MARK = 'ttc-merits';
@@ -62,7 +62,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null };
+    const s = { doc, win, settle: null, stopWatching: null };
     state = s;
 
     function clear() {
@@ -140,12 +140,11 @@ export default {
     const own = (n) => Boolean((n.nodeType === 1 ? n : n.parentElement)?.closest?.(`.${MARK}`));
     const ours = (r) => own(r.target)
       || (r.addedNodes.length + r.removedNodes.length > 0 && [...r.addedNodes, ...r.removedNodes].every(own));
+    s.settle = settler(look, SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
-      if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(look, SETTLE_MS);
+      if (!records.every(ours)) s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(look, SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -153,7 +152,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };
