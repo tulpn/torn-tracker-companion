@@ -6,7 +6,7 @@
 // (core/entry.js). It is built from what the script already holds: opening it makes no
 // request. A menu of sections sits on the left, and across the top on a narrow screen;
 // each section is a plain link to #/torn-tracker/<section>, so Back and Forward work:
-//   General   version, the update link, the page's look, the achievement switches,
+//   General   version, the update link, the page's look, the achievement toast switch,
 //             console logging
 //   Features  each feature with its switch, one line on what it does, its options and a
 //             "Learn more" link to its knowledge base page, grouped by area
@@ -18,10 +18,11 @@
 //   Data      what is kept on this device, and "Forget me"
 //   Credits   every script this one took code or an idea from
 //   Help      the tours (core/tours.js), the knowledge base and where to ask
-// A search box finds a setting in any section. Edits are kept in a draft until Save, so
+// A search bar, the page's first element under its title (hq #489), finds a setting in
+// any section, with a clear button beside it. Edits are kept in a draft until Save, so
 // moving between sections loses nothing; Close, or any link away, leaves without saving.
-// The header shows the player's featured achievements (WP-UX-8) from what core/unlocks.js
-// last read, and every section starts with the guide's next step (GDE-007) as core/guide.js
+// The header holds the title, the version and whether a script key is saved, nothing
+// more (hq #489: the featured achievements left it); every section starts with the guide's next step (GDE-007) as core/guide.js
 // last read it; opening the page asks for nothing. The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
 // dark unless the player picks light or Torn's own theme under General, and every
 // target is at least 44 px so it can be hit with a thumb in Torn PDA; under 600 px of
@@ -102,8 +103,8 @@ const STYLE = `
   #${P}-panel[hidden] { display: none; }
   #${P}-panel *, #${P}-panel *::before, #${P}-panel *::after { box-sizing: border-box; }
   #${P}-panel .${P}-sheet {
-    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
-    grid-template-areas: "head head" "banned banned" "nav main" "foot foot";
+    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto;
+    grid-template-areas: "head head" "find find" "banned banned" "nav main" "foot foot";
     width: 100%; min-width: 0; min-height: 70vh;
     background: var(--ttc-bg); border-radius: var(--radius); border: 1px solid var(--ttc-line);
   }
@@ -118,12 +119,19 @@ const STYLE = `
   }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
   #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
-  #${P}-panel .${P}-featured { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; margin: 0; padding: 0; list-style: none; }
-  #${P}-panel .${P}-featured:empty { display: none; }
+  #${P}-panel .${P}-keystate { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; background: var(--ttc-accent-soft); color: var(--ttc-text); }
+  #${P}-panel .${P}-keystate[data-key="none"] { background: color-mix(in srgb, var(--ttc-warn) 18%, transparent); }
+  #${P}-panel .${P}-head .${P}-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  #${P}-panel .${P}-find {
+    grid-area: find; display: flex; align-items: center; gap: 8px; padding: 12px 18px;
+    background: var(--ttc-surface); border-bottom: 1px solid var(--ttc-line);
+  }
+  #${P}-panel .${P}-find input[type=search] { flex: 1 1 auto; min-width: 320px; max-width: 640px; min-height: 44px; font-size: 16px; }
+  #${P}-panel .${P}-find input[type=search]::-webkit-search-cancel-button { display: none; }
+  #${P}-panel .${P}-find .${P}-clear { flex: none; }
+  #${P}-panel .${P}-find .${P}-clear[hidden] { display: none; }
   #${P}-panel .${P}-guide { border-left: 4px solid var(--primary); }
-  #${P}-panel .${P}-featured li { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
-    background: color-mix(in srgb, var(--tt-warning) 16%, transparent); }
-  #${P}-panel .${P}-head input[type=search] { flex: 1; min-width: 0; max-width: 420px; margin-left: auto; border-radius: 999px; padding-left: 16px; }
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head, #${P}-panel .${P}-foot { min-width: 0; }
   #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
@@ -216,12 +224,17 @@ const STYLE = `
   }
   @container (max-width: 600px) {
     #${P}-panel .${P}-sheet {
-      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto;
-      grid-template-areas: "head" "banned" "nav" "main" "foot"; border-radius: 0;
+      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr auto;
+      grid-template-areas: "head" "find" "banned" "nav" "main" "foot"; border-radius: 0;
     }
-    #${P}-panel .${P}-head { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
-    #${P}-panel .${P}-head input[type=search] { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
-    #${P}-panel .${P}-head .${P}-x { margin-left: auto; }
+    #${P}-panel .${P}-head { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    /* hq issue 489: the title gives way, so the key state and ✕ stay on its row at 360 px. */
+    #${P}-panel .${P}-brand { flex: 1 1 0; min-width: 0; }
+    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 11px; }
+    #${P}-panel .${P}-head .${P}-tools { gap: 4px; }
+    #${P}-panel .${P}-head .${P}-x { padding: 6px 10px; }
+    #${P}-panel .${P}-find { padding: 10px 12px; }
+    #${P}-panel .${P}-find input[type=search] { min-width: 0; max-width: none; }
     #${P}-panel .${P}-foot button { flex: 1; }
     #${P}-panel nav { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ttc-line); padding: 6px 8px; }
     #${P}-panel nav a { flex: none; white-space: nowrap; }
@@ -327,7 +340,8 @@ export function mountPanel({
   const main = h('main');
   const status = h('div', { class: `${P}-status`, role: 'status' });
   const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
-  const featured = h('ul', { class: `${P}-featured`, 'aria-label': 'Your featured achievements' });
+  const clear = h('button', { type: 'button', class: `${P}-clear`, 'data-act': 'clear-search', 'aria-label': 'Clear the search', title: 'Clear', hidden: true }, '\u2715');
+  const keyState = h('span', { class: `${P}-keystate`, 'data-keystate': '' });
   // The way into the dashboard page (hq #465), while its preview switch is on.
   const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '', hidden: getSettings().dashboard !== true }, 'Dashboard');
   panel.append(h('div', { class: `${P}-sheet` },
@@ -335,14 +349,15 @@ export function mountPanel({
       h('div', { class: `${P}-brand` },
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
-      featured,
-      dashboardLink,
-      search,
-      ...(tours ? [h('button', {
-        type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
-        'aria-label': 'Show me around this page', title: 'Show me around',
-      }, '?')] : []),
-      h('a', { href: CLOSE, class: `${P}-btn ${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close' }, '\u2715')),
+      keyState,
+      h('div', { class: `${P}-tools` },
+        dashboardLink,
+        ...(tours ? [h('button', {
+          type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
+          'aria-label': 'Show me around this page', title: 'Show me around',
+        }, '?')] : []),
+        h('a', { href: CLOSE, class: `${P}-btn ${P}-x`, 'data-act': 'close', 'aria-label': 'Close settings', title: 'Close' }, '\u2715'))),
+    h('div', { class: `${P}-find`, role: 'search' }, search, clear),
     banned,
     nav,
     main,
@@ -626,9 +641,6 @@ export function mountPanel({
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-achievements': 'toast', checked: draft.settings.achievements?.toast !== false }),
         'Show a toast on Torn’s page when I earn one'),
-      h('label', { class: `${P}-check` },
-        h('input', { type: 'checkbox', 'data-achievements': 'featured', checked: draft.settings.achievements?.featured !== false }),
-        'Show my featured achievements at the top of this page'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion asks torn-tracker.com for new ones when you open a Torn page, at most every five minutes. Sharing one is only ever your own press, on torn-tracker.com.'),
       unlocks?.silenced?.()
@@ -764,10 +776,11 @@ export function mountPanel({
     return rows;
   }
 
-  /** The featured achievements, as saved: the switch acts once saved, like every other. */
-  function drawFeatured() {
-    featured.replaceChildren(...(unlocks?.featured() || []).map((a) => h('li', null,
-      a.tier ? `${a.name} · ${a.tier[0].toUpperCase()}${a.tier.slice(1)}` : a.name)));
+  /** Whether a script key is saved, as the header says it (hq #489). */
+  function drawKeyState() {
+    const has = Boolean(getKeys().script);
+    keyState.dataset.key = has ? 'set' : 'none';
+    keyState.textContent = has ? 'Script key saved' : 'No script key';
   }
 
   /** The guide's next step (GDE-007), above every section; nothing when there's none. */
@@ -788,16 +801,18 @@ export function mountPanel({
 
   function render(message = '', tone = '') {
     dashboardLink.hidden = getSettings().dashboard !== true;
-    drawFeatured();
+    drawKeyState();
+    clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
     nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
       href: sectionHref(id), role: 'tab', 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-selected': String(!query && id === section),
     }, title)));
     const title = SECTIONS.find(([id]) => id === section)[1];
+    // hq #489: a body may hold null for a part it leaves out; the DOM would write it as text.
     main.replaceChildren(...(query ? searchBody() : [
-      ...[guideStrip()].filter(Boolean),
+      guideStrip(),
       h('h3', null, title), h('p', { class: `${P}-intro` }, INTROS[section]), ...BODIES[section](),
-    ]));
+    ]).filter((node) => node != null && node !== false));
     status.textContent = message;
     status.dataset.tone = tone;
     // On a narrow screen the menu scrolls sideways: keep the open section in sight.
@@ -892,6 +907,13 @@ export function mountPanel({
       startTour(button.dataset.tourId);
       return;
     }
+    if (act === 'clear-search') {
+      search.value = '';
+      query = '';
+      render();
+      search.focus();
+      return;
+    }
     if (act !== 'forget') armedForget = false;
 
     if (act === 'save') {
@@ -964,7 +986,6 @@ export function mountPanel({
     const id = event.target.closest?.('a[data-tour-page]')?.dataset.tourPage;
     if (id) tours?.request(id);
   });
-  const stopUnlocks = unlocks?.onChange(drawFeatured);
   // A new guide answer while the page shows: only the strip is redrawn, so nothing typed is lost.
   const stopGuide = guide?.onChange(() => {
     if (!active || query) return;
@@ -1002,7 +1023,6 @@ export function mountPanel({
       if (active) showBanned();
     },
     destroy() {
-      stopUnlocks?.();
       stopGuide?.();
       stopTours?.();
       stopWatch?.();

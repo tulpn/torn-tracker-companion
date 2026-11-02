@@ -437,6 +437,29 @@ describe('on Torn’s real sidebar (the owner’s capture, 2026-10-23)', () => {
   });
 });
 
+describe('hq #488 on Torn’s Home page (the owner’s capture, 2026-11-02)', () => {
+  const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
+
+  test('the entry follows TornTools Settings and the block follows Targets, within two seconds', async () => {
+    const t = await boot(HOME + PAGE);
+    await t.tick(2000);
+    assert.equal(t.entry().previousElementSibling.textContent.trim(), 'TornTools Settings');
+    const block = t.doc.getElementById('ttc-sidebar-block');
+    assert.equal(block?.previousElementSibling.id, 'nav-targets_list');
+    assert.deepEqual(t.violations, []);
+  });
+
+  test('once placed, nothing keeps changing the page', async () => {
+    const t = await boot(HOME + PAGE);
+    await t.tick(500);
+    let changes = 0;
+    new t.window.MutationObserver((records) => { changes += records.length; })
+      .observe(t.doc.body, { childList: true, subtree: true, characterData: true });
+    await t.tick(1200);
+    assert.equal(changes, 0);
+  });
+});
+
 describe('hq #454 the built script: ticking a kind and pressing Save is the agreement', () => {
   test('a fresh install ticks a kind, presses Save, and the saved settings agree to the wording shipped', async () => {
     const t = await boot(PAGE);

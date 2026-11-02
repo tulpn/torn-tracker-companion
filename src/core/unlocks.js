@@ -1,12 +1,13 @@
 // Achievements in the companion (hq #241, WP-UX-8; UXA-002, UXA-003).
 //
-// Two things, each with its own switch under Settings → General:
-//   - a small toast on the Torn page the player is on when torn-tracker.com says they
-//     earned an achievement: its name, its tier and one sentence, with a link to the
-//     achievement on the site, where Share is. Nothing is ever shared from here;
-//   - the player's featured achievements in the settings page's header.
+// A small toast on the Torn page the player is on when torn-tracker.com says they earned
+// an achievement: its name, its tier and one sentence, with a link to the achievement on
+// the site, where Share is. Nothing is ever shared from here. Its switch is under
+// Settings → General. The featured achievements still come with the read and are kept,
+// but the settings header no longer shows them (hq #489): they live on the in-Torn
+// dashboard and the site.
 //
-// One read feeds both: GET /api/feeds/me/achievements?since=<the last reply's time>
+// The read: GET /api/feeds/me/achievements?since=<the last reply's time>
 // (site.achievements). It's asked when the player opens a Torn page, at most once every
 // five minutes, only with a script key and while the tab is visible, and never on the
 // attack page. There is no timer that asks by itself. The very first read only sets where
@@ -173,8 +174,8 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     },
     /** On every location change: asks if both are due, never on the attack page. */
     update(loc) {
-      const on = switches();
-      if (!on.toast && !on.featured) return;
+      // hq #489: the settings header no longer shows the featured ones, so only the toast asks.
+      if (!switches().toast) return;
       if (asking || doc.visibilityState === 'hidden' || NEVER.some((route) => matchRoute(route, loc))) return;
       if (now() - state.readAt < READ_EVERY_MS || now() < notBefore) return;
       asking = ask(loc).catch(() => {}).finally(() => { asking = null; });

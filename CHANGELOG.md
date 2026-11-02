@@ -9,6 +9,26 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The settings page no longer shows a stray "null" under General.
+- The search bar is easy to find: it's the first thing under the settings page's title,
+  full width on a phone, with a **✕** to clear it.
+
+### Changed
+
+- The settings page's title bar shows only the title, the version and whether a script key
+  is saved. Your featured achievements no longer show there, and their switch is gone; the
+  achievement toast switch stays under General.
+- The dashboard preview starts with what needs you now: ranked war, chain and organized
+  crime come first. The top card, the bars and the battle-stats chart are gone.
+- Each dashboard card's **More on torn-tracker.com** opens that card's own page; a card
+  with no page of its own has no link. The full dashboard is one link, at the top.
+- The dashboard preview has three new cards: **Alerts**, **Chain watch** (who is on watch
+  now and next, your own next watch, and the slots with no Lead) and **Nearest awards**.
+- The dashboard's **Ranked war** card says when a war starts and lists your dibs while it
+  runs; **Education** shows your current course, its branch and your next pick.
+
 ## 0.9.6 — 2026-11-02
 
 ### Added

@@ -1,57 +1,216 @@
 {
   "server_time": "2026-11-02T12:00:00Z",
-  "hero": {
-    "name": "ExamplePlayer", "torn_id": 2000001, "level": 42,
-    "faction": { "id": 9001, "name": "Example Faction" },
-    "rank": { "name": "Bronze", "points": 1200, "next_name": "Silver", "next_points": 2000 },
-    "steps": [
-      { "title": "Share your gym trains", "detail": "Two of four kinds on.", "value": 2, "max": 4, "url": "https://torn-tracker.com/settings/sharing/" },
-      { "title": "Set a savings goal", "value": 0, "max": 1, "url": "https://torn-tracker.com/finances/goals/" },
-      { "title": "A third step is never shown", "value": 0, "max": 1, "url": "https://torn-tracker.com/" }
+  "alerts": [
+    {
+      "kind": "personal.stakeout",
+      "title": "Stakeout triggered",
+      "at": "2026-11-02T11:40:00Z",
+      "url": "https://www.torn-tracker.com/stakeouts/"
+    },
+    {
+      "kind": "faction.chain_watch",
+      "title": "Your watch starts soon",
+      "at": "2026-11-02T10:55:00Z",
+      "url": "https://torn-tracker.com/notifications/"
+    }
+  ],
+  "war": {
+    "state": "running",
+    "opponent_name": "Other Example Faction",
+    "our_score": 1200,
+    "their_score": 1000,
+    "target": 5000,
+    "finish_eta": null,
+    "as_of": "2026-11-02T12:00:00Z",
+    "starts_at": "2026-11-01T12:00:00Z",
+    "ends_at": null,
+    "dibs": [
+      {
+        "target_id": 2000003,
+        "target_name": "Example Target",
+        "expires_at": "2026-11-02T12:05:00Z"
+      }
     ]
   },
-  "bars": {
-    "observed_at": "2026-11-02T11:50:00Z",
-    "bars": [
-      { "key": "energy", "label": "Energy", "current": 150, "maximum": 150, "pct": 100, "over": false },
-      { "key": "nerve", "label": "Nerve", "current": 40, "maximum": 60, "pct": 66 },
-      { "key": "happy", "label": "Happy", "current": 5200, "maximum": 5025, "pct": 103, "over": true },
-      { "key": "life", "label": "Life", "current": 3000, "maximum": 3000, "pct": 100 }
+  "chain_watch": {
+    "now": {
+      "slot_start": "2026-11-02T12:00:00Z",
+      "holders": [
+        {
+          "role": "lead",
+          "role_label": "Lead",
+          "torn_id": 2000001,
+          "name": "ExamplePlayer",
+          "mine": true
+        },
+        {
+          "role": "backup_1",
+          "role_label": "Backup 1",
+          "torn_id": 2000002,
+          "name": "ExampleFriend",
+          "mine": false
+        }
+      ]
+    },
+    "next": {
+      "slot_start": "2026-11-02T12:30:00Z",
+      "holders": []
+    },
+    "mine": {
+      "now": {
+        "role": "lead"
+      },
+      "next": {
+        "slot_start": "2026-11-02T18:00:00Z",
+        "role": "backup_1"
+      }
+    },
+    "gaps_24h": 6,
+    "chain": null,
+    "url": "https://www.torn-tracker.com/chains/watch/"
+  },
+  "chain": {
+    "current": 412,
+    "max": 500,
+    "timeout_at": "2026-11-02T12:04:00Z",
+    "as_of": "2026-11-02T12:00:00Z",
+    "url": "https://www.torn-tracker.com/chains/"
+  },
+  "oc": {
+    "crime_id": 3,
+    "name": "Blast from the Past",
+    "state": "planning",
+    "ready_at": "2026-11-03T00:00:00Z",
+    "needs_me": true
+  },
+  "awards": {
+    "nearest": [
+      {
+        "id": 101,
+        "kind": "honor",
+        "name": "Example honor",
+        "description": "Win 100 attacks.",
+        "pct": 95,
+        "current": 95,
+        "goal": 100,
+        "remaining": 5,
+        "detail": "5 to go",
+        "url": "https://www.torn-tracker.com/awards/#closest"
+      },
+      {
+        "id": 202,
+        "kind": "medal",
+        "name": "Example medal",
+        "description": "Reach level 20.",
+        "pct": 60.5,
+        "current": 12,
+        "goal": 20,
+        "remaining": 8,
+        "detail": "8 to go",
+        "url": "https://www.torn-tracker.com/awards/#closest"
+      }
     ],
-    "effects": [{ "label": "Drug cooldown", "until": "2026-11-02T14:00:00Z", "note": "Xanax" }]
+    "url": "https://www.torn-tracker.com/awards/"
+  },
+  "education": {
+    "course": {
+      "id": 11,
+      "name": "Example course",
+      "finishes_at": "2026-11-05T12:00:00Z"
+    },
+    "next_course": {
+      "id": 12,
+      "name": "Next example course"
+    },
+    "branch": {
+      "name": "Biology",
+      "done": 3,
+      "total": 10
+    },
+    "position": "Junior doctor",
+    "complete": false,
+    "next": {
+      "to": "Bachelor of Medicine",
+      "job": "Doctor",
+      "days_left": 28
+    },
+    "url": "https://www.torn-tracker.com/education/"
+  },
+  "gym": {
+    "next_gym": "George's",
+    "percent": 37.5,
+    "energy_to_next": 120000,
+    "url": "https://torn-tracker.com/gym/"
+  },
+  "goals": {
+    "saved": 25000000,
+    "active": [
+      {
+        "id": 1,
+        "name": "Private island",
+        "amount": 500000000,
+        "known": true,
+        "remaining": 475000000,
+        "pct": 5,
+        "reached": false
+      }
+    ]
+  },
+  "achievements": {
+    "next": [
+      {
+        "id": "first-chain",
+        "name": "First chain",
+        "tier": null,
+        "points": 10,
+        "description": "Hit in a chain of 10.",
+        "progress": {
+          "value": 4,
+          "target": 10
+        }
+      }
+    ]
+  },
+  "guide": {
+    "state": "started",
+    "done": 3,
+    "total": 9,
+    "bonuses_unclaimed": 1,
+    "steps": [
+      {
+        "key": "keys",
+        "title": "Add your keys",
+        "done": true
+      },
+      {
+        "key": "alerts",
+        "title": "Set your first alerts",
+        "done": false
+      }
+    ]
   },
   "money": {
     "days": 3,
     "series": [
-      { "date": "2026-10-31", "income": 1500000, "cost": 200000, "networth": 900000000 },
-      { "date": "2026-11-01", "income": 800000, "cost": 2500000, "networth": 898000000 },
-      { "date": "2026-11-02", "income": 0, "cost": null, "networth": null }
+      {
+        "date": "2026-10-31",
+        "income": 1500000,
+        "cost": 200000,
+        "networth": 900000000
+      },
+      {
+        "date": "2026-11-01",
+        "income": 800000,
+        "cost": 2500000,
+        "networth": 898000000
+      },
+      {
+        "date": "2026-11-02",
+        "income": 0,
+        "cost": null,
+        "networth": null
+      }
     ]
-  },
-  "gym": { "next_gym": "George's", "percent": 37.5, "energy_to_next": 120000 },
-  "goals": {
-    "saved": 25000000,
-    "active": [{ "id": 1, "name": "Private island", "amount": 500000000, "known": true, "remaining": 475000000, "pct": 5, "reached": false }]
-  },
-  "achievements": {
-    "next": [{ "id": "first-chain", "name": "First chain", "tier": null, "points": 10, "description": "Hit in a chain of 10.", "progress": { "value": 4, "target": 10 } }]
-  },
-  "guide": {
-    "state": "started", "done": 3, "total": 9, "bonuses_unclaimed": 1,
-    "steps": [{ "key": "keys", "title": "Add your keys", "done": true }, { "key": "alerts", "title": "Set your first alerts", "done": false }]
-  },
-  "education": { "position": "Junior doctor", "complete": false, "next": { "to": "Bachelor of Medicine", "job": "Doctor", "days_left": 28 } },
-  "chain": { "current": 412, "max": 500, "timeout_at": "2026-11-02T12:04:00Z", "as_of": "2026-11-02T12:00:00Z" },
-  "war": { "opponent_name": "Other Example Faction", "our_score": 1200, "their_score": 1000, "target": 5000, "finish_eta": null, "as_of": "2026-11-02T12:00:00Z" },
-  "oc": { "crime_id": 3, "name": "Blast from the Past", "state": "planning", "ready_at": "2026-11-03T00:00:00Z", "needs_me": true },
-  "stats": {
-    "days": 3,
-    "gym": [
-      { "date": "2026-10-31", "Strength": 1000000, "Defense": 900000, "Speed": 800000, "Dexterity": 700000 },
-      { "date": "2026-11-01", "Strength": 1100000, "Defense": 950000, "Speed": 820000, "Dexterity": 720000 },
-      { "date": "2026-11-02", "Strength": 1200000, "Defense": 990000, "Speed": 850000, "Dexterity": 760000 }
-    ],
-    "edu": []
   },
   "links": {
     "dashboard": "https://torn-tracker.com/dashboard/",
@@ -61,6 +220,10 @@
     "guide": "https://torn-tracker.com/guide/",
     "war": "https://evil.example/war/",
     "oc": "https://torn-tracker.com/oc/",
-    "education": "https://torn-tracker.com/education/"
+    "education": "https://torn-tracker.com/education/",
+    "alerts": "https://torn-tracker.com/notifications/",
+    "chain_watch": "https://torn-tracker.com/chains/watch/",
+    "chain": "https://torn-tracker.com/chains/",
+    "awards": "https://torn-tracker.com/awards/"
   }
 }

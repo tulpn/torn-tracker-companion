@@ -4,13 +4,17 @@
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { BLOCK_ID, READ_EVERY_MS, askedItems, mountSidebarBlock } from '../../src/core/sidebar.js';
+import { BLOCK_ID, READ_EVERY_MS, askedItems, mountSidebarBlock, readLine } from '../../src/core/sidebar.js';
 import { readSidebar } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults } from '../../src/core/settings.js';
 import * as dom from '../../src/core/dom.js';
+import { setDebug } from '../../src/core/log.js';
+import { ROOT } from '../helpers.js';
 
 const windows = [];
 after(() => windows.forEach((w) => w.close()));
@@ -401,5 +405,92 @@ describe('CHW-011, CHW-021 the watch line', () => {
     const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0 } }, ['watch'], 0) } });
     await settle();
     assert.match(t.node().textContent, /Sign up to watch/);
+  });
+});
+
+// hq #488: Torn's Home page, from the owner's capture of 2026-11-02 (scrubbed). On that
+// capture the block was placed and read; the site sent every item but Watch empty.
+describe('hq #488 on Torn’s Home page', () => {
+  const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
+  // The read as the site answered it on the capture: only Watch has something to say.
+  const LIVE = {
+    chain: null, war: null, terms: null, partner: null, dibs: null, oc: null, guide: null,
+    travel: null, loot: null, gym: null, stocks: null,
+    watch: { now: null, next: null, gaps_24h: 48 },
+    links: [{ label: 'Dashboard', url: 'https://www.torn-tracker.com/dashboard/' }],
+  };
+
+  /** console.log while debug is on, for the lines the player would see. */
+  async function logged(fn) {
+    const seen = [];
+    const original = console.log;
+    console.log = (...args) => seen.push(args.map(String).join(' '));
+    setDebug(true);
+    try {
+      await fn();
+    } finally {
+      setDebug(false);
+      console.log = original;
+    }
+    return seen;
+  }
+
+  test('the block follows Targets, the last Lists entry, open, with its rows', async () => {
+    const t = mount({ html: HOME });
+    await settle();
+    assert.equal(t.node().previousElementSibling.id, 'nav-targets_list');
+    assert.equal(t.node().dataset.open, 'true');
+    assert.equal(t.node().hidden, false);
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+    assert.match(t.node().textContent, /War vs Ares/);
+  });
+
+  test('a sidebar Torn draws late is found within the settler’s second, and read once', async () => {
+    const t = mount({ html: '<div id="mainContainer"></div>' });
+    await settle();
+    assert.equal(t.node(), null);
+    t.window.document.body.insertAdjacentHTML('afterbegin', HOME);
+    await settle();
+    t.timers.run();
+    await settle();
+    assert.equal(t.node()?.previousElementSibling.id, 'nav-targets_list');
+    assert.equal(t.asked.length, 1);
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+  });
+
+  test('the site’s answer on the capture: Watch and the links show, and the console names what came back empty', async () => {
+    let t;
+    const seen = await logged(async () => {
+      t = mount({ html: HOME, answer: { status: 'ok', ...readSidebar(LIVE, Object.keys(LIVE), 0) } });
+      await settle();
+    });
+    assert.equal(t.node().hidden, false);
+    assert.match(t.node().textContent, /Watch Sign up to watch · 48 without a Lead/);
+    assert.match(t.node().textContent, /Dashboard/);
+    assert.ok(seen.some((l) => l.includes('sidebar: block placed after #nav-targets_list')), seen.join(' | '));
+    assert.ok(seen.some((l) => /sidebar: read ok: watch to show; empty from the site: chain, war, .*oc/.test(l)), seen.join(' | '));
+  });
+
+  test('each reason the block is not placed is said once', async () => {
+    const off = await logged(async () => {
+      mount({ html: HOME, change: (s) => { s.sidebar.enabled = false; } });
+      await settle();
+    });
+    assert.deepEqual(off.filter((l) => l.includes('not placed')).length, 1);
+    assert.match(off.join(' | '), /block not placed: switched off in Settings/);
+    const none = await logged(async () => {
+      const t = mount({ html: '<div id="mainContainer"></div>' });
+      t.block.place();
+      t.block.place();
+      await settle();
+    });
+    assert.equal(none.filter((l) => l.includes("not placed: no anchor (Torn's Areas or Lists not found yet)")).length, 1);
+  });
+
+  test('the read line: a failed or refused read says so; a full one names no empty item', () => {
+    assert.equal(readLine(['chain'], { status: 'failed' }), 'sidebar: read failed');
+    assert.equal(readLine(['chain'], { status: 'refused' }), 'sidebar: read refused');
+    assert.equal(readLine(['chain'], { status: 'ok', items: new Map([['chain', { current: 3 }]]) }), 'sidebar: read ok: chain to show');
+    assert.equal(readLine(['chain', 'war'], { status: 'ok', items: new Map() }), 'sidebar: read ok: nothing to show; empty from the site: chain, war');
   });
 });
