@@ -104,8 +104,7 @@ describe('hq #522 the figures are compact badges beside the slot', () => {
     assert.equal(badges(r).length, 4);
     for (const n of badges(r)) {
       assert.ok(n.classList.contains('ttc-ui-compact'), n.className);
-      assert.equal(n.tagName, 'BUTTON');
-      assert.equal(n.type, 'button');
+      assert.equal(n.tagName, 'SPAN', "Torn's slot header is a button; buttons don't nest");
       assert.match(n.textContent, /^~?\d+(\.\d)?%$/);
     }
     const css = r.doc.getElementById('ttc-ui-style').textContent;
@@ -116,23 +115,23 @@ describe('hq #522 the figures are compact badges beside the slot', () => {
     assert.match(body, /height: 16px/);
   });
 
-  test('the detail is in the title and the accessible name, and a tap opens it under the badge', async () => {
+  test('the detail is in the title, and a tap opens it under the badge', async () => {
     const r = run({ site: fakeSite() });
     await wait();
     const n = r.doc.querySelector('.ttc-oc[data-kind="weight"]');
     assert.match(n.title, /counts towards success/);
     assert.equal(n.dataset.detail, n.title);
-    assert.equal(n.getAttribute('aria-label'), `${n.textContent}: ${n.title}`);
-    assert.equal(n.getAttribute('aria-expanded'), 'false');
+    assert.ok(n.closest('[class*="slotHeader___"]'), 'beside the role, in the slot header');
+    assert.equal(n.dataset.open, 'false');
     let reached = 0;
     n.parentElement.addEventListener('click', () => { reached += 1; });
     press(n);
-    assert.equal(n.getAttribute('aria-expanded'), 'true');
+    assert.equal(n.dataset.open, 'true');
     press(n);
-    assert.equal(n.getAttribute('aria-expanded'), 'false');
+    assert.equal(n.dataset.open, 'false');
     assert.equal(reached, 0, "the tap never reaches Torn's handlers on the slot");
     const css = r.doc.getElementById('ttc-ui-style').textContent;
-    assert.match(css, /\.ttc-ui-compact\.ttc-ui-compact\[aria-expanded="true"\]::after \{\s*content: attr\(data-detail\)/);
+    assert.match(css, /\.ttc-ui-compact\.ttc-ui-compact\[data-open="true"\]::after \{\s*content: attr\(data-detail\)/);
   });
 
   test('a repaint keeps one badge per slot and the tap state', async () => {
@@ -142,6 +141,6 @@ describe('hq #522 the figures are compact badges beside the slot', () => {
     press(n);
     await wait();
     assert.equal(badges(r).length, 4);
-    assert.equal(n.getAttribute('aria-expanded'), 'true');
+    assert.equal(n.dataset.open, 'true');
   });
 });
