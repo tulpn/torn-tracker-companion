@@ -1,5 +1,5 @@
 // Achievements in the companion (hq #241, WP-UX-8): the read, the unlock toast, the
-// featured ones in the settings header, and their switches.
+// featured ones kept from the read (no longer shown in the settings header, hq #489), and the switch.
 
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -219,24 +219,20 @@ describe('WP-UX-8 the unlock toast', () => {
     assert.equal(r.asked.length, 2);
   });
 
-  test('with the toast off nothing shows, but the featured ones still come; with both off nothing is asked', async () => {
+  test('hq #489: with the toast off nothing is asked, featured switch or not', async () => {
     const settings = defaults(createRegistry([]));
     settings.achievements.toast = false;
     const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
     const featured = [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }];
     const r = rig({ settings, stored: { cursor: iso(T0 - 1000) }, replies: [ok({ unlocked, featured })] });
     await r.unlocks.load();
-    let told = 0;
-    r.unlocks.onChange(() => { told += 1; });
     await r.visit();
+    assert.equal(r.asked.length, 0);
     assert.equal(r.toast(), null);
-    assert.deepEqual(r.unlocks.featured(), featured);
-    assert.equal(told, 1);
     r.set({ ...settings, achievements: { toast: false, featured: false } });
-    assert.deepEqual(r.unlocks.featured(), []);
     r.tick(READ_EVERY_MS);
     await r.visit();
-    assert.equal(r.asked.length, 1);
+    assert.equal(r.asked.length, 0);
   });
 
   test('what’s stored is checked field by field, and "Forget me" clears it', async () => {
@@ -259,15 +255,14 @@ describe('WP-UX-8 the switches and the settings header', () => {
     assert.deepEqual(normalize({ achievements: 'junk' }, registry).achievements, { toast: true, featured: true });
   });
 
-  test('the header shows the featured ones; General has the two switches, saved like any other', async () => {
+  test('hq #489: the header shows no achievements; General has the toast switch, saved like any other', async () => {
     const { window } = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://www.torn.com/' });
     windows.push(window);
     const registry = createRegistry([]);
     let current = defaults(registry);
     const saves = [];
-    let featured = [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }, { id: 'achievement-night_shift', name: 'Night shift', tier: null }];
-    const listeners = new Set();
-    const unlocks = { featured: () => featured, onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); } };
+    const featured = [{ id: 'achievement-chain_tracker', name: 'Chain tracker', tier: 'silver' }];
+    const unlocks = { featured: () => featured, onChange: () => () => {} };
     const panel = mountPanel({
       doc: window.document,
       registry,
@@ -281,11 +276,9 @@ describe('WP-UX-8 the switches and the settings header', () => {
       unlocks,
     });
     panel.open('general');
-    const chips = [...panel.panel.querySelectorAll('.ttc-featured li')].map((li) => li.textContent);
-    assert.deepEqual(chips, ['Chain tracker · Silver', 'Night shift']);
-    featured = [];
-    listeners.forEach((fn) => fn());
-    assert.equal(panel.panel.querySelectorAll('.ttc-featured li').length, 0);
+    assert.equal(panel.panel.querySelector('.ttc-featured'), null);
+    assert.doesNotMatch(panel.panel.querySelector('.ttc-head').textContent, /Chain tracker/);
+    assert.equal(panel.panel.querySelector('[data-achievements=featured]'), null);
 
     const toast = panel.panel.querySelector('[data-achievements=toast]');
     assert.equal(toast.checked, true);

@@ -58,15 +58,14 @@ over a stable one. How a release is made is in [RELEASING.md](RELEASING.md).
 Open the settings from the **Torn Tracker** entry in Torn's sidebar, in the Areas list
 (right under **TornTools Settings** if you have TornTools; in the slide-out menu on a phone
 or in Torn PDA). They open as a page inside Torn, at `index.php#/torn-tracker`, with a menu
-of sections and a search box. Nothing is added to Torn's header.
+of sections and a search bar at the top. Nothing is added to Torn's header.
 
 - **General**: the version, a link to check for an update, the page's look, the
-  achievement switches, and console logging. When torn-tracker.com says you earned an
-  achievement, a small toast shows on the Torn page you're on, and your featured
-  achievements show at the top of the settings. For that, when you open a Torn page and at
-  most once every five minutes, it asks torn-tracker.com with your script key for the
-  achievements earned since it last asked; nothing else is sent, and never from the attack
-  page. Switch either off here; with both off, nothing is asked. Pause all, or companion
+  achievement toast switch, and console logging. When torn-tracker.com says you earned an
+  achievement, a small toast shows on the Torn page you're on. For that, when you open a
+  Torn page and at most once every five minutes, it asks torn-tracker.com with your script
+  key for the achievements earned since it last asked; nothing else is sent, and never from
+  the attack page. Switch the toast off here and nothing is asked. Pause all, or companion
   toasts off, in your notification settings on torn-tracker.com also stops the toast and
   the chain watch slot notice. Every section starts with
   your next step in the torn-tracker guide, if you started it: for that it asks

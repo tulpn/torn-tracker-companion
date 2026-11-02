@@ -647,3 +647,86 @@ describe('WP-UX-4 tours from the settings page (UXT-022)', () => {
     assert.equal(t.$('#ttc-tours'), null);
   });
 });
+
+describe('hq #489 the search bar, the header, and no stray null', () => {
+  const two = () => createRegistry([
+    descriptor(),
+    descriptor({ id: 'gym-thing', title: 'Gym thing', area: 'gym', guide: 'gym-progress', summary: 'Shows gym progress.', shares: [] }),
+  ]);
+  /** Every text node, empty paragraph and empty muted line under main. */
+  function strays(t) {
+    const main = t.$('main');
+    const walker = t.window.document.createTreeWalker(main, t.window.NodeFilter.SHOW_TEXT);
+    const bad = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (/\b(null|undefined)\b/.test(n.textContent)) bad.push(`text: ${n.textContent.trim().slice(0, 60)}`);
+    }
+    for (const p of main.querySelectorAll('p, .ttc-muted')) {
+      if (!p.textContent.trim() && !p.children.length) bad.push(`empty ${p.tagName.toLowerCase()}.${p.className}`);
+    }
+    return bad;
+  }
+  const SECTIONS = ['general', 'features', 'sidebar', 'watch', 'sharing', 'keys', 'data', 'credits', 'help'];
+
+  for (const silenced of [true, false]) {
+    test(`no section writes null, undefined or an empty line (site toasts ${silenced ? 'silenced' : 'on'})`, () => {
+      const t = mount({ unlocks: { featured: () => [], silenced: () => silenced, onChange: () => () => {} } });
+      for (const id of SECTIONS) {
+        t.open(id);
+        assert.deepEqual(strays(t), [], id);
+      }
+      for (const q of ['gym', 'key', 'zzzz']) {
+        const search = t.$('#ttc-search');
+        search.value = q;
+        search.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+        assert.deepEqual(strays(t), [], `search ${q}`);
+      }
+    });
+  }
+
+  test('no section writes null with no achievements module at all', () => {
+    const t = mount();
+    for (const id of SECTIONS) {
+      t.open(id);
+      assert.deepEqual(strays(t), [], id);
+    }
+  });
+
+  test('the header holds the title, the version and the key state, and no achievements', async () => {
+    const t = mount({ unlocks: { featured: () => [{ id: 'a', name: 'Chain tracker', tier: 'gold' }], silenced: () => false, onChange: () => () => {} } });
+    t.open('general');
+    assert.equal(t.$('.ttc-featured'), null);
+    assert.doesNotMatch(t.$('.ttc-head').textContent, /Chain tracker/);
+    assert.match(t.$('.ttc-head').textContent, /9\.9\.9/);
+    assert.equal(t.$('.ttc-keystate').textContent, 'No script key');
+    assert.equal(t.$('.ttc-keystate').dataset.key, 'none');
+    assert.equal(t.$('.ttc-head #ttc-search'), null);
+
+    const k = mount({ keys: { ...emptyKeys(), script: KEY } });
+    k.open('general');
+    assert.equal(k.$('.ttc-keystate').textContent, 'Script key saved');
+    assert.equal(k.$('.ttc-keystate').dataset.key, 'set');
+    assert.doesNotMatch(k.$('.ttc-head').textContent, /tt_feed_/);
+  });
+
+  test('the search bar comes first, under the header, and the clear button empties it', () => {
+    const t = mount({ registry: two() });
+    t.open('features');
+    const find = t.$('.ttc-find');
+    assert.equal(find.getAttribute('role'), 'search');
+    assert.equal(find.previousElementSibling.classList.contains('ttc-head'), true);
+    const search = find.querySelector('#ttc-search');
+    const clear = find.querySelector('[data-act="clear-search"]');
+    assert.equal(clear.getAttribute('aria-label'), 'Clear the search');
+    assert.equal(clear.hidden, true);
+    search.value = 'gym';
+    search.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    assert.equal(clear.hidden, false);
+    assert.equal(t.$('[data-card="war-enhancer"]'), null);
+    t.click(clear);
+    assert.equal(search.value, '');
+    assert.equal(clear.hidden, true);
+    assert.ok(t.$('[data-card="war-enhancer"]'));
+    assert.equal(t.window.document.activeElement === search || t.root.activeElement === search, true);
+  });
+});

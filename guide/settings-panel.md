@@ -34,7 +34,9 @@ from any other page, or from the address above.
 
 ## Find a setting
 
-Type in **Search settings** at the top to find any switch or option, in any section.
+Type in **Search settings**, the bar right under the page's title, to find any switch or
+option, in any section. **✕** beside it clears the search. The title bar itself shows the
+companion's version and whether a script key is saved.
 Changes are kept until you press **Save**, so you can move between sections freely; leaving
 without saving throws them away. After **Save** you stay on the page, and it says
 **Saved.** The page opens on the section you used last.
@@ -42,8 +44,8 @@ without saving throws them away. After **Save** you stay on the page, and it say
 ## The sections
 
 - **General:** the version, a link to check for an update, the page's **Look**, the
-  switches for [achievements](achievements.md), and console logging for troubleshooting.
-  Your featured achievements show at the top of the page.
+  switch for the [achievements](achievements.md) toast, and console logging for
+  troubleshooting.
 - **Features:** every feature, grouped by area (war, travel, market, crimes, gym, jobs),
   each with its switch, one line on what it does, its options, and a **Learn more** link to
   its page here. A feature that's off doesn't run at all. **Reset settings to defaults** is
