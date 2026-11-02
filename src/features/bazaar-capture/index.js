@@ -20,6 +20,7 @@
 import { createGate, isVisible } from '../../core/capture.js';
 import { createListing, ownIdFrom, ownerFrom, readChunk } from './read.js';
 import { isItemsResponse } from './selectors.js';
+import { settler } from '../../core/dom.js';
 
 const WINDOW_MS = 5 * 60_000;
 
@@ -46,7 +47,7 @@ const feature = {
     if (!owner || owner === ownIdFrom(ctx.doc.cookie)) return;
 
     const s = {
-      win, timer: null, unsubscribe: null, listing: createListing(), sentComplete: false,
+      win, settle: null, unsubscribe: null, listing: createListing(), sentComplete: false,
       gate: createGate({ windowMs: WINDOW_MS, now: ctx.now }),
     };
     state = s;
@@ -66,8 +67,8 @@ const feature = {
       const chunk = readChunk(data);
       if (!chunk) return;
       s.listing.add(chunk);
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(report, feature.settleMs);
+      s.settle ??= settler(report, feature.settleMs, { timers: win });
+      s.settle.poke();
     }, ctx.win);
   },
 
@@ -76,7 +77,7 @@ const feature = {
     state = null;
     if (!s) return;
     s.unsubscribe?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
   },
 };
 
