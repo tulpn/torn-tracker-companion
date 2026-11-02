@@ -167,6 +167,26 @@ export function anchorOf(doc) {
   return areas.closest("[class*='sidebar-block'], [class*='toggle-block']") || areas;
 }
 
+/** How the console names a node of Torn's sidebar: its id, else its first class. */
+function nameOf(node) {
+  if (node.id) return `#${node.id}`;
+  const first = String(node.getAttribute('class') || '').split(/\s+/)[0];
+  return first ? `.${first}` : node.tagName.toLowerCase();
+}
+
+/**
+ * The console line for a read (hq #488): which items came back with something to show
+ * and which the site sent empty, so "the block shows only Watch" can be told apart from
+ * "the block is broken".
+ */
+export function readLine(want, result) {
+  if (result.status !== 'ok') return `sidebar: read ${result.status}`;
+  const full = want.filter((id) => result.items.get(id));
+  const empty = want.filter((id) => !result.items.get(id));
+  return `sidebar: read ok: ${full.length ? full.join(', ') : 'nothing'} to show`
+    + (empty.length ? `; empty from the site: ${empty.join(', ')}` : '');
+}
+
 /**
  * @param {object} opts
  * @param {Document} opts.doc
@@ -195,8 +215,15 @@ export function mountSidebarBlock({
   let notBefore = 0;
   let readTimer = null;
   let tick = null;
-  let toldNoAnchor = false;
   let stopped = false;
+  // hq #488: what the console last said about placing, reading and hiding, so that a
+  // reason is said once when it changes, not on every redraw.
+  const said = new Map();
+  const say = (topic, text) => {
+    if (said.get(topic) === text) return;
+    said.set(topic, text);
+    log(text);
+  };
 
   store.read().then((saved) => {
     if (typeof saved?.open === 'boolean' && openState === null) {
@@ -310,6 +337,8 @@ export function mountSidebarBlock({
     block.querySelector(`.${P}-sb-body`).replaceChildren(...rows);
     // Open with nothing to show: the block hides itself.
     block.hidden = open && rows.length === 0;
+    say('hidden', block.hidden ? 'sidebar: block hidden: every item switched on is empty'
+      : `sidebar: block shown ${open ? 'open' : 'closed'}`);
   }
 
   /** Ticks the countdowns between reads; nothing else. */
@@ -337,6 +366,7 @@ export function mountSidebarBlock({
       answer = result;
       if (result.status === 'ok' && result.items.has('watch')) onWatch?.(result.items.get('watch'));
     }
+    say('read', readLine(want, result));
     render();
   }
 
@@ -371,15 +401,15 @@ export function mountSidebarBlock({
     if (stopped) return;
     if (!enabled()) {
       block?.remove();
+      say('place', 'sidebar: block not placed: switched off in Settings');
       return;
     }
     const anchor = anchorOf(doc);
     if (!anchor) {
-      if (!toldNoAnchor) log("sidebar: block not placed: no anchor (Torn's Areas or Lists not found yet)");
-      toldNoAnchor = true;
+      say('place', "sidebar: block not placed: no anchor (Torn's Areas or Lists not found yet)");
       return;
     }
-    toldNoAnchor = false;
+    say('place', `sidebar: block placed after ${nameOf(anchor)}`);
     if (!block) block = build();
     // A copy left behind by a redraw of Torn's sidebar holds old rows and a dead button.
     for (const copy of doc.querySelectorAll(`#${BLOCK_ID}`)) {
@@ -420,10 +450,6 @@ export function mountSidebarBlock({
      * the next read, which still waits out its minute.
      */
     update() {
-      if (!enabled()) {
-        block?.remove();
-        return;
-      }
       place();
     },
     place,
