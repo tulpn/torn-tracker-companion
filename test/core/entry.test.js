@@ -7,7 +7,8 @@ import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
-import { LINK_ID, ROUTE_HREF, SIDEBAR, mountEntry, nativeEntry, tornHref } from '../../src/core/entry.js';
+import { ownChange } from '../../src/core/dom.js';
+import { LINK_ID, OURS, ROUTE_HREF, SIDEBAR, mountEntry, nativeEntry, tornHref } from '../../src/core/entry.js';
 import { ROOT } from '../helpers.js';
 
 const REAL = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-desktop.html'), 'utf8');
@@ -93,25 +94,61 @@ describe('hq #453 the entry is copied from Torn, never from another script', () 
     assert.ok(t.doc.getElementById(LINK_ID).hasAttribute('data-own'));
   });
 
-  test('after ten redraws in which another script copies our row: one entry, no mark of ours outside it', () => {
-    const t = boot();
+  test('after ten redraws in which The Contract copies our row as it really does: one entry, Torn’s icon on its copy, no mark or marker of ours', () => {
+    const t = boot(REAL, { contractFirst: false });
     const entry = mount(t);
+    const { window } = t;
     for (let i = 0; i < 10; i += 1) {
-      // The other script clones the last row (ours) and makes it its own.
+      // As the owner's DOM showed it (hq #453): our row cloned with our attributes kept,
+      // the id dropped, its own marker, title, link and name set, and its chip added.
       const clone = t.doc.getElementById(LINK_ID).cloneNode(true);
       clone.removeAttribute('id');
-      clone.removeAttribute('data-ttc-open');
-      clone.removeAttribute('data-own');
-      clone.querySelector('a').setAttribute('href', `/index.php#/other-${i}`);
+      clone.setAttribute('data-tc-entry', '');
+      clone.setAttribute('title', 'The Contract (Alt+Shift+C)');
+      const a = clone.querySelector('a');
+      a.setAttribute('href', '/index.php#/the-contract');
+      a.querySelector("[class*='linkName']").textContent = 'The Contract';
+      a.append(JSDOM.fragment('<span data-tc-chip="">#7</span>'));
+      const record = { target: t.areas, addedNodes: [clone], removedNodes: [] };
       t.areas.append(clone);
+      assert.equal(ownChange(record, OURS), false, 'another script’s copy is not ours, so the entry looks again');
       if (i % 3 === 0) t.doc.getElementById(LINK_ID).remove(); // and Torn sometimes drops ours
       entry.place();
       assert.equal(t.doc.querySelectorAll(`#${LINK_ID}`).length, 1, `redraw ${i + 1}`);
       assert.deepEqual(marksOutside(t.doc), [], `redraw ${i + 1}`);
+      assert.deepEqual([...t.doc.querySelectorAll('[data-ttc-open]')].map((n) => n.id), [LINK_ID], `redraw ${i + 1}`);
     }
-    assert.equal(t.doc.getElementById(LINK_ID).querySelectorAll('.ttc-mark').length, 1, 'ours keeps its mark');
-    const contract = t.contract();
-    assert.ok(contract.querySelector('svg'), 'The Contract’s icon intact');
-    assert.equal(contract.querySelector('[data-tc-chip]').textContent, '#7', 'and its chip');
+    const own = t.doc.getElementById(LINK_ID);
+    assert.equal(own.querySelectorAll('.ttc-mark').length, 1, 'ours keeps its mark');
+    assert.equal(window.getComputedStyle(own.querySelector('.ttc-mark')).display, 'inline-flex', 'and shows it');
+    assert.equal(window.getComputedStyle(own.querySelector('svg')).display, 'none', 'Torn’s icon is hidden under our id');
+    for (const copy of t.doc.querySelectorAll('[data-tc-entry]')) {
+      const svg = copy.querySelector('svg');
+      assert.ok(svg, 'the copy has Torn’s icon');
+      assert.notEqual(window.getComputedStyle(svg).display, 'none', 'and shows it');
+      assert.equal(copy.querySelector("[class*='linkName']").textContent, 'The Contract');
+      assert.equal(copy.querySelector('[data-tc-chip]').textContent, '#7');
+    }
+  });
+
+  test('a mark a copy carries from before the fix is hidden even before it is taken off', () => {
+    const t = boot();
+    mount(t);
+    const clone = t.doc.getElementById(LINK_ID).cloneNode(true);
+    clone.removeAttribute('id');
+    t.areas.append(clone);
+    assert.equal(t.window.getComputedStyle(clone.querySelector('.ttc-mark')).display, 'none');
+  });
+
+  test('destroy removes our row and leaves another script’s copy of it', () => {
+    const t = boot();
+    const entry = mount(t);
+    const clone = t.doc.getElementById(LINK_ID).cloneNode(true);
+    clone.removeAttribute('id');
+    clone.setAttribute('data-tc-entry', '');
+    t.areas.append(clone);
+    entry.destroy();
+    assert.equal(t.doc.getElementById(LINK_ID), null);
+    assert.ok(t.doc.querySelector('[data-tc-entry]'));
   });
 });

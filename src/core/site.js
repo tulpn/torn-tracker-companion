@@ -77,6 +77,12 @@ const DEMAND_MAX = 500;
 export const MAX_IDS = 100;
 
 const HOUR = 3_600_000;
+/** A read the site has no route for (404) rests 10 minutes (hq #368). */
+const REST_MISSING_MS = 600_000;
+/** A read that failed, or a 429 without Retry-After, rests a minute. */
+const RETRY_FAILED_MS = 60_000;
+/** The longest a 429's Retry-After is honoured. */
+const REST_MAX_MS = HOUR;
 const BAND = 40;
 
 const positiveInt = (v) => Number.isInteger(v) && v > 0;
@@ -286,6 +292,12 @@ const SIDEBAR_READERS = {
 };
 
 /**
+ * A link on our site, on either spelling of the host (D-162). Requests go to the bare host,
+ * but the site writes the links in its replies on www (hq #312).
+ */
+const onSite = (v) => SITE_ORIGINS.some((origin) => v.startsWith(`${origin}/`));
+
+/**
  * The sidebar read's answer, checked item by item. An item that was asked for and doesn't
  * fit is null, the same as nothing to show; one that wasn't asked for is left out.
  * @returns {{items: Map<string, object|null>, links: Array<{label: string, url: string}>}}
@@ -308,7 +320,7 @@ export function readSidebar(data, asked, skew = 0) {
   }
   const links = (Array.isArray(data?.links) ? data.links : []).slice(0, 6)
     .filter((l) => typeof l?.label === 'string' && l.label && l.label.length <= 30
-      && typeof l.url === 'string' && l.url.startsWith(`${SITE}/`) && l.url.length <= 200)
+      && typeof l.url === 'string' && onSite(l.url) && l.url.length <= 200)
     .map((l) => ({ label: l.label, url: l.url }));
   return { items, links };
 }
@@ -347,7 +359,7 @@ export function readAchievements(data) {
   }).filter(Boolean);
   const featured = (Array.isArray(data?.featured) ? data.featured : []).slice(0, FEATURED_MAX)
     .filter((a) => a?.earned !== false).map(readAchievement).filter(Boolean);
-  const url = typeof data?.url === 'string' && data.url.startsWith(`${SITE}/`) && data.url.length <= 200 ? data.url : ACHIEVEMENTS_PAGE;
+  const url = typeof data?.url === 'string' && onSite(data.url) && data.url.length <= 200 ? data.url : ACHIEVEMENTS_PAGE;
   const cursor = typeof data?.server_time === 'string' && data.server_time.length <= 40 && Number.isFinite(Date.parse(data.server_time))
     ? data.server_time : null;
   const said = typeof data?.pause_all === 'boolean' || typeof data?.companion_toasts === 'boolean';
@@ -356,7 +368,6 @@ export function readAchievements(data) {
 }
 
 const trimmed = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
-const onSite = (v) => SITE_ORIGINS.some((origin) => v.startsWith(`${origin}/`));
 
 /** A link on our site: an absolute one on either spelling of our host, or a path on it. */
 function siteLink(v) {
@@ -394,10 +405,10 @@ export function readGuide(data) {
 /** A cached guide answer still has the shape readGuide gives. */
 export function validGuide(v) {
   if (!v || typeof v !== 'object' || typeof v.started !== 'boolean' || typeof v.offer !== 'boolean') return false;
-  if (!count(v.done, 100) || !count(v.total, 100) || v.done > v.total || typeof v.url !== 'string' || !v.url.startsWith(`${SITE}/`)) return false;
+  if (!count(v.done, 100) || !count(v.total, 100) || v.done > v.total || typeof v.url !== 'string' || !onSite(v.url)) return false;
   if (v.next === null) return true;
   return typeof v.next?.title === 'string' && typeof v.next.cta === 'string'
-    && typeof v.next.href === 'string' && v.next.href.startsWith(`${SITE}/`)
+    && typeof v.next.href === 'string' && onSite(v.next.href)
     && (v.next.outcome === null || typeof v.next.outcome === 'string');
 }
 
@@ -523,7 +534,7 @@ export const SPACES = Object.freeze({
   sidebar: { ttlMs: SIDEBAR_TTL, max: 1, valid: validSidebarCopy },
   trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
   lists: { ttlMs: LISTS_TTL, max: 200, valid: validLists },
-  trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && v.startsWith(`${SITE}/`) },
+  trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && onSite(v) },
   shops: { ttlMs: DAY, max: 1, valid: validShopRows },
   // The site had no table: the built-in one serves for an hour before it is asked again.
   shopsMissed: { ttlMs: HOUR, max: 1, valid: (v) => v === true },
@@ -591,9 +602,41 @@ export function createSite({
     return result || { ok: false, status: 0, data: null };
   }
 
+  /**
+   * Reads the site couldn't answer, by method and address, and until when they rest. A
+   * feature asks again on the next page change; without the rest a missing route (404)
+   * or a busy site would be asked on every mutation (hq #368: the mugger badge looped).
+   */
+  const resting = new Map();
+
+  /** How long a failed read rests, in ms; 0 for answers that say nothing about the route. */
+  function restFor(result) {
+    if (!result) return RETRY_FAILED_MS;
+    if (result.status === 404) return REST_MISSING_MS;
+    if (result.status === 429) {
+      const seconds = Number(result.retryAfter);
+      return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, REST_MAX_MS) : RETRY_FAILED_MS;
+    }
+    if (result.status >= 500 || (result.status === 0 && result.error !== 'budget')) return RETRY_FAILED_MS;
+    return 0;
+  }
+
   async function call(url, opts) {
+    const key = `${opts?.method || 'GET'} ${url}`;
+    const until = resting.get(key);
+    if (until !== undefined) {
+      if (now() < until) return null;
+      resting.delete(key);
+    }
     const result = await exchange(url, opts);
-    return result.ok ? result.data : null;
+    if (result?.ok) return result.data;
+    const rest = restFor(result);
+    if (rest > 0) {
+      for (const [k, t] of resting) if (t <= now()) resting.delete(k);
+      resting.set(key, now() + rest);
+      log(`site: ${key.split('?')[0]} answered ${result?.status ?? 0}; not asked again for ${Math.round(rest / 1000)} s`);
+    }
+    return null;
   }
 
   /** How far the site's clock is ahead of ours, from a reply's server_time; 0 if absent. */
@@ -1082,7 +1125,7 @@ export function createSite({
         const points = c.job_points === null || (Number.isInteger(c.job_points) && c.job_points >= 0) ? c.job_points : undefined;
         const fit = c.fit === null || ['good', 'fair', 'poor'].includes(c.fit) ? c.fit : undefined;
         if (merits === undefined || points === undefined || fit === undefined) continue;
-        const url = typeof c.card_url === 'string' && c.card_url.startsWith(`${SITE}/`) ? c.card_url : null;
+        const url = typeof c.card_url === 'string' && onSite(c.card_url) ? c.card_url : null;
         cards.set(c.id, { merits, job_points: points, fit, card_url: url });
       }
       return { allowed: true, cards };

@@ -22,7 +22,7 @@ afterEach(() => {
   delete globalThis.localStorage;
 });
 
-function rig({ key = KEY, reply, now = () => 0 } = {}) {
+function rig({ key = KEY, reply, now = () => 0, clock = () => Date.parse('2026-10-25T00:00:00Z') } = {}) {
   const calls = [];
   const site = createSite({
     getKey: () => key,
@@ -31,7 +31,7 @@ function rig({ key = KEY, reply, now = () => 0 } = {}) {
       return reply(url, opts);
     },
     cache: createCache(SPACES, { now }),
-    now: () => Date.parse('2026-10-25T00:00:00Z'),
+    now: clock,
   });
   return { site, calls };
 }
@@ -94,9 +94,51 @@ describe('TRU-023 the after-sale mug read: listed players only, kept 10 minutes'
     assert.equal((await bare.site.muggers([1])).safetyUrl, SAFETY);
   });
 
-  test('until the site serves the read, nothing is cached and nobody is listed', async () => {
-    const r = rig({ reply: () => ({ ok: false, status: 404, data: null }) });
+  test('until the site serves the read, nobody is listed and the read rests 10 minutes (hq #368)', async () => {
+    let t = Date.parse('2026-10-25T00:00:00Z');
+    const r = rig({ reply: () => ({ ok: false, status: 404, data: null }), clock: () => t });
     assert.equal((await r.site.muggers([1])).players.size, 0);
+    // A profile page changes many times a second; none of those changes asks again.
+    for (let i = 0; i < 50; i += 1) await r.site.muggers([1]);
+    assert.equal(r.calls.length, 1);
+    t += 599_000;
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 1);
+    t += 2_000;
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 2, 'asked again once the rest is over');
+  });
+
+  test('a 429 rests as long as Retry-After says, at most an hour; a failure a minute', async () => {
+    let t = 0;
+    let reply = { ok: false, status: 429, data: null, retryAfter: '120' };
+    const r = rig({ reply: () => reply, clock: () => t });
+    await r.site.muggers([1]);
+    t += 119_000;
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 1);
+    t += 2_000;
+    reply = { ok: false, status: 503, data: null };
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 2);
+    t += 59_000;
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 2);
+    t += 2_000;
+    reply = { ok: false, status: 429, data: null, retryAfter: '99999' };
+    await r.site.muggers([1]);
+    t += 3_599_000;
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 3);
+    t += 2_000;
+    await r.site.muggers([1]);
+    assert.equal(r.calls.length, 4);
+  });
+
+  test('a refused answer that says nothing about the route does not rest it', async () => {
+    let t = 0;
+    const r = rig({ reply: () => ({ ok: false, status: 400, data: null }), clock: () => t });
+    await r.site.muggers([1]);
     await r.site.muggers([1]);
     assert.equal(r.calls.length, 2);
   });
