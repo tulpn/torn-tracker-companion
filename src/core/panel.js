@@ -194,6 +194,7 @@ const STYLE = `
   #${P}-panel .${P}-warn { color: var(--ttc-warn); margin-top: 6px; font-size: 13px; }
   #${P}-panel .${P}-banned { grid-area: banned; border-left: 4px solid var(--ttc-warn); padding: 8px 12px; margin: 0 18px 8px; font-size: 13px; }
   #${P}-panel .${P}-banned[hidden] { display: none; }
+  #${P}-panel .${P}-head a[hidden] { display: none; }
   #${P}-panel .${P}-banned strong { display: block; }
   #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; font-size: 13px; }
   #${P}-panel .${P}-status[data-tone="good"] { color: var(--ttc-good); }
@@ -327,12 +328,15 @@ export function mountPanel({
   const status = h('div', { class: `${P}-status`, role: 'status' });
   const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
   const featured = h('ul', { class: `${P}-featured`, 'aria-label': 'Your featured achievements' });
+  // The way into the dashboard page (hq #465), while its preview switch is on.
+  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '', hidden: getSettings().dashboard !== true }, 'Dashboard');
   panel.append(h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       featured,
+      dashboardLink,
       search,
       ...(tours ? [h('button', {
         type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
@@ -637,6 +641,12 @@ export function mountPanel({
         'Show my next step in the torn-tracker guide at the top of this page'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion asks torn-tracker.com for it when you open a Torn page, at most every 15 minutes.'),
+      h('h4', null, 'Dashboard (preview)'),
+      h('label', { class: `${P}-check` },
+        h('input', { type: 'checkbox', 'data-setting': 'dashboard', checked: draft.settings.dashboard === true }),
+        'Show my torn-tracker dashboard inside Torn'),
+      h('div', { class: `${P}-muted` },
+        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
@@ -777,6 +787,7 @@ export function mountPanel({
   }
 
   function render(message = '', tone = '') {
+    dashboardLink.hidden = getSettings().dashboard !== true;
     drawFeatured();
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
     nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
@@ -827,6 +838,8 @@ export function mountPanel({
       draft.settings.debug = input.checked;
     } else if (setting === 'guideStrip') {
       draft.settings.guideStrip = input.checked;
+    } else if (setting === 'dashboard') {
+      draft.settings.dashboard = input.checked;
     } else if (setting === 'look') {
       // Shown at once, so the player sees it before saving; Close without Save puts it back.
       draft.settings.look = input.value;
