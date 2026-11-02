@@ -9,6 +9,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The companion now sees Torn's own page requests again under Tampermonkey and other script
+  managers, so the observations you switched on in Sharing are captured and uploaded. Before,
+  it watched its own sandbox instead of the page, and nothing was sent.
+- With **Debug** on, the console now shows each page response the companion read and how many
+  features used it. On the gym page it also says when no gym in progress was found.
+
 ## 0.9.8 — 2026-11-02
 
 ### Added
