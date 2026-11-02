@@ -14,7 +14,12 @@ import { TOKENS } from '../data/tokens.js';
 const P = 'ttc';
 export const TONES = Object.freeze(['good', 'neutral', 'warn', 'bad', 'info']);
 
-const OWN = `.${P}-ui-badge, .${P}-ui-strip, .${P}-ui-note, .${P}-ui-bar, .${P}-ui-button`;
+const OWN = `.${P}-ui-badge, .${P}-ui-strip, .${P}-ui-note, .${P}-ui-bar, .${P}-ui-button, .${P}-profile-actions`;
+/** The profile's row of our buttons (hq #467), and the order its parts keep. */
+export const PROFILE_ACTIONS = `${P}-profile-actions`;
+const ACTION_ORDER = Object.freeze(['lists', 'messages', 'notes']);
+/** The row's class twice: it outweighs Torn's `.d .content-title button`. */
+const ROW = `.${PROFILE_ACTIONS}.${PROFILE_ACTIONS}`;
 /** Each tone's ink; its background is the same colour, faint. */
 const INK = Object.freeze({
   good: 'var(--tt-success)',
@@ -136,6 +141,42 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
   }
+  /* The profile's row of our buttons (hq issue 467): one block below Torn's title row, drawn
+     like Torn's own buttons (its size, radius, font and theme colours); our green only as
+     the accent on the left edge and the focus ring. Torn styles every button in its title
+     box (no border, no background, a divider before it), so these rules carry the row's
+     class twice to win over that. */
+  .${P}-profile-actions {
+    clear: both; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px;
+  }
+  .${P}-profile-actions:empty { display: none; }
+  .${P}-profile-actions > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; }
+  ${ROW} .${P}-ui-button {
+    position: relative; box-sizing: border-box; height: auto; min-height: 34px; min-width: 34px; margin: 0; padding: 0 12px;
+    border-radius: 5px; border: var(--btn-border, 1px solid var(--input)); border-left: 3px solid var(--primary);
+    background: var(--btn-background, var(--card)); color: var(--btn-color, var(--foreground));
+    text-shadow: var(--btn-text-shadow, none); box-shadow: none;
+    font: normal 14px/32px "Fjalla One", Arial, sans-serif; text-transform: uppercase; text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; white-space: nowrap;
+  }
+  ${ROW} .${P}-ui-button::before, ${ROW} .${P}-ui-button::after { content: none; display: none; }
+  ${ROW} .${P}-ui-button:hover:not(:disabled) {
+    background: var(--btn-hover-background, var(--muted)); color: var(--btn-hover-color, var(--foreground));
+    border: var(--btn-hover-border, 1px solid var(--input)); border-left: 3px solid var(--primary);
+    text-shadow: var(--btn-hover-text-shadow, none);
+  }
+  ${ROW} .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  ${ROW} .${P}-ui-button:disabled { cursor: default; opacity: .6; }
+  ${ROW} .${P}-ui-button[aria-expanded="true"] { box-shadow: inset 0 -2px 0 var(--primary); }
+  /* The split button: its two halves join. */
+  ${ROW} .${P}-lists-main { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  ${ROW} .${P}-lists-arrow, ${ROW} .${P}-lists-arrow:hover:not(:disabled) {
+    border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; padding: 0 10px;
+  }
+  ${ROW} .${P}-lists-note:not(:empty) { margin-left: 8px; }
+  @media (pointer: coarse), (max-width: 600px) {
+    ${ROW} .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 0 14px; }
+  }
 `;
 
 /** Puts the one stylesheet on the page, once. */
@@ -212,6 +253,36 @@ export function preview(doc, { cls, attrs = {} } = {}, ...children) {
 export function flag(doc, { cls, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
   return el('mark', { class: classes(`${P}-ui-flag`, cls), ownerDocument: doc, ...attrs }, ...children);
+}
+
+/**
+ * Puts one of our profile controls into the profile's row of our buttons (hq #467): one
+ * block inside Torn's title box, below its title row and before its rule, so nothing of
+ * Torn's moves sideways and none of its nodes is touched. The row is made once; its parts
+ * keep one order (lists, messages, notes) whichever feature comes first.
+ * @param {Document} doc
+ * @param {Element} heading   the profile's name heading
+ * @param {'lists'|'messages'|'notes'} slot
+ * @param {Element} node
+ */
+export function profileAction(doc, heading, slot, node) {
+  ensureStyle(doc);
+  let row = doc.querySelector(`.${PROFILE_ACTIONS}`);
+  if (!row) {
+    row = el('div', {
+      class: PROFILE_ACTIONS, role: 'group', 'aria-label': 'Torn Tracker', 'data-ttc-own': '', ownerDocument: doc,
+    });
+    const title = heading.closest('.content-title');
+    const rule = title && [...title.children].find((n) => n.matches('hr'));
+    if (rule) rule.before(row);
+    else if (title) title.append(row);
+    else heading.after(row);
+  }
+  node.dataset.ttcSlot = slot;
+  const rank = (n) => ACTION_ORDER.indexOf(n.dataset?.ttcSlot);
+  const next = [...row.children].find((n) => rank(n) > rank(node));
+  row.insertBefore(node, next || null);
+  return node;
 }
 
 /** One of our own small buttons; 44 px on touch screens. */

@@ -86,20 +86,25 @@ describe('hq #313 the profile features on the captured profile', () => {
     untouched(r);
   });
 
-  test('CMP-308 the note toggle sits beside the heading', async () => {
+  test('CMP-308 the note toggle sits in our row of buttons below the title row (hq #467)', async () => {
     const r = run(playerNotes);
     await wait();
     const toggle = r.doc.querySelector('.ttc-notes-toggle');
     assert.ok(toggle);
-    assert.equal(toggle.parentElement, r.doc.querySelector('.content-title'));
+    const row = toggle.parentElement;
+    assert.ok(row.matches('.ttc-profile-actions'));
+    assert.equal(row.parentElement, r.doc.querySelector('.content-title'));
+    assert.ok(row.nextElementSibling.matches('hr.page-head-delimiter'), "above Torn's rule, below its title row");
     untouched(r);
   });
 
-  test('CMP-110 the list button sits beside the heading and reads once', async () => {
+  test('CMP-110 the list button sits in our row of buttons and reads once (hq #467)', async () => {
     const r = run(addToList);
     await wait();
     assert.equal(r.doc.querySelectorAll('.ttc-lists-main').length, 1);
-    assert.equal(r.doc.querySelector('h4#skip-to-content').nextElementSibling.classList.contains('ttc-lists'), true);
+    assert.ok(r.doc.querySelector('.content-title > .ttc-profile-actions > .ttc-lists'));
+    assert.equal(r.doc.querySelector('h4#skip-to-content').nextElementSibling.className.includes('ttc-'), false,
+      'nothing of ours beside the heading but badges');
     assert.equal(r.doc.querySelector('.ttc-lists-main').textContent, 'Add to Chain targets');
     assert.deepEqual(site.calls, [['lists', 4]]);
     untouched(r);
