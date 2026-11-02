@@ -40,6 +40,16 @@ describe('hq #471 contract/site-paths.json', () => {
     ]);
   });
 
+  test('a query held in a variable is read from what the variable spells, in that file only', () => {
+    const { paths } = contractFrom([
+      ['a.js', `${SITE_DECL}export const A_URL = \`\${SITE}/api/feeds/a\`;
+        const query = since ? \`?since=\${encodeURIComponent(since)}\` : '';
+        call(\`\${A_URL}\${query}\`, { method: 'GET' });`],
+      ['b.js', "const query = '?other=1';"],
+    ]);
+    assert.deepEqual(paths, [{ method: 'GET', path: '/api/feeds/a', query: ['since'], auth: 'script_key' }]);
+  });
+
   test('a URL nobody calls, or a call with no literal method, fails the build', () => {
     assert.throws(() => contractFrom([['a.js', `${SITE_DECL}const B_URL = \`\${SITE}/api/feeds/b\`;`]]), /B_URL .* never called/);
     assert.throws(() => contractFrom([['a.js', `${SITE_DECL}const B_URL = \`\${SITE}/api/feeds/b\`; call(B_URL, { method: verb });`]]), /a\.js:2: a call to B_URL with no literal method/);

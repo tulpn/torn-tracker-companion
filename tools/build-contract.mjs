@@ -41,6 +41,18 @@ function sitePath(init) {
   return tail.value.cooked.startsWith('/api/') ? tail.value.cooked : null;
 }
 
+/** Every string written in a node: literals and the fixed parts of template literals. */
+function textIn(node) {
+  let text = '';
+  walk.full(node, (n) => {
+    if (n.type === 'Literal' && typeof n.value === 'string') text += `${n.value}
+`;
+    else if (n.type === 'TemplateElement') text += `${n.value.cooked}
+`;
+  });
+  return text;
+}
+
 /** The literal `method` of a call's options, or null. */
 function methodOf(options) {
   if (options?.type !== 'ObjectExpression') return null;
@@ -51,10 +63,11 @@ function methodOf(options) {
 /**
  * The path and query names a call's URL argument asks for, or null when it isn't built
  * from a URL constant. Text after `?` is the query; a value spliced in before it is a path
- * parameter when it follows a `/`, and otherwise (an optional query held in a variable)
- * left out.
+ * parameter when it follows a `/`, and otherwise an optional query held in a variable: the
+ * query names written in that variable's value (`const query = since ? `?since=…` : ''`)
+ * count, from the file's own declarations of it.
  */
-function urlOf(arg, constants) {
+function urlOf(arg, constants, locals = new Map()) {
   if (arg.type === 'Identifier') return constants.has(arg.name) ? { name: arg.name, path: constants.get(arg.name), query: [] } : null;
   if (arg.type !== 'TemplateLiteral' || arg.quasis[0].value.cooked !== '') return null;
   const first = arg.expressions[0];
@@ -70,6 +83,7 @@ function urlOf(arg, constants) {
     text += quasi;
     const expr = arg.expressions[i];
     if (expr && !inQuery && path.endsWith('/')) path += `{${paramName(expr)}}`;
+    else if (expr?.type === 'Identifier') text += locals.get(expr.name) ?? '';
   }
   const query = [...text.matchAll(/[?&]([\w.-]+)=/g)].map((m) => m[1]);
   return { name: first.name, path, query };
@@ -93,17 +107,24 @@ export function contractFrom(files) {
   const parsed = files.map(([name, text]) => [name, parse(text, { ecmaVersion: 'latest', sourceType: 'module', locations: true })]);
   const constants = new Map();
   const ownNames = new Map();
+  /** Per file, what each other variable's value spells, for a query held in one. */
+  const localText = new Map();
   for (const [file, ast] of parsed) {
     const own = new Set();
+    const text = new Map();
     walk.simple(ast, {
       VariableDeclarator(node) {
         if (node.id.type !== 'Identifier') return;
         const path = sitePath(node.init);
         if (path) constants.set(node.id.name, path);
-        else own.add(node.id.name);
+        else {
+          own.add(node.id.name);
+          if (node.init) text.set(node.id.name, (text.get(node.id.name) ?? '') + textIn(node.init));
+        }
       },
     });
     ownNames.set(file, own);
+    localText.set(file, text);
   }
 
   const seen = new Map();
@@ -114,7 +135,7 @@ export function contractFrom(files) {
     const visible = new Map([...constants].filter(([name]) => !ownNames.get(file).has(name)));
     walk.simple(ast, {
       CallExpression(node) {
-        const url = node.arguments[0] && urlOf(node.arguments[0], visible);
+        const url = node.arguments[0] && urlOf(node.arguments[0], visible, localText.get(file));
         if (!url) return;
         const method = methodOf(node.arguments[1]);
         if (!method) {
