@@ -18,15 +18,16 @@ keywords: torn organized crime, oc role weights, oc success chance
 
 ## Role weights
 
-On your faction's crimes tab, each slot shows its role's weight: how much that role counts
-towards the crime's success. Put your strongest members where the weight is highest.
+On your faction's crimes tab, each slot shows its role's weight in a small badge beside
+the role, such as `30.9%`: how much that role counts towards the crime's success. Hover
+over the badge, or tap it on a phone, to read what the figure means; tap again to close it. Put your strongest members where the weight is highest.
 The weights come from **tornprobability.com**, through torn-tracker.com, and the page says
 so above the crimes. The companion never contacts tornprobability.com itself.
 
 ## Success estimates
 
 Each crime your faction is recruiting or planning shows torn-tracker.com's success
-estimate beside its name, worked out from your members' pass rates. It needs a key on
+estimate in a small green badge beside its name, such as `~72.5%`, worked out from your members' pass rates. It needs a key on
 torn-tracker.com with faction API access in your faction; without one, there's no estimate.
 
 > **What it reads and sends.** It reads the crime names and role titles on the page and

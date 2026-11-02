@@ -59,16 +59,33 @@ export default {
     const alive = () => state === s;
 
 
-    function label(parent, text, title, kind) {
+    /**
+     * A compact badge beside the slot (hq #522): one short line, never taller than the row.
+     * The detail is in its title (hover) and opens under it on a tap; the tap goes no further,
+     * so it never reaches Torn's own handlers on the slot.
+     */
+    function label(parent, text, detail, kind) {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
         // The tour's anchors (hq #238), one per kind of label.
         const anchor = kind === 'success' ? { 'data-tour': 'oc-success' } : { 'data-tour': 'oc-weight' };
-        node = badge(doc, { cls: MARK, tone: kind === 'success' ? 'good' : 'info', attrs: { 'data-kind': kind, ...anchor } });
+        node = badge(doc, {
+          cls: MARK, tone: kind === 'success' ? 'good' : 'info', compact: true, tag: 'button',
+          attrs: { type: 'button', 'data-kind': kind, 'aria-expanded': 'false', ...anchor },
+        });
+        node.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const open = node.getAttribute('aria-expanded') === 'true';
+          node.setAttribute('aria-expanded', String(!open));
+        });
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
-      node.title = title;
+      if (node.title !== detail) node.title = detail;
+      if (node.dataset.detail !== detail) node.dataset.detail = detail;
+      const name = `${text}: ${detail}`;
+      if (node.getAttribute('aria-label') !== name) node.setAttribute('aria-label', name);
     }
 
     /** One visible credit line above the first crime card, once any weight shows. */
