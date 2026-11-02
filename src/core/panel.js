@@ -19,14 +19,15 @@
 //   Credits   every script this one took code or an idea from
 //   Help      the tours (core/tours.js), the knowledge base and where to ask
 // A search bar, the page's first element under its title (hq #489), finds a setting in
-// any section, with a clear button beside it. Edits are kept in a draft until Save, so
-// moving between sections loses nothing; Close, or any link away, leaves without saving.
+// any section, with a clear button beside it. Every change is saved as it is made (hq #520):
+// a switch or a menu at once, a typed field when the player leaves it. There is no Save
+// button; a short note at the top of the page says each save, and a mistyped key is not saved.
 // The header holds the title, the version and whether a script key is saved, nothing
 // more (hq #489: the featured achievements left it); every section starts with the guide's next step (GDE-007) as core/guide.js
 // last read it; opening the page asks for nothing. The page remembers the last section. Its look is the suite's design tokens (WP-UI-8),
 // dark unless the player picks light or Torn's own theme under General, and every
-// target is at least 44 px so it can be hit with a thumb in Torn PDA; under 600 px of
-// width the menu goes across the top.
+// target is at least 44 px so it can be hit with a thumb in Torn PDA; under 640 px of
+// width the section menu becomes a drop-down above the section (hq #520).
 //
 // Everything is built with createElement and text nodes.
 
@@ -64,9 +65,9 @@ export const SECTIONS = Object.freeze([
 /** One line under each section's heading: what it's for, in plain words. */
 const INTROS = Object.freeze({
   general: 'Your version, updates, and help when something misbehaves.',
-  features: 'Switch each feature on or off and set its options. Changes apply when you press Save.',
+  features: 'Switch each feature on or off and set its options. Each change is saved at once.',
   sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits under General. Choose what it shows. All of it is Core (free).',
-  watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Watch mode’s settings apply at once, without Save. Core (free).',
+  watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
   data: 'What the companion keeps on this device, and how to clear it.',
@@ -103,8 +104,8 @@ const STYLE = `
   #${P}-panel[hidden] { display: none; }
   #${P}-panel *, #${P}-panel *::before, #${P}-panel *::after { box-sizing: border-box; }
   #${P}-panel .${P}-sheet {
-    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto;
-    grid-template-areas: "head head" "find find" "banned banned" "nav main" "foot foot";
+    display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: "head head" "find find" "banned banned" "nav main";
     width: 100%; min-width: 0; min-height: 70vh;
     background: var(--ttc-bg); border-radius: var(--radius); border: 1px solid var(--ttc-line);
   }
@@ -133,7 +134,7 @@ const STYLE = `
   #${P}-panel .${P}-find .${P}-clear[hidden] { display: none; }
   #${P}-panel .${P}-guide { border-left: 4px solid var(--primary); }
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
-  #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head, #${P}-panel .${P}-foot { min-width: 0; }
+  #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head { min-width: 0; }
   #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
     content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
     background: var(--ttc-accent-soft); color: var(--ttc-muted);
@@ -145,6 +146,7 @@ const STYLE = `
   }
   #${P}-panel nav a:hover { background: var(--ttc-bg); text-decoration: none; }
   #${P}-panel nav a[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-link); font-weight: 700; }
+  #${P}-panel nav select.${P}-sections { display: none; }
   #${P}-panel main { grid-area: main; padding: 18px 26px 26px; }
   #${P}-panel main > * { max-width: 760px; }
   #${P}-panel main h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
@@ -157,12 +159,6 @@ const STYLE = `
     box-shadow: var(--ttc-shadow);
   }
   #${P}-panel .${P}-card ul { margin: 6px 0 0 18px; padding: 0; }
-  #${P}-panel .${P}-foot {
-    grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 18px;
-    background: var(--ttc-surface); border-top: 1px solid var(--ttc-line); border-radius: 0 0 var(--radius) var(--radius);
-    position: sticky; bottom: 0; z-index: 1;
-  }
-  #${P}-panel .${P}-foot .${P}-status { flex: 1; min-width: 160px; }
   #${P}-panel label.${P}-check { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; font-weight: 600; }
   #${P}-panel label.${P}-check[data-off] { color: var(--ttc-muted); cursor: default; }
   #${P}-panel label.${P}-field { display: block; margin-top: 10px; }
@@ -204,8 +200,16 @@ const STYLE = `
   #${P}-panel .${P}-banned[hidden] { display: none; }
   #${P}-panel .${P}-head a[hidden] { display: none; }
   #${P}-panel .${P}-banned strong { display: block; }
-  #${P}-panel .${P}-status { color: var(--ttc-danger); min-height: 1em; font-size: 13px; }
-  #${P}-panel .${P}-status[data-tone="good"] { color: var(--ttc-good); }
+  /* hq 520: what a save did, at the top of the page whatever the scroll; Torn's bottom bar can't hide it. */
+  #${P}-panel .${P}-toastbox { position: sticky; top: 0; height: 0; z-index: 3; }
+  #${P}-panel .${P}-toast {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
+    padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line);
+    border-left: 4px solid var(--ttc-danger); box-shadow: var(--ttc-shadow);
+  }
+  #${P}-panel .${P}-toast[data-tone="good"] { border-left-color: var(--ttc-good); }
+  #${P}-panel .${P}-toast:empty, #${P}-panel .${P}-toast[data-hide] { display: none; }
   #${P}-panel dl { margin: 6px 0; }
   #${P}-panel dt { color: var(--ttc-muted); font-size: 12px; margin-top: 8px; }
   #${P}-panel dd { margin: 0; }
@@ -222,10 +226,10 @@ const STYLE = `
     flex: none; width: 52px; height: 44px; padding: 2px; border: 1px solid var(--ttc-field-line); border-radius: var(--radius);
     background: var(--ttc-field); cursor: pointer;
   }
-  @container (max-width: 600px) {
+  @container (max-width: 640px) {
     #${P}-panel .${P}-sheet {
-      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr auto;
-      grid-template-areas: "head" "find" "banned" "nav" "main" "foot"; border-radius: 0;
+      grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr;
+      grid-template-areas: "head" "find" "banned" "nav" "main"; border-radius: 0;
     }
     #${P}-panel .${P}-head { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
     /* hq issue 489: the title gives way, so the key state and ✕ stay on its row at 360 px. */
@@ -235,9 +239,10 @@ const STYLE = `
     #${P}-panel .${P}-head .${P}-x { padding: 6px 10px; }
     #${P}-panel .${P}-find { padding: 10px 12px; }
     #${P}-panel .${P}-find input[type=search] { min-width: 0; max-width: none; }
-    #${P}-panel .${P}-foot button { flex: 1; }
-    #${P}-panel nav { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ttc-line); padding: 6px 8px; }
-    #${P}-panel nav a { flex: none; white-space: nowrap; }
+    /* hq 520: nine tabs don't fit 360 px; a drop-down in the page's own look does. */
+    #${P}-panel nav { border-right: 0; border-bottom: 1px solid var(--ttc-line); padding: 10px 12px; }
+    #${P}-panel nav a { display: none; }
+    #${P}-panel nav select.${P}-sections { display: block; font-weight: 600; }
     #${P}-panel main { padding: 14px 14px 20px; }
     #${P}-panel .${P}-option { margin-left: 0; }
   }
@@ -338,13 +343,16 @@ export function mountPanel({
   const search = h('input', { type: 'search', id: `${P}-search`, placeholder: 'Search settings', 'aria-label': 'Search settings', autocomplete: 'off' });
   const nav = h('nav', { 'aria-label': 'Settings sections', 'data-tour': 'companion-sections' });
   const main = h('main');
-  const status = h('div', { class: `${P}-status`, role: 'status' });
+  // What a save did (hq #520): a toast at the top of the page, gone after a few seconds.
+  const status = h('div', { class: `${P}-status ${P}-toast`, role: 'status', 'aria-live': 'polite' });
+  const sectionMenu = h('select', { class: `${P}-sections`, 'aria-label': 'Section', 'data-sections': '' },
+    ...SECTIONS.map(([id, title]) => h('option', { value: id }, title)));
   const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
   const clear = h('button', { type: 'button', class: `${P}-clear`, 'data-act': 'clear-search', 'aria-label': 'Clear the search', title: 'Clear', hidden: true }, '\u2715');
   const keyState = h('span', { class: `${P}-keystate`, 'data-keystate': '' });
   // The way into the dashboard page (hq #465), while its preview switch is on.
   const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '', hidden: getSettings().dashboard !== true }, 'Dashboard');
-  panel.append(h('div', { class: `${P}-sheet` },
+  panel.append(h('div', { class: `${P}-toastbox` }, status), h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
@@ -360,11 +368,7 @@ export function mountPanel({
     h('div', { class: `${P}-find`, role: 'search' }, search, clear),
     banned,
     nav,
-    main,
-    h('div', { class: `${P}-foot` },
-      status,
-      h('a', { href: CLOSE, class: `${P}-btn`, 'data-act': 'close' }, 'Close'),
-      h('button', { type: 'button', class: `${P}-primary`, 'data-act': 'save', 'data-tour': 'companion-save' }, 'Save'))));
+    main));
   root.append(panel);
 
   let section = 'features';
@@ -372,8 +376,11 @@ export function mountPanel({
   let active = false;
   let query = '';
   let armedForget = false;
-  /** What the player has changed and not yet saved. */
+  /** The settings as the page shows them; each change is saved from here at once. */
   let draft = null;
+  /** Saves run one after another, in the order the changes were made. */
+  let saving = Promise.resolve();
+  let toastTimer = null;
   /** The Data section's export and import box. */
   let transferText = '';
 
@@ -545,9 +552,9 @@ export function mountPanel({
         : [];
     }
     if (consent === 0) {
-      // Never agreed: the ticks are the choice and Save records it. The wording is on this screen.
+      // Never agreed: ticking a kind is the choice and the agreement. The wording is on this screen.
       return [h('div', { class: `${P}-notice`, id: `${P}-consent-state` },
-        'Nothing is shared yet. Tick the kinds you want to share and press Save: that is your agreement to the lines above.')];
+        'Nothing is shared yet. Ticking a kind shares it from then on: that is your agreement to the lines above.')];
     }
     // Agreed to an older wording: a separate press, so the new wording is read first.
     return [
@@ -644,7 +651,7 @@ export function mountPanel({
         }, POSITION_LABELS[at])))),
       draft.settings.sidebar.moved
         ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
-          'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you save.')
+          'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
         : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.'),
       h('h4', null, 'Achievements'),
       h('label', { class: `${P}-check` },
@@ -813,33 +820,64 @@ export function mountPanel({
     drawKeyState();
     clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
-    nav.replaceChildren(...SECTIONS.map(([id, title]) => h('a', {
+    nav.replaceChildren(sectionMenu, ...SECTIONS.map(([id, title]) => h('a', {
       href: sectionHref(id), role: 'tab', 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-selected': String(!query && id === section),
     }, title)));
+    sectionMenu.value = section;
     const title = SECTIONS.find(([id]) => id === section)[1];
     // hq #489: a body may hold null for a part it leaves out; the DOM would write it as text.
     main.replaceChildren(...(query ? searchBody() : [
       guideStrip(),
       h('h3', null, title), h('p', { class: `${P}-intro` }, INTROS[section]), ...BODIES[section](),
     ]).filter((node) => node != null && node !== false));
-    status.textContent = message;
-    status.dataset.tone = tone;
-    // On a narrow screen the menu scrolls sideways: keep the open section in sight.
-    const current = nav.querySelector('[aria-selected=true]');
-    if (current && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = Math.max(0, current.offsetLeft - 8);
+    flash(message, tone);
   }
 
-  /** Keeps the draft in step with every input, so a section change loses nothing. */
+  /** The toast: a good word goes after 3 s, a problem stays 6 s so it can be read. */
+  function flash(message = '', tone = '') {
+    status.textContent = message;
+    status.dataset.tone = tone;
+    delete status.dataset.hide;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = null;
+    if (!message) return;
+    toastTimer = setTimeout(() => {
+      toastTimer = null;
+      status.dataset.hide = '';
+    }, tone === 'good' ? 3000 : 6000);
+    toastTimer?.unref?.();
+  }
+
+  /**
+   * Keeps the draft in step with every input, and saves it when a change is made (hq #520):
+   * `change` is a switch or menu moved, or a typed field left; `input` only follows typing.
+   */
   function onInput(event) {
-    const input = event.target;
+    const what = follow(event.target);
+    if (what && event.type === 'change' && draft) persist(what);
+  }
+
+  /** Puts one input's value into the draft; says what kind of setting it was, or null. */
+  function follow(input) {
     if (input === search) {
       query = search.value.trim().toLowerCase();
       render();
-      return;
+      return null;
+    }
+    if (input === sectionMenu) {
+      if (sectionIds.includes(input.value) && input.value !== section) {
+        const view = doc.defaultView;
+        if (view?.location) view.location.hash = sectionHref(input.value);
+        show(input.value);
+      }
+      return null;
     }
     const { feature, opt, share, key, setting, sidebar, achievements } = input.dataset || {};
+    if (!draft) return null;
     if (input.dataset?.sidebarPosition !== undefined) {
-      if (POSITIONS.includes(input.value)) draft.settings.sidebar.position = input.value;
+      if (!POSITIONS.includes(input.value)) return null;
+      draft.settings.sidebar.position = input.value;
+      return 'sidebar';
     } else if (feature && opt) {
       const current = draft.settings.features[feature]?.[opt];
       let value;
@@ -852,14 +890,18 @@ export function mountPanel({
       for (const twin of panel.querySelectorAll(`[data-feature="${feature}"][data-opt="${opt}"]`)) {
         if (twin !== input && twin.type === 'checkbox') twin.checked = input.checked;
       }
+      return 'feature';
     } else if (share) {
       draft.settings.shares[share] = input.checked;
+      return 'share';
     } else if (key === 'usePdaKey') {
       draft.keys.usePdaKey = input.checked;
       const api = panel.querySelector(`#${P}-key-api`);
       if (api) api.disabled = input.checked;
+      return 'key';
     } else if (key) {
       draft.keys[key] = input.value;
+      return 'key';
     } else if (setting === 'debug') {
       draft.settings.debug = input.checked;
     } else if (setting === 'guideStrip') {
@@ -867,7 +909,6 @@ export function mountPanel({
     } else if (setting === 'dashboard') {
       draft.settings.dashboard = input.checked;
     } else if (setting === 'look') {
-      // Shown at once, so the player sees it before saving; Close without Save puts it back.
       draft.settings.look = input.value;
       panel.dataset.theme = lookTheme(input.value, doc);
     } else if (sidebar === 'enabled') {
@@ -875,14 +916,65 @@ export function mountPanel({
       for (const item of panel.querySelectorAll('[data-sidebar]')) {
         if (item !== input && item.dataset.sidebar !== 'enabled') item.disabled = !input.checked;
       }
+      return 'sidebar';
     } else if (sidebar) {
       draft.settings.sidebar.items[sidebar] = input.checked;
+      return 'sidebar';
     } else if (achievements) {
       draft.settings.achievements[achievements] = input.checked;
+    } else {
+      return null;
     }
+    return 'setting';
   }
 
-  /** The route closed: whatever wasn't saved is dropped. */
+  /**
+   * Saves the draft as it stands (hq #520). A mistyped key is never saved: when the change
+   * was the key, the toast says what is wrong; any other change saves with the keys as stored.
+   * Ticking a kind before ever agreeing is the agreement (hq #454): the wording is on the
+   * Sharing screen. A wording that changed since keeps its own button.
+   */
+  function persist(what) {
+    const typed = checkTyped(draft.keys);
+    if (typed.error && what === 'key') {
+      flash(typed.error);
+      return saving;
+    }
+    const keys = typed.error ? (checkTyped(getKeys()).keys ?? getKeys()) : typed.keys;
+    let done = 'Saved.';
+    // Only what changes the page's own lines redraws it: a redraw would take the field the
+    // player just tapped from under their finger.
+    let redraw = false;
+    const agree = what === 'share' && draft.settings.sharingConsent === 0 && sharingOffered(disclosure)
+      && Object.values(draft.settings.shares).some(Boolean);
+    if (agree) {
+      draft.settings.sharingConsent = disclosure.version;
+      done = 'Saved. Sharing is on for the kinds you ticked.';
+      redraw = true;
+    }
+    // The note that the sidebar block moved (hq #507) has done its job once a sidebar setting changes.
+    if (what === 'sidebar' && draft.settings.sidebar.moved) {
+      draft.settings.sidebar.moved = false;
+      redraw = true;
+    }
+    const settings = JSON.parse(JSON.stringify(draft.settings));
+    saving = saving.then(async () => {
+      const ok = await onSave(settings, keys);
+      if (!active) return;
+      if (!ok) flash('Could not save: storage is full or unavailable.');
+      else if (redraw) render(done, 'good');
+      else {
+        drawKeyState();
+        dashboardLink.hidden = getSettings().dashboard !== true;
+        flash(done, 'good');
+      }
+    }).catch(() => {
+      if (active) flash('Could not save: storage is full or unavailable.');
+    });
+    return saving;
+  }
+
+  /** The route closed: the draft goes with it, a mistyped key with it. */
   function close() {
     // A tour of this page ends with it, and counts as not seen.
     if (active) tours?.stop();
@@ -892,18 +984,12 @@ export function mountPanel({
     transferText = '';
   }
 
+  /** A save from a button (consent, import): a mistyped key in the draft keeps the stored one. */
   async function save(settings, done = 'Saved.') {
     const typed = checkTyped(draft.keys);
-    if (typed.error) {
-      section = 'keys';
-      query = '';
-      search.value = '';
-      render(typed.error);
-      return;
-    }
-    // The note that the sidebar block moved (hq #507) has been seen once a save happens.
-    if (settings?.sidebar) settings.sidebar.moved = false;
-    const ok = await onSave(settings, typed.keys);
+    const keys = typed.error ? (checkTyped(getKeys()).keys ?? getKeys()) : typed.keys;
+    await saving;
+    const ok = await onSave(settings, keys);
     if (!ok) {
       render('Could not save: storage is full or unavailable.');
       return;
@@ -929,14 +1015,7 @@ export function mountPanel({
     }
     if (act !== 'forget') armedForget = false;
 
-    if (act === 'save') {
-      // A first Save with a kind ticked is the agreement (hq #454): the wording is on the
-      // Sharing screen and the ticks are the choice. A changed wording keeps its own button.
-      const first = draft.settings.sharingConsent === 0 && sharingOffered(disclosure) && shareKinds(registry).length > 0
-        && Object.values(draft.settings.shares).some(Boolean);
-      if (first) await save({ ...draft.settings, sharingConsent: disclosure.version }, 'Saved. Sharing is on for the kinds you ticked.');
-      else await save(draft.settings);
-    } else if (act === 'consent') {
+    if (act === 'consent') {
       await save({ ...draft.settings, sharingConsent: disclosure.version });
     } else if (act === 'export') {
       transferText = exportText(registry, draft.settings);

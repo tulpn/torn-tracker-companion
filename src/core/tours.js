@@ -27,7 +27,7 @@ const NEVER = ['loader.php?sid=attack', 'page.php?sid=attack'];
 export const TOURS = Object.freeze([
   checkTour({
     id: 'settings',
-    version: 1,
+    version: 2,
     surface: 'companion',
     page: '#/torn-tracker',
     title: 'The settings page',
@@ -35,7 +35,7 @@ export const TOURS = Object.freeze([
       {
         target: 'companion-settings',
         title: 'Your companion, on one page',
-        body: 'Every feature has a switch here. Nothing changes on Torn’s pages until you press Save.',
+        body: 'Every feature has a switch here. Each change is saved as you make it.',
       },
       {
         target: 'companion-sections',
@@ -52,11 +52,6 @@ export const TOURS = Object.freeze([
         target: 'companion-sharing-tab',
         title: 'Sharing starts off',
         body: 'Nothing about you is shared until you switch a kind on. Each switch says exactly what it sends.',
-      },
-      {
-        target: 'companion-save',
-        title: 'Save when you’re done',
-        body: 'Close leaves without saving. Next time, the page opens on the section you used last.',
       },
       {
         target: 'companion-sidebar',

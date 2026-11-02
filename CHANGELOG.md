@@ -9,6 +9,15 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- Settings save as soon as you change them; there is no Save button any more. A short
+  "Saved." note shows at the top for three seconds.
+- On a narrow screen or in Torn PDA, the settings sections are a menu at the top instead of
+  a row of tabs that ran off the screen.
+- The sharing wording changed (version 9): if you share data, the Sharing tab asks you to
+  agree again before anything more is sent.
+
 ### Fixed
 
 - The sidebar's **Watch** row shows only when you hold a chain watch slot or your faction has
