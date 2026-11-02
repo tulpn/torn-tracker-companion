@@ -124,8 +124,11 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   }
   ${INLINE}:hover:not(:disabled) { background: ${tint('var(--primary)', 28)}; }
   ${INLINE}:disabled { border-color: var(--input); background: transparent; color: var(--muted-foreground); }
-  /* Its field and it stay on one line; Torn's field keeps its own width. */
-  :has(> ${INLINE}) { display: flex; flex-wrap: nowrap; align-items: center; }
+  /* Its field and it stay on one line inside Torn's cell, the field shrinking to make room.
+     Torn's own cell rules set display: block with a long selector, so this one is important. */
+  :has(> ${INLINE}) { display: flex !important; flex-wrap: nowrap; align-items: center; }
+  :has(> ${INLINE}) > :not(${INLINE}) { flex: 1 1 auto; min-width: 0; }
+  :has(> ${INLINE}) > :not(${INLINE}) input:not([type="hidden"]) { width: 100% !important; box-sizing: border-box; }
   /* The best buy abroad: its whole row is outlined, without touching Torn's own styles. */
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
   [class*='row___']:has(.${P}-best) { outline: 2px solid ${TOKENS.light['tt-success']}; outline-offset: -2px; border-radius: 6px; }
