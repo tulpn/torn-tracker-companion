@@ -30,8 +30,18 @@ Torn's main column, at `torn.com/index.php#/torn-tracker/dashboard`.
 One card for each thing torn-tracker.com knows about you, with what needs you now at the
 top:
 
-- **Ranked war**, **Chain** and **Organized crime**, the same as the sidebar block shows.
-- **Education:** your course and what comes next.
+- **Alerts:** your latest alerts from torn-tracker.com, up to ten, each with how long ago
+  and a link to its page.
+- **Ranked war:** the score while it runs, and **Your dibs** with the time each has left.
+  Before it starts, when it starts.
+- **Chain watch:** who is on watch now and next, with you marked. An empty slot says
+  **Nobody on watch.** You also see your own next watch and how many slots in the next
+  24 hours have no Lead. When the chain is running, it shows here too.
+- **Chain** and **Organized crime**, the same as the sidebar block shows. The Chain card is
+  left out when the chain is already on the Chain watch card.
+- **Nearest awards:** the honors and medals you are closest to, with how far you are.
+- **Education:** the course you are taking and when it ends, how far you are in its
+  branch, and your next pick.
 - **Next gym:** how far you are to the next gym. It's an estimate, not Torn's figure.
 - **Savings goals**, **Next achievements** and **Getting started**.
 - **Money, last 7 days:** income and costs per day, as a chart.
