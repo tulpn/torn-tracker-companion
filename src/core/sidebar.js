@@ -18,7 +18,8 @@
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
 
-import { el, ownChange } from './dom.js';
+import { el, ownChange, settler } from './dom.js';
+import { log } from './log.js';
 import { SITE } from '../hosts.js';
 import { OURS, SIDEBAR } from './entry.js';
 import { followTorn } from './tokens.js';
@@ -194,7 +195,7 @@ export function mountSidebarBlock({
   let notBefore = 0;
   let readTimer = null;
   let tick = null;
-  let placeTimer = null;
+  let toldNoAnchor = false;
   let stopped = false;
 
   store.read().then((saved) => {
@@ -373,11 +374,18 @@ export function mountSidebarBlock({
       return;
     }
     const anchor = anchorOf(doc);
-    if (!anchor) return;
+    if (!anchor) {
+      if (!toldNoAnchor) log("sidebar: block not placed: no anchor (Torn's Areas or Lists not found yet)");
+      toldNoAnchor = true;
+      return;
+    }
+    toldNoAnchor = false;
     if (!block) block = build();
     // A copy left behind by a redraw of Torn's sidebar holds old rows and a dead button.
     for (const copy of doc.querySelectorAll(`#${BLOCK_ID}`)) {
-      if (copy !== block) copy.remove();
+      if (copy === block) continue;
+      copy.remove();
+      log('sidebar: block removed as stale: a copy a redraw left behind');
     }
     if (anchor.nextElementSibling !== block) anchor.after(block);
     render();
@@ -386,10 +394,11 @@ export function mountSidebarBlock({
 
   // A redraw that only takes our block out reads as our own change, so a block that is
   // gone is put back whatever the records say. It comes back with the rows it had.
+  // A script that keeps changing the sidebar never puts the look off past a second (hq #466).
+  const placeSoon = settler(() => place(), 200, { timers });
   const stopWatching = onMutation((records) => {
     if (records.every((r) => ownChange(r, OURS)) && (!block || block.isConnected || !enabled())) return;
-    timers.clearTimeout(placeTimer);
-    placeTimer = timers.setTimeout(place, 200);
+    placeSoon.poke();
   }, doc);
   const onVisible = () => {
     if (doc.visibilityState !== 'hidden') refreshSidebar();
@@ -425,7 +434,7 @@ export function mountSidebarBlock({
       stopWatchMode?.();
       doc.removeEventListener('visibilitychange', onVisible);
       timers.clearTimeout(readTimer);
-      timers.clearTimeout(placeTimer);
+      placeSoon.cancel();
       timers.clearInterval(tick);
       block?.remove();
     },

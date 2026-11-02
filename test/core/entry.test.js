@@ -94,7 +94,7 @@ describe('hq #453 the entry is copied from Torn, never from another script', () 
     assert.ok(t.doc.getElementById(LINK_ID).hasAttribute('data-own'));
   });
 
-  test('after ten redraws in which The Contract copies our row as it really does: one entry, Torn’s icon on its copy, no mark or marker of ours', () => {
+  test('after ten redraws in which The Contract copies our row as it really does: one entry, Torn’s icon showing on its copy, and its copy never changed by us (hq #466)', () => {
     const t = boot(REAL, { contractFirst: false });
     const entry = mount(t);
     const { window } = t;
@@ -113,10 +113,16 @@ describe('hq #453 the entry is copied from Torn, never from another script', () 
       t.areas.append(clone);
       assert.equal(ownChange(record, OURS), false, 'another script’s copy is not ours, so the entry looks again');
       if (i % 3 === 0) t.doc.getElementById(LINK_ID).remove(); // and Torn sometimes drops ours
+      const copies = () => [...t.doc.querySelectorAll('[data-tc-entry]')].map((n) => n.outerHTML);
+      const before = copies();
       entry.place();
       assert.equal(t.doc.querySelectorAll(`#${LINK_ID}`).length, 1, `redraw ${i + 1}`);
-      assert.deepEqual(marksOutside(t.doc), [], `redraw ${i + 1}`);
-      assert.deepEqual([...t.doc.querySelectorAll('[data-ttc-open]')].map((n) => n.id), [LINK_ID], `redraw ${i + 1}`);
+      // Taking our attributes or mark off a copy made The Contract put them back, and the
+      // two scripts fought for ever (hq #466): its copies stay exactly as it made them.
+      assert.deepEqual(copies(), before, `redraw ${i + 1}: no copy changed`);
+      for (const mark of marksOutside(t.doc)) {
+        assert.equal(window.getComputedStyle(mark).display, 'none', `redraw ${i + 1}: a mark on a copy is hidden`);
+      }
     }
     const own = t.doc.getElementById(LINK_ID);
     assert.equal(own.querySelectorAll('.ttc-mark').length, 1, 'ours keeps its mark');
@@ -131,13 +137,16 @@ describe('hq #453 the entry is copied from Torn, never from another script', () 
     }
   });
 
-  test('a mark a copy carries from before the fix is hidden even before it is taken off', () => {
+  test('a mark a copy carries is hidden, and left where it is', () => {
     const t = boot();
     mount(t);
     const clone = t.doc.getElementById(LINK_ID).cloneNode(true);
     clone.removeAttribute('id');
     t.areas.append(clone);
+    const copy = clone.outerHTML;
     assert.equal(t.window.getComputedStyle(clone.querySelector('.ttc-mark')).display, 'none');
+    mount(t).place();
+    assert.equal(clone.outerHTML, copy);
   });
 
   test('destroy removes our row and leaves another script’s copy of it', () => {

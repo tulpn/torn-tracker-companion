@@ -45,6 +45,40 @@ export function onMutation(handler, doc = globalThis.document) {
 }
 
 /**
+ * Runs `fn` once the page has been quiet for `ms`, and never later than `maxMs` after
+ * the first change, however busy the page stays (hq #466). A plain "wait for quiet" is
+ * put off for ever by anything that keeps changing: Torn's clock, a chat, another
+ * script's counter. That kept the sidebar block from ever being placed beside The
+ * Contract, and kept a capture from ever reading the page it was on.
+ * @param {() => void} fn
+ * @param {number} ms
+ * @param {{timers?: {setTimeout: Function, clearTimeout: Function}, maxMs?: number}} [opts]
+ * @returns {{poke: () => void, cancel: () => void}}
+ */
+export function settler(fn, ms, { timers = globalThis, maxMs = Math.max(ms * 3, 1000) } = {}) {
+  let quiet = null;
+  let deadline = null;
+  const cancel = () => {
+    if (quiet !== null) timers.clearTimeout(quiet);
+    if (deadline !== null) timers.clearTimeout(deadline);
+    quiet = null;
+    deadline = null;
+  };
+  const fire = () => {
+    cancel();
+    fn();
+  };
+  return {
+    poke() {
+      if (quiet !== null) timers.clearTimeout(quiet);
+      quiet = timers.setTimeout(fire, ms);
+      if (deadline === null) deadline = timers.setTimeout(fire, Math.max(maxMs, ms));
+    },
+    cancel,
+  };
+}
+
+/**
  * Whether a mutation is only our own doing: it happened inside one of our nodes, or it
  * only added or removed our nodes. A removed node has no ancestors left, so closest()
  * can't place it; it's judged by itself. Every observer uses this, so a re-render of our
