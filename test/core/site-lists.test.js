@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
-import { LISTS_URL, SPACES, createSite, readLists } from '../../src/core/site.js';
+import { LISTS_URL, SPACES, createSite, listPath, readLists } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'L'.repeat(43)}`;
 const A = '11111111-1111-4111-8111-111111111111';
@@ -84,7 +84,7 @@ describe('CMP-110 the lists read: one GET per player, kept 5 minutes', () => {
       ],
       last_used: B,
     });
-    assert.deepEqual(got, { lists: [{ uuid: A, name: 'Chain targets', shared: false, contains: true }], lastUsed: null });
+    assert.deepEqual(got, { lists: [{ uuid: A, name: 'Chain targets', shared: false, contains: true, path: null }], lastUsed: null });
     assert.equal(readLists({ lists: 'no' }), null);
     assert.equal(readLists(null), null);
   });
@@ -117,7 +117,7 @@ describe('CMP-110 AC1 one press is one POST', () => {
     const r = rig({ reply: (url, opts) => (opts.method === 'GET' ? ok(LISTS)() : ok({ uuid: B, player_id: 55, state: 'on' })()) });
     await r.site.lists(55);
     const got = await r.site.listEntry(B, 55, 'add');
-    assert.deepEqual(got, { ok: true, state: 'on', error: null });
+    assert.deepEqual(got, { ok: true, state: 'on', error: null, path: null });
     assert.equal(r.calls.length, 2);
     assert.equal(r.calls[1].url, `${LISTS_URL}/${B}/entries`);
     assert.equal(r.calls[1].method, 'POST');
@@ -161,5 +161,30 @@ describe('CMP-110 AC1 one press is one POST', () => {
     assert.equal((await r.site.listEntry(A, 0, 'add')).error, 'invalid');
     assert.equal((await r.site.listEntry(A, 55, 'toggle')).error, 'invalid');
     assert.equal(r.calls.length, 0);
+  });
+});
+
+describe("hq #486 each list's own page on the site", () => {
+  test('a path that is exactly /lists/<its uuid>/ is kept, from the read and from a change', async () => {
+    const withPaths = { ...LISTS, lists: LISTS.lists.map((l) => ({ ...l, path: `/lists/${l.uuid}/` })) };
+    const r = rig({ reply: (url, opts) => (opts.method === 'GET' ? ok(withPaths)() : ok({ uuid: B, player_id: 55, state: 'off', path: `/lists/${B}/` })()) });
+    const got = await r.site.lists(55);
+    assert.deepEqual(got.lists.map((l) => l.path), [`/lists/${A}/`, `/lists/${B}/`]);
+    assert.deepEqual(await r.site.listEntry(B, 55, 'remove'), { ok: true, state: 'off', error: null, path: `/lists/${B}/` });
+  });
+
+  test('any other path is dropped, and the list stays', () => {
+    for (const bad of [`/lists/${B}/`, `https://evil.example/lists/${A}/`, `//evil.example/lists/${A}/`, 'javascript:alert(1)',
+      `/lists/${A}`, `/lists/${A}/../../x/`, `/targets/`, 42, '']) {
+      const got = readLists({ lists: [{ ...LISTS.lists[0], path: bad }], last_used: A });
+      assert.equal(got.lists.length, 1, String(bad));
+      assert.equal(got.lists[0].path, null, String(bad));
+    }
+  });
+
+  test('listPath matches the uuid whatever its case, and needs both', () => {
+    assert.equal(listPath(`/lists/${A.toUpperCase()}/`, A), `/lists/${A.toUpperCase()}/`);
+    assert.equal(listPath(undefined, A), null);
+    assert.equal(listPath(`/lists/${A}/`, undefined), null);
   });
 });

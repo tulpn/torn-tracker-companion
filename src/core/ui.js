@@ -209,6 +209,17 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     flex: none; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
     background: ${tint('var(--primary)')}; color: var(--muted-foreground);
   }
+  /* Each list's row: the tick button, then Open to that list's page on the site (hq issue 486). */
+  ${MENU} .${P}-lists-row { display: flex; align-items: center; gap: 4px; }
+  ${MENU} .${P}-lists-row .${P}-lists-item { flex: 1; min-width: 0; }
+  ${MENU} a.${P}-lists-open {
+    flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+    min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 8px;
+    color: var(--primary); font: 600 13px/1.4 var(--tt-font-sans); text-decoration: none;
+    transition: background-color var(--tt-duration-fast) var(--tt-ease);
+  }
+  ${MENU} a.${P}-lists-open:hover { background: var(--muted); color: var(--primary); text-decoration: underline; }
+  ${MENU} a.${P}-lists-open:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
   ${MENU} .${P}-lists-empty { margin: 0; padding: 8px 10px; color: var(--muted-foreground); }
   ${MENU} .${P}-lists-foot { display: flex; margin-top: 4px; padding: 8px 4px 2px; border-top: 1px solid var(--border); }
   ${MENU} a.${P}-lists-manage {

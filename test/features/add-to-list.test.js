@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 
 import feature, { KEYS_HREF, MANAGE_URL, mainAction } from '../../src/features/add-to-list/index.js';
 import { runFeature } from '../feature-harness.js';
+import { SITE } from '../../src/hosts.js';
 
 const HEADING = '<div class="content-title"><h4>Someone\'s profile</h4></div>';
 const PROFILE = 'https://www.torn.com/profiles.php?XID=55';
@@ -105,6 +106,30 @@ describe('CMP-110 the split button', () => {
     assert.match(style, /\.ttc-lists-menu\.ttc-lists-menu \.ttc-lists-item \{[^}]*min-height: 44px/, 'every row is a 44 px target');
     assert.match(style, /\.ttc-lists-menu\.ttc-lists-menu a\.ttc-lists-manage \{[^}]*min-height: 44px[^}]*background: var\(--primary\)/);
     assert.match(style, /body\.dark-mode \.ttc-lists-menu/, 'the menu takes the dark tokens on Torn\'s dark theme');
+  });
+
+  test('hq #486: each list links to its own page on the site, and one with no path links nowhere', async () => {
+    const site = fakeSite({ status: 'ok', lists: [{ ...chain(true), path: `/lists/${A}/` }, { ...hits(), path: null }], lastUsed: A });
+    const r = run({ html: HEADING, url: PROFILE, site });
+    await wait();
+    press(arrow(r));
+    await wait(50);
+    const rows = [...r.doc.querySelectorAll('.ttc-lists-menu > .ttc-lists-row')];
+    assert.equal(rows.length, 2);
+    const open = rows[0].querySelector(':scope > a.ttc-lists-open');
+    assert.equal(open.textContent, 'Open');
+    assert.equal(open.getAttribute('href'), `${SITE}/lists/${A}/`);
+    assert.equal(open.getAttribute('target'), '_blank');
+    assert.equal(open.getAttribute('rel'), 'noopener noreferrer');
+    assert.equal(open.getAttribute('aria-label'), 'Open Chain targets on torn-tracker.com');
+    assert.equal(rows[0].querySelector(':scope > .ttc-lists-item').getAttribute('aria-pressed'), 'true');
+    assert.equal(rows[1].querySelector('.ttc-lists-open'), null);
+    press(open);
+    await wait(50);
+    assert.deepEqual(site.calls, [], 'Open is a link, never a change');
+    const style = [...r.doc.querySelectorAll('style')].map((n) => n.textContent).join('\n');
+    assert.match(style, /\.ttc-lists-menu\.ttc-lists-menu a\.ttc-lists-open \{[^}]*min-width: 44px; min-height: 44px/);
+    assert.deepEqual(r.violations, []);
   });
 
   test('hq #487: no lists yet says so, and the rows wait while a change is on its way', async () => {
