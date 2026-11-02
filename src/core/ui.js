@@ -22,6 +22,8 @@ export const PROFILE_ACTIONS = `${P}-profile-actions`;
 const ACTION_ORDER = Object.freeze(['lists', 'messages', 'notes']);
 /** The row's class twice: it outweighs Torn's `.d .content-title button`. */
 const ROW = `.${PROFILE_ACTIONS}.${PROFILE_ACTIONS}`;
+/** A compact badge (hq #522); the class twice, see the style. */
+const COMPACT = `.${P}-ui-compact.${P}-ui-compact`;
 /** Each tone's ink; its background is the same colour, faint. */
 const INK = Object.freeze({
   good: 'var(--tt-success)',
@@ -53,6 +55,22 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-badge[data-dim="true"] { opacity: .5; }
   a.${P}-ui-badge:hover { filter: brightness(.95); text-decoration: underline; }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
+  /* Compact (hq issue 522): one short line in a row whose height Torn fixes. The class twice
+     outweighs Torn's own span and button rules in that row. Its detail is in its title, and
+     opens below it on a tap. */
+  ${COMPACT} {
+    flex: none; position: relative; box-sizing: border-box; width: auto; min-width: 0; height: 16px; min-height: 0;
+    margin: 0 0 0 4px; padding: 0 6px; border: 0; box-shadow: none; text-shadow: none; text-transform: none;
+    font: 600 12px/16px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; vertical-align: middle;
+  }
+  button${COMPACT} { cursor: help; }
+  button${COMPACT}:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  ${COMPACT}[aria-expanded="true"]::after {
+    content: attr(data-detail); position: absolute; top: calc(100% + 4px); left: 0; z-index: 10;
+    width: max-content; max-width: 220px; padding: 6px 8px; white-space: normal; text-align: left;
+    font: 400 12px/1.4 var(--tt-font-sans); border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--popover); color: var(--popover-foreground); box-shadow: var(--tt-shadow-md);
+  }
   /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
   .${P}-ui-badge[data-pin="under"] {
@@ -269,14 +287,16 @@ function classes(base, extra) {
  * @param {string} [opts.cls]    the feature's own class, which finds it again
  * @param {string} [opts.tone]   good, neutral, warn, bad or info
  * @param {boolean} [opts.block] on its own line
+ * @param {boolean} [opts.compact] one short line inside a row of fixed height (hq #522)
  * @param {'under'} [opts.pin]   pinned over the bottom edge of its (positioned) parent
  * @param {string} [opts.tag]    span by default; 'a' for a link
  * @param {object} [opts.attrs]  any other attributes
  */
-export function badge(doc, { cls, tone = 'neutral', block = false, pin = null, tag = 'span', attrs = {} } = {}, ...children) {
+export function badge(doc, { cls, tone = 'neutral', block = false, compact = false, pin = null, tag = 'span', attrs = {} } = {}, ...children) {
   ensureStyle(doc);
+  const extra = `${block ? ` ${P}-ui-block` : ''}${compact ? ` ${P}-ui-compact` : ''}`;
   const node = el(tag, {
-    class: classes(`${P}-ui-badge${block ? ` ${P}-ui-block` : ''}`, cls), 'data-tone': tone, ownerDocument: doc,
+    class: classes(`${P}-ui-badge${extra}`, cls), 'data-tone': tone, ownerDocument: doc,
     ...(pin === 'under' ? { 'data-pin': 'under' } : {}), ...attrs,
   }, ...children);
   return node;

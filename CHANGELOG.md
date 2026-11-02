@@ -20,6 +20,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The OC helper's role weight and success figures are small badges beside the slot,
+  on one line, instead of large labels that broke the crime card's row. Hover or tap one
+  to read what it means.
 - The sidebar's **Watch** row shows only when you hold a chain watch slot or your faction has
   a watch open to sign up for, instead of always saying "Sign up to watch".
 - The **Fill** button on the bazaar and item market sell forms is small again: the height of
