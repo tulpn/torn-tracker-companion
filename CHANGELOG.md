@@ -18,6 +18,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The sharing wording changed (version 9): if you share data, the Sharing tab asks you to
   agree again before anything more is sent.
 
+### Fixed
+
+- The **Fill** button on the bazaar and item market sell forms is small again: the height of
+  the price field beside it, in the companion's green instead of black, with a short amount
+  like **Fill $1.2m**. Hover over it for the exact price.
+
 ## 0.9.9 — 2026-11-02
 
 ### Fixed

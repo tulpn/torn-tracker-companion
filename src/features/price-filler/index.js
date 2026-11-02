@@ -1,7 +1,7 @@
 // Price filler (CMP-105).
 //
 // On the bazaar's add and manage pages and the item market's sell form, each row gets a
-// "Fill" button. A press fills that row's price (the site's market value minus the
+// small inline "Fill" button with a short amount (hq #521). A press fills that row's price (the site's market value minus the
 // player's undercut) and, where the form has one, the quantity the player owns. It never
 // fills below what a shop in Torn pays for the item, and says so when it stopped there
 // (CMP-109). Torn's own button still has to be pressed by the player: the script never
@@ -13,8 +13,10 @@
 // for setting a React field. No code was taken. Their "fill all" and their press of
 // Torn's mobile Manage button are deliberately not here (CMP-900).
 
-import { el, settler } from '../../core/dom.js';
+import { compact } from '../../core/chart.js';
+import { settler } from '../../core/dom.js';
 import { shopName } from '../../core/shops.js';
+import { button as uiButton } from '../../core/ui.js';
 import { fillRow, itemIdOf, ownedOf, priceFrom } from './fill.js';
 import { FORMS, formFor } from './selectors.js';
 
@@ -28,6 +30,8 @@ let page = null;
 let alive = false;
 
 const money = (n) => `$${n.toLocaleString('en-US')}`;
+/** The button's short amount (hq #521): $1.2m, $800k, $49. The full one is in its title. */
+export const shortMoney = (n) => `$${compact(n)}`;
 
 /**
  * Never fills below what a shop in Torn pays (CMP-109): the market price, or the shop's
@@ -71,12 +75,13 @@ const feature = {
       for (const { row, id } of items) {
         if (!row.isConnected || row.querySelector(`.${MARK}`)) continue;
         const { price, shop } = floored(priceFrom(prices.get(id), ctx.settings.undercut), shops.get(id));
-        const button = el('button', {
-          type: 'button', class: MARK, ownerDocument: doc, disabled: price === null, 'data-tour': 'price-fill',
-          title: price === null ? 'No market value for this item yet'
-            : shop ? `Stopped at the shop price: ${shopName(shop)} pays ${money(price)} each, more than the market value less your undercut`
-              : `Fill the price with ${money(price)}`,
-        }, price === null ? 'No price' : `Fill ${money(price)}${shop ? ' (shop price)' : ''}`);
+        const title = price === null ? 'No market value for this item yet'
+          : shop ? `Stopped at the shop price: ${shopName(shop)} pays ${money(price)} each, more than the market value less your undercut`
+            : `Fill the price with ${money(price)}`;
+        const button = uiButton(doc, {
+          cls: MARK, inline: true,
+          attrs: { disabled: price === null, 'data-tour': 'price-fill', title, 'aria-label': title },
+        }, price === null ? 'No price' : `Fill ${shortMoney(price)}${shop ? ' (shop)' : ''}`);
         button.addEventListener('click', (event) => {
           // The player's own press. It fills this row and stops there.
           event.preventDefault();
