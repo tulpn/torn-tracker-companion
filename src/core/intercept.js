@@ -4,8 +4,13 @@
 // is still "the page the player loaded": we never issue a request, never change one, and
 // never alter a response. The wrappers hand back exactly what the page would have got,
 // and the rules lint and a byte-equal test both hold this file to that (CMP-030).
+//
+// Whatever window a caller names, the one wrapped is the page's (hq #516): under a script
+// manager a feature's `ctx.win` is the sandbox, whose fetch and XHR Torn never calls.
+// With debug on, every response a feature wants is logged with how many took it, and each
+// other address once, so the console shows whether the page's requests are seen at all.
 
-import { warn } from './log.js';
+import { log, warn } from './log.js';
 import { pageWindow } from './page-window.js';
 
 /** @type {Set<{test: (url: string) => boolean, handler: Function}>} */
@@ -15,6 +20,28 @@ let originals = null;
 let target = null;
 
 const MARK = '__ttcIntercept';
+
+/** Addresses seen that no feature wanted, logged once each (debug). */
+const passedBy = new Set();
+
+/** The address without its query, for the debug log: page.php?sid=… keeps its sid. */
+function shortUrl(url) {
+  try {
+    const u = new URL(String(url), 'https://www.torn.com');
+    const sid = u.searchParams.get('sid') || u.searchParams.get('step');
+    return `${u.pathname}${sid ? `?${sid}` : ''}`;
+  } catch {
+    return '?';
+  }
+}
+
+/** A response no feature wanted: one debug line per address. */
+function passed(url) {
+  const short = shortUrl(url);
+  if (passedBy.has(short) || passedBy.size >= 200) return;
+  passedBy.add(short);
+  log(`intercept: ${short} seen, no feature wants it`);
+}
 
 /**
  * The request's form fields, read from its body without touching it: a form-encoded
@@ -36,18 +63,21 @@ export function formOf(body, win = globalThis) {
 }
 
 function deliver(url, method, data, form = null) {
+  let taken = 0;
   for (const sub of [...subscribers]) {
     let wanted = false;
     try {
       wanted = sub.test(url);
     } catch { /* a bad predicate is not the page's problem */ }
     if (!wanted) continue;
+    taken += 1;
     try {
       sub.handler({ url, method, data, form });
     } catch (err) {
       warn('interceptor threw', err);
     }
   }
+  log(`intercept: ${shortUrl(url)} read, ${taken} feature(s) took it`);
 }
 
 function anyWants(url) {
@@ -59,8 +89,10 @@ function anyWants(url) {
   return false;
 }
 
-export function install(win = pageWindow()) {
+export function install(given = pageWindow()) {
+  const win = pageWindow(given);
   if (originals && target === win) return;
+  if (originals) uninstallWrappers();
   target = win;
   originals = { fetch: win.fetch, open: win.XMLHttpRequest?.prototype?.open, send: win.XMLHttpRequest?.prototype?.send };
 
@@ -96,11 +128,16 @@ export function install(win = pageWindow()) {
       return send.call(this, body);
     };
   }
+  log(`intercept: watching the ${win === given ? 'page' : 'page window (not the sandbox)'} fetch and XHR`);
 }
 
 function observeFetch(args, promise, win) {
   const url = urlOf(args[0]);
-  if (!url || !anyWants(url)) return;
+  if (!url) return;
+  if (!anyWants(url)) {
+    passed(url);
+    return;
+  }
   const method = String(args[1]?.method || args[0]?.method || 'GET');
   const form = formOf(args[1]?.body, win);
   Promise.resolve(promise)
@@ -121,7 +158,10 @@ function observeXhr(request) {
   if (!info) return;
   request.addEventListener('loadend', () => {
     try {
-      if (!anyWants(info.url)) return;
+      if (!anyWants(info.url)) {
+        passed(info.url);
+        return;
+      }
       const type = request.responseType;
       let data = null;
       if (type === 'json') data = request.response;
@@ -145,20 +185,26 @@ function urlOf(input) {
  * @returns {() => void} unsubscribe
  */
 export function onJson(test, handler, win = pageWindow()) {
+  // `win` may be the sandbox (a feature's ctx.win); install() moves to the page's.
   install(win);
   const sub = { test, handler };
   subscribers.add(sub);
   return () => subscribers.delete(sub);
 }
 
-/** Puts the page's own fetch and XHR back. Tests use it; the script never does. */
-export function uninstall() {
-  if (!originals || !target) return;
+function uninstallWrappers() {
   if (originals.fetch) target.fetch = originals.fetch;
   const xhr = target.XMLHttpRequest?.prototype;
   if (xhr && originals.open) xhr.open = originals.open;
   if (xhr && originals.send) xhr.send = originals.send;
-  subscribers.clear();
   originals = null;
   target = null;
+}
+
+/** Puts the page's own fetch and XHR back. Tests use it; the script never does. */
+export function uninstall() {
+  subscribers.clear();
+  passedBy.clear();
+  if (!originals || !target) return;
+  uninstallWrappers();
 }
