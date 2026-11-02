@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createCache } from '../../src/core/cache.js';
 import {
   SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
-  WAR_LOADOUTS_URL, createSite, siteUrl, validRoles,
+  WAR_LOADOUTS_URL, createSite, siteUrl, validFf, validRoles,
 } from '../../src/core/site.js';
 
 const KEY = `tt_feed_${'E'.repeat(43)}`;
@@ -51,7 +51,7 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
     assert.equal(r.calls[0].method, 'POST');
     assert.deepEqual(JSON.parse(r.calls[0].body), { ids: [1, 2] });
     assert.equal(r.calls[0].headers.Authorization, `Bearer ${KEY}`);
-    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m' });
+    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', source: null, estimatedAt: null });
   });
 
   test('a second page view inside the hour asks nothing', async () => {
@@ -74,23 +74,42 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
 
   test('a player the site does not know is "?" for the hour, never a guess and never a retry', async () => {
     const r = rig({ reply: ffReply([]) });
-    assert.deepEqual((await r.site.ff([7])).get(7), { ff: null, band: null });
+    assert.deepEqual((await r.site.ff([7])).get(7), { ff: null, band: null, source: null, estimatedAt: null });
     await r.site.ff([7]);
     assert.equal(r.calls.length, 1);
+  });
+
+  test('hq #492: whose figure it is and when it was made come along; junk in either drops only that field', async () => {
+    const r = rig({ reply: ffReply([
+      { id: 1, ff: 2.5, band: '1m–5m', source: 'ffscouter', estimated_at: '2026-11-01T12:00:00Z' },
+      { id: 2, ff: 3, band: null, source: 'index', estimated_at: null },
+      { id: 3, ff: 3, band: null, source: 'someone', estimated_at: 'yesterday' },
+    ]) });
+    const found = await r.site.ff([1, 2, 3]);
+    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', source: 'ffscouter', estimatedAt: Date.UTC(2026, 10, 1, 12) });
+    assert.deepEqual(found.get(2), { ff: 3, band: null, source: 'index', estimatedAt: null });
+    assert.deepEqual(found.get(3), { ff: 3, band: null, source: null, estimatedAt: null });
+  });
+
+  test('hq #492: an answer kept from before the source still reads', () => {
+    assert.equal(validFf({ ff: 2, band: null }), true);
+    assert.equal(validFf({ ff: 2, band: null, source: 'ffscouter', estimatedAt: 1 }), true);
+    assert.equal(validFf({ ff: 2, band: null, source: 'other' }), false);
+    assert.equal(validFf({ ff: 2, band: null, estimatedAt: 'x' }), false);
   });
 
   test('an estimate above 10 is kept: the contract has no upper bound (hq #97)', async () => {
     const r = rig({ reply: ffReply([{ id: 1, ff: 14.2, band: null }, { id: 2, ff: Infinity, band: null }]) });
     const found = await r.site.ff([1, 2]);
-    assert.deepEqual(found.get(1), { ff: 14.2, band: null });
-    assert.deepEqual(found.get(2), { ff: null, band: null });
+    assert.deepEqual(found.get(1), { ff: 14.2, band: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(2), { ff: null, band: null, source: null, estimatedAt: null });
   });
 
   test('a reply that does not fit is no answer: nothing cached, nothing invented', async () => {
     const r = rig({ reply: ffReply([{ id: 1, ff: 0.5 }, { id: 2, ff: '3' }, { id: 3, ff: 2, band: 'x'.repeat(41) }, { id: 4, ff: 2, band: null, extra: 'fine' }, { id: 5, ff: 2 }]) });
     const found = await r.site.ff([1, 2, 3, 4]);
-    for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null }, `id ${id}`);
-    assert.deepEqual(found.get(4), { ff: 2, band: null });
+    for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null, source: null, estimatedAt: null }, `id ${id}`);
+    assert.deepEqual(found.get(4), { ff: 2, band: null, source: null, estimatedAt: null });
     assert.equal(found.has(5), false, 'a row for an id we did not ask about is ignored');
   });
 
@@ -705,6 +724,22 @@ describe('CMP-108 the sidebar read', () => {
     status = 401;
     assert.equal((await site.sidebar(['chain'])).status, 'refused');
     assert.equal(cache.get('sidebar', 'chain'), undefined);
+  });
+
+  test('hq #507 the site’s faction_linked comes through, and stays in the kept copy', async () => {
+    const reply = (data) => () => ({ ok: true, status: 200, data });
+    assert.equal((await rig({ reply: reply({ chain: null, faction_linked: false }) }).site.sidebar(['chain'])).factionLinked, false);
+    assert.equal((await rig({ reply: reply({ chain: null, faction_linked: true }) }).site.sidebar(['chain'])).factionLinked, true);
+    for (const odd of [undefined, 'false', 0, null]) {
+      assert.equal((await rig({ reply: reply({ chain: null, faction_linked: odd }) }).site.sidebar(['chain'])).factionLinked, null, String(odd));
+    }
+    let clock = 0;
+    const r = rig({ now: () => clock, clock: () => clock, reply: reply({ chain: null, faction_linked: false }) });
+    await r.site.sidebar(['chain']);
+    clock = 10_000;
+    const again = await r.site.sidebar(['chain']);
+    assert.equal(again.cached, true);
+    assert.equal(again.factionLinked, false);
   });
 
   test('a kept copy that does not fit is not used', () => {

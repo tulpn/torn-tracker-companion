@@ -7,7 +7,9 @@ import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { BLOCK_ID, READ_EVERY_MS, askedItems, mountSidebarBlock, readLine } from '../../src/core/sidebar.js';
+import {
+  BLOCK_ID, DEFAULT_POSITION, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
+} from '../../src/core/sidebar.js';
 import { readSidebar } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
 import { createRegistry } from '../../src/core/registry.js';
@@ -64,11 +66,14 @@ function fakeTimers() {
   };
 }
 
-function mount({ html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null } = {}) {
+// The older tests below were written for the Lists place; the four places have their own
+// describe (hq #507).
+function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null } = {}) {
   dom.resetObserver();
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, { url: 'https://www.torn.com/' });
   windows.push(window);
   const settings = defaults(createRegistry([]));
+  settings.sidebar.position = position;
   change?.(settings);
   const asked = [];
   const site = {
@@ -484,7 +489,7 @@ describe('hq #488 on Torn’s Home page', () => {
       t.block.place();
       await settle();
     });
-    assert.equal(none.filter((l) => l.includes("not placed: no anchor (Torn's Areas or Lists not found yet)")).length, 1);
+    assert.equal(none.filter((l) => l.includes("not placed: no anchor (Torn's Areas not found yet)")).length, 1);
   });
 
   test('the read line: a failed or refused read says so; a full one names no empty item', () => {
@@ -492,5 +497,120 @@ describe('hq #488 on Torn’s Home page', () => {
     assert.equal(readLine(['chain'], { status: 'refused' }), 'sidebar: read refused');
     assert.equal(readLine(['chain'], { status: 'ok', items: new Map([['chain', { current: 3 }]]) }), 'sidebar: read ok: chain to show');
     assert.equal(readLine(['chain', 'war'], { status: 'ok', items: new Map() }), 'sidebar: read ok: nothing to show; empty from the site: chain, war');
+  });
+});
+
+describe('hq #507 the block sits where the player chose', () => {
+  const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
+  const REAL = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-desktop.html'), 'utf8');
+  // A page whose sidebar has Areas and another block, but no Lists.
+  const NO_LISTS = `<div id="sidebar">
+  <div class="sidebar-block___a"><div class="toggle-block___b"><h2 class="title___c">Areas</h2>
+    <div class="areas___x1"><div><a href="/index.php">Home</a></div></div></div></div>
+  <div class="sidebar-block___a" id="other"><div>Something else</div></div>
+</div>`;
+  const areasOf = (doc) => doc.querySelector('.areas___x1, [class*="areas___"]').closest('#sidebar > *, [class*="sidebar-block"]');
+
+  test('four places, Top first and the default', () => {
+    assert.deepEqual(POSITIONS, ['top', 'areas', 'lists', 'bottom']);
+    assert.equal(DEFAULT_POSITION, 'top');
+  });
+
+  for (const [name, html, lastId] of [['the #466 capture', REAL, 'nav-targets_list'], ['the #488 Home capture', HOME, 'nav-targets_list'], ['a plain sidebar', DESKTOP, 'lists']]) {
+    test(`on ${name}: each place puts the block where it says`, async () => {
+      for (const position of POSITIONS) {
+        const t = mount({ html, position });
+        await settle();
+        const block = t.node();
+        assert.equal(block.dataset.position, position, position);
+        const spot = placementOf(t.window.document, position);
+        if (spot.before) assert.equal(block.nextElementSibling, spot.anchor, position);
+        else assert.equal(block.previousElementSibling, spot.anchor, position);
+        if (position === 'top') assert.match(block.nextElementSibling.textContent, /Home/, 'Areas follows the block');
+        if (position === 'areas') assert.match(block.previousElementSibling.textContent, /Home/, 'the block follows Areas');
+        if (position === 'lists') assert.equal(block.previousElementSibling.id, lastId);
+        if (position === 'bottom') assert.equal(block.nextElementSibling, null, 'nothing of the sidebar comes after it');
+        assert.equal(t.window.document.querySelectorAll(`#${BLOCK_ID}`).length, 1);
+      }
+    });
+  }
+
+  test('a saved change moves the block straight away, without a second copy', async () => {
+    const t = mount({ position: 'top' });
+    await settle();
+    t.settings.sidebar.position = 'lists';
+    t.block.update();
+    assert.equal(t.node().previousElementSibling.id, 'lists');
+    assert.equal(t.node().dataset.position, 'lists');
+    assert.equal(t.window.document.querySelectorAll(`#${BLOCK_ID}`).length, 1);
+  });
+
+  test('a page without Lists shows a Lists choice at the next place down, and says so', async () => {
+    const seen = [];
+    const original = console.log;
+    console.log = (...args) => seen.push(args.map(String).join(' '));
+    setDebug(true);
+    let t;
+    try {
+      t = mount({ html: NO_LISTS, position: 'lists' });
+      await settle();
+    } finally {
+      setDebug(false);
+      console.log = original;
+    }
+    assert.equal(t.node().dataset.position, 'bottom');
+    assert.equal(t.node().previousElementSibling.id, 'other');
+    assert.ok(seen.some((l) => l.includes('(bottom: this page has no place for lists)')), seen.join(' | '));
+  });
+
+  test('a position that is not one of the four counts as Top', () => {
+    const { window } = new JSDOM(`<!doctype html><body>${DESKTOP}</body>`);
+    windows.push(window);
+    assert.equal(placementOf(window.document, 'middle').position, 'top');
+    assert.equal(placementOf(window.document).position, 'top');
+    assert.equal(placementOf(new JSDOM('<!doctype html><body></body>').window.document, 'top'), null);
+    assert.ok(areasOf(window.document));
+  });
+
+  test('at 360 px, in PDA’s menu, the same choice holds', async () => {
+    for (const position of POSITIONS) {
+      const t = mount({ html: PDA, position });
+      await settle();
+      assert.ok(t.node(), position);
+      assert.equal(t.node().dataset.open, 'false');
+    }
+  });
+});
+
+describe('hq #507 a line when the account has no faction linked', () => {
+  const EMPTY = { chain: null, war: null, terms: null, partner: null, dibs: null, oc: null, guide: null, links: [] };
+  const answerOf = (data) => ({ status: 'ok', ...readSidebar(data, Object.keys(data), 0) });
+  const line = (t) => t.node().querySelector('[data-ttc-no-faction]');
+
+  test('the site says no faction and the faction items are empty: one line, linking to the faction page', async () => {
+    const t = mount({ answer: answerOf({ ...EMPTY, faction_linked: false }) });
+    await settle();
+    assert.ok(line(t));
+    assert.equal(line(t).textContent, 'Link your faction on torn-tracker.com to see chain, war and dibs');
+    const a = line(t).querySelector('a');
+    assert.equal(a.getAttribute('href'), 'https://torn-tracker.com/faction/');
+    assert.equal(t.node().hidden, false);
+  });
+
+  test('no line when the site says nothing, says linked, or a faction item has a value', async () => {
+    for (const data of [EMPTY, { ...EMPTY, faction_linked: true }, { ...EMPTY, faction_linked: 'no' }, { ...FULL, faction_linked: false }]) {
+      const t = mount({ answer: answerOf(data) });
+      await settle();
+      assert.equal(line(t), null, JSON.stringify(data.faction_linked));
+    }
+  });
+
+  test('no line when no faction item is switched on', async () => {
+    const t = mount({
+      answer: answerOf({ ...EMPTY, faction_linked: false }),
+      change: (s) => { for (const id of ['chain', 'war', 'dibs', 'loot']) s.sidebar.items[id] = false; },
+    });
+    await settle();
+    assert.equal(line(t), null);
   });
 });

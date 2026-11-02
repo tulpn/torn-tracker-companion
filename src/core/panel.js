@@ -39,7 +39,7 @@ import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
 import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
-import { SIDEBAR_ITEMS } from './sidebar.js';
+import { POSITIONS, POSITION_LABELS, SIDEBAR_ITEMS } from './sidebar.js';
 import { KEYS, backendName, read, write } from './storage.js';
 import { syncWatchSection, watchSection } from './watch-panel.js';
 import { ROTA_STYLE, rotaSection, syncRota } from './rota.js';
@@ -65,7 +65,7 @@ export const SECTIONS = Object.freeze([
 const INTROS = Object.freeze({
   general: 'Your version, updates, and help when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Changes apply when you press Save.',
-  sidebar: 'A Torn Tracker block in Torn’s sidebar, under Lists, with a few live facts. Choose what it shows. All of it is Core (free).',
+  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits under General. Choose what it shows. All of it is Core (free).',
   watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Watch mode’s settings apply at once, without Save. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
@@ -637,6 +637,15 @@ export function mountPanel({
           value: look, selected: look === draft.settings.look,
         }, LOOK_LABELS[look])))),
       h('div', { class: `${P}-muted` }, 'What the companion adds to Torn’s own pages always follows Torn’s theme.'),
+      h('h4', null, 'Sidebar block'),
+      h('label', { class: `${P}-field` }, h('span', null, 'Where the Torn Tracker block sits'),
+        h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
+          value: at, selected: at === draft.settings.sidebar.position,
+        }, POSITION_LABELS[at])))),
+      draft.settings.sidebar.moved
+        ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
+          'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you save.')
+        : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.'),
       h('h4', null, 'Achievements'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-achievements': 'toast', checked: draft.settings.achievements?.toast !== false }),
@@ -829,7 +838,9 @@ export function mountPanel({
       return;
     }
     const { feature, opt, share, key, setting, sidebar, achievements } = input.dataset || {};
-    if (feature && opt) {
+    if (input.dataset?.sidebarPosition !== undefined) {
+      if (POSITIONS.includes(input.value)) draft.settings.sidebar.position = input.value;
+    } else if (feature && opt) {
       const current = draft.settings.features[feature]?.[opt];
       let value;
       if (input.type === 'checkbox') value = input.checked;
@@ -890,6 +901,8 @@ export function mountPanel({
       render(typed.error);
       return;
     }
+    // The note that the sidebar block moved (hq #507) has been seen once a save happens.
+    if (settings?.sidebar) settings.sidebar.moved = false;
     const ok = await onSave(settings, typed.keys);
     if (!ok) {
       render('Could not save: storage is full or unavailable.');

@@ -1,6 +1,6 @@
 // The Torn Tracker block in Torn's sidebar (CMP-108).
 //
-// A collapsible block of its own after Torn's "Lists", shaped like Torn's own blocks and
+// A collapsible block of its own in Torn's sidebar, shaped like Torn's own blocks and
 // coloured by the suite's tokens in Torn's theme (WP-UI-8), with a few live facts the
 // player would otherwise open the site or Discord for. It has a master switch, and every
 // item has its own switch (Settings → Sidebar). An item with nothing to say is left out,
@@ -14,6 +14,10 @@
 // is plain navigation (a profile, an attack page, the site): the game action is still the
 // player's own click on Torn's page. A local item (the shop price highlighter's count)
 // is never asked for: it comes from this page and is shown whatever the read says.
+//
+// Where it sits is the player's choice on this device (hq #507, D-173): at the top, above
+// Torn's Areas (the default), after Areas, after Lists, or at the bottom. A page without
+// the chosen place falls back to the next one down, never to nothing.
 //
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
@@ -54,11 +58,13 @@ const LINKS = Object.freeze([
   { label: 'Guide', url: `${SITE}/guide/` },
 ]);
 const GUIDE_URL = `${SITE}/guide/`;
+const FACTION_URL = `${SITE}/faction/`;
 const PLANNER_URL = `${SITE}/travel/`;
 const STOCKS_URL = `${SITE}/stocks/`;
 
 const STYLE = `
   ${followTorn(`#${BLOCK_ID}`)}
+  #${BLOCK_ID}[data-position="top"] { margin: 0 0 8px; }
   #${BLOCK_ID} { margin-top: 8px; font: 12px/1.4 var(--tt-font-sans); color: var(--card-foreground); }
   #${BLOCK_ID} .${P}-sb-head {
     display: flex; align-items: center; gap: 6px; width: 100%; min-height: 32px; padding: 0 8px; border: 0; cursor: pointer;
@@ -134,6 +140,19 @@ export function askedItems(settings) {
   return SIDEBAR_ITEMS.filter((item) => item.id !== 'links' && !item.local && sb.items?.[item.id] === true).map((item) => item.id);
 }
 
+/** Where the block can sit, top to bottom, with the settings page's words. */
+export const POSITIONS = Object.freeze(['top', 'areas', 'lists', 'bottom']);
+export const DEFAULT_POSITION = 'top';
+export const POSITION_LABELS = Object.freeze({
+  top: 'At the top, above Areas',
+  areas: 'After Areas',
+  lists: 'After Lists',
+  bottom: 'At the bottom',
+});
+
+/** The items that need a faction the site manages: the empty-state line's case (hq #507). */
+const FACTION_ITEMS = Object.freeze(['chain', 'war', 'dibs', 'loot']);
+
 /** One of Torn's sidebar entries (Friends, Enemies, Targets under Lists). */
 const ENTRY = "[id^='nav-'], [class*='area-desktop'], [class*='area-mobile']";
 
@@ -147,9 +166,34 @@ const ENTRY = "[id^='nav-'], [class*='area-desktop'], [class*='area-mobile']";
 export function anchorOf(doc) {
   const areas = doc.querySelector(SIDEBAR);
   if (!areas) return null;
-  const scope = doc.querySelector('#sidebarroot') || doc.querySelector('#sidebar') || doc.body;
-  const heading = [...scope.querySelectorAll('h2, h3, [class*="title"], [class*="header"]')]
-    .find((n) => n.children.length === 0 && n.textContent.trim() === 'Lists');
+  return listsAnchor(doc, areas) || areasBlockOf(doc, areas);
+}
+
+const scopeOf = (doc) => doc.querySelector('#sidebarroot') || doc.querySelector('#sidebar') || doc.body;
+
+/** The h2 (or header) that says "Lists", or undefined. */
+const listsHeadingIn = (scope) => [...scope.querySelectorAll('h2, h3, [class*="title"], [class*="header"]')]
+  .find((n) => n.children.length === 0 && n.textContent.trim() === 'Lists');
+
+/**
+ * Torn's Areas block: the wrapper of Areas' links, climbed to the outermost wrapper that
+ * still holds only Areas, so the blocks beside it are Torn's other sidebar blocks.
+ */
+function areasBlockOf(doc, areas) {
+  const scope = scopeOf(doc);
+  const heading = listsHeadingIn(scope);
+  let block = areas.closest("[class*='sidebar-block'], [class*='toggle-block']") || areas;
+  // Without Torn's #sidebar (PDA's menu) there is nothing safe to climb to.
+  if (scope === doc.body) return block;
+  while (block.parentElement && block.parentElement !== scope
+    && !(heading && block.parentElement.contains(heading))) block = block.parentElement;
+  return block;
+}
+
+/** The last of Lists' entries, or the Lists block; null when the page has no Lists. */
+function listsAnchor(doc, areas) {
+  const scope = scopeOf(doc);
+  const heading = listsHeadingIn(scope);
   if (heading) {
     // Climb until the next step up would also hold Areas: that's the Lists header or block.
     let block = heading;
@@ -164,7 +208,39 @@ export function anchorOf(doc) {
       return last;
     }
   }
-  return areas.closest("[class*='sidebar-block'], [class*='toggle-block']") || areas;
+  return null;
+}
+
+/**
+ * Where the block goes for a position (hq #507): the node it goes next to, whether it
+ * goes before or after it, and the position that was used. A position the page can't
+ * give falls back to the next one down; null only when Torn's Areas isn't there yet.
+ * @param {Document} doc
+ * @param {string} position  one of POSITIONS; anything else counts as the default
+ * @returns {{anchor: Element, before: boolean, position: string}|null}
+ */
+export function placementOf(doc, position = DEFAULT_POSITION) {
+  const areas = doc.querySelector(SIDEBAR);
+  if (!areas) return null;
+  const block = areasBlockOf(doc, areas);
+  const start = POSITIONS.includes(position) ? POSITIONS.indexOf(position) : 0;
+  for (const at of POSITIONS.slice(start)) {
+    if (at === 'top') return { anchor: block, before: true, position: at };
+    if (at === 'areas') return { anchor: block, before: false, position: at };
+    if (at === 'lists') {
+      const lists = listsAnchor(doc, areas);
+      if (lists) return { anchor: lists, before: false, position: at };
+    }
+    if (at === 'bottom') {
+      // The last of the blocks beside Areas, leaving ours out.
+      let last = block;
+      for (let n = block.nextElementSibling; n; n = n.nextElementSibling) {
+        if (n.id !== BLOCK_ID) last = n;
+      }
+      return { anchor: last, before: false, position: at };
+    }
+  }
+  return null;
 }
 
 /** How the console names a node of Torn's sidebar: its id, else its first class. */
@@ -311,6 +387,14 @@ export function mountSidebarBlock({
         rows.push(row(h('b', null, item.title), h('span', { class: `${P}-sb-muted` }, ' no data')));
       }
     } else {
+      // hq #507: the site says the account has no faction it manages, and every faction
+      // item asked for came back empty for it. Any other empty item stays silent.
+      const factionAsked = want.filter((id) => FACTION_ITEMS.includes(id));
+      if (answer.factionLinked === false && factionAsked.length && factionAsked.every((id) => !answer.items.get(id))) {
+        rows.push(h('div', { class: `${P}-sb-row`, 'data-ttc-no-faction': '' },
+          link(FACTION_URL, 'Link your faction on torn-tracker.com', true),
+          h('span', { class: `${P}-sb-muted` }, ' to see chain, war and dibs')));
+      }
       for (const id of want) {
         const value = answer.items.get(id);
         const line = value ? LINES[id](value) : null;
@@ -404,20 +488,27 @@ export function mountSidebarBlock({
       say('place', 'sidebar: block not placed: switched off in Settings');
       return;
     }
-    const anchor = anchorOf(doc);
-    if (!anchor) {
-      say('place', "sidebar: block not placed: no anchor (Torn's Areas or Lists not found yet)");
+    const wanted = getSettings()?.sidebar?.position;
+    const spot = placementOf(doc, wanted);
+    if (!spot) {
+      say('place', "sidebar: block not placed: no anchor (Torn's Areas not found yet)");
       return;
     }
-    say('place', `sidebar: block placed after ${nameOf(anchor)}`);
+    const { anchor, before } = spot;
+    say('place', `sidebar: block placed ${before ? 'before' : 'after'} ${nameOf(anchor)}`
+      + (spot.position !== wanted && wanted ? ` (${spot.position}: this page has no place for ${wanted})` : ''));
     if (!block) block = build();
+    block.dataset.position = spot.position;
     // A copy left behind by a redraw of Torn's sidebar holds old rows and a dead button.
     for (const copy of doc.querySelectorAll(`#${BLOCK_ID}`)) {
       if (copy === block) continue;
       copy.remove();
       log('sidebar: block removed as stale: a copy a redraw left behind');
     }
-    if (anchor.nextElementSibling !== block) anchor.after(block);
+    if (before ? anchor.previousElementSibling !== block : anchor.nextElementSibling !== block) {
+      if (before) anchor.before(block);
+      else anchor.after(block);
+    }
     render();
     if (isOpen()) refreshSidebar();
   }

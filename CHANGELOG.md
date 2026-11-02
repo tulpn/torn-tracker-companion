@@ -9,6 +9,27 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.8 — 2026-11-02
+
+### Added
+
+- Settings → General → **Sidebar block**: choose where the Torn Tracker block sits in
+  Torn's sidebar: at the top above Areas, after Areas, after Lists or at the bottom. The
+  choice is kept on this device; a page without that place shows the block at the next one
+  down.
+- When your account has no faction linked on torn-tracker.com, the sidebar block says so
+  and links to the faction page, instead of leaving chain, war and dibs blank.
+
+### Changed
+
+- The sidebar block now sits at the top of Torn's sidebar by default. An existing install
+  moves there once; the settings page says so under General, and **After Lists** puts it
+  back where it was.
+
+- Fair-fight badges: a player with no estimate shows **–** instead of **?**. A **?** now
+  means only a rough idea of their stats. Hovering over a badge says whose estimate it is
+  (FFScouter's are credited to them) and how old it is.
+
 ## 0.9.7 — 2026-11-02
 
 ### Fixed

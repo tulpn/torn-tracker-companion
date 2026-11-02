@@ -73,7 +73,7 @@ of sections and a search bar at the top. Nothing is added to Torn's header.
   Torn page. It has its own switch here.
 - **Features**: every feature, grouped by area, with its switch, one line on what it does,
   its options and a link to its guide page.
-- **Sidebar**: the Torn Tracker block under Lists in Torn's sidebar, with your chain, your
+- **Sidebar**: the Torn Tracker block in Torn's sidebar (at the top unless you move it under General), with your chain, your
   chain watch (now, next, or a way to sign up, with a switch for watch mode), war, dibs,
   med-out partner and OC. Switch it off, or choose which lines it shows. While it is
   open and the tab is visible, it asks torn-tracker.com once a minute for those lines,

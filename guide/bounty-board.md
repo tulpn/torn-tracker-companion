@@ -21,7 +21,7 @@ keywords: torn bounties, torn bounty filter, torn bounty hunting, bounty fair fi
 On Torn's bounty board:
 
 - **A badge beside each target** with the fair-fight estimate, as on
-  [profiles and faction lists](ff-badges.md). A **?** means torn-tracker.com has no
+  [profiles and faction lists](ff-badges.md). A **–** means torn-tracker.com has no
   estimate yet.
 - **A filter bar above the list.** Set any of these and the rows outside them are hidden
   at once:

@@ -730,3 +730,43 @@ describe('hq #489 the search bar, the header, and no stray null', () => {
     assert.equal(t.window.document.activeElement === search || t.root.activeElement === search, true);
   });
 });
+
+describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => {
+  test('a select with the four places, Top chosen on a fresh install, and no note', () => {
+    const t = mount();
+    t.open('general');
+    const select = t.$('#ttc-sidebar-position');
+    assert.ok(select);
+    assert.deepEqual([...select.options].map((o) => o.value), ['top', 'areas', 'lists', 'bottom']);
+    assert.equal(select.value, 'top');
+    assert.equal(t.$('[data-sidebar-moved]'), null);
+    assert.match(t.text(), /On this device/);
+  });
+
+  test('an install that was moved says so until the player saves', async () => {
+    const settings = defaults(createRegistry([]));
+    settings.sidebar.moved = true;
+    const t = mount({ registry: createRegistry([]), settings });
+    t.open('general');
+    assert.match(t.$('[data-sidebar-moved]').textContent, /moved to the top of Torn.s sidebar in 0\.9\.8/);
+    t.change(t.$('#ttc-sidebar-position'), 'lists');
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    const saved = t.saves[0].settings.sidebar;
+    assert.equal(saved.position, 'lists');
+    assert.equal(saved.moved, false);
+  });
+
+  test('a value that is not a place is not taken', async () => {
+    const t = mount();
+    t.open('general');
+    const select = t.$('#ttc-sidebar-position');
+    const bad = t.window.document.createElement('option');
+    bad.value = 'middle';
+    select.append(bad);
+    t.change(select, 'middle');
+    t.click(t.$('button[data-act="save"]'));
+    await settle();
+    assert.equal(t.saves[0].settings.sidebar.position, 'top');
+  });
+});
