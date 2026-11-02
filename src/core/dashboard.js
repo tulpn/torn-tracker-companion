@@ -7,10 +7,12 @@
 // ticks: timers show the time they were read, and a card the site has nothing for is left
 // out. hq #491 (D-170): what needs the player now comes first, the hero, bars and battle
 // stats are gone, and each card links to its own page on torn-tracker.com, never to the
-// dashboard page; the one dashboard link is at the top.
+// dashboard page; the one dashboard link is at the top. Part 2 adds the alerts, chain watch
+// and awards cards, the war's start and dibs, and the running course in education.
 
 import { barChart, CHART_STYLE, chartDeclarations } from './chart.js';
 import { el } from './dom.js';
+import { ROLE_NAMES } from './rota.js';
 import { DASHBOARD_CARDS } from './site.js';
 import { left, roughly } from './sidebar.js';
 import { declarations, lookTheme } from './tokens.js';
@@ -20,8 +22,9 @@ export const DASH_ID = `${P}-dash`;
 const MONEY_DAYS = 7;
 
 const CARD_TITLE = Object.freeze({
-  money: 'Money, last 7 days', gym: 'Next gym', goals: 'Savings goals', achievements: 'Next achievements',
-  guide: 'Getting started', education: 'Education', chain: 'Chain', war: 'Ranked war', oc: 'Organized crime',
+  alerts: 'Alerts', war: 'Ranked war', chain_watch: 'Chain watch', chain: 'Chain', oc: 'Organized crime',
+  awards: 'Nearest awards', education: 'Education', gym: 'Next gym', goals: 'Savings goals',
+  achievements: 'Next achievements', guide: 'Getting started', money: 'Money, last 7 days',
 });
 
 const STYLE = `
@@ -69,6 +72,7 @@ const STYLE = `
   #${DASH_ID} .${P}-meter > span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
   #${DASH_ID} .${P}-meter[data-over] > span { background: var(--tt-warning); }
   #${DASH_ID} .${P}-more { margin-top: auto; display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
+  #${DASH_ID} .${P}-sub { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
     background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   ${CHART_STYLE}
@@ -119,6 +123,21 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     }, bar);
   };
   const until = (at) => (at == null ? null : (at > now() ? `in ${roughly(at - now())}` : 'now'));
+  const ago = (at) => (at == null ? null : (at < now() ? `${roughly(now() - at)} ago` : 'just now'));
+  const role = (r) => r.label ?? ROLE_NAMES[r.role];
+  const chainBody = (v) => [
+    h('p', null, h('span', { class: `${P}-big` }, `${thousands(v.current)} / ${thousands(v.max)}`)),
+    meter(v.current, v.max, `Chain: ${v.current} of ${v.max}`),
+    v.timeoutAt != null ? h('p', { class: `${P}-muted` }, `Timeout was ${left(v.timeoutAt - (v.asOf ?? now()))} when read`) : null,
+  ];
+  // An empty slot is said, not hidden: nobody on watch is worth knowing.
+  const slot = (heading, v) => (v ? [
+    h('p', { class: `${P}-sub` }, heading),
+    v.holders.length
+      ? h('ul', { class: `${P}-rows` }, ...v.holders.map((x) => h('li', { class: `${P}-row` },
+        h('span', null, x.mine ? h('strong', null, `${x.name} (you)`) : x.name), h('span', { class: `${P}-muted` }, role(x)))))
+      : h('p', { class: `${P}-muted` }, 'Nobody on watch.'),
+  ] : []);
 
   const BODIES = {
     money(v) {
@@ -153,23 +172,52 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
       v.bonuses ? h('p', null, `${v.bonuses} bonus${v.bonuses === 1 ? '' : 'es'} to claim`) : null,
       h('ul', { class: `${P}-rows` }, ...v.steps.filter((s) => !s.done).slice(0, 3).map((s) => h('li', null, s.title))),
     ],
+    alerts: (v) => [h('ul', { class: `${P}-rows` }, ...v.map((a) => h('li', { class: `${P}-row` },
+      a.url ? h('a', { href: a.url, target: '_blank', rel: 'noopener noreferrer' }, a.title) : h('span', null, a.title),
+      a.at != null ? h('span', { class: `${P}-muted` }, ago(a.at)) : null)))],
+    chain_watch: (v) => [
+      v.mine.now ? h('p', null, h('span', { class: `${P}-tag` }, `You're on watch now: ${ROLE_NAMES[v.mine.now]}`)) : null,
+      ...slot('Now', v.now),
+      ...slot(v.next ? `Next, ${until(v.next.startsAt)}` : '', v.next),
+      v.mine.next ? h('p', null, `Your next watch: ${ROLE_NAMES[v.mine.next.role]}, ${until(v.mine.next.startsAt)}`) : null,
+      v.gaps ? h('p', { class: `${P}-muted` }, `${v.gaps} slot${v.gaps === 1 ? '' : 's'} in the next 24 h ${v.gaps === 1 ? 'has' : 'have'} no Lead.`) : null,
+      ...(v.chain ? [h('p', { class: `${P}-sub` }, 'Chain'), ...chainBody(v.chain)] : []),
+    ],
+    awards: (v) => [h('ul', { class: `${P}-rows` }, ...v.nearest.map((a) => h('li', null,
+      h('div', { class: `${P}-row` },
+        a.url ? h('a', { href: a.url, target: '_blank', rel: 'noopener noreferrer' }, a.name) : h('strong', null, a.name),
+        h('span', { class: `${P}-muted` }, a.detail ?? `${Math.floor(a.pct)}%`)),
+      a.description ? h('p', { class: `${P}-muted` }, `${a.kind === 'medal' ? 'Medal' : 'Honor'} · ${a.description}`) : null,
+      meter(a.pct, 100, `${a.name}: ${Math.floor(a.pct)}%`))))],
     education: (v) => [
+      v.course ? h('p', null, 'Studying ', h('strong', null, v.course.name),
+        v.course.finishesAt != null ? h('span', { class: `${P}-muted` }, ` · done ${until(v.course.finishesAt)}`) : null) : null,
+      v.branch ? h('p', { class: `${P}-muted` }, `${v.branch.name}: ${v.branch.done} of ${v.branch.total} courses`) : null,
+      v.branch ? meter(v.branch.done, v.branch.total, `${v.branch.name}: ${v.branch.done} of ${v.branch.total}`) : null,
+      v.nextCourse ? h('p', null, `Your next pick: ${v.nextCourse.name}`) : null,
       v.position ? h('p', null, v.position) : null,
       v.complete ? h('p', null, 'Every course is done.') : null,
       v.next ? h('p', null, `Next: ${v.next.to}${v.next.job ? ` (for ${v.next.job})` : ''}`,
         v.next.daysLeft != null ? h('span', { class: `${P}-muted` }, ` · ${v.next.daysLeft} days`) : null) : null,
     ],
-    chain: (v) => [
-      h('p', null, h('span', { class: `${P}-big` }, `${thousands(v.current)} / ${thousands(v.max)}`)),
-      meter(v.current, v.max, `Chain: ${v.current} of ${v.max}`),
-      v.timeoutAt != null ? h('p', { class: `${P}-muted` }, `Timeout was ${left(v.timeoutAt - (v.asOf ?? now()))} when read`) : null,
-    ],
-    war: (v) => [
-      h('p', null, `Against ${v.opponent}`),
-      h('div', { class: `${P}-row` }, h('span', null, 'Us'), h('strong', null, thousands(v.ours))),
-      h('div', { class: `${P}-row` }, h('span', null, 'Them'), h('strong', null, thousands(v.theirs))),
-      h('p', { class: `${P}-muted` }, `Target ${thousands(v.target)}${v.finishAt != null ? ` · ends ${until(v.finishAt)}` : ''}`),
-    ],
+    chain: chainBody,
+    war: (v) => (v.state === 'scheduled'
+      ? [
+        h('p', null, `Against ${v.opponent}`),
+        h('p', null, h('strong', null, v.startsAt != null ? `Starts ${until(v.startsAt)}` : 'Matched, not started')),
+        h('p', { class: `${P}-muted` }, `Target ${thousands(v.target)}`),
+      ]
+      : [
+        h('p', null, `Against ${v.opponent}`),
+        h('div', { class: `${P}-row` }, h('span', null, 'Us'), h('strong', null, thousands(v.ours))),
+        h('div', { class: `${P}-row` }, h('span', null, 'Them'), h('strong', null, thousands(v.theirs))),
+        h('p', { class: `${P}-muted` }, `Target ${thousands(v.target)}${v.finishAt != null ? ` · ends ${until(v.finishAt)}` : ''}`),
+        ...(v.dibs.length ? [
+          h('p', { class: `${P}-sub` }, 'Your dibs'),
+          h('ul', { class: `${P}-rows` }, ...v.dibs.map((d) => h('li', { class: `${P}-row` },
+            h('span', null, d.name), h('span', { class: `${P}-muted` }, d.expiresAt > now() ? `${left(d.expiresAt - now())} left` : 'expired')))),
+        ] : []),
+      ]),
     oc: (v) => [
       h('p', null, h('strong', null, v.name), h('span', { class: `${P}-muted` }, ` · ${v.state}`)),
       v.readyAt != null ? h('p', { class: `${P}-muted` }, `Ready ${until(v.readyAt)}`) : null,

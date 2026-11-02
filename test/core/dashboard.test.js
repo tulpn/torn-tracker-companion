@@ -1,6 +1,7 @@
 // The dashboard inside Torn (hq #465): the read, checked card by card, and the page that
 // shows it at /index.php#/torn-tracker/dashboard while its switch is on. hq #491 (D-170):
-// the new order, no hero, bars or battle stats, and each card's link to its own page.
+// the new order, no hero, bars or battle stats, and each card's link to its own page; part 2
+// adds alerts, chain watch, awards, the war's start and dibs, and the running course.
 
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -68,7 +69,9 @@ describe('hq #465 the dashboard read', () => {
   });
 
   test('hq #491: the order puts what needs the player now first; hero, bars and stats are gone', () => {
-    assert.deepEqual(DASHBOARD_CARDS.slice(0, 2), ['war', 'chain']);
+    assert.deepEqual(DASHBOARD_CARDS, [
+      'alerts', 'war', 'chain_watch', 'chain', 'oc', 'awards', 'education', 'gym', 'goals', 'achievements', 'guide', 'money',
+    ]);
     for (const gone of ['hero', 'bars', 'stats']) assert.equal(DASHBOARD_CARDS.includes(gone), false, gone);
     const read = readDashboard({ ...copy(), hero: { name: 'Someone' }, bars: { bars: [] }, stats: { gym: [] } });
     assert.equal('hero' in read, false);
@@ -92,7 +95,7 @@ describe('hq #465 the dashboard read', () => {
     data.links.finances = 'https://torn-tracker.com/dashboard/';
     data.links.guide = 'javascript:alert(1)';
     const read = readDashboard(data);
-    assert.equal(read.cardLinks.get('gym'), 'https://torn-tracker.com/stats/', 'falls back to its page');
+    assert.equal(read.cardLinks.get('gym'), null, 'no gym page in the links: none at all');
     assert.equal(read.cardLinks.get('goals'), null);
     assert.equal(read.cardLinks.get('money'), null);
     assert.equal(read.cardLinks.get('guide'), null);
@@ -110,6 +113,81 @@ describe('hq #465 the dashboard read', () => {
     for (const key of ['gym', 'money', 'chain', 'education']) assert.equal(read.cards.get(key), null, key);
     assert.notEqual(read.cards.get('goals'), null);
     assert.notEqual(read.cards.get('war'), null);
+  });
+
+  test('hq #491 part 2: alerts are checked row by row, newest first as sent, without a payload', () => {
+    const data = copy();
+    data.alerts.push({ kind: 'Bad Kind!', title: 'x', at: '2026-11-02T10:00:00Z' }, { kind: 'personal.x', title: '' },
+      { kind: 'personal.merit', title: 'Off-site link', at: 'soon', url: 'https://evil.example/' });
+    const alerts = readDashboard(data).cards.get('alerts');
+    assert.deepEqual(alerts.map((a) => a.title), ['Stakeout triggered', 'Your watch starts soon', 'Off-site link']);
+    assert.equal(alerts[0].url, 'https://www.torn-tracker.com/stakeouts/');
+    assert.equal(alerts[2].url, null);
+    assert.equal(alerts[2].at, null);
+    assert.equal('detail' in alerts[0], false);
+    data.alerts = Array.from({ length: 15 }, (_, i) => ({ kind: 'personal.x', title: `Alert ${i}` }));
+    assert.equal(readDashboard(data).cards.get('alerts').length, 10);
+    data.alerts = [];
+    assert.equal(readDashboard(data).cards.get('alerts'), null);
+  });
+
+  test('hq #491 part 2: the war says whether it runs, when it starts, and the member\'s dibs', () => {
+    const data = copy();
+    const war = readDashboard(data).cards.get('war');
+    assert.equal(war.state, 'running');
+    assert.equal(war.startsAt, Date.UTC(2026, 10, 1, 12));
+    assert.equal(war.endsAt, null);
+    assert.deepEqual(war.dibs.map((d) => d.name), ['Example Target']);
+    data.war.state = 'ended';
+    assert.equal(readDashboard(data).cards.get('war'), null);
+    data.war.state = 'scheduled';
+    data.war.dibs = [{ target_id: -1, target_name: 'x', expires_at: 'never' }];
+    assert.deepEqual(readDashboard(data).cards.get('war').dibs, []);
+  });
+
+  test('hq #491 part 2: chain watch reads holders, the member\'s slots and the gaps; junk holders drop', () => {
+    const data = copy();
+    data.chain_watch.now.holders.push({ role: 'captain', torn_id: 2000003, name: 'Nobody' });
+    const cw = readDashboard(data).cards.get('chain_watch');
+    assert.deepEqual(cw.now.holders.map((x) => [x.role, x.name, x.mine]), [['lead', 'ExamplePlayer', true], ['backup_1', 'ExampleFriend', false]]);
+    assert.deepEqual(cw.next.holders, [], 'nobody on watch next is kept, not dropped');
+    assert.deepEqual(cw.mine, { now: 'lead', next: { role: 'backup_1', slotStart: Date.UTC(2026, 10, 2, 18), startsAt: Date.UTC(2026, 10, 2, 18) } });
+    assert.equal(cw.gaps, 6);
+    data.chain_watch.now.slot_start = '2026-11-02T12:10:00Z';
+    assert.equal(readDashboard(data).cards.get('chain_watch').now, null, 'a slot off :00 and :30 does not fit');
+    assert.equal(readDashboard({ chain_watch: { now: null, next: null, mine: {}, chain: null } }).cards.get('chain_watch'), null);
+  });
+
+  test('hq #491 part 2: a chain on the chain watch card is not shown twice', () => {
+    const data = copy();
+    assert.notEqual(readDashboard(data).cards.get('chain'), null, 'no chain on the watch card: the chain card shows');
+    data.chain_watch.chain = { current: 148, max: 250, timeout_at: '2026-11-02T12:03:00Z', as_of: '2026-11-02T12:00:00Z', url: 'https://www.torn-tracker.com/chains/' };
+    const read = readDashboard(data);
+    assert.equal(read.cards.get('chain_watch').chain.current, 148);
+    assert.equal(read.cards.get('chain_watch').chain.url, 'https://www.torn-tracker.com/chains/');
+    assert.equal(read.cards.get('chain'), null);
+  });
+
+  test('hq #491 part 2: awards keep at most five fitting rows, each linking on the site only', () => {
+    const data = copy();
+    data.awards.nearest[1].url = 'https://torn-tracker.com/dashboard/';
+    data.awards.nearest.push({ id: 3, kind: 'trophy', name: 'x', pct: 10 }, { id: 4, kind: 'medal', name: 'y', pct: 101 });
+    for (let i = 0; i < 6; i += 1) data.awards.nearest.push({ id: 10 + i, kind: 'honor', name: `Filler ${i}`, pct: 1 });
+    const awards = readDashboard(data).cards.get('awards');
+    assert.equal(awards.nearest.length, 3, 'only the first five sent are looked at; two of them do not fit');
+    assert.deepEqual(awards.nearest.slice(0, 2).map((a) => [a.name, a.detail, a.pct]), [['Example honor', '5 to go', 95], ['Example medal', '8 to go', 60.5]]);
+    assert.equal(awards.nearest[1].url, null, 'never the dashboard page');
+    assert.equal(readDashboard(data).cardLinks.get('awards'), 'https://www.torn-tracker.com/awards/');
+  });
+
+  test('hq #491 part 2: education carries the running course, the member\'s next pick and the branch', () => {
+    const data = copy();
+    const edu = readDashboard(data).cards.get('education');
+    assert.deepEqual(edu.course, { id: 11, name: 'Example course', finishesAt: Date.UTC(2026, 10, 5, 12) });
+    assert.deepEqual(edu.nextCourse, { id: 12, name: 'Next example course' });
+    assert.deepEqual(edu.branch, { name: 'Biology', done: 3, total: 10 });
+    data.education = { course: null, next_course: null, branch: { name: 'Biology', done: 1, total: 0 }, position: null, next: null, complete: false };
+    assert.equal(readDashboard(data).cards.get('education'), null, 'nothing to say is no card');
   });
 
   test('the last gym is a card of its own, not a missing one', () => {
@@ -187,6 +265,30 @@ describe('hq #465 the page', () => {
     assert.equal(top.length, 1);
     assert.equal(top[0].closest('[data-card]'), null);
     assert.equal(root.querySelector('[data-card="hero"]'), null);
+  });
+
+  test('hq #491 part 2: chain watch says nobody is on watch, and marks the member', async () => {
+    const { root } = await opened(siteRig().site);
+    const cw = root.querySelector('[data-card="chain_watch"]').textContent;
+    assert.match(cw, /ExamplePlayer \(you\)/);
+    assert.match(cw, /Nobody on watch\./);
+    assert.match(cw, /You're on watch now: Lead/);
+    assert.match(cw, /Your next watch: Backup 1, in 6h/);
+    assert.match(cw, /6 slots in the next 24 h have no Lead/);
+    assert.match(root.querySelector('[data-card="alerts"]').textContent, /Stakeout triggered20m ago/);
+    assert.match(root.querySelector('[data-card="awards"]').textContent, /5 to go/);
+    assert.match(root.querySelector('[data-card="war"]').textContent, /Your dibs.*Example Target/);
+    assert.match(root.querySelector('[data-card="education"]').textContent, /Studying Example course/);
+  });
+
+  test('hq #491 part 2: a scheduled war says when it starts', async () => {
+    const data = copy();
+    data.war.state = 'scheduled';
+    data.war.starts_at = '2026-11-03T12:00:00Z';
+    const { root } = await opened(siteRig({ reply: () => ({ ok: true, status: 200, data }) }).site);
+    const war = root.querySelector('[data-card="war"]').textContent;
+    assert.match(war, /Starts in /);
+    assert.doesNotMatch(war, /Us/);
   });
 
   test('a card that is off is not on the page', async () => {
