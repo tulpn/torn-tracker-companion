@@ -15,7 +15,7 @@
 import { SITE } from '../../hosts.js';
 import { el, settler } from '../../core/dom.js';
 import { onSubjectPage, pageSubject } from '../../core/players.js';
-import { bar, button, note, profileAction } from '../../core/ui.js';
+import { button, note, profileAction } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 
 const MARK = 'ttc-lists';
@@ -79,21 +79,31 @@ export default {
       if (line) line.textContent = words;
     }
 
-    /** The menu under the button: one entry per list, ticked when the player is on it. */
+    /**
+     * The menu under the button, in the settings panel's look (hq #487): one row per list
+     * with a tick box, ticked when the player is on it; unticking takes them off. "Manage
+     * lists" is the primary button to the site's lists.
+     */
     function menuNode(id) {
-      const items = s.menu.lists.map((list) => {
-        const item = button(doc, {
-          cls: `${MARK}-item`, tone: list.contains ? 'good' : undefined,
-          attrs: { 'aria-pressed': String(list.contains), title: list.contains ? 'Take them off this list' : 'Add them to this list' },
-        }, `${list.contains ? '✓ ' : ''}${list.name}`, list.shared ? ' (faction)' : '');
-        item.addEventListener('click', (event) => {
+      const rows = s.menu.lists.map((list) => {
+        const row = el('button', {
+          type: 'button', class: `${MARK}-item`, disabled: s.busy, ownerDocument: doc,
+          'aria-pressed': String(list.contains), title: list.contains ? 'Untick to take them off this list' : 'Tick to add them to this list',
+        },
+        el('span', { class: `${MARK}-box`, 'aria-hidden': 'true', ownerDocument: doc }),
+        el('span', { class: `${MARK}-name`, ownerDocument: doc }, list.name),
+        list.shared ? el('span', { class: `${MARK}-tag`, ownerDocument: doc }, 'Faction') : null);
+        row.addEventListener('click', (event) => {
           stop(event);
           change(id, list, list.contains ? 'remove' : 'add');
         });
-        return item;
+        return row;
       });
       const manage = el('a', { href: MANAGE_URL, target: '_blank', rel: 'noopener noreferrer', class: `${MARK}-manage`, ownerDocument: doc }, 'Manage lists');
-      return bar(doc, { cls: `${MARK}-menu` }, ...(items.length ? items : [note(doc, {}, 'You have no lists yet.')]), manage);
+      return el('div', { class: `${MARK}-menu`, role: 'group', 'aria-label': 'Your lists', ownerDocument: doc },
+        el('div', { class: `${MARK}-head`, ownerDocument: doc }, 'Your lists'),
+        ...(rows.length ? rows : [el('p', { class: `${MARK}-empty`, ownerDocument: doc }, 'You have no lists yet.')]),
+        el('div', { class: `${MARK}-foot`, ownerDocument: doc }, manage));
     }
 
     /** Builds the split button (or the key link) from what the site said. */
