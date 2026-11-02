@@ -149,3 +149,33 @@ describe('CMP-108 the sidebar block’s switches', () => {
     assert.deepEqual(out.sidebar, defaults(registry).sidebar);
   });
 });
+
+describe('hq #507 where the sidebar block sits', () => {
+  const registry = createRegistry([]);
+
+  test('a fresh install starts at the top, with no note about a move', () => {
+    assert.equal(defaults(registry).sidebar.position, 'top');
+    const fresh = normalize(null, registry).sidebar;
+    assert.equal(fresh.position, 'top');
+    assert.equal(fresh.moved, false);
+  });
+
+  test('settings saved before 0.9.8 move to the top, and keep the note until a save', () => {
+    const old = normalize({ sidebar: { enabled: true, items: { gym: true } } }, registry).sidebar;
+    assert.equal(old.position, 'top');
+    assert.equal(old.moved, true);
+    assert.equal(old.items.gym, true, 'the rest is kept');
+    const after = normalize({ sidebar: { ...old, moved: false } }, registry).sidebar;
+    assert.equal(after.moved, false);
+  });
+
+  test('a chosen place is kept; one that is not a place falls back to the top', () => {
+    for (const position of ['top', 'areas', 'lists', 'bottom']) {
+      assert.equal(normalize({ sidebar: { position } }, registry).sidebar.position, position);
+    }
+    for (const bad of ['middle', 3, null, '']) {
+      assert.equal(normalize({ sidebar: { position: bad, enabled: true } }, registry).sidebar.position, 'top', String(bad));
+    }
+    assert.equal(normalize({ sidebar: { position: 'lists', moved: 'yes' } }, registry).sidebar.moved, false);
+  });
+});

@@ -421,9 +421,11 @@ describe('on Torn’s real sidebar (the owner’s capture, 2026-10-23)', () => {
     assert.equal(t.doc.querySelectorAll('[class*="header___"] .ttc-mark').length, 0, 'no header was copied');
   });
 
-  test('the block goes after the last Lists entry, not between the heading and its entries', async () => {
+  test('a fresh install puts the block at the top, right above the Areas block (hq #507)', async () => {
     const t = await boot(REAL + PAGE);
-    assert.equal(t.doc.getElementById('ttc-sidebar-block').previousElementSibling.id, 'nav-targets_list');
+    const block = t.doc.getElementById('ttc-sidebar-block');
+    assert.equal(block.dataset.position, 'top');
+    assert.ok(block.nextElementSibling.contains(t.entry()), 'the next block is Areas, with our entry in it');
   });
 
   test('once placed, nothing keeps changing the page', async () => {
@@ -440,12 +442,13 @@ describe('on Torn’s real sidebar (the owner’s capture, 2026-10-23)', () => {
 describe('hq #488 on Torn’s Home page (the owner’s capture, 2026-11-02)', () => {
   const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
 
-  test('the entry follows TornTools Settings and the block follows Targets, within two seconds', async () => {
+  test('the entry follows TornTools Settings and the block sits above Areas, within two seconds', async () => {
     const t = await boot(HOME + PAGE);
     await t.tick(2000);
     assert.equal(t.entry().previousElementSibling.textContent.trim(), 'TornTools Settings');
     const block = t.doc.getElementById('ttc-sidebar-block');
-    assert.equal(block?.previousElementSibling.id, 'nav-targets_list');
+    assert.equal(block?.dataset.position, 'top');
+    assert.ok(block.nextElementSibling.contains(t.entry()), 'the next block is Areas, with our entry in it');
     assert.deepEqual(t.violations, []);
   });
 

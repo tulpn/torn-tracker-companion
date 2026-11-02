@@ -14,7 +14,9 @@
 // `sharingConsent` holds the disclosure version they agreed to, 0 for none.
 //
 // The sidebar block (CMP-108) has a master switch and one switch per item, with the
-// defaults its table in the spec gives.
+// defaults its table in the spec gives, and where it sits (hq #507): `position`, Top by
+// default. An install from before 0.9.8 has no position saved: it moves to Top, and
+// `moved` keeps the settings page's note about it until the player picks a place.
 //
 // `look` is the settings page's theme (WP-UI-8): dark, light, or Torn's own.
 //
@@ -28,7 +30,7 @@
 // core/dashboard.js). It starts off until the site answers its read everywhere.
 
 import { KEYS, read, write } from './storage.js';
-import { SIDEBAR_ITEMS } from './sidebar.js';
+import { DEFAULT_POSITION, POSITIONS, SIDEBAR_ITEMS } from './sidebar.js';
 import { inRange, shareKinds } from './registry.js';
 import { DISCLOSURE, kindOffered } from './disclosure.js';
 import { DEFAULT_LOOK, LOOKS } from './tokens.js';
@@ -47,6 +49,8 @@ export function defaults(registry) {
     featureData: Object.fromEntries(registry.filter((d) => d.data).map((d) => [d.id, d.data.empty])),
     sidebar: {
       enabled: true,
+      position: DEFAULT_POSITION,
+      moved: false,
       items: Object.fromEntries(SIDEBAR_ITEMS.map((item) => [item.id, item.on])),
     },
   };
@@ -113,8 +117,13 @@ export function normalize(raw, registry) {
 
   const givenSidebar = given.sidebar && typeof given.sidebar === 'object' ? given.sidebar : {};
   const givenItems = givenSidebar.items && typeof givenSidebar.items === 'object' ? givenSidebar.items : {};
+  const hasPosition = POSITIONS.includes(givenSidebar.position);
+  // Saved settings with a sidebar but no position come from before 0.9.8 (hq #507).
+  const fromBefore = !hasPosition && Object.keys(givenSidebar).length > 0;
   out.sidebar = {
     enabled: typeof givenSidebar.enabled === 'boolean' ? givenSidebar.enabled : base.sidebar.enabled,
+    position: hasPosition ? givenSidebar.position : base.sidebar.position,
+    moved: fromBefore || (hasPosition && givenSidebar.moved === true),
     items: Object.fromEntries(SIDEBAR_ITEMS.map((item) => [
       item.id, typeof givenItems[item.id] === 'boolean' ? givenItems[item.id] : item.on,
     ])),

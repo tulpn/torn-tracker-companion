@@ -43,8 +43,8 @@ without saving throws them away. After **Save** you stay on the page, and it say
 
 ## The sections
 
-- **General:** the version, a link to check for an update, the page's **Look**, the
-  switch for the [achievements](achievements.md) toast, and console logging for
+- **General:** the version, a link to check for an update, the page's **Look**, where the
+  [sidebar block](sidebar.md) sits, the switch for the [achievements](achievements.md) toast, and console logging for
   troubleshooting.
 - **Features:** every feature, grouped by area (war, travel, market, crimes, gym, jobs),
   each with its switch, one line on what it does, its options, and a **Learn more** link to
