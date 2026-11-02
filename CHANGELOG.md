@@ -23,6 +23,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- A shared observation whose kind isn't text is refused with a message instead of stopping
+  the upload check.
 - Every feature that waits for the page to settle (badges, helpers, templates, the war
   page, the shop and market helpers, bazaar sharing) now looks at the page within a second
   or two even while something else on it keeps changing (a clock, a chat, another script).
