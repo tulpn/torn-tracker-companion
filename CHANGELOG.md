@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.9 — 2026-11-02
+
 ### Fixed
 
 - The companion now sees Torn's own page requests again under Tampermonkey and other script
