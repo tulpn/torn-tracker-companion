@@ -113,20 +113,50 @@ describe('CMP-107 the settings page has a section for each job', () => {
     t.change(t.$('#ttc-key-script'), KEY);
     t.open('features');
     assert.equal(t.$('#ttc-feature-war-enhancer').checked, false);
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].settings.features['war-enhancer'].enabled, false);
-    assert.equal(t.saves[0].keys.script, KEY);
+    assert.equal(t.saves.at(-1).settings.features['war-enhancer'].enabled, false);
+    assert.equal(t.saves.at(-1).keys.script, KEY);
     assert.equal(t.$('[role=status]').textContent, 'Saved.');
   });
 
-  test('leaving the route without saving throws the draft away', async () => {
+  test('hq #520: each change is saved at once and is still there on reopening', async () => {
     const t = mount();
     t.open();
     t.change(t.$('#ttc-feature-war-enhancer'), false);
+    await settle();
+    assert.equal(t.saves.length, 1);
     t.panel.close();
     t.open();
-    assert.equal(t.$('#ttc-feature-war-enhancer').checked, true);
+    assert.equal(t.$('#ttc-feature-war-enhancer').checked, false);
+  });
+
+  test('hq #520: there is no Save button; the saved line is a toast that goes away', async () => {
+    const t = mount();
+    t.open();
+    assert.equal(t.$('button[data-act="save"]'), null);
+    t.change(t.$('#ttc-feature-war-enhancer'), false);
+    await settle();
+    const toast = t.$('.ttc-toast');
+    assert.equal(toast.getAttribute('role'), 'status');
+    assert.equal(toast.textContent, 'Saved.');
+    assert.equal(toast.dataset.tone, 'good');
+    assert.equal(toast.parentNode, t.$('.ttc-toastbox'));
+    await new Promise((resolve) => setTimeout(resolve, 3100));
+    assert.ok(toast.textContent === '' || toast.hasAttribute('data-hide'), 'gone after 3 s');
+  });
+
+  test('hq #520: a section menu stands in for the tabs on a narrow screen', () => {
+    const t = mount();
+    t.open('general');
+    const menu = t.$('select[data-sections]');
+    assert.ok(menu);
+    assert.equal(menu.getAttribute('aria-label'), 'Section');
+    assert.equal(menu.value, 'general');
+    assert.deepEqual([...menu.options].map((o) => o.value), [...t.panel.panel.querySelectorAll('nav a')].map((a) => a.getAttribute('href').split('/').pop()));
+    t.change(menu, 'keys');
+    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+    assert.equal(t.$('select[data-sections]').value, 'keys');
+    assert.equal(t.saves.length, 0, 'moving section saves nothing');
   });
 
   test('a feature\'s described options are shown and saved with their type', async () => {
@@ -136,10 +166,9 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.equal(select.tagName, 'SELECT');
     t.change(select, 'level');
     t.change(t.$('#ttc-opt-war-enhancer-undercut'), '250');
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].settings.features['war-enhancer'].sortBy, 'level');
-    assert.equal(t.saves[0].settings.features['war-enhancer'].undercut, 250);
+    assert.equal(t.saves.at(-1).settings.features['war-enhancer'].sortBy, 'level');
+    assert.equal(t.saves.at(-1).settings.features['war-enhancer'].undercut, 250);
   });
 
   test('without a script key: one banner that leads to Keys, and each card that needs it is marked', () => {
@@ -190,60 +219,66 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     t.change(t.$('#ttc-share-loadout'), true);
     t.click(t.$('button[data-act="consent"]'));
     await settle();
-    assert.equal(t.saves[0].settings.shares.loadout, true);
-    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version);
+    assert.equal(t.saves.at(-1).settings.shares.loadout, true);
+    assert.equal(t.saves.at(-1).settings.sharingConsent, WORDED.version);
 
     t.open('sharing');
     assert.equal(t.$('button[data-act="consent"]'), null, 'asked once per wording');
   });
 
-  test('hq #454: the first Save with a kind ticked is the agreement, and the tab says so', async () => {
+  test('hq #454 #520: ticking the first kind is the agreement, and the tab says so', async () => {
     const t = mount();
     t.open('sharing');
     assert.equal(t.$('button[data-act="consent"]'), null, 'no separate button before any agreement');
-    assert.match(t.$('#ttc-consent-state').textContent, /Nothing is shared yet.*press Save/);
+    assert.match(t.$('#ttc-consent-state').textContent, /Nothing is shared yet.*Ticking a kind/);
     t.change(t.$('#ttc-share-loadout'), true);
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].settings.shares.loadout, true);
-    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version);
+    assert.equal(t.saves.at(-1).settings.shares.loadout, true);
+    assert.equal(t.saves.at(-1).settings.sharingConsent, WORDED.version);
     assert.match(t.text(), /Saved\. Sharing is on for the kinds you ticked\./);
     assert.equal(t.$('#ttc-consent-state').textContent, 'Sharing is on for the kinds ticked above.');
   });
 
-  test('Save with no kind ticked agrees to nothing', async () => {
+  test('a change elsewhere, with no kind ticked, agrees to nothing', async () => {
     const t = mount();
-    t.open('sharing');
-    t.click(t.$('button[data-act="save"]'));
+    t.open('features');
+    t.change(t.$('#ttc-feature-war-enhancer'), false);
     await settle();
-    assert.equal(t.saves[0].settings.sharingConsent, 0);
+    t.open('sharing');
+    assert.equal(t.saves.at(-1).settings.sharingConsent, 0);
     assert.match(t.$('#ttc-consent-state').textContent, /Nothing is shared yet/);
   });
 
-  test('a kind ticked earlier without agreement: the next Save records it', async () => {
+  test('a kind ticked earlier without agreement: a change elsewhere does not agree, the next tick does', async () => {
     const settings = defaults(createRegistry([descriptor()]));
     settings.shares.loadout = true;
     const t = mount({ settings });
     t.open('features');
-    t.click(t.$('button[data-act="save"]'));
+    t.change(t.$('#ttc-feature-war-enhancer'), false);
     await settle();
-    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version);
+    assert.equal(t.saves.at(-1).settings.sharingConsent, 0);
+    t.open('sharing');
+    t.change(t.$('#ttc-share-loadout'), false);
+    t.change(t.$('#ttc-share-loadout'), true);
+    await settle();
+    assert.equal(t.saves.at(-1).settings.sharingConsent, WORDED.version);
   });
 
-  test('new wording asks again, with its own button; plain Save keeps the old agreement', async () => {
+  test('new wording asks again, with its own button; any other change keeps the old agreement', async () => {
     const settings = { ...defaults(createRegistry([descriptor()])), sharingConsent: WORDED.version - 1 };
     settings.shares.loadout = true;
     const t = mount({ settings });
     t.open('sharing');
     assert.ok(t.$('button[data-act="consent"]'));
     assert.match(t.$('#ttc-consent-state').textContent, /worded differently.*nothing is shared/);
-    t.click(t.$('button[data-act="save"]'));
+    t.change(t.$('#ttc-share-loadout'), false);
+    t.change(t.$('#ttc-share-loadout'), true);
     await settle();
-    assert.equal(t.saves[0].settings.sharingConsent, WORDED.version - 1);
+    assert.equal(t.saves.at(-1).settings.sharingConsent, WORDED.version - 1);
     assert.ok(t.$('button[data-act="consent"]'), 'still asked');
     t.click(t.$('button[data-act="consent"]'));
     await settle();
-    assert.equal(t.saves[1].settings.sharingConsent, WORDED.version);
+    assert.equal(t.saves.at(-1).settings.sharingConsent, WORDED.version);
   });
 
   test('the queue\'s trouble is spelled out', () => {
@@ -317,7 +352,6 @@ describe('CMP-011 CMP-012 the keys', () => {
     const t = mount();
     t.open('keys');
     t.change(t.$('#ttc-key-script'), 'abcdEFGH12345678');
-    t.click(t.$('button[data-act="save"]'));
     await settle();
     assert.equal(t.saves.length, 0);
     assert.match(t.$('[role=status]').textContent, /looks like a Torn API key/);
@@ -345,9 +379,8 @@ describe('CMP-011 CMP-012 the keys', () => {
     t.open('keys');
     t.change(t.$('#ttc-key-pda'), true);
     assert.equal(t.$('#ttc-key-api').disabled, true);
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].keys.usePdaKey, true);
+    assert.equal(t.saves.at(-1).keys.usePdaKey, true);
   });
 
   test('outside PDA that choice is not offered', () => {
@@ -408,9 +441,8 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.ok(t.$('[data-card="gym-thing"]'));
     assert.equal(t.$('[data-card="war-enhancer"]'), null);
     t.change(t.$('#ttc-feature-gym-thing'), false);
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].settings.features['gym-thing'].enabled, false);
+    assert.equal(t.saves.at(-1).settings.features['gym-thing'].enabled, false);
   });
 
   test('a search that matches nothing says so', () => {
@@ -422,11 +454,11 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.match(t.text(), /Nothing matches/);
   });
 
-  test('both Close links lead back to Torn\u2019s home page, without saving', () => {
+  test('the Close link leads back to Torn\u2019s home page, without saving', () => {
     const t = mount();
     t.open();
     const closes = [...t.panel.panel.querySelectorAll('[data-act="close"]')];
-    assert.equal(closes.length, 2);
+    assert.equal(closes.length, 1);
     assert.ok(closes.every((a) => a.tagName === 'A' && a.getAttribute('href') === '#'));
     assert.equal(t.saves.length, 0);
   });
@@ -457,18 +489,17 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.equal(t.panel.panel.dataset.theme, 'dark');
   });
 
-  test('a new look shows at once, is kept by Save, and Close without Save puts it back', () => {
+  test('a new look shows at once and is saved at once', async () => {
     const t = mount();
     t.open('general');
     t.change(t.$('#ttc-look'), 'light');
     assert.equal(t.panel.panel.dataset.theme, 'light');
+    await settle();
+    assert.equal(t.saves.at(-1).settings.look, 'light');
     t.panel.close();
     t.open('general');
-    assert.equal(t.panel.panel.dataset.theme, 'dark');
-    assert.equal(t.$('#ttc-look').value, 'dark');
-    t.change(t.$('#ttc-look'), 'light');
-    t.click(t.$('button[data-act="save"]'));
-    assert.equal(t.saves.at(-1).settings.look, 'light');
+    assert.equal(t.panel.panel.dataset.theme, 'light');
+    assert.equal(t.$('#ttc-look').value, 'light');
   });
 
   test('its colours are the suite\u2019s tokens, for both themes, inside its Shadow DOM', () => {
@@ -557,9 +588,8 @@ describe('CMP-108 Settings \u2192 Sidebar', () => {
     t.change(t.$('#ttc-sidebar-chain'), false);
     t.change(t.$('#ttc-sidebar-enabled'), false);
     assert.equal(t.$('#ttc-sidebar-war').disabled, true);
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    const saved = t.saves[0].settings.sidebar;
+    const saved = t.saves.at(-1).settings.sidebar;
     assert.equal(saved.enabled, false);
     assert.equal(saved.items.gym, true);
     assert.equal(saved.items.chain, false);
@@ -629,11 +659,11 @@ describe('WP-UX-4 tours from the settings page (UXT-022)', () => {
     assert.match(t.$('#ttc-tours').textContent, /Show me the settings page\s*Done/);
   });
 
-  test('closing the page ends its tour; the sections and Save carry anchors', () => {
+  test('closing the page ends its tour; the sections carry anchors', () => {
     const tours = fakeTours();
     const t = mount({ tours });
     t.open();
-    for (const anchor of ['companion-settings', 'companion-sections', 'companion-keys-tab', 'companion-sharing-tab', 'companion-save']) {
+    for (const anchor of ['companion-settings', 'companion-sections', 'companion-keys-tab', 'companion-sharing-tab']) {
       assert.ok(t.root.querySelector(`[data-tour="${anchor}"]`), anchor);
     }
     t.panel.close();
@@ -743,18 +773,18 @@ describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => 
     assert.match(t.text(), /On this device/);
   });
 
-  test('an install that was moved says so until the player saves', async () => {
+  test('an install that was moved says so until a sidebar setting changes', async () => {
     const settings = defaults(createRegistry([]));
     settings.sidebar.moved = true;
     const t = mount({ registry: createRegistry([]), settings });
     t.open('general');
     assert.match(t.$('[data-sidebar-moved]').textContent, /moved to the top of Torn.s sidebar in 0\.9\.8/);
     t.change(t.$('#ttc-sidebar-position'), 'lists');
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    const saved = t.saves[0].settings.sidebar;
+    const saved = t.saves.at(-1).settings.sidebar;
     assert.equal(saved.position, 'lists');
     assert.equal(saved.moved, false);
+    assert.equal(t.$('[data-sidebar-moved]'), null, 'the note goes');
   });
 
   test('a value that is not a place is not taken', async () => {
@@ -765,8 +795,10 @@ describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => 
     bad.value = 'middle';
     select.append(bad);
     t.change(select, 'middle');
-    t.click(t.$('button[data-act="save"]'));
     await settle();
-    assert.equal(t.saves[0].settings.sidebar.position, 'top');
+    assert.equal(t.saves.length, 0);
+    t.panel.close();
+    t.open('general');
+    assert.equal(t.$('#ttc-sidebar-position').value, 'top');
   });
 });

@@ -59,16 +59,31 @@ export default {
     const alive = () => state === s;
 
 
-    function label(parent, text, title, kind) {
+    /**
+     * A compact badge beside the slot (hq #522): one short line, never taller than the row.
+     * The detail is in its title (hover) and opens under it on a tap; the tap goes no further,
+     * so it never reaches Torn's own handlers on the slot. A span, not a button: Torn's slot
+     * header is itself a button (seen on a capture of 2026-11-02), and buttons don't nest.
+     */
+    function label(parent, text, detail, kind) {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
         // The tour's anchors (hq #238), one per kind of label.
         const anchor = kind === 'success' ? { 'data-tour': 'oc-success' } : { 'data-tour': 'oc-weight' };
-        node = badge(doc, { cls: MARK, tone: kind === 'success' ? 'good' : 'info', attrs: { 'data-kind': kind, ...anchor } });
+        node = badge(doc, {
+          cls: MARK, tone: kind === 'success' ? 'good' : 'info', compact: true,
+          attrs: { 'data-kind': kind, 'data-open': 'false', ...anchor },
+        });
+        node.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          node.dataset.open = String(node.dataset.open !== 'true');
+        });
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
-      node.title = title;
+      if (node.title !== detail) node.title = detail;
+      if (node.dataset.detail !== detail) node.dataset.detail = detail;
     }
 
     /** One visible credit line above the first crime card, once any weight shows. */

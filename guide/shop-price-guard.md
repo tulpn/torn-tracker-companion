@@ -53,7 +53,7 @@ is disabled, changed or submitted, and you can still list at any price you like.
 shop buys never get a warning.
 
 The [price filler](price-filler.md) follows the same rule: it never fills a price below what
-a shop pays, and its button says **(shop price)** when it stopped there.
+a shop pays, and its button's hover text says when it stopped there.
 
 ## Change how it looks
 

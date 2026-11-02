@@ -93,3 +93,54 @@ describe('CMP-204 weights and success from torn-tracker.com', () => {
     assert.equal(r.doc.querySelectorAll('.ttc-oc').length, 0);
   });
 });
+
+describe('hq #522 the figures are compact badges beside the slot', () => {
+  const press = (node) => node.dispatchEvent(new node.ownerDocument.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+  const badges = (r) => [...r.doc.querySelectorAll('.ttc-oc[data-kind="weight"], .ttc-oc[data-kind="success"]')];
+
+  test('each is a compact badge: one short line, the figure only', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    assert.equal(badges(r).length, 4);
+    for (const n of badges(r)) {
+      assert.ok(n.classList.contains('ttc-ui-compact'), n.className);
+      assert.equal(n.tagName, 'SPAN', "Torn's slot header is a button; buttons don't nest");
+      assert.match(n.textContent, /^~?\d+(\.\d)?%$/);
+    }
+    const css = r.doc.getElementById('ttc-ui-style').textContent;
+    const rule = css.slice(css.indexOf('.ttc-ui-compact.ttc-ui-compact {'));
+    const body = rule.slice(0, rule.indexOf('}'));
+    assert.match(body, /white-space: nowrap/);
+    assert.match(body, /font: 600 12px\/16px/);
+    assert.match(body, /height: 16px/);
+  });
+
+  test('the detail is in the title, and a tap opens it under the badge', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    const n = r.doc.querySelector('.ttc-oc[data-kind="weight"]');
+    assert.match(n.title, /counts towards success/);
+    assert.equal(n.dataset.detail, n.title);
+    assert.ok(n.closest('[class*="slotHeader___"]'), 'beside the role, in the slot header');
+    assert.equal(n.dataset.open, 'false');
+    let reached = 0;
+    n.parentElement.addEventListener('click', () => { reached += 1; });
+    press(n);
+    assert.equal(n.dataset.open, 'true');
+    press(n);
+    assert.equal(n.dataset.open, 'false');
+    assert.equal(reached, 0, "the tap never reaches Torn's handlers on the slot");
+    const css = r.doc.getElementById('ttc-ui-style').textContent;
+    assert.match(css, /\.ttc-ui-compact\.ttc-ui-compact\[data-open="true"\]::after \{\s*content: attr\(data-detail\)/);
+  });
+
+  test('a repaint keeps one badge per slot and the tap state', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    const n = r.doc.querySelector('.ttc-oc[data-kind="weight"]');
+    press(n);
+    await wait();
+    assert.equal(badges(r).length, 4);
+    assert.equal(n.dataset.open, 'true');
+  });
+});

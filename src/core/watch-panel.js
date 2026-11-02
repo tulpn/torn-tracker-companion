@@ -1,10 +1,9 @@
 // Settings → Chain watch: watch mode's switch, size, colours, preview and beep (CHW-021,
 // CHW-025, CHW-028).
 //
-// Unlike the rest of the settings page, these act at once and need no Save: the member
-// sees the box change as they move a slider. They are kept on this device only
-// (`ttc_watch`) and sent nowhere. The controls carry `data-watch`, never `data-act`, so the
-// page's own Save and draft leave them alone.
+// These act at once, as the member moves a slider, and are kept apart from the rest of
+// the settings: on this device only (`ttc_watch`) and sent nowhere. The controls carry
+// `data-watch`, never `data-act` or the page's own data fields, so its saves leave them alone.
 
 import { COLOUR_KEYS, DEFAULT_COLOURS, SIZE_MAX, SIZE_MIN } from './watch.js';
 

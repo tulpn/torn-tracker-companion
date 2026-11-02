@@ -261,6 +261,9 @@ const SIDEBAR_READERS = {
       now,
       next: v.next ? { role: nextRole, slotStart: nextAt, startsAt: nextAt - skew } : null,
       gaps: count(v.gaps_24h, 48) ? v.gaps_24h : 0,
+      // hq #523: a chain watch the faction has open for sign-ups. A site that doesn't say
+      // means none, so "Sign up to watch" never shows with nothing to sign up for.
+      open: v.open === true,
     };
   },
   war(v, skew) {

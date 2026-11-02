@@ -284,7 +284,6 @@ describe('WP-UX-8 the switches and the settings header', () => {
     assert.equal(toast.checked, true);
     toast.checked = false;
     toast.dispatchEvent(new window.Event('change', { bubbles: true }));
-    panel.panel.querySelector('[data-act=save]').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await new Promise((resolve) => setImmediate(resolve));
     assert.deepEqual(saves.at(-1).achievements, { toast: false, featured: true });
     panel.destroy();

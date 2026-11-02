@@ -209,6 +209,40 @@ describe('hq #448 under a script manager the page window is the one wrapped', ()
     assert.deepEqual(seen, [JSON.parse(BODY)]);
   });
 
+  test('hq #516: a feature naming its ctx.win (the sandbox) still gets the page window wrapped', async () => {
+    const page = fakeWindow();
+    const sandbox = fakeWindow();
+    globalThis.unsafeWindow = page;
+    const pageFetch = page.fetch;
+    const sandboxFetch = sandbox.fetch;
+    const pageOpen = page.XMLHttpRequest.prototype.open;
+
+    const seen = [];
+    onJson(() => true, ({ url, data }) => seen.push([url, data]), sandbox);
+    assert.notEqual(page.fetch, pageFetch, 'the page window fetch is wrapped');
+    assert.notEqual(page.XMLHttpRequest.prototype.open, pageOpen, 'the page window XHR is wrapped');
+    assert.equal(sandbox.fetch, sandboxFetch, 'the sandbox fetch is left alone');
+
+    await page.fetch('https://www.torn.com/bazaar.php?step=getBazaarItems');
+    const xhr = new page.XMLHttpRequest();
+    xhr.open('POST', '/gym.php?step=train');
+    xhr.send('step=train');
+    xhr.finish(BODY);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(seen.map(([url]) => url).sort(), [
+      '/gym.php?step=train', 'https://www.torn.com/bazaar.php?step=getBazaarItems',
+    ]);
+  });
+
+  test('hq #516: every feature that reads responses goes through the interceptor, not its own window', () => {
+    const features = fs.readdirSync(new URL('../../src/features/', import.meta.url), { withFileTypes: true })
+      .filter((d) => d.isDirectory());
+    for (const dir of features) {
+      const source = fs.readFileSync(new URL(`../../src/features/${dir.name}/index.js`, import.meta.url), 'utf8');
+      assert.ok(!/\.fetch\s*=|XMLHttpRequest\.prototype/.test(source), `${dir.name} wraps a request itself`);
+    }
+  });
+
   test('outside a manager it is the global window, as before', async () => {
     const { pageWindow } = await import('../../src/core/page-window.js');
     assert.equal(pageWindow(), globalThis);

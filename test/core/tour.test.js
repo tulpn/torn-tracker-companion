@@ -225,14 +225,14 @@ describe('UXT-003 and UXT-022 when tours run, and what is kept', () => {
     });
     return { tours, writes };
   }
-  const SETTINGS = '<div data-tour="companion-settings">s</div><button data-tour="companion-save">Save</button>';
+  const SETTINGS = '<div data-tour="companion-settings">s</div><nav data-tour="companion-sections">n</nav>';
 
   test('stored progress is checked field by field, and an old request expires', () => {
     const clean = cleanProgress({
-      tours: { settings: { version: 1, seen: ['companion-save', 'nope', 5], done: 'yes' }, other: { version: 1 } },
+      tours: { settings: { version: 1, seen: ['companion-sections', 'nope', 5], done: 'yes' }, other: { version: 1 } },
       pending: { id: 'war-page', at: 0 },
     }, PENDING_MS + 1);
-    assert.deepEqual(clean, { tours: { settings: { version: 1, seen: ['companion-save'], done: false, skipped: false } }, pending: null });
+    assert.deepEqual(clean, { tours: { settings: { version: 1, seen: ['companion-sections'], done: false, skipped: false } }, pending: null });
     assert.equal(cleanProgress({ pending: { id: 'war-page', at: 10 } }, 20).pending.id, 'war-page');
     assert.deepEqual(cleanProgress('junk'), { tours: {}, pending: null });
   });
@@ -257,7 +257,7 @@ describe('UXT-003 and UXT-022 when tours run, and what is kept', () => {
     const { tours } = manager(win, { stored: { tours: { settings: { version: 0, seen: ['companion-settings'], done: true } } } });
     await tours.load();
     assert.equal(tours.auto('settings'), true);
-    assert.match(win.document.querySelector('[role=dialog]').textContent, /1 of 1.*Save when/s);
+    assert.match(win.document.querySelector('[role=dialog]').textContent, /1 of 1.*Search finds/s);
   });
 
   test('never by itself on the attack page, or over a field being typed in', async () => {

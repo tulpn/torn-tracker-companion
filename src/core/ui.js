@@ -22,6 +22,8 @@ export const PROFILE_ACTIONS = `${P}-profile-actions`;
 const ACTION_ORDER = Object.freeze(['lists', 'messages', 'notes']);
 /** The row's class twice: it outweighs Torn's `.d .content-title button`. */
 const ROW = `.${PROFILE_ACTIONS}.${PROFILE_ACTIONS}`;
+/** A compact badge (hq #522); the class twice, see the style. */
+const COMPACT = `.${P}-ui-compact.${P}-ui-compact`;
 /** Each tone's ink; its background is the same colour, faint. */
 const INK = Object.freeze({
   good: 'var(--tt-success)',
@@ -31,6 +33,8 @@ const INK = Object.freeze({
   bad: 'color-mix(in srgb, var(--destructive) 65%, var(--foreground))',
   info: 'var(--ring)',
 });
+/** A small button inline in one of Torn's forms (hq #521); the class twice, see the style. */
+const INLINE = `.${P}-ui-inline.${P}-ui-inline`;
 /** The shop price highlighter's tiers and the token each is drawn in. */
 const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-ff-hard'], ['blue', 'ring']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
@@ -51,6 +55,21 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-badge[data-dim="true"] { opacity: .5; }
   a.${P}-ui-badge:hover { filter: brightness(.95); text-decoration: underline; }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
+  /* Compact (hq issue 522): one short line in a row whose height Torn fixes. The class twice
+     outweighs Torn's own span and button rules in that row. A badge with a data-detail shows
+     it below itself while data-open is true (a tap, set by the feature). */
+  ${COMPACT} {
+    flex: none; position: relative; box-sizing: border-box; width: auto; min-width: 0; height: 16px; min-height: 0;
+    margin: 0 0 0 4px; padding: 0 6px; border: 0; box-shadow: none; text-shadow: none; text-transform: none;
+    font: 600 12px/16px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; vertical-align: middle;
+  }
+  ${COMPACT}[data-detail] { cursor: help; }
+  ${COMPACT}[data-open="true"]::after {
+    content: attr(data-detail); position: absolute; top: calc(100% + 4px); left: 0; z-index: 10;
+    width: max-content; max-width: 220px; padding: 6px 8px; white-space: normal; text-align: left;
+    font: 400 12px/1.4 var(--tt-font-sans); border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--popover); color: var(--popover-foreground); box-shadow: var(--tt-shadow-md);
+  }
   /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
   .${P}-ui-badge[data-pin="under"] {
@@ -94,6 +113,22 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-button[data-tone="bad"] { background: ${tint(INK.bad)}; border-color: transparent; color: ${INK.bad}; cursor: default; }
   .${P}-ui-button:disabled { cursor: default; }
   .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  /* Inline beside one of Torn's form fields (hq issue 521): the field's height, one line, our
+     accent. The class twice outweighs Torn's own form button rules, which made it black. */
+  ${INLINE} {
+    display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
+    min-height: 0; min-width: 0; height: 24px; margin: 0 0 0 4px; padding: 0 8px; white-space: nowrap;
+    font: 600 11px/1 var(--tt-font-sans); text-transform: none; box-shadow: none; text-shadow: none;
+    border: 1px solid var(--primary); border-radius: var(--radius);
+    background: ${tint('var(--primary)')}; color: var(--foreground);
+  }
+  ${INLINE}:hover:not(:disabled) { background: ${tint('var(--primary)', 28)}; }
+  ${INLINE}:disabled { border-color: var(--input); background: transparent; color: var(--muted-foreground); }
+  /* Its field and it stay on one line inside Torn's cell, the field shrinking to make room.
+     Torn's own cell rules set display: block with a long selector, so this one is important. */
+  :has(> ${INLINE}) { display: flex !important; flex-wrap: nowrap; align-items: center; }
+  :has(> ${INLINE}) > :not(${INLINE}) { flex: 1 1 auto; min-width: 0; }
+  :has(> ${INLINE}) > :not(${INLINE}) input:not([type="hidden"]) { width: 100% !important; box-sizing: border-box; }
   /* The best buy abroad: its whole row is outlined, without touching Torn's own styles. */
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
   [class*='row___']:has(.${P}-best) { outline: 2px solid ${TOKENS.light['tt-success']}; outline-offset: -2px; border-radius: 6px; }
@@ -142,6 +177,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   .${P}-ui-strip :is(input[type="text"], select) { min-height: 28px; }
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
+    ${INLINE} { min-height: 0; height: 32px; min-width: 44px; padding: 0 10px; }
   }
   /* The profile's row of our buttons (hq issue 467): one block below Torn's title row, drawn
      like Torn's own buttons (its size, radius, font and theme colours); our green only as
@@ -253,14 +289,16 @@ function classes(base, extra) {
  * @param {string} [opts.cls]    the feature's own class, which finds it again
  * @param {string} [opts.tone]   good, neutral, warn, bad or info
  * @param {boolean} [opts.block] on its own line
+ * @param {boolean} [opts.compact] one short line inside a row of fixed height (hq #522)
  * @param {'under'} [opts.pin]   pinned over the bottom edge of its (positioned) parent
  * @param {string} [opts.tag]    span by default; 'a' for a link
  * @param {object} [opts.attrs]  any other attributes
  */
-export function badge(doc, { cls, tone = 'neutral', block = false, pin = null, tag = 'span', attrs = {} } = {}, ...children) {
+export function badge(doc, { cls, tone = 'neutral', block = false, compact = false, pin = null, tag = 'span', attrs = {} } = {}, ...children) {
   ensureStyle(doc);
+  const extra = `${block ? ` ${P}-ui-block` : ''}${compact ? ` ${P}-ui-compact` : ''}`;
   const node = el(tag, {
-    class: classes(`${P}-ui-badge${block ? ` ${P}-ui-block` : ''}`, cls), 'data-tone': tone, ownerDocument: doc,
+    class: classes(`${P}-ui-badge${extra}`, cls), 'data-tone': tone, ownerDocument: doc,
     ...(pin === 'under' ? { 'data-pin': 'under' } : {}), ...attrs,
   }, ...children);
   return node;
@@ -340,8 +378,12 @@ export function profileAction(doc, heading, slot, node) {
   return node;
 }
 
-/** One of our own small buttons; 44 px on touch screens. */
-export function button(doc, { cls, tone, attrs = {} } = {}, ...children) {
+/**
+ * One of our own small buttons; 44 px on touch screens. `inline` sizes it to sit beside
+ * one of Torn's form fields, on the same line (hq #521).
+ */
+export function button(doc, { cls, tone, inline = false, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
-  return el('button', { type: 'button', class: classes(`${P}-ui-button`, cls), 'data-tone': tone, ownerDocument: doc, ...attrs }, ...children);
+  const base = inline ? `${P}-ui-button ${P}-ui-inline` : `${P}-ui-button`;
+  return el('button', { type: 'button', class: classes(base, cls), 'data-tone': tone, ownerDocument: doc, ...attrs }, ...children);
 }

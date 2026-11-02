@@ -64,6 +64,11 @@ export default {
     function look() {
       if (!alive()) return;
       const progress = readProgress(doc);
+      if (!progress && !s.toldNone) {
+        // Once per page: the reader found no gym in progress (hq #515).
+        s.toldNone = true;
+        ctx.log('gym_progress: nothing captured (no gym in progress found on the page)');
+      }
       if (progress) {
         const key = `${progress.gym_id}:${progress.percent}`;
         if (!s.sent.has(key)) {

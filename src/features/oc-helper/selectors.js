@@ -4,7 +4,7 @@
 // Facts, not code, from TornTools (GPLv3, src/common/pages/factions-page.ts and the
 // oc-weights, oc2-filter and highlight-oc features) and OC2.0 Helper by Strigwulf (GPLv3,
 // greasyfork.org/scripts/577968), read 2026-10. That `data-oc-id` holds Torn's crime id
-// is inferred: no source reads its value. Confirm with a capture.
+// was confirmed on a capture of the crimes tab (2026-11-02), as were the slot selectors.
 
 /** One crime card; its attribute is the crime's id. */
 export const CARD = '#faction-crimes-root [data-oc-id]';
