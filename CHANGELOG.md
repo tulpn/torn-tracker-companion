@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.5 — 2026-11-02
+
 ### Fixed
 
 - Our buttons on a player's profile (Add to list, Messages, Add note) sit together in one
