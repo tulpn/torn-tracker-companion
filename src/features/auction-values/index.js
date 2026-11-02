@@ -8,7 +8,7 @@
 // Sharing the listings themselves is a separate kind (auction-capture), off until the
 // player switches it on; seeing the badges never needs it.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { ROW } from '../auction-capture/selectors.js';
 import { badge, setTone } from '../../core/ui.js';
 
@@ -54,7 +54,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null };
+    const s = { doc, win, settle: null, stopWatching: null };
     state = s;
     const alive = () => state === s;
 
@@ -91,8 +91,8 @@ export default {
     const quiet = (r) => mine(r.target)
       || (r.addedNodes.length + r.removedNodes.length > 0 && [...r.addedNodes, ...r.removedNodes].every(mine));
     const later = () => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => paint().catch((err) => ctx.log('auction values', err)), SETTLE_MS);
+      s.settle ??= settler(() => paint().catch((err) => ctx.log('auction values', err)), SETTLE_MS, { timers: win });
+      s.settle.poke();
     };
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (!records.every(quiet)) later();
@@ -105,7 +105,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

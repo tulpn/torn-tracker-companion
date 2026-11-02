@@ -170,7 +170,8 @@ The build is never minified, so the file you install is the source you can read 
 |---|---|
 | `src/core/` | storage, settings, keys, the page router, DOM reads, the read-only response reader, the network layer, the upload queue and the rules each kind of observation must meet, the panel |
 | `src/features/` | one folder per feature, each exporting a single descriptor |
-| `tools/` | the build and the Torn-rules lint |
+| `tools/` | the build, the Torn-rules lint, and `npm run contract`, which writes `contract/site-paths.json` |
+| `contract/` | `site-paths.json`: every torn-tracker.com path and method the script calls, generated from `src/`; the site tests its routes against it |
 | `test/` | unit tests per module, plus the built script running on a fake Torn page |
 
 ## Credits

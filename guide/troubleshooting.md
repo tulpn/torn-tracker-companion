@@ -50,6 +50,25 @@ under **General** in the settings is the one that runs.
 Script keys can be revoked on torn-tracker.com. Create a new one, paste it in the **Keys**
 tab and press **Save**.
 
+## See what the script does
+
+The settings can show you, step by step, what the companion does on a page. This is the
+first thing a bug report asks for.
+
+1. Open the settings, go to **General** and, under **Troubleshooting**, tick **Log what
+   the script does to the browser console**. Press **Save**.
+2. Open the browser's console: F12 on a computer, then the **Console** tab.
+3. Reload the Torn page and do what went wrong again.
+4. The lines starting `[torn-tracker-companion]` say what the script did: each request to
+   torn-tracker.com and its answer, and for each report whether it was shared, and if not,
+   why (the kind is off, no consent yet, or the site didn't ask for that item).
+
+Your keys are never written to the console. Untick the box when you're done: nothing extra
+is printed without it.
+
 ## Still stuck
 
-Open an issue on the companion's GitHub page, saying what you expected, what happened, and whether it was in a browser or in Torn PDA.
+Open an issue on the companion's GitHub page with the **Bug report** form. Say what you
+expected, what happened, whether it was in a browser or in Torn PDA, and paste the
+`[torn-tracker-companion]` lines from the console. Before you paste, take out anything you
+don't want public, like player names.

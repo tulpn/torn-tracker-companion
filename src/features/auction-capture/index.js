@@ -15,6 +15,7 @@
 // read the same rows. No code was taken; the selectors come from the owner's capture.
 
 import { createGate, isVisible } from '../../core/capture.js';
+import { settler } from '../../core/dom.js';
 import { readRow } from './read.js';
 import { ROW } from './selectors.js';
 
@@ -58,12 +59,13 @@ const feature = {
     // A countdown ticking changes only text inside .time-wrap; that is not a new listing.
     const tick = (r) => r.type === 'characterData'
       || [r.target, ...r.addedNodes].every((n) => (n.nodeType === 1 ? n : n.parentElement)?.closest?.('.time-wrap, .time'));
+    // A page that never goes quiet (a clock, a chat, another script) still gets read (hq #466).
+    s.settle = settler(scan, feature.settleMs, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every(tick)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(scan, feature.settleMs);
+      s.settle.poke();
     }, ctx.doc);
-    s.timer = win.setTimeout(scan, feature.settleMs);
+    s.settle.poke();
   },
 
   stop() {
@@ -71,7 +73,7 @@ const feature = {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
   },
 };
 

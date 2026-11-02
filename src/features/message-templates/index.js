@@ -11,9 +11,9 @@
 // Where the profile keeps its details is a fact from TornTools (GPLv3, profile page): the
 // "basic information" table, one labelled row each. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import {
-  bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, strip as uiStrip,
+  bar as uiBar, button as uiButton, flag as uiFlag, note as uiNote, preview as uiPreview, profileAction, strip as uiStrip,
 } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 import {
@@ -35,6 +35,11 @@ const SETTLE_MS = 250;
 export const INFO_ROWS = '.basic-information .info-table > li';
 export const INFO_LABEL = '.user-information-section';
 export const INFO_VALUE = '.user-info-value';
+/**
+ * The boxes beside the profile picture: Level, Rank and Age. A player's level is shown
+ * there, one digit per cell, not in the table (the owner's capture, hq #313).
+ */
+export const INFO_BOXES = '.profile-information-wrapper .box-info';
 
 /** Every placeholder a template may use, and where its value comes from. */
 export const PLACEHOLDERS = Object.freeze([
@@ -136,7 +141,10 @@ export function fill(text, values) {
   return { parts, missing, text: parts.map((p) => p.text ?? p.flag).join('') };
 }
 
-/** The profile's details by label; null for any the page doesn't show plainly. */
+/**
+ * The profile's details: the table's rows by label, the level from the Level box (or a
+ * Level row, where a page has one); null for any the page doesn't show plainly.
+ */
 export function readProfile(doc, id) {
   const rows = new Map();
   for (const li of doc.querySelectorAll(INFO_ROWS)) {
@@ -148,7 +156,10 @@ export function readProfile(doc, id) {
   const named = text(rows.get('name'))?.match(/^(.+?)\s*\[(\d+)\]$/);
   const name = named && Number(named[2]) === id ? named[1] : null;
   const faction = text(rows.get('faction')?.querySelector("a[href*='factions.php']"));
-  const level = text(rows.get('level'));
+  const box = [...doc.querySelectorAll(INFO_BOXES)]
+    .find((b) => text(b.querySelector('.box-name'))?.toLowerCase() === 'level');
+  const digits = box && [...box.querySelectorAll('.digit')].map((d) => d.textContent.trim()).join('').replace(/^0+/, '');
+  const level = digits || text(rows.get('level'));
   return {
     name,
     id: id ? String(id) : null,
@@ -200,7 +211,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, open: false, chosen: null };
+    const s = { doc, win, settle: null, stopWatching: null, open: false, chosen: null };
     state = s;
     const alive = () => state === s;
     const templates = () => validateTemplates(ctx.data?.()).templates;
@@ -432,7 +443,7 @@ export default {
       const id = pageSubject(win.location);
       if (!id) return;
       const heading = doc.querySelector(HEADING);
-      if (!heading || heading.parentNode?.querySelector(`:scope > .${MARK}-toggle`)) return;
+      if (!heading || doc.querySelector(`.${MARK}-toggle`)) return;
       const toggle = uiButton(doc, { cls: `${MARK} ${MARK}-toggle`, attrs: { 'aria-expanded': String(s.open) } }, 'Messages');
       toggle.addEventListener('click', (event) => {
         stop(event);
@@ -441,16 +452,15 @@ export default {
         if (s.open) place(id, heading);
         else doc.querySelector(`.${MARK}-box`)?.remove();
       });
-      heading.after(toggle);
+      profileAction(doc, heading, 'messages', toggle);
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    s.settle = settler(() => alive() && look(), SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
-      if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+      if (!records.every(ours)) s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(() => alive() && look(), SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -458,7 +468,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

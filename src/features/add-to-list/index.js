@@ -3,8 +3,8 @@
 // On a player's profile, beside the heading, a split button. The main part adds the
 // player to the list you last added to ("Add to Chain targets"); the arrow opens a menu of
 // your lists, and the faction lists you may edit, each ticked when the player is on it. A
-// click on a list adds them, or takes them off a ticked one. "Manage lists" opens the
-// lists on torn-tracker.com.
+// click on a list adds them, or takes them off a ticked one; "Open" beside it opens that
+// list on torn-tracker.com, and "Manage lists" opens all of them.
 //
 // One click is one call to torn-tracker.com and never a game action. Nothing is read from
 // the profile but its id. The menu is read once per profile view and kept 5 minutes; a
@@ -13,9 +13,9 @@
 // answer (the site doesn't serve it yet, or is down), nothing shows on that profile view.
 
 import { SITE } from '../../hosts.js';
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { onSubjectPage, pageSubject } from '../../core/players.js';
-import { bar, button, note } from '../../core/ui.js';
+import { button, note, profileAction } from '../../core/ui.js';
 import { HEADING } from '../ff-badges/selectors.js';
 
 const MARK = 'ttc-lists';
@@ -66,7 +66,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, asking: null, menu: null, open: false, stale: false, busy: false };
+    const s = { doc, win, settle: null, stopWatching: null, asking: null, menu: null, open: false, stale: false, busy: false };
     state = s;
     const alive = () => state === s;
     const stop = (event) => {
@@ -79,21 +79,37 @@ export default {
       if (line) line.textContent = words;
     }
 
-    /** The menu under the button: one entry per list, ticked when the player is on it. */
+    /**
+     * The menu under the button, in the settings panel's look (hq #487): one row per list
+     * with a tick box, ticked when the player is on it; unticking takes them off. Beside
+     * each, "Open" goes to that list's page on the site (hq #486). "Manage lists" is the
+     * primary button to the site's lists.
+     */
     function menuNode(id) {
-      const items = s.menu.lists.map((list) => {
-        const item = button(doc, {
-          cls: `${MARK}-item`, tone: list.contains ? 'good' : undefined,
-          attrs: { 'aria-pressed': String(list.contains), title: list.contains ? 'Take them off this list' : 'Add them to this list' },
-        }, `${list.contains ? '✓ ' : ''}${list.name}`, list.shared ? ' (faction)' : '');
-        item.addEventListener('click', (event) => {
+      const rows = s.menu.lists.map((list) => {
+        const row = el('button', {
+          type: 'button', class: `${MARK}-item`, disabled: s.busy, ownerDocument: doc,
+          'aria-pressed': String(list.contains), title: list.contains ? 'Untick to take them off this list' : 'Tick to add them to this list',
+        },
+        el('span', { class: `${MARK}-box`, 'aria-hidden': 'true', ownerDocument: doc }),
+        el('span', { class: `${MARK}-name`, ownerDocument: doc }, list.name),
+        list.shared ? el('span', { class: `${MARK}-tag`, ownerDocument: doc }, 'Faction') : null);
+        row.addEventListener('click', (event) => {
           stop(event);
           change(id, list, list.contains ? 'remove' : 'add');
         });
-        return item;
+        // hq #486: the list's own page, as the site names it; no path, no link.
+        const open = list.path ? el('a', {
+          href: `${SITE}${list.path}`, target: '_blank', rel: 'noopener noreferrer', class: `${MARK}-open`, ownerDocument: doc,
+          title: `Open ${list.name} on torn-tracker.com`, 'aria-label': `Open ${list.name} on torn-tracker.com`,
+        }, 'Open') : null;
+        return el('div', { class: `${MARK}-row`, ownerDocument: doc }, row, open);
       });
       const manage = el('a', { href: MANAGE_URL, target: '_blank', rel: 'noopener noreferrer', class: `${MARK}-manage`, ownerDocument: doc }, 'Manage lists');
-      return bar(doc, { cls: `${MARK}-menu` }, ...(items.length ? items : [note(doc, {}, 'You have no lists yet.')]), manage);
+      return el('div', { class: `${MARK}-menu`, role: 'group', 'aria-label': 'Your lists', ownerDocument: doc },
+        el('div', { class: `${MARK}-head`, ownerDocument: doc }, 'Your lists'),
+        ...(rows.length ? rows : [el('p', { class: `${MARK}-empty`, ownerDocument: doc }, 'You have no lists yet.')]),
+        el('div', { class: `${MARK}-foot`, ownerDocument: doc }, manage));
     }
 
     /** Builds the split button (or the key link) from what the site said. */
@@ -104,7 +120,7 @@ export default {
       if (s.menu?.status === 'no_key') {
         const link = el('a', { href: KEYS_HREF, class: `${MARK} ${MARK}-key ttc-ui-button`, title: 'Lists need a script key with the lists scope.', ownerDocument: doc },
           'Add your script key');
-        heading.after(link);
+        profileAction(doc, heading, 'lists', link);
         return;
       }
       const action = mainAction(s.menu);
@@ -123,7 +139,7 @@ export default {
       });
       const group = el('span', { class: `${MARK} ${MARK}-group`, ownerDocument: doc }, main, arrow, note(doc, { cls: `${MARK}-note` }));
       group.dataset.player = String(id);
-      heading.after(group);
+      profileAction(doc, heading, 'lists', group);
       if (s.open && s.menu?.status === 'ok') (heading.closest('.content-title') || heading).after(el('div', { class: MARK, ownerDocument: doc }, menuNode(id)));
     }
 
@@ -204,11 +220,10 @@ export default {
     }
 
     const later = () => {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         if (alive()) look().catch((err) => ctx.log('add to list', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     };
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every((r) => ctx.dom.ownChange(r, `.${MARK}`))) return;
@@ -222,7 +237,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    if (s.timer !== null) s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

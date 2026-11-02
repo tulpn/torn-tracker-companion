@@ -12,16 +12,22 @@
 // top header, and there's no edge tab or floating button.
 //
 // The copy is only ever made from one of Torn's own entries, never from a row another
-// script added (hq #453: The Contract's row once carried our mark). The source is never
-// touched: it is cloned first and only the clone is edited. Our row carries `data-own`
-// so other scripts' clone logic can skip it, and a mark of ours found outside our entry
-// (another script copied our row) is taken out again.
+// script added. The source is never touched: it is cloned first and only the clone is
+// edited. Our row carries `data-own` so other scripts' clone logic can skip it.
+//
+// Other scripts copy *our* row (hq #453: The Contract cloned it, our attributes and mark
+// included, and showed TT as its icon). So our row keeps Torn's icon, hidden only while
+// the row has our id, and our mark shows only under that id: a copy without our id looks
+// like a copy of Torn's row. The copy is left as it is: taking our marker off it made
+// The Contract put it back, over and over, and that stream of changes kept the sidebar
+// block from ever being placed (hq #466). Our row is known by its id, never by
+// attributes a copy carries along.
 //
 // Facts, not code: where TornTools (GPLv3, features/settings-link) puts its own link and
 // the two places it looks for Areas; that The Contract (torncontracts.online) clones an
 // Areas entry and routes its page through the hash. No code was taken from either.
 
-import { el, ownChange } from './dom.js';
+import { el, ownChange, settler } from './dom.js';
 import { log } from './log.js';
 import { followTorn } from './tokens.js';
 
@@ -49,8 +55,12 @@ const KEEP = new Set(['class', 'href', 'role', 'aria-hidden']);
 /** Attributes that mark a node as ours or another script's: such a row is never copied. */
 const FOREIGN = /^data-(own|ttc|tc)(-|$)/;
 const TORN_HOSTS = new Set(['torn.com', 'www.torn.com']);
-/** Every node the entry, the page host and the sidebar block add. */
-export const OURS = '[data-ttc-open], [data-ttc-own]';
+/**
+ * Every node the entry, the page host and the sidebar block add. The entry is known by
+ * its id: a copy another script makes of it keeps `data-ttc-open`, and its changes to
+ * that copy are not ours (hq #453).
+ */
+export const OURS = `#${LINK_ID}, [data-ttc-own]`;
 
 const STYLE = `
   ${followTorn(`.${P}-mark`)}
@@ -58,6 +68,9 @@ const STYLE = `
     display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none;
     border-radius: 4px; background: var(--primary); color: var(--primary-foreground); font: 700 9px/1 Arial, sans-serif; letter-spacing: -.02em;
   }
+  .${P}-mark.${P}-entry-mark { display: none; }
+  #${LINK_ID} .${P}-mark.${P}-entry-mark { display: inline-flex; }
+  #${LINK_ID} svg { display: none; }
   #${LINK_ID}[data-ttc-plain] {
     display: flex; align-items: center; gap: 6px; min-height: 23px; margin: 2px 0; padding: 0 6px;
     border-top-right-radius: 5px; border-bottom-right-radius: 5px; text-decoration: none;
@@ -75,7 +88,7 @@ function addStyle(doc) {
 }
 
 /** Our mark: the letters TT on our green, drawn with text, never with markup. */
-const mark = (doc) => el('span', { class: `${P}-mark`, 'aria-hidden': 'true', ownerDocument: doc }, 'TT');
+const mark = (doc) => el('span', { class: `${P}-mark ${P}-entry-mark`, 'aria-hidden': 'true', ownerDocument: doc }, 'TT');
 
 /** TornTools' own entry, found by its words: it has no stable id. */
 function tornToolsEntry(parent) {
@@ -146,9 +159,8 @@ export function copyEntry(parent, doc = parent.ownerDocument) {
   // The name: Torn's own name span when it has one, otherwise the link's text.
   const name = link.querySelector(LINK_NAME);
   if (name) name.textContent = LABEL;
-  const icon = link.querySelector('svg')?.parentElement;
-  if (icon && icon !== link) icon.replaceChildren(mark(doc));
-  else link.querySelector('svg')?.replaceWith(mark(doc));
+  // Torn's icon stays, hidden under our id, so a script that copies our row gets Torn's.
+  link.querySelector('svg')?.after(mark(doc));
   if (!name) {
     for (const node of [...link.childNodes]) if (node.nodeType === 3) node.remove();
     link.append(doc.createTextNode(LABEL));
@@ -175,20 +187,21 @@ export function mountEntry({ doc = globalThis.document, isCurrent = () => false,
   addStyle(doc);
   let toldStray = false;
 
-  /** Our mark outside our own nodes: another script copied our row. Take it back out. */
-  function removeStrayMarks() {
-    for (const node of doc.querySelectorAll(`.${P}-mark`)) {
-      if (node.closest(OURS)) continue;
-      node.remove();
-      if (!toldStray) {
-        toldStray = true;
-        log('entry: took our mark out of a node another script copied from our Areas entry');
-      }
+  /**
+   * Another script copied our row. Its copy is never changed (the stylesheet hides our
+   * mark on it); this only says so once, for the debug log.
+   */
+  function noticeCopies() {
+    if (toldStray) return;
+    const own = doc.getElementById(LINK_ID);
+    if ([...doc.querySelectorAll('[data-ttc-open]')].some((node) => node !== own)) {
+      toldStray = true;
+      log('entry: another script copied our Areas entry; its copy is left as it is');
     }
   }
 
   function place() {
-    removeStrayMarks();
+    noticeCopies();
     const parent = doc.querySelector(SIDEBAR);
     let entry = doc.getElementById(LINK_ID);
     if (!parent) return false;
@@ -207,12 +220,12 @@ export function mountEntry({ doc = globalThis.document, isCurrent = () => false,
 
   // Torn redraws its sidebar (for example when the layout changes); put the entry back
   // each time. Our own nodes changing is no reason to look.
-  let timer = null;
+  // However busy the page stays, the look runs within a second (hq #466).
   const view = doc.defaultView || globalThis;
+  const placeSoon = settler(() => place(), 200, { timers: view });
   const stopWatching = onMutation((records) => {
     if (records.every((r) => ownChange(r, OURS))) return;
-    view.clearTimeout(timer);
-    timer = view.setTimeout(place, 200);
+    placeSoon.poke();
   }, doc);
   place();
 
@@ -220,8 +233,8 @@ export function mountEntry({ doc = globalThis.document, isCurrent = () => false,
     place,
     destroy() {
       stopWatching?.();
-      view.clearTimeout(timer);
-      for (const node of doc.querySelectorAll('[data-ttc-open]')) node.remove();
+      placeSoon.cancel();
+      doc.getElementById(LINK_ID)?.remove();
     },
   };
 }

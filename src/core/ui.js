@@ -14,7 +14,14 @@ import { TOKENS } from '../data/tokens.js';
 const P = 'ttc';
 export const TONES = Object.freeze(['good', 'neutral', 'warn', 'bad', 'info']);
 
-const OWN = `.${P}-ui-badge, .${P}-ui-strip, .${P}-ui-note, .${P}-ui-bar, .${P}-ui-button`;
+const OWN = `.${P}-ui-badge, .${P}-ui-strip, .${P}-ui-note, .${P}-ui-bar, .${P}-ui-button, .${P}-profile-actions, .${P}-lists-menu`;
+/** The lists menu's class twice, so Torn's own `a` and `button` rules don't reach in. */
+const MENU = `.${P}-lists-menu.${P}-lists-menu`;
+/** The profile's row of our buttons (hq #467), and the order its parts keep. */
+export const PROFILE_ACTIONS = `${P}-profile-actions`;
+const ACTION_ORDER = Object.freeze(['lists', 'messages', 'notes']);
+/** The row's class twice: it outweighs Torn's `.d .content-title button`. */
+const ROW = `.${PROFILE_ACTIONS}.${PROFILE_ACTIONS}`;
 /** Each tone's ink; its background is the same colour, faint. */
 const INK = Object.freeze({
   good: 'var(--tt-success)',
@@ -136,6 +143,95 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
   }
+  /* The profile's row of our buttons (hq issue 467): one block below Torn's title row, drawn
+     like Torn's own buttons (its size, radius, font and theme colours); our green only as
+     the accent on the left edge and the focus ring. Torn styles every button in its title
+     box (no border, no background, a divider before it), so these rules carry the row's
+     class twice to win over that. */
+  .${P}-profile-actions {
+    clear: both; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px;
+  }
+  .${P}-profile-actions:empty { display: none; }
+  .${P}-profile-actions > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; }
+  ${ROW} .${P}-ui-button {
+    position: relative; box-sizing: border-box; height: auto; min-height: 34px; min-width: 34px; margin: 0; padding: 0 12px;
+    border-radius: 5px; border: var(--btn-border, 1px solid var(--input)); border-left: 3px solid var(--primary);
+    background: var(--btn-background, var(--card)); color: var(--btn-color, var(--foreground));
+    text-shadow: var(--btn-text-shadow, none); box-shadow: none;
+    font: normal 14px/32px "Fjalla One", Arial, sans-serif; text-transform: uppercase; text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; white-space: nowrap;
+  }
+  ${ROW} .${P}-ui-button::before, ${ROW} .${P}-ui-button::after { content: none; display: none; }
+  ${ROW} .${P}-ui-button:hover:not(:disabled) {
+    background: var(--btn-hover-background, var(--muted)); color: var(--btn-hover-color, var(--foreground));
+    border: var(--btn-hover-border, 1px solid var(--input)); border-left: 3px solid var(--primary);
+    text-shadow: var(--btn-hover-text-shadow, none);
+  }
+  ${ROW} .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  ${ROW} .${P}-ui-button:disabled { cursor: default; opacity: .6; }
+  ${ROW} .${P}-ui-button[aria-expanded="true"] { box-shadow: inset 0 -2px 0 var(--primary); }
+  /* The split button: its two halves join. */
+  ${ROW} .${P}-lists-main { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  ${ROW} .${P}-lists-arrow, ${ROW} .${P}-lists-arrow:hover:not(:disabled) {
+    border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; padding: 0 10px;
+  }
+  ${ROW} .${P}-lists-note:not(:empty) { margin-left: 8px; }
+  /* The lists menu under the profile's buttons (hq issue 487): a card in the settings panel's
+     look, one 44 px row per list with a tick box, and Manage lists as the primary button. */
+  ${MENU} {
+    box-sizing: border-box; width: 100%; max-width: 380px; margin: 0 0 10px; padding: 6px;
+    border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--tt-shadow-sm);
+    background: var(--card); color: var(--card-foreground); font: 14px/1.4 var(--tt-font-sans); text-align: left;
+  }
+  ${MENU} .${P}-lists-head {
+    padding: 6px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  ${MENU} .${P}-lists-item {
+    display: flex; align-items: center; gap: 12px; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 6px 10px;
+    border: 0; border-radius: 8px; background: transparent; color: inherit; box-shadow: none; text-shadow: none;
+    font: 600 14px/1.4 var(--tt-font-sans); text-align: left; text-transform: none; cursor: pointer;
+    transition: background-color var(--tt-duration-fast) var(--tt-ease);
+  }
+  ${MENU} .${P}-lists-item:hover:not(:disabled) { background: var(--muted); }
+  ${MENU} .${P}-lists-item:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+  ${MENU} .${P}-lists-item:disabled { cursor: default; opacity: .6; }
+  ${MENU} .${P}-lists-box {
+    flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+    width: 20px; height: 20px; border: 2px solid var(--input); border-radius: 5px; background: var(--background);
+  }
+  ${MENU} .${P}-lists-item[aria-pressed="true"] .${P}-lists-box { background: var(--primary); border-color: var(--primary); }
+  ${MENU} .${P}-lists-item[aria-pressed="true"] .${P}-lists-box::after {
+    content: '\\2713'; color: var(--primary-foreground); font: 700 13px/1 var(--tt-font-sans);
+  }
+  ${MENU} .${P}-lists-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  ${MENU} .${P}-lists-tag {
+    flex: none; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
+    background: ${tint('var(--primary)')}; color: var(--muted-foreground);
+  }
+  /* Each list's row: the tick button, then Open to that list's page on the site (hq issue 486). */
+  ${MENU} .${P}-lists-row { display: flex; align-items: center; gap: 4px; }
+  ${MENU} .${P}-lists-row .${P}-lists-item { flex: 1; min-width: 0; }
+  ${MENU} a.${P}-lists-open {
+    flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+    min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 8px;
+    color: var(--primary); font: 600 13px/1.4 var(--tt-font-sans); text-decoration: none;
+    transition: background-color var(--tt-duration-fast) var(--tt-ease);
+  }
+  ${MENU} a.${P}-lists-open:hover { background: var(--muted); color: var(--primary); text-decoration: underline; }
+  ${MENU} a.${P}-lists-open:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+  ${MENU} .${P}-lists-empty { margin: 0; padding: 8px 10px; color: var(--muted-foreground); }
+  ${MENU} .${P}-lists-foot { display: flex; margin-top: 4px; padding: 8px 4px 2px; border-top: 1px solid var(--border); }
+  ${MENU} a.${P}-lists-manage {
+    display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px; padding: 8px 16px;
+    border: 1px solid var(--primary); border-radius: var(--radius); background: var(--primary); color: var(--primary-foreground);
+    font: 600 14px/1.4 var(--tt-font-sans); text-decoration: none;
+  }
+  ${MENU} a.${P}-lists-manage:hover { filter: brightness(1.05); color: var(--primary-foreground); text-decoration: none; }
+  ${MENU} a.${P}-lists-manage:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  @media (pointer: coarse), (max-width: 600px) {
+    ${ROW} .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 0 14px; }
+  }
 `;
 
 /** Puts the one stylesheet on the page, once. */
@@ -212,6 +308,36 @@ export function preview(doc, { cls, attrs = {} } = {}, ...children) {
 export function flag(doc, { cls, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
   return el('mark', { class: classes(`${P}-ui-flag`, cls), ownerDocument: doc, ...attrs }, ...children);
+}
+
+/**
+ * Puts one of our profile controls into the profile's row of our buttons (hq #467): one
+ * block inside Torn's title box, below its title row and before its rule, so nothing of
+ * Torn's moves sideways and none of its nodes is touched. The row is made once; its parts
+ * keep one order (lists, messages, notes) whichever feature comes first.
+ * @param {Document} doc
+ * @param {Element} heading   the profile's name heading
+ * @param {'lists'|'messages'|'notes'} slot
+ * @param {Element} node
+ */
+export function profileAction(doc, heading, slot, node) {
+  ensureStyle(doc);
+  let row = doc.querySelector(`.${PROFILE_ACTIONS}`);
+  if (!row) {
+    row = el('div', {
+      class: PROFILE_ACTIONS, role: 'group', 'aria-label': 'Torn Tracker', 'data-ttc-own': '', ownerDocument: doc,
+    });
+    const title = heading.closest('.content-title');
+    const rule = title && [...title.children].find((n) => n.matches('hr'));
+    if (rule) rule.before(row);
+    else if (title) title.append(row);
+    else heading.after(row);
+  }
+  node.dataset.ttcSlot = slot;
+  const rank = (n) => ACTION_ORDER.indexOf(n.dataset?.ttcSlot);
+  const next = [...row.children].find((n) => rank(n) > rank(node));
+  row.insertBefore(node, next || null);
+  return node;
 }
 
 /** One of our own small buttons; 44 px on touch screens. */

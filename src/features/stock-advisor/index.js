@@ -9,7 +9,7 @@
 // row's id attribute is Torn's stock id, and the name cell is the place for a label.
 // Torn Stock Analyzer and Torn Stock Advisor (both MIT) confirmed the rows.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { badge, setTone } from '../../core/ui.js';
 
 const MARK = 'ttc-stock';
@@ -50,7 +50,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, signals: null, asked: false };
+    const s = { doc, win, settle: null, stopWatching: null, signals: null, asked: false };
     state = s;
     const alive = () => state === s;
 
@@ -92,12 +92,11 @@ export default {
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    s.settle = settler(() => look().catch((err) => ctx.log('stock signals', err)), SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
-      if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => look().catch((err) => ctx.log('stock signals', err)), SETTLE_MS);
+      if (!records.every(ours)) s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(() => look().catch((err) => ctx.log('stock signals', err)), SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -105,7 +104,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

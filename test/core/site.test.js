@@ -95,10 +95,14 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
   });
 
   test('CMP-023 an unreachable site gives no data and caches nothing', async () => {
-    const r = rig({ reply: () => ({ ok: false, status: 0, data: null }) });
+    let t = 0;
+    const r = rig({ reply: () => ({ ok: false, status: 0, data: null }), clock: () => t });
     assert.equal((await r.site.ff([1])).size, 0);
     await r.site.ff([1]);
-    assert.equal(r.calls.length, 2, 'tried again on the next page view');
+    assert.equal(r.calls.length, 1, 'not asked again on every page change (hq #368)');
+    t += 61_000;
+    await r.site.ff([1]);
+    assert.equal(r.calls.length, 2, 'tried again a minute later');
   });
 
   test('without a script key nothing is asked', async () => {
@@ -449,6 +453,29 @@ describe('LDT-032 the two loadout reads (shapes accepted in hq #142)', () => {
     assert.deepEqual(await rig({ reply: reply({ player_id: 5, hidden: true }) }).site.playerLoadout(5), { seen: true, hidden: true });
     assert.equal(await rig({ reply: reply({ player_id: 6, hidden: false, slots: {} }) }).site.playerLoadout(5), null);
     assert.equal(await rig({ reply: reply(null, 503) }).site.playerLoadout(5), null);
+  });
+
+  test('hq #468: a 404 that says "hidden" is hidden, not unseen (LDT-005)', async () => {
+    const hidden = rig({ reply: reply({ player_id: 5, hidden: true, detail: "hidden at the player's request" }, 404) });
+    assert.deepEqual(await hidden.site.playerLoadout(5), { seen: true, hidden: true });
+    assert.equal(hidden.site.cache.get('loadoutMissed', 5), undefined);
+    const other = rig({ reply: reply({ player_id: 6, hidden: true }, 404) });
+    assert.deepEqual(await other.site.playerLoadout(5), { seen: false }, 'another player in the answer is no answer about this one');
+  });
+
+  test('hq #468: "no sighting" rests 30 minutes across page loads, per player', async () => {
+    let t = 0;
+    const r = rig({ now: () => t, clock: () => t, reply: reply({ player_id: 5, detail: 'no sighting' }, 404) });
+    assert.deepEqual(await r.site.playerLoadout(5), { seen: false });
+    assert.equal(r.site.cache.get('loadoutMissed', 5), true, 'kept in the stored cache, not only in memory');
+    t = 20 * 60_000;
+    assert.deepEqual(await r.site.playerLoadout(5), { seen: false });
+    assert.equal(r.calls.length, 1);
+    await r.site.playerLoadout(6);
+    assert.equal(r.calls.length, 2, 'another player is still asked');
+    t = 31 * 60_000;
+    await r.site.playerLoadout(5);
+    assert.equal(r.calls.length, 3, 'asked again after the rest');
   });
 });
 

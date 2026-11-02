@@ -9,14 +9,19 @@
 // src/data/items.js (tools/build-items.mjs). An item it does not know is counted as
 // "without a price", never guessed.
 //
+// CMP-309 (hq #339): the player may instead price at a buy list on torn-tracker.com,
+// their own (the other side, what they buy) or a public trader's (their own side, what
+// they sell). One read of the list per five minutes; an item the list doesn't buy is
+// "not on the list", never $0. The money field is never filled, Accept never pressed.
+//
 // Inspiration: TornTools (GPLv3, https://github.com/Mephiles/torntools_extension) totals
 // each side the same way, and Torn PDA (GPLv3, https://github.com/Manuito83/torn-pda)
 // copies the total. No code was taken.
 
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { ITEM_IDS } from '../../data/items.js';
-import { money, priceOffer, readSide, receipt } from './read.js';
-import { STEPS, THEIR_NAME, THEIR_SIDE } from './selectors.js';
+import { listBasis, money, priceOffer, readSide, receipt } from './read.js';
+import { OWN_SIDE, STEPS, THEIR_NAME, THEIR_SIDE } from './selectors.js';
 import { bar as uiBar, button as uiButton, strip } from '../../core/ui.js';
 
 const MARK = 'ttc-trade';
@@ -37,7 +42,19 @@ export default {
   guide: 'trade-value',
   summary: 'Totals the other side of a trade at market value, with a receipt to copy.',
   routes: ['trade.php'],
-  defaults: { enabled: true },
+  defaults: { enabled: true, priceAt: 'market', trader: '' },
+  options: {
+    priceAt: {
+      label: 'Price a trade at',
+      choices: ['market', 'mine', 'trader'],
+      labels: {
+        market: 'Market value (their side)',
+        mine: 'Your own buy list (their side, you buy)',
+        trader: "A trader's buy list (your side, you sell)",
+      },
+    },
+    trader: { label: "The trader's name or id, for a trader's buy list", maxLength: 32 },
+  },
   shares: [],
   needs: { apiKey: false, scriptKey: true },
   credits: ['TornTools (GPLv3)', 'Torn PDA (GPLv3)'],
@@ -45,7 +62,7 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
-    const s = { doc, win, timer: null, stopWatching: null, seen: '', ids: ITEM_IDS };
+    const s = { doc, win, settle: null, stopWatching: null, seen: '', ids: ITEM_IDS };
     state = s;
     const alive = () => state === s;
 
@@ -59,14 +76,19 @@ export default {
       return node;
     }
 
-    function show(side, priced, trader) {
+    /** A line in place of the total, when the buy list can't be read (CMP-309). */
+    function say(side, text) {
+      box(side).replaceChildren(el('div', { ownerDocument: doc }, text));
+    }
+
+    function show(side, priced, trader, basis) {
       const node = box(side);
-      const words = priced.unpriced ? `, ${priced.unpriced} without a price` : '';
+      const words = priced.unpriced ? `, ${priced.unpriced} ${basis ? basis.missingCount : 'without a price'}` : '';
       const copy = uiButton(doc, {}, 'Copy receipt');
       copy.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const text = receipt(priced, trader);
+        const text = receipt(priced, trader, basis);
         try {
           await win.navigator.clipboard.writeText(text);
           copy.textContent = 'Copied';
@@ -78,17 +100,39 @@ export default {
           area.select();
         }
       });
-      node.replaceChildren(
-        el('div', { ownerDocument: doc }, 'Their offer at market value: ', el('strong', { ownerDocument: doc }, money(priced.total)), words),
-        uiBar(doc, {}, copy),
-      );
+      const head = basis
+        ? [`Items at ${basis.basis}: `, el('strong', { ownerDocument: doc }, money(priced.total)), words]
+        : ['Their offer at market value: ', el('strong', { ownerDocument: doc }, money(priced.total)), words];
+      const parts = [copy];
+      if (basis?.link) parts.push(el('a', { href: basis.link, target: '_blank', rel: 'noopener noreferrer', ownerDocument: doc }, 'The list on torn-tracker.com'));
+      node.replaceChildren(el('div', { ownerDocument: doc }, ...head), uiBar(doc, {}, ...parts));
     }
+
+    /** The buy list to price at, or null for market value (CMP-309). */
+    function listAsked() {
+      const mode = ctx.settings?.priceAt;
+      if (mode === 'mine') return { who: 'me', side: THEIR_SIDE };
+      if (mode === 'trader') return { who: ctx.settings?.trader ?? '', side: OWN_SIDE };
+      return null;
+    }
+
+    const LIST_TROUBLE = {
+      no_key: 'To price at a buy list, add your script key under Keys in the Torn Tracker settings.',
+      refused: 'torn-tracker.com refused your script key; check it under Keys.',
+      bad_name: "Set the trader's name or id in the Torn Tracker settings, under Trade value.",
+      not_found: 'torn-tracker.com has no public buy list by that name.',
+      wait: 'torn-tracker.com asked to wait; the buy list is read again in a minute.',
+      failed: "Couldn't read the buy list from torn-tracker.com.",
+    };
 
     async function scan() {
       if (!STEPS.includes(stepOf(win.location?.hash))) return;
-      const side = doc.querySelector(THEIR_SIDE);
+      const asked = listAsked();
+      const side = doc.querySelector(asked ? asked.side : THEIR_SIDE);
       if (!side) return;
-      const offer = readSide(side, s.ids);
+      const read = readSide(side, s.ids);
+      // A buy list prices items only: the money on the side isn't bought.
+      const offer = asked ? { cash: 0, items: read.items } : read;
       if (offer.cash === 0 && offer.items.length === 0) {
         side.querySelector(`:scope > .${MARK}`)?.remove();
         s.seen = '';
@@ -98,19 +142,30 @@ export default {
       const key = JSON.stringify(offer);
       if (key === s.seen && side.querySelector(`:scope > .${MARK}`)) return;
       s.seen = key;
+      const trader = doc.querySelector(`${THEIR_SIDE} ${THEIR_NAME}`)?.textContent.trim() || '';
+      if (asked) {
+        const answer = ctx.site ? await ctx.site.buylist(asked.who) : { status: 'failed' };
+        if (!alive()) return;
+        if (answer.status !== 'ok') {
+          // Not kept as seen: the next change of the page asks again (the site keeps its own pace).
+          s.seen = '';
+          say(side, LIST_TROUBLE[answer.status] ?? LIST_TROUBLE.failed);
+          return;
+        }
+        show(side, priceOffer(offer, answer.list.prices), trader, listBasis(answer.list));
+        return;
+      }
       const ids = offer.items.map((item) => item.id).filter((id) => id !== null);
       const prices = ids.length && ctx.site ? await ctx.site.prices(ids) : new Map();
       if (!alive()) return;
-      const trader = side.querySelector(THEIR_NAME)?.textContent.trim() || '';
       show(side, priceOffer(offer, prices), trader);
     }
 
     function later() {
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(() => {
-        s.timer = null;
+      s.settle ??= settler(() => {
         scan().catch((err) => ctx.log('trade value', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers: win });
+      s.settle.poke();
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
@@ -128,7 +183,7 @@ export default {
     if (!s) return;
     s.stopWatching?.();
     s.win.removeEventListener('hashchange', s.onHash);
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

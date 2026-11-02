@@ -61,6 +61,8 @@ export const OPEN_LOADOUT_URL = `${SITE}/api/open/v1/loadouts`;
 export const LOADOUT_FLAGS = Object.freeze(['heavy_hitter', 'armoured', 'temp_ready']);
 const WAR_LOADOUTS_TTL = 60_000;
 const OPEN_LOADOUT_TTL = 10 * 60_000;
+/** How long "no sighting" of a loadout is kept across page loads (hq #468). */
+const LOADOUT_MISSED_TTL = 30 * 60_000;
 /**
  * The item catalogue's shop prices (CMP-109): public, asked anonymously, kept 24 hours.
  * The shape is the companion's proposal on hq #363 until companion-api.md names it.
@@ -77,6 +79,12 @@ const DEMAND_MAX = 500;
 export const MAX_IDS = 100;
 
 const HOUR = 3_600_000;
+/** A read the site has no route for (404) rests 10 minutes (hq #368). */
+const REST_MISSING_MS = 600_000;
+/** A read that failed, or a 429 without Retry-After, rests a minute. */
+const RETRY_FAILED_MS = 60_000;
+/** The longest a 429's Retry-After is honoured. */
+const REST_MAX_MS = HOUR;
 const BAND = 40;
 
 const positiveInt = (v) => Number.isInteger(v) && v > 0;
@@ -286,6 +294,12 @@ const SIDEBAR_READERS = {
 };
 
 /**
+ * A link on our site, on either spelling of the host (D-162). Requests go to the bare host,
+ * but the site writes the links in its replies on www (hq #312).
+ */
+const onSite = (v) => SITE_ORIGINS.some((origin) => v.startsWith(`${origin}/`));
+
+/**
  * The sidebar read's answer, checked item by item. An item that was asked for and doesn't
  * fit is null, the same as nothing to show; one that wasn't asked for is left out.
  * @returns {{items: Map<string, object|null>, links: Array<{label: string, url: string}>}}
@@ -308,7 +322,7 @@ export function readSidebar(data, asked, skew = 0) {
   }
   const links = (Array.isArray(data?.links) ? data.links : []).slice(0, 6)
     .filter((l) => typeof l?.label === 'string' && l.label && l.label.length <= 30
-      && typeof l.url === 'string' && l.url.startsWith(`${SITE}/`) && l.url.length <= 200)
+      && typeof l.url === 'string' && onSite(l.url) && l.url.length <= 200)
     .map((l) => ({ label: l.label, url: l.url }));
   return { items, links };
 }
@@ -347,7 +361,7 @@ export function readAchievements(data) {
   }).filter(Boolean);
   const featured = (Array.isArray(data?.featured) ? data.featured : []).slice(0, FEATURED_MAX)
     .filter((a) => a?.earned !== false).map(readAchievement).filter(Boolean);
-  const url = typeof data?.url === 'string' && data.url.startsWith(`${SITE}/`) && data.url.length <= 200 ? data.url : ACHIEVEMENTS_PAGE;
+  const url = typeof data?.url === 'string' && onSite(data.url) && data.url.length <= 200 ? data.url : ACHIEVEMENTS_PAGE;
   const cursor = typeof data?.server_time === 'string' && data.server_time.length <= 40 && Number.isFinite(Date.parse(data.server_time))
     ? data.server_time : null;
   const said = typeof data?.pause_all === 'boolean' || typeof data?.companion_toasts === 'boolean';
@@ -356,7 +370,6 @@ export function readAchievements(data) {
 }
 
 const trimmed = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
-const onSite = (v) => SITE_ORIGINS.some((origin) => v.startsWith(`${origin}/`));
 
 /** A link on our site: an absolute one on either spelling of our host, or a path on it. */
 function siteLink(v) {
@@ -394,10 +407,10 @@ export function readGuide(data) {
 /** A cached guide answer still has the shape readGuide gives. */
 export function validGuide(v) {
   if (!v || typeof v !== 'object' || typeof v.started !== 'boolean' || typeof v.offer !== 'boolean') return false;
-  if (!count(v.done, 100) || !count(v.total, 100) || v.done > v.total || typeof v.url !== 'string' || !v.url.startsWith(`${SITE}/`)) return false;
+  if (!count(v.done, 100) || !count(v.total, 100) || v.done > v.total || typeof v.url !== 'string' || !onSite(v.url)) return false;
   if (v.next === null) return true;
   return typeof v.next?.title === 'string' && typeof v.next.cta === 'string'
-    && typeof v.next.href === 'string' && v.next.href.startsWith(`${SITE}/`)
+    && typeof v.next.href === 'string' && onSite(v.next.href)
     && (v.next.outcome === null || typeof v.next.outcome === 'string');
 }
 
@@ -466,10 +479,20 @@ function readSlot(v) {
   return { item_id: v.item_id, name: v.name, damage: v.damage ?? null, accuracy: v.accuracy ?? null, bonuses };
 }
 
-/** One target list as the profile menu shows it (CAPI-037). */
+/**
+ * A list's own page on the site (hq #486), as the site names it: exactly `/lists/<its uuid>/`.
+ * Anything else, or a site that doesn't send it yet, is null and the menu links nowhere.
+ */
+export function listPath(path, uuid) {
+  return typeof path === 'string' && typeof uuid === 'string' && path.toLowerCase() === `/lists/${uuid.toLowerCase()}/`
+    ? path : null;
+}
+
+/** One target list as the profile menu shows it (CAPI-037). A menu kept before hq #486 has no path. */
 const validList = (l) => l !== null && typeof l === 'object' && typeof l.uuid === 'string' && UUID.test(l.uuid)
   && typeof l.name === 'string' && l.name.trim().length > 0 && l.name.length <= LIST_NAME
-  && typeof l.shared === 'boolean' && typeof l.contains === 'boolean';
+  && typeof l.shared === 'boolean' && typeof l.contains === 'boolean'
+  && (l.path === undefined || l.path === null || listPath(l.path, l.uuid) === l.path);
 
 /** A player's menu: the lists and the one last added to, which must be one of them. */
 export function validLists(v) {
@@ -483,7 +506,10 @@ export function readLists(data) {
   const lists = [];
   const seen = new Set();
   for (const row of data.lists) {
-    const list = { uuid: row?.uuid, name: typeof row?.name === 'string' ? row.name.trim() : row?.name, shared: row?.shared, contains: row?.contains };
+    const list = {
+      uuid: row?.uuid, name: typeof row?.name === 'string' ? row.name.trim() : row?.name, shared: row?.shared, contains: row?.contains,
+      path: listPath(row?.path, row?.uuid),
+    };
     if (!validList(list) || seen.has(list.uuid.toLowerCase())) continue;
     seen.add(list.uuid.toLowerCase());
     lists.push(list);
@@ -523,10 +549,12 @@ export const SPACES = Object.freeze({
   sidebar: { ttlMs: SIDEBAR_TTL, max: 1, valid: validSidebarCopy },
   trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
   lists: { ttlMs: LISTS_TTL, max: 200, valid: validLists },
-  trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && v.startsWith(`${SITE}/`) },
+  trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && onSite(v) },
   shops: { ttlMs: DAY, max: 1, valid: validShopRows },
   // The site had no table: the built-in one serves for an hour before it is asked again.
   shopsMissed: { ttlMs: HOUR, max: 1, valid: (v) => v === true },
+  // No sighting of this player's loadout (hq #468): not asked again on every profile visit.
+  loadoutMissed: { ttlMs: LOADOUT_MISSED_TTL, max: 500, valid: (v) => v === true },
 });
 
 /** What a chain watch reply that isn't an answer means, or null when it is one. */
@@ -539,6 +567,214 @@ function watchFailure(result) {
   }
   if (!result || result.status === 0) return { status: 'failed' };
   return null;
+}
+
+// ---- A trader's buy list (CMP-309, hq #335) ----
+
+export const BUYLIST_URL = `${SITE}/api/feeds/buylist`;
+/** Kept 5 minutes per list (CMP-309); the site allows six reads a minute. */
+const BUYLIST_TTL = 5 * 60_000;
+const BUYLIST_ITEMS = 5_000;
+const ITEM_ID = /^[1-9]\d{0,5}$/;
+/** Torn names are letters, digits, `_` and `-`; `me` is the player's own list. */
+const TRADER = /^(?:me|[1-9]\d{0,9}|[A-Za-z0-9_-]{1,32})$/;
+
+/** The trader to ask for, trimmed: `me`, a name or an id; null when it can't be one. */
+export function buylistTrader(v) {
+  const t = typeof v === 'string' ? v.trim() : '';
+  if (!TRADER.test(t)) return null;
+  return t.toLowerCase() === 'me' ? 'me' : t;
+}
+
+/**
+ * The buy list read's answer, checked (CMP-309). Prices are whole dollars per Torn item id;
+ * an item the list doesn't buy is absent, and a price that isn't a whole dollar amount
+ * above 0 is dropped, never read as 0 (AC2).
+ * @returns {{trader: {id: number, name: string}, prices: Map<number, number>,
+ *   pageUrl: string, calcUrl: string, receipts: number|null}|null}
+ */
+export function readBuylist(data) {
+  const t = data?.trader;
+  if (!positiveInt(t?.torn_id) || !validName(t.name)) return null;
+  if (!data.prices || typeof data.prices !== 'object' || Array.isArray(data.prices)) return null;
+  const prices = new Map();
+  for (const [id, price] of Object.entries(data.prices)) {
+    if (prices.size >= BUYLIST_ITEMS) break;
+    if (ITEM_ID.test(id) && positiveInt(price) && price <= 1e13) prices.set(Number(id), price);
+  }
+  const link = (v, fallback) => (typeof v === 'string' && v.length <= 200 && onSite(v) ? v : fallback);
+  const pageUrl = link(data.page_url, `${SITE}/traders/`);
+  return {
+    trader: { id: t.torn_id, name: t.name },
+    prices,
+    pageUrl,
+    calcUrl: link(data.calc_url, pageUrl),
+    receipts: count(data.receipts) ? data.receipts : null,
+  };
+}
+
+// ---- The dashboard inside Torn (hq #465, companion-api §6.4b) ----
+
+export const ME_DASHBOARD_URL = `${SITE}/api/feeds/me/dashboard`;
+const DASHBOARD_TTL = 60_000;
+/** The dashboard's cards, in the order the page shows them. */
+export const DASHBOARD_CARDS = Object.freeze(['bars', 'money', 'gym', 'goals', 'achievements', 'guide', 'education', 'chain', 'war', 'oc', 'stats']);
+export const DASHBOARD_LINKS = Object.freeze(['dashboard', 'stats', 'achievements', 'finances', 'guide', 'war', 'oc', 'education']);
+const BAR_KEYS = Object.freeze(['energy', 'nerve', 'happy', 'life']);
+export const GYM_STATS = Object.freeze(['Strength', 'Defense', 'Speed', 'Dexterity']);
+export const EDU_STATS = Object.freeze(['Intelligence', 'Manual labor', 'Endurance']);
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+const MONEY_MAX = 1e15;
+const SERIES_MAX = 400;
+const words = (v, max = SENTENCE) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+const textOrNull = (v, max = NAME) => (words(v, max) ? v.trim() : null);
+const intOrNull = (v, max = 1e9) => (count(v, max) ? v : null);
+const money = (v) => (typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= MONEY_MAX ? Math.round(v) : null);
+const listOf = (v, max, read) => (Array.isArray(v) ? v.slice(0, max).map((x) => {
+  try {
+    return read(x);
+  } catch {
+    return null;
+  }
+}).filter(Boolean) : []);
+const dayOf = (v) => (typeof v === 'string' && DAY_KEY.test(v.slice(0, 10)) ? v.slice(0, 10) : null);
+
+/** The hero card: who the player is, their rank and at most two next steps. */
+function readHero(v) {
+  if (!v || typeof v !== 'object') return null;
+  const faction = positiveInt(v.faction?.id) && validName(v.faction.name) ? { id: v.faction.id, name: v.faction.name } : null;
+  const r = v.rank;
+  const rank = r && validName(r.name) && count(r.points, 1e9) ? {
+    name: r.name, points: r.points,
+    next: validName(r.next_name) && count(r.next_points, 1e9) ? { name: r.next_name, points: r.next_points } : null,
+  } : null;
+  const steps = listOf(v.steps, 2, (s) => {
+    const url = siteLink(s?.url);
+    if (!words(s?.title, 80) || !url || !count(s.value, 1e9) || !count(s.max, 1e9) || s.max === 0) return null;
+    return { title: s.title.trim(), detail: textOrNull(s.detail, SENTENCE) ?? '', value: Math.min(s.value, s.max), max: s.max, url };
+  });
+  return {
+    name: validName(v.name) ? v.name : null,
+    id: positiveInt(v.torn_id) ? v.torn_id : null,
+    level: count(v.level, 100) && v.level > 0 ? v.level : null,
+    faction, rank, steps,
+  };
+}
+
+/** Each of the dashboard's own cards' reader: the checked value, or null when it doesn't fit. */
+const DASHBOARD_READERS = {
+  bars(v, skew) {
+    const bars = listOf(v?.bars, 4, (b) => {
+      if (!BAR_KEYS.includes(b?.key) || !words(b.label, 30) || !count(b.current, 1e7)) return null;
+      const maximum = b.maximum == null ? null : intOrNull(b.maximum, 1e7);
+      if (b.maximum != null && maximum === null) return null;
+      const pct = count(b.pct, 1000) ? b.pct : (maximum ? Math.round((b.current / maximum) * 100) : 0);
+      return { key: b.key, label: b.label.trim(), current: b.current, maximum, pct, over: b.over === true };
+    });
+    const effects = listOf(v?.effects, 6, (e) => {
+      const until = time(e?.until, skew);
+      return words(e?.label, 40) && until !== null ? { label: e.label.trim(), until, note: textOrNull(e.note, SENTENCE) ?? '' } : null;
+    });
+    if (!bars.length) return null;
+    return { observedAt: v.observed_at == null ? null : time(v.observed_at, skew), bars, effects };
+  },
+  money(v) {
+    const series = listOf(v?.series, 31, (d) => {
+      const date = dayOf(d?.date);
+      if (!date) return null;
+      return { date, income: money(d.income), cost: money(d.cost), networth: money(d.networth) };
+    });
+    if (!series.some((d) => d.income !== null || d.cost !== null)) return null;
+    return { days: count(v.days, 400) && v.days > 0 ? v.days : series.length, series };
+  },
+  // An estimate, labelled one wherever it shows (D-073). At the last gym both are null.
+  gym(v) {
+    if (v?.next_gym === null && v.percent == null) return { nextGym: null, percent: null, energy: null };
+    if (!words(v?.next_gym, 40) || !percent_(v.percent)) return null;
+    return { nextGym: v.next_gym.trim(), percent: v.percent, energy: intOrNull(v.energy_to_next, 1e7) };
+  },
+  goals(v) {
+    const active = listOf(v?.active, 10, (g) => {
+      if (!positiveInt(g?.id) || !words(g.name, 100) || !count(g.amount, MONEY_MAX)) return null;
+      return {
+        id: g.id, name: g.name.trim(), amount: g.amount, known: g.known === true,
+        remaining: count(g.remaining, MONEY_MAX) ? g.remaining : g.amount,
+        pct: g.known === true && count(g.pct, 100) ? g.pct : null, reached: g.reached === true,
+      };
+    });
+    const saved = count(v?.saved, MONEY_MAX) ? v.saved : null;
+    return active.length || saved !== null ? { saved, active } : null;
+  },
+  achievements(v) {
+    const next = listOf(v?.next, 5, (a) => {
+      const base = readAchievement(a);
+      if (!base || !count(a.points, 1e6)) return null;
+      const p = a.progress;
+      const progress = p && count(p.value, 1e12) && count(p.target, 1e12) && p.target > 0
+        ? { value: Math.min(p.value, p.target), target: p.target } : null;
+      return { ...base, description: textOrNull(a.description, SENTENCE) ?? '', progress, points: a.points };
+    });
+    return next.length ? { next } : null;
+  },
+  guide(v) {
+    if (!['offer', 'started'].includes(v?.state) || !count(v.done, 100) || !count(v.total, 100) || v.total === 0) return null;
+    const steps = listOf(v.steps, 20, (s) => (typeof s?.key === 'string' && ACHIEVEMENT_ID.test(s.key) && words(s.title, 100)
+      ? { key: s.key, title: s.title.trim(), done: s.done === true } : null));
+    return {
+      state: v.state, done: Math.min(v.done, v.total), total: v.total,
+      bonuses: count(v.bonuses_unclaimed, 100) ? v.bonuses_unclaimed : 0, steps,
+    };
+  },
+  education(v) {
+    if (typeof v?.complete !== 'boolean') return null;
+    const n = v.next;
+    const next = n && words(n.to, 80) ? { to: n.to.trim(), job: textOrNull(n.job, 80), daysLeft: intOrNull(n.days_left, 10_000) } : null;
+    return { position: textOrNull(v.position, 80), next, complete: v.complete };
+  },
+  stats(v) {
+    const row = (keys) => (d) => {
+      const date = dayOf(d?.date);
+      if (!date) return null;
+      const out = { date };
+      for (const k of keys) out[k] = typeof d[k] === 'number' && Number.isFinite(d[k]) && d[k] >= 0 && d[k] <= MONEY_MAX ? d[k] : null;
+      return out;
+    };
+    const gym = listOf(v?.gym, SERIES_MAX, row(GYM_STATS));
+    const edu = listOf(v?.edu, SERIES_MAX, row(EDU_STATS));
+    if (gym.length < 2 && edu.length < 2) return null;
+    return { days: count(v.days, 10_000) ? v.days : gym.length, gym, edu };
+  },
+};
+
+/**
+ * The dashboard read's answer, checked card by card (hq #465). A card that doesn't fit is
+ * null, the same as nothing to show; the hero and the links are always there. The chain,
+ * war and OC cards are the sidebar read's own items, checked by the sidebar's readers.
+ * @returns {{hero: object, cards: Map<string, object|null>, links: Record<string, string>}}
+ */
+export function readDashboard(data, skew = 0) {
+  const hero = readHero(data?.hero) || { name: null, id: null, level: null, faction: null, rank: null, steps: [] };
+  const cards = new Map();
+  const sidebar = readSidebar(data, ['chain', 'war', 'oc'], skew).items;
+  for (const key of DASHBOARD_CARDS) {
+    if (sidebar.has(key)) {
+      cards.set(key, sidebar.get(key));
+      continue;
+    }
+    const raw = data?.[key];
+    let value = null;
+    if (raw && typeof raw === 'object') {
+      try {
+        value = DASHBOARD_READERS[key](raw, skew);
+      } catch {
+        value = null;
+      }
+    }
+    cards.set(key, value);
+  }
+  const links = {};
+  for (const key of DASHBOARD_LINKS) links[key] = siteLink(data?.links?.[key]) ?? `${SITE}/dashboard/`;
+  return { hero, cards, links };
 }
 
 /**
@@ -561,6 +797,11 @@ export function createSite({
   const openLoadouts = new Map();
   /** The player's own travel runs and when they came (TRV-050: kept 5 minutes). */
   let runsMemo = null;
+  /** The dashboard's answer and when it came, in memory only (hq #465: kept a minute). */
+  let dashboardMemo = null;
+  /** Buy lists by trader (CMP-309: kept 5 minutes), in memory only; and when to ask again after a 429. */
+  const buylists = new Map();
+  let buylistWait = 0;
   /** The stock signals answer and when it came (CMP-304: kept 5 minutes). */
   let stockMemo = null;
   /** The player's own mugs of others, by target id (MUG-031: kept 10 minutes). */
@@ -591,9 +832,41 @@ export function createSite({
     return result || { ok: false, status: 0, data: null };
   }
 
+  /**
+   * Reads the site couldn't answer, by method and address, and until when they rest. A
+   * feature asks again on the next page change; without the rest a missing route (404)
+   * or a busy site would be asked on every mutation (hq #368: the mugger badge looped).
+   */
+  const resting = new Map();
+
+  /** How long a failed read rests, in ms; 0 for answers that say nothing about the route. */
+  function restFor(result) {
+    if (!result) return RETRY_FAILED_MS;
+    if (result.status === 404) return REST_MISSING_MS;
+    if (result.status === 429) {
+      const seconds = Number(result.retryAfter);
+      return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, REST_MAX_MS) : RETRY_FAILED_MS;
+    }
+    if (result.status >= 500 || (result.status === 0 && result.error !== 'budget')) return RETRY_FAILED_MS;
+    return 0;
+  }
+
   async function call(url, opts) {
+    const key = `${opts?.method || 'GET'} ${url}`;
+    const until = resting.get(key);
+    if (until !== undefined) {
+      if (now() < until) return null;
+      resting.delete(key);
+    }
     const result = await exchange(url, opts);
-    return result.ok ? result.data : null;
+    if (result?.ok) return result.data;
+    const rest = restFor(result);
+    if (rest > 0) {
+      for (const [k, t] of resting) if (t <= now()) resting.delete(k);
+      resting.set(key, now() + rest);
+      log(`site: ${key.split('?')[0]} answered ${result?.status ?? 0}; not asked again for ${Math.round(rest / 1000)} s`);
+    }
+    return null;
   }
 
   /** How far the site's clock is ahead of ours, from a reply's server_time; 0 if absent. */
@@ -743,7 +1016,7 @@ export function createSite({
       const data = result.data && typeof result.data === 'object' ? result.data : {};
       if (result.ok) {
         const state = ['on', 'off'].includes(data.state) ? data.state : (action === 'add' ? 'on' : 'off');
-        return { ok: true, state, error: null };
+        return { ok: true, state, error: null, path: listPath(data.path, uuid) };
       }
       // tc-targets#360 names its refusals in `detail`; `error` is the other endpoints' key.
       const code = [data.detail, data.error].find((v) => typeof v === 'string') ?? '';
@@ -957,7 +1230,10 @@ export function createSite({
 
     /**
      * One player's latest loadout, from the open data (LDT-032, D-053). Asked without any
-     * key, as anyone may. Kept 10 minutes.
+     * key, as anyone may. Kept 10 minutes; "no sighting" is kept 30 minutes across page
+     * loads, so a player nobody has reported isn't asked for on every visit (hq #468).
+     * The site answers both "no sighting" and "hidden at the player's request" with a 404;
+     * the body tells them apart (LDT-005).
      * @param {number} playerId
      * @returns {Promise<{seen: boolean, hidden?: boolean, slots?: object, flags?: object[], seen_at?: number|null, reporters?: number|null}|null>}
      *          seen false when the site has never seen this player's loadout; null on failure
@@ -966,9 +1242,16 @@ export function createSite({
       if (!positiveInt(playerId)) return null;
       const memo = openLoadouts.get(playerId);
       if (memo && now() - memo.at < OPEN_LOADOUT_TTL) return memo.value;
+      if (cache.get('loadoutMissed', playerId)) return { seen: false };
       const result = await send(`${OPEN_LOADOUT_URL}/${playerId}`, { method: 'GET', headers: { Accept: 'application/json' } });
       let value = null;
-      if (result.status === 404) value = { seen: false };
+      if (result.status === 404) {
+        if (result.data?.hidden === true && result.data.player_id === playerId) value = { seen: true, hidden: true };
+        else {
+          value = { seen: false };
+          cache.set('loadoutMissed', playerId, true);
+        }
+      }
       else if (result.ok && result.data?.player_id === playerId) {
         const d = result.data;
         if (d.hidden === true) value = { seen: true, hidden: true };
@@ -1082,7 +1365,7 @@ export function createSite({
         const points = c.job_points === null || (Number.isInteger(c.job_points) && c.job_points >= 0) ? c.job_points : undefined;
         const fit = c.fit === null || ['good', 'fair', 'poor'].includes(c.fit) ? c.fit : undefined;
         if (merits === undefined || points === undefined || fit === undefined) continue;
-        const url = typeof c.card_url === 'string' && c.card_url.startsWith(`${SITE}/`) ? c.card_url : null;
+        const url = typeof c.card_url === 'string' && onSite(c.card_url) ? c.card_url : null;
         cards.set(c.id, { merits, job_points: points, fit, card_url: url });
       }
       return { allowed: true, cards };
@@ -1314,6 +1597,68 @@ export function createSite({
       const value = readGuide(await call(GUIDE_URL, { method: 'GET' }));
       if (value) cache.set('guide', 'me', value);
       return value;
+    },
+
+    /**
+     * The dashboard page's one read (hq #465, companion-api §6.4b). Asked once per open
+     * of the page; the answer is kept a minute, so going back and forth asks once.
+     * @returns {Promise<{status: 'ok', hero: object, cards: Map<string, object|null>, links: object, skew: number}
+     *   | {status: 'no_key'|'refused'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async dashboard() {
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const kept = dashboardMemo && now() - dashboardMemo.at < DASHBOARD_TTL ? dashboardMemo : null;
+      if (kept) return { status: 'ok', ...readDashboard(kept.data, kept.skew), skew: kept.skew, cached: true };
+      const result = await exchange(ME_DASHBOARD_URL, { method: 'GET' });
+      if (keyRefused(result)) {
+        dashboardMemo = null;
+        return { status: 'refused' };
+      }
+      if (result?.status === 429) {
+        const seconds = Number(result.retryAfter);
+        return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
+      }
+      if (!result?.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
+      const skew = skewOf(result.data);
+      const read = readDashboard(result.data, skew);
+      dashboardMemo = { at: now(), data: result.data, skew };
+      return { status: 'ok', ...read, skew };
+    },
+
+    /**
+     * A trader's buy list (CMP-309): `me`, a Torn name or an id. One GET, kept 5 minutes.
+     * @returns {Promise<{status: 'ok', list: NonNullable<ReturnType<typeof readBuylist>>}
+     *   | {status: 'no_key'|'refused'|'bad_name'|'not_found'|'failed'} | {status: 'wait', retryMs: number}>}
+     */
+    async buylist(trader) {
+      const who = buylistTrader(trader);
+      if (!who) return { status: 'bad_name' };
+      if (!getKey()) return { status: 'no_key' };
+      if (!usable()) return { status: 'refused' };
+      const memoKey = who.toLowerCase();
+      const kept = buylists.get(memoKey);
+      if (kept && now() - kept.at < BUYLIST_TTL) return kept.answer;
+      if (now() < buylistWait) return { status: 'wait', retryMs: buylistWait - now() };
+      const result = await exchange(`${BUYLIST_URL}/${encodeURIComponent(who)}`, { method: 'GET' });
+      if (keyRefused(result)) return { status: 'refused' };
+      if (result?.status === 429) {
+        const seconds = Number(result.retryAfter);
+        const retryMs = Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000;
+        buylistWait = now() + retryMs;
+        return { status: 'wait', retryMs };
+      }
+      // An unknown or unpublished list is a 404 for everyone but its trader; kept like an answer.
+      let answer;
+      if (result?.status === 404) answer = { status: 'not_found' };
+      else {
+        const list = result?.ok ? readBuylist(result.data) : null;
+        if (!list) return { status: 'failed' };
+        answer = { status: 'ok', list };
+      }
+      if (buylists.size >= 20) buylists.delete(buylists.keys().next().value);
+      buylists.set(memoKey, { at: now(), answer });
+      return answer;
     },
 
     /** The guide as last read, without asking; null when there is none fresh. */

@@ -14,13 +14,14 @@ import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../cor
 import { badge, setTone } from '../../core/ui.js';
 import { HEADING, ROWS, ROW_LINK } from './selectors.js';
 import { describe, textColourFor } from './view.js';
+import { settler } from '../../core/dom.js';
 
 const MARK = 'ttc-ff';
 /** Torn re-renders lists in bursts; one scan once it settles. */
 const SETTLE_MS = 250;
 
 let stopWatching = null;
-let timer = null;
+let settle = null;
 let timers = globalThis;
 let page = null;
 let alive = false;
@@ -88,11 +89,10 @@ export default {
     };
 
     const later = () => {
-      timers.clearTimeout(timer);
-      timer = timers.setTimeout(() => {
-        timer = null;
+      settle ??= settler(() => {
         scan().catch((err) => ctx.log('ff badges', err));
-      }, SETTLE_MS);
+      }, SETTLE_MS, { timers });
+      settle.poke();
     };
 
     stopWatching = ctx.dom.onMutation((records) => {
@@ -107,8 +107,8 @@ export default {
     alive = false;
     stopWatching?.();
     stopWatching = null;
-    if (timer !== null) timers.clearTimeout(timer);
-    timer = null;
+    settle?.cancel();
+    settle = null;
     for (const node of page?.querySelectorAll(`.${MARK}`) || []) node.remove();
     page = null;
   },

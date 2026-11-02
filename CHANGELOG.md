@@ -9,6 +9,83 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.6 — 2026-11-02
+
+### Added
+
+- A preview of your torn-tracker.com dashboard inside Torn, at
+  `index.php#/torn-tracker/dashboard`: your bars, money, gym, goals, achievements, guide,
+  education, chain, war and organized crime, with charts of your money and battle stats.
+  It is off until you tick **Dashboard (preview)** under General, and it asks
+  torn-tracker.com once each time you open it.
+- Trade value can price a trade at a buy list on torn-tracker.com: your own (the other
+  side's items, what you buy) or a trader's public list (your own items, what you sell).
+  Choose it under **Trade value** in the settings. An item the list doesn't buy shows as
+  "not on the list", never $0, and the receipt links to the list.
+
+### Changed
+
+- Add to list: each list in the menu has an **Open** link to that list's own page on
+  torn-tracker.com, instead of only the general lists page.
+- The lists menu under **Add to list** looks like the settings panel, in light and dark:
+  one row per list with a tick box, 44 px tall on a phone, faction lists tagged **Faction**,
+  and **Manage lists** as a button at the bottom. Unticking a list takes the player off it.
+
+### Fixed
+
+- On a profile, a loadout the player asked to hide now shows "Loadout hidden at the
+  player's request" instead of no card at all.
+- A player nobody has reported a loadout for isn't asked about on every visit to their
+  profile; the companion asks again after 30 minutes.
+- A shared observation whose kind isn't text is refused with a message instead of stopping
+  the upload check.
+- Every feature that waits for the page to settle (badges, helpers, templates, the war
+  page, the shop and market helpers, bazaar sharing) now looks at the page within a second
+  or two even while something else on it keeps changing (a clock, a chat, another script).
+  Before, they waited for the page to go quiet, and on a busy page they never showed or
+  shared anything.
+
+## 0.9.5 — 2026-11-02
+
+### Fixed
+
+- Our buttons on a player's profile (Add to list, Messages, Add note) sit together in one
+  row below the name, drawn like Torn's own buttons in light and dark, and 44 px tall on a
+  phone. They were scattered around the title and lost their look to Torn's title styles.
+- Message templates never filled in `{level}` on a player's profile. Torn shows the level in
+  the Level box beside the picture, not in the Basic Information table; it is read from
+  there now.
+- The sidebar block's quick links (Dashboard, Chains, Travel planner) never showed. The site
+  writes its links on www.torn-tracker.com, and since 0.9.2 the script only accepted the
+  bare host. Links on either spelling of the host are kept again, in the sidebar, the
+  guide, the achievements page link, the trust link and applicant cards. The guide's answer
+  is kept for its 15 minutes again instead of being asked for on every check.
+- 0.9.4 showed no sidebar block and read nothing when The Contract was installed too. 0.9.4
+  took our marker off The Contract's copy of the Torn Tracker entry, The Contract put it
+  back, and the two kept at it; the script waited for the page to go quiet before placing
+  the block, and it never did. The script no longer changes another script's copy (our mark
+  on it stays hidden), and a page that keeps changing is looked at within a second anyway.
+- The same wait could keep bust safety, gym progress and auction capture from ever reading
+  their page, and so from sending anything, on a page with a ticking clock or a busy chat.
+  They now read it within a few seconds however busy the page is.
+
+## 0.9.4 — 2026-11-01
+
+### Fixed
+
+- The Contract's link in Torn's Areas list still showed the Torn Tracker "TT" icon. It
+  copies the Torn Tracker entry, and that entry no longer had Torn's icon to copy. The
+  entry now keeps Torn's icon (hidden only on the Torn Tracker entry itself), and the
+  "TT" mark shows only on the real entry, so a copy looks like Torn's own link.
+- On profile pages the script asked torn-tracker.com for the mug badge over and over while
+  the site didn't have that read yet. A read the site can't answer now rests: 10 minutes
+  when the site doesn't have it, as long as the site asks after "too many requests", and
+  a minute after any other failure.
+- Item market prices could go unshared on a busy market page: the script waited for the
+  page to stop changing, and with other scripts redrawing it that never happened. It now
+  looks within a second of the first change. With debug on it also says when nothing is
+  shared because the kind is off under Sharing, the tab is hidden, or there's no script key.
+
 ## 0.9.3 — 2026-11-01
 
 ### Fixed

@@ -56,6 +56,12 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
     assert.deepEqual(await rulesFor("const home = 'https://example.com/';"), ['hosts-allowlist']);
   });
 
+  test('the SVG namespace is a name, not a host; asking it for anything still fails (hq #465)', async () => {
+    assert.deepEqual(await rulesFor("const NS = 'http://www.w3.org/2000/svg';"), []);
+    assert.deepEqual(await rulesFor("const other = 'http://www.w3.org/1999/xhtml';"), ['hosts-allowlist']);
+    assert.deepEqual(await rulesFor("fetch('http://www.w3.org/2000/svg');"), ['hosts-allowlist']);
+  });
+
   test('a synthetic click', async () => {
     assert.deepEqual(await rulesFor("document.querySelector('#go').click();"), ['no-synthetic-clicks']);
     assert.deepEqual(

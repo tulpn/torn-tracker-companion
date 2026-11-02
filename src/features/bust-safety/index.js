@@ -13,7 +13,7 @@
 // rows, levels and times are) and Bustr+ (MIT, greasyfork 586532).
 
 import { createGate, isVisible } from '../../core/capture.js';
-import { el } from '../../core/dom.js';
+import { el, settler } from '../../core/dom.js';
 import { badge, setTone } from '../../core/ui.js';
 
 const MARK = 'ttc-bust';
@@ -113,12 +113,13 @@ export default {
     }
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    // A page that never goes quiet (a clock, a chat, another script) still gets read (hq #466).
+    s.settle = settler(look, SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(look, SETTLE_MS);
+      s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(look, SETTLE_MS);
+    s.settle.poke();
   },
 
   stop() {
@@ -126,7 +127,7 @@ export default {
     state = null;
     if (!s) return;
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };

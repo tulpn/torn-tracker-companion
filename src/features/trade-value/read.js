@@ -56,16 +56,28 @@ export function priceOffer(offer, prices) {
 
 const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 
+const MARKET = Object.freeze({ basis: 'torn-tracker.com market value', missing: 'no price', missingCount: 'without a price', link: '' });
+
+/**
+ * What a buy list prices against (CMP-309): its name in the receipt and the words for an
+ * item it doesn't buy, which is "not on the list", never $0 (AC2).
+ * @param {{trader: {name: string}, pageUrl: string}} list
+ */
+export function listBasis(list) {
+  return { basis: `${list.trader.name}'s buy list`, missing: 'not on the list', missingCount: 'not on the list', link: list.pageUrl };
+}
+
 /** The text the Copy button puts on the clipboard. */
-export function receipt(priced, trader) {
-  const out = [`Trade${trader ? ` with ${trader}` : ''}, at torn-tracker.com market value`];
+export function receipt(priced, trader, basis = MARKET) {
+  const out = [`Trade${trader ? ` with ${trader}` : ''}, at ${basis.basis}`];
   for (const line of priced.lines) {
     out.push(line.value === null
-      ? `${line.quantity} x ${line.name}: no price`
+      ? `${line.quantity} x ${line.name}: ${basis.missing}`
       : `${line.quantity} x ${line.name} @ ${money(line.each)} = ${money(line.value)}`);
   }
   if (priced.cash > 0) out.push(`Money: ${money(priced.cash)}`);
-  out.push(`Total: ${money(priced.total)}${priced.unpriced ? ` (${priced.unpriced} without a price)` : ''}`);
+  out.push(`Total: ${money(priced.total)}${priced.unpriced ? ` (${priced.unpriced} ${basis.missingCount})` : ''}`);
+  if (basis.link) out.push(basis.link);
   return out.join('\n');
 }
 

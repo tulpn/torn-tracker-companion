@@ -86,22 +86,63 @@ describe('hq #313 the profile features on the captured profile', () => {
     untouched(r);
   });
 
-  test('CMP-308 the note toggle sits beside the heading', async () => {
+  test('CMP-308 the note toggle sits in our row of buttons below the title row (hq #467)', async () => {
     const r = run(playerNotes);
     await wait();
     const toggle = r.doc.querySelector('.ttc-notes-toggle');
     assert.ok(toggle);
-    assert.equal(toggle.parentElement, r.doc.querySelector('.content-title'));
+    const row = toggle.parentElement;
+    assert.ok(row.matches('.ttc-profile-actions'));
+    assert.equal(row.parentElement, r.doc.querySelector('.content-title'));
+    assert.ok(row.nextElementSibling.matches('hr.page-head-delimiter'), "above Torn's rule, below its title row");
     untouched(r);
   });
 
-  test('CMP-110 the list button sits beside the heading and reads once', async () => {
+  test('CMP-110 the list button sits in our row of buttons and reads once (hq #467)', async () => {
     const r = run(addToList);
     await wait();
     assert.equal(r.doc.querySelectorAll('.ttc-lists-main').length, 1);
-    assert.equal(r.doc.querySelector('h4#skip-to-content').nextElementSibling.classList.contains('ttc-lists'), true);
+    assert.ok(r.doc.querySelector('.content-title > .ttc-profile-actions > .ttc-lists'));
+    assert.equal(r.doc.querySelector('h4#skip-to-content').nextElementSibling.className.includes('ttc-'), false,
+      'nothing of ours beside the heading but badges');
     assert.equal(r.doc.querySelector('.ttc-lists-main').textContent, 'Add to Chain targets');
     assert.deepEqual(site.calls, [['lists', 4]]);
     untouched(r);
+  });
+});
+
+// A player's profile (hq #313): the owner's capture of an ordinary player's page, name,
+// id, faction and numbers made up. Torn shows the level in the Level box beside the
+// picture, one digit per cell, not as a row of the basic information table.
+describe('hq #313 the profile features on a captured player\'s profile', () => {
+  const PLAYER = 'https://www.torn.com/profiles.php?XID=2000002';
+  const runPlayer = (feature) => {
+    site.calls = [];
+    const r = runFeature(feature, { html: page('profile-player.html'), url: PLAYER, now: () => NOW, site });
+    running.push(r);
+    return r;
+  };
+  const rows = (r) => r.doc.querySelectorAll('.basic-information .info-table > li').length;
+
+  test('readProfile reads the name, the faction and the level from the Level box', () => {
+    const r = runPlayer(playerNotes);
+    assert.deepEqual(readProfile(r.doc, 2000002), { name: 'Example', id: '2000002', faction: 'Example Faction', level: '27' });
+  });
+
+  test('readProfile gives no name when the address names another player', () => {
+    const r = runPlayer(playerNotes);
+    assert.equal(readProfile(r.doc, 2000003).name, null);
+  });
+
+  test('the mug line, the loadout card, the note toggle and the list button each go in once', async () => {
+    for (const feature of [mugStrip, loadoutView, playerNotes, addToList]) {
+      const r = runPlayer(feature);
+      await wait();
+      assert.equal(r.doc.querySelectorAll('.ttc-mugs, .ttc-loadout, .ttc-notes-toggle, .ttc-lists-main').length, 1, feature.id);
+      assert.ok(r.doc.querySelector('.content-title h4#skip-to-content'));
+      assert.equal(rows(r), 12);
+      assert.deepEqual(r.violations, []);
+      r.stop();
+    }
   });
 });
