@@ -4,7 +4,7 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import feature, { findSpots, idFromHref } from '../../src/features/ff-badges/index.js';
-import { UNKNOWN_COLOUR, colourFor, describe as look, textColourFor } from '../../src/features/ff-badges/view.js';
+import { NO_ESTIMATE, UNKNOWN_COLOUR, colourFor, describe as look, textColourFor } from '../../src/features/ff-badges/view.js';
 import { page, runFeature } from '../feature-harness.js';
 
 const WAR = 'https://www.torn.com/factions.php?step=your#/war/rank';
@@ -40,7 +40,7 @@ describe('CMP-101 a badge beside each player, from one batched lookup', () => {
     const r = run({ html: page('faction-war.html'), url: WAR, site });
     await wait();
     assert.deepEqual(site.lookups, [[101, 102, 201]]);
-    assert.deepEqual(badges(r).map((b) => [b.dataset.player, b.textContent]), [['101', '3.20'], ['102', '1.10'], ['201', '?']]);
+    assert.deepEqual(badges(r).map((b) => [b.dataset.player, b.textContent]), [['101', '3.20'], ['102', '1.10'], ['201', '–']]);
     assert.deepEqual(r.violations, []);
   });
 
@@ -52,11 +52,11 @@ describe('CMP-101 a badge beside each player, from one batched lookup', () => {
     assert.equal(link.textContent, 'Enemy One');
   });
 
-  test('an unknown player shows "?" on grey, never a guess', async () => {
+  test('an unknown player shows a dash on grey, never a guess (hq #492)', async () => {
     const r = run({ html: page('faction-war.html'), url: WAR, site: fakeSite() });
     await wait();
     const unknown = badges(r)[0];
-    assert.equal(unknown.textContent, '?');
+    assert.equal(unknown.textContent, NO_ESTIMATE);
     assert.match(unknown.title, /no estimate/);
   });
 
@@ -133,6 +133,28 @@ describe('CMP-101 colours as FF Scouter, so players read them the way they alrea
   test('two decimals, with the band in the tooltip', () => {
     assert.deepEqual(look({ ff: 2.345, band: '1m–5m' }).text, '2.35');
     assert.match(look({ ff: 2.345, band: '1m–5m' }).title, /stats about 1m–5m/);
+  });
+
+  test("hq #492: FFScouter's estimate is credited to them on hover, with its age", () => {
+    const now = Date.UTC(2026, 10, 2, 12);
+    const scouter = look({ ff: 2.5, band: null, source: 'ffscouter', estimatedAt: now - 3 * 86_400_000 }, now);
+    assert.equal(scouter.text, '2.50');
+    assert.match(scouter.title, /estimate by FFScouter, ffscouter\.com, via torn-tracker\.com, estimated 3 days ago/);
+    const own = look({ ff: 2.5, band: null, source: 'index', estimatedAt: now - 1000 }, now);
+    assert.match(own.title, /\(torn-tracker\.com, estimated today\)/);
+    assert.doesNotMatch(own.title, /FFScouter/);
+    assert.match(look({ ff: 2.5, band: null, source: 'ffscouter', estimatedAt: now - 86_400_000 }, now).title, /1 day ago/);
+    assert.match(look({ ff: 2.5, band: null }).title, /\(torn-tracker\.com\)$/, 'a kept answer with no source or age');
+  });
+
+  test('hq #492: no figure and no band is a dash; a band alone is "?" with the band', () => {
+    const none = look({ ff: null, band: null, source: null, estimatedAt: null });
+    assert.deepEqual([none.text, none.background], [NO_ESTIMATE, UNKNOWN_COLOUR]);
+    assert.equal(look(undefined).text, NO_ESTIMATE);
+    const floor = look({ ff: null, band: '>1b', source: 'index', estimatedAt: null });
+    assert.equal(floor.text, '?');
+    assert.match(floor.title, /no exact figure, stats about >1b/);
+    assert.notEqual(none.text, floor.text, 'unknown and band-only look different');
   });
 });
 
