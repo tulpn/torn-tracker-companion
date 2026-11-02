@@ -23,6 +23,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Changed
 
+- Add to list: each list in the menu has an **Open** link to that list's own page on
+  torn-tracker.com, instead of only the general lists page.
 - The lists menu under **Add to list** looks like the settings panel, in light and dark:
   one row per list with a tick box, 44 px tall on a phone, faction lists tagged **Faction**,
   and **Manage lists** as a button at the bottom. Unticking a list takes the player off it.

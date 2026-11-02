@@ -11,6 +11,7 @@ import feature, { KEYS_HREF, SAY } from '../../src/features/add-to-list/index.js
 import { createCache } from '../../src/core/cache.js';
 import { LISTS_URL, SPACES, createSite } from '../../src/core/site.js';
 import { page, runFeature } from '../feature-harness.js';
+import { SITE } from '../../src/hosts.js';
 import { ROOT } from '../helpers.js';
 
 const REPLIES = JSON.parse(fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'site', 'lists.json'), 'utf8'));
@@ -80,6 +81,16 @@ describe('CMP-110 end to end: the backend\'s replies to what the player sees', (
       { url: `${LISTS_URL}/${CHAIN}/entries`, method: 'POST' },
     ]);
     assert.equal(noteText(r), 'Added to Chain targets. On 2 lists.');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('hq #486: the menu links each list to the page the site named for it', async () => {
+    const r = profile('added');
+    await wait();
+    press(r.doc.querySelector('.ttc-lists-arrow'));
+    await wait(50);
+    assert.deepEqual([...r.doc.querySelectorAll('.ttc-lists-open')].map((a) => a.getAttribute('href')),
+      REPLIES.read.data.lists.map((l) => `${SITE}${l.path}`));
     assert.deepEqual(r.violations, []);
   });
 

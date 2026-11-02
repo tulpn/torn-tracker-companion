@@ -3,8 +3,8 @@
 // On a player's profile, beside the heading, a split button. The main part adds the
 // player to the list you last added to ("Add to Chain targets"); the arrow opens a menu of
 // your lists, and the faction lists you may edit, each ticked when the player is on it. A
-// click on a list adds them, or takes them off a ticked one. "Manage lists" opens the
-// lists on torn-tracker.com.
+// click on a list adds them, or takes them off a ticked one; "Open" beside it opens that
+// list on torn-tracker.com, and "Manage lists" opens all of them.
 //
 // One click is one call to torn-tracker.com and never a game action. Nothing is read from
 // the profile but its id. The menu is read once per profile view and kept 5 minutes; a
@@ -81,8 +81,9 @@ export default {
 
     /**
      * The menu under the button, in the settings panel's look (hq #487): one row per list
-     * with a tick box, ticked when the player is on it; unticking takes them off. "Manage
-     * lists" is the primary button to the site's lists.
+     * with a tick box, ticked when the player is on it; unticking takes them off. Beside
+     * each, "Open" goes to that list's page on the site (hq #486). "Manage lists" is the
+     * primary button to the site's lists.
      */
     function menuNode(id) {
       const rows = s.menu.lists.map((list) => {
@@ -97,7 +98,12 @@ export default {
           stop(event);
           change(id, list, list.contains ? 'remove' : 'add');
         });
-        return row;
+        // hq #486: the list's own page, as the site names it; no path, no link.
+        const open = list.path ? el('a', {
+          href: `${SITE}${list.path}`, target: '_blank', rel: 'noopener noreferrer', class: `${MARK}-open`, ownerDocument: doc,
+          title: `Open ${list.name} on torn-tracker.com`, 'aria-label': `Open ${list.name} on torn-tracker.com`,
+        }, 'Open') : null;
+        return el('div', { class: `${MARK}-row`, ownerDocument: doc }, row, open);
       });
       const manage = el('a', { href: MANAGE_URL, target: '_blank', rel: 'noopener noreferrer', class: `${MARK}-manage`, ownerDocument: doc }, 'Manage lists');
       return el('div', { class: `${MARK}-menu`, role: 'group', 'aria-label': 'Your lists', ownerDocument: doc },
