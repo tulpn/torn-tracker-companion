@@ -57,7 +57,9 @@
     {
       "method": "GET",
       "path": "/api/feeds/me/achievements",
-      "query": [],
+      "query": [
+        "since"
+      ],
       "auth": "script_key"
     },
     {
