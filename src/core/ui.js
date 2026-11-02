@@ -56,16 +56,15 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   a.${P}-ui-badge:hover { filter: brightness(.95); text-decoration: underline; }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
   /* Compact (hq issue 522): one short line in a row whose height Torn fixes. The class twice
-     outweighs Torn's own span and button rules in that row. Its detail is in its title, and
-     opens below it on a tap. */
+     outweighs Torn's own span and button rules in that row. A badge with a data-detail shows
+     it below itself while data-open is true (a tap, set by the feature). */
   ${COMPACT} {
     flex: none; position: relative; box-sizing: border-box; width: auto; min-width: 0; height: 16px; min-height: 0;
     margin: 0 0 0 4px; padding: 0 6px; border: 0; box-shadow: none; text-shadow: none; text-transform: none;
     font: 600 12px/16px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; vertical-align: middle;
   }
-  button${COMPACT} { cursor: help; }
-  button${COMPACT}:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-  ${COMPACT}[aria-expanded="true"]::after {
+  ${COMPACT}[data-detail] { cursor: help; }
+  ${COMPACT}[data-open="true"]::after {
     content: attr(data-detail); position: absolute; top: calc(100% + 4px); left: 0; z-index: 10;
     width: max-content; max-width: 220px; padding: 6px 8px; white-space: normal; text-align: left;
     font: 400 12px/1.4 var(--tt-font-sans); border: 1px solid var(--border); border-radius: var(--radius);
