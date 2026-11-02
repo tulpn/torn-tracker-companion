@@ -19,6 +19,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   bare host. Links on either spelling of the host are kept again, in the sidebar, the
   guide, the achievements page link, the trust link and applicant cards. The guide's answer
   is kept for its 15 minutes again instead of being asked for on every check.
+- 0.9.4 showed no sidebar block and read nothing when The Contract was installed too. 0.9.4
+  took our marker off The Contract's copy of the Torn Tracker entry, The Contract put it
+  back, and the two kept at it; the script waited for the page to go quiet before placing
+  the block, and it never did. The script no longer changes another script's copy (our mark
+  on it stays hidden), and a page that keeps changing is looked at within a second anyway.
+- The same wait could keep bust safety, gym progress and auction capture from ever reading
+  their page, and so from sending anything, on a page with a ticking clock or a busy chat.
+  They now read it within a few seconds however busy the page is.
 
 ## 0.9.4 — 2026-11-01
 

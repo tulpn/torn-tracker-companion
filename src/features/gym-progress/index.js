@@ -16,6 +16,7 @@
 import { readInitial, readProgress, readTrain } from './read.js';
 import { gymStep } from './selectors.js';
 import { badge } from '../../core/ui.js';
+import { settler } from '../../core/dom.js';
 
 const MARK = 'ttc-gym';
 const SETTLE_MS = 500;
@@ -107,12 +108,13 @@ export default {
     }, ctx.win);
 
     const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    // A page that never goes quiet (a clock, a chat, another script) still gets read (hq #466).
+    s.settle = settler(look, SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
       if (records.every(ours)) return;
-      win.clearTimeout(s.timer);
-      s.timer = win.setTimeout(look, SETTLE_MS);
+      s.settle.poke();
     }, doc);
-    s.timer = win.setTimeout(look, SETTLE_MS);
+    s.settle.poke();
     refreshEstimate().catch((err) => ctx.log('gym estimate', err));
   },
 
@@ -122,7 +124,7 @@ export default {
     if (!s) return;
     s.unsubscribe?.();
     s.stopWatching?.();
-    s.win.clearTimeout(s.timer);
+    s.settle?.cancel();
     for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
   },
 };
