@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in the companion doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The debug log is the most useful thing you can send: it shows what the script did on the page.
+        Open the settings, go to **General**, tick **Log what the script does to the browser console** under Troubleshooting and press **Save**. Open the console (F12, then **Console**), reload the page and do what went wrong again.
+        Never paste an API key or a script key here. The log never contains one.
+  - type: textarea
+    id: debug
+    attributes:
+      label: The debug log
+      description: The lines starting [torn-tracker-companion]. Take out anything you don't want public, like player names.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: The Torn page
+      description: The address without anything personal, for example page.php?sid=ItemMarket
+  - type: input
+    id: version
+    attributes:
+      label: The companion's version
+      description: Shown under General in the settings.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it runs
+      options:
+        - Browser with Tampermonkey
+        - Browser with Violentmonkey
+        - Browser with another script manager
+        - Torn PDA
+    validations:
+      required: true
+  - type: textarea
+    id: others
+    attributes:
+      label: Other Torn scripts you have on
+      description: Some scripts change the page the companion reads.
