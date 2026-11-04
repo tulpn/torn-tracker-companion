@@ -269,9 +269,14 @@ describe('LDT-032 loadout flags of opponents on the war page (Pro)', () => {
     const site = fakeSite({ loadouts: pro });
     const r = run({ site });
     await wait();
-    assert.equal(label(r, 101).textContent, 'Heavy \u00b7 Temp \u00b7 3h');
+    // One short word in the one-line member cell; the rest on hover and on a tap (hq #557).
+    assert.equal(label(r, 101).textContent, 'Heavy +1');
+    assert.ok(label(r, 101).classList.contains('ttc-ui-compact'));
     assert.match(label(r, 101).title, /Rifle: damage 76\.9/);
-    assert.match(label(r, 101).title, /by 2 players/);
+    assert.match(label(r, 101).dataset.detail, /^Rifle: damage 76\.9\. Temp\. Seen 3h ago by 2 players/);
+    assert.equal(label(r, 101).dataset.open, 'false');
+    label(r, 101).dispatchEvent(new r.doc.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    assert.equal(label(r, 101).dataset.open, 'true');
     assert.equal(label(r, 102).textContent, '20d');
     assert.equal(label(r, 102).dataset.old, 'true');
     assert.equal(label(r, 103).textContent, 'hidden');
@@ -347,6 +352,8 @@ describe('hq #535 the captured war page, with Torn War Stuff Enhanced and FF Sco
     assert.match(body, /white-space: nowrap/);
     assert.match(body, /flex: none/);
     assert.match(body, /height: 20px/);
+    // On a touch screen it gets a finger's room, still on one line (hq #557 A4).
+    assert.match(css, /@media \(pointer: coarse\) \{[^@]*\.ttc-ui-small\.ttc-ui-small \{ min-height: 0; height: 32px; min-width: 44px;/);
   });
 });
 

@@ -189,8 +189,10 @@ describe('hq #521 the fill button is small, inline and in our tokens', () => {
     assert.match(rule, /background: color-mix\(in srgb, var\(--primary\)/, 'our accent, not black');
     // Torn's cell rule sets display: block with a long selector, so ours is important,
     // and the field shrinks to make room (a capture of the live bazaar, 2026-11-02).
-    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) \{ display: flex !important; flex-wrap: nowrap;/);
-    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) > :not\(\.ttc-ui-inline\.ttc-ui-inline\) \{ flex: 1 1 auto; min-width: 0; \}/);
+    // Our own block in the cell (the undersell warning) wraps to a full line below (hq #557).
+    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) \{ display: flex !important; flex-wrap: wrap;/);
+    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) > :not\(\.ttc-ui-inline\.ttc-ui-inline, \.ttc-ui-block\) \{ flex: 1 1 0; min-width: 0; \}/);
+    assert.match(css, /:has\(> \.ttc-ui-inline\.ttc-ui-inline\) > \.ttc-ui-block \{ flex: 0 0 100%; order: 1;/);
   });
 
   test('the market sell form gets the same button', async () => {

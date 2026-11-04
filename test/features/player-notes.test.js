@@ -106,6 +106,12 @@ describe('CMP-308 on the pages the player opened', () => {
     assert.equal(badges.length, 1);
     assert.equal(badges[0].dataset.player, '101');
     assert.equal(badges[0].previousElementSibling.getAttribute('href'), '/profiles.php?XID=101');
+    // Torn keeps the row one line high: the tag only, the note on a tap (hq #557).
+    assert.ok(badges[0].classList.contains('ttc-ui-compact'));
+    assert.equal(badges[0].textContent, 'Enemy');
+    assert.equal(badges[0].dataset.detail, NOTE.text);
+    badges[0].dispatchEvent(new r.doc.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    assert.equal(badges[0].dataset.open, 'true');
     assert.equal(r.doc.querySelector('.ttc-notes-toggle'), null, 'notes are written on the profile');
   });
 

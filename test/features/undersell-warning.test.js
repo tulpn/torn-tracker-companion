@@ -105,7 +105,12 @@ describe('CMP-109 AC2 the warning while the player types', () => {
     fill.className = 'ttc-fill';
     group.after(fill);
     type(r, row.querySelector('div.price input'), '900');
-    assert.equal(fill.nextElementSibling?.className.includes('ttc-undersell'), true);
+    const warning = fill.nextElementSibling;
+    assert.equal(warning?.className.includes('ttc-undersell'), true);
+    // A block in the field's row: the shared CSS gives it a full line below the field and
+    // the button, so it never squeezes the field (hq #557 A1).
+    assert.ok(warning.classList.contains('ttc-ui-block'));
+    assert.equal(warning.parentElement, group.parentElement);
   });
 
   test('stopping the feature takes its warnings away and stops listening', async () => {

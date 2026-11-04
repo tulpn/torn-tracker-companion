@@ -32,8 +32,9 @@ Wherever that player shows up on a page you open:
 - in faction member lists and on the ranked-war page, beside their name;
 - on the attack page, beside the heading.
 
-The badge shows the tag and the start of the note. Hover over it, or hold it on a phone,
-for the whole note. Players without a note get nothing.
+Beside a heading, the badge shows the tag and the start of the note; hover over it, or hold
+it on a phone, for the whole note. In member lists and on the war page, where Torn keeps
+each row one line high, it shows only the tag: hover over it, or tap it, for the note. Players without a note get nothing.
 
 ## Keep a copy, or move them to another device
 

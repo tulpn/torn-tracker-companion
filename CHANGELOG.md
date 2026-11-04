@@ -9,6 +9,17 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The undersell warning sits on its own line under the price field and the Fill button,
+  instead of squeezing the field (hq #557).
+- No fair-fight badge on rows where FF Scouter's script already shows its estimate
+  (hq #557).
+- The war page's loadout label and the player-note badges in member lists are short, one
+  line in Torn's row: **Heavy +1**, or the note's tag. Hover or tap for the rest (hq #557).
+- The Dibs button is a finger's size on touch screens: 32 px high, at least 44 px wide
+  (hq #557).
+
 ## 0.9.10 — 2026-11-04
 
 ### Changed

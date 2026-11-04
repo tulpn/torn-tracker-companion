@@ -7,6 +7,9 @@
 /** Member rows on faction profiles, faction member lists and the ranked-war page. */
 export const ROWS = ".table-body > .table-row, li.enemy, li.your";
 
+/** FF Scouter's own marks on a row: where it shows its estimate, ours would only repeat it. */
+export const OTHER_SCRIPT = '.ffscouter-cell, .ffscouter-gauge';
+
 /** The member's profile link inside a row. */
 export const ROW_LINK = ".member a[href*='profiles.php'], a[href*='profiles.php?XID=']";
 

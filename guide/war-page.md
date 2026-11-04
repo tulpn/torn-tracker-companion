@@ -56,14 +56,16 @@ seconds while the page is on screen.
 
 ## Opponents' loadouts (Pro)
 
-For a Pro faction, each opponent shows the danger flags of their latest loadout and how
-long ago it was seen, for example **Heavy · Temp · 3h**:
+For a Pro faction, each opponent shows a short label for the danger flags of their latest
+loadout: the strongest flag and how many more, for example **Heavy +1**, or only how long
+ago it was seen, for example **3h**, when it has no flags. The flags are:
 
 - **Heavy:** a weapon whose damage is in the top quarter of seen weapons of its kind;
 - **Armour:** at least four armour pieces;
 - **Temp:** a temporary item equipped.
 
-Hover a label for the reason and how many players saw it. A loadout older than 14 days is
+Hover a label, or tap it, for every flag with its reason, when it was seen and how many
+players saw it. A loadout older than 14 days is
 dimmed; **hidden** means the player asked for theirs to be hidden. A Core faction sees a
 one-line note instead. Switch it off in the settings, under **Features**.
 
