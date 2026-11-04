@@ -9,6 +9,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- Sidebar block: **War** opens your faction's ranked war and **OC** your faction's crimes,
+  in the same tab. The war's end, the OC's ready time, the chain's timeout and your dibs
+  count down every second, and say **ending**, **ready**, **timed out** or **expired** at
+  zero until the next read.
+
 ### Fixed
 
 - War page: one timer per opponent. Where another script (Torn War Stuff Enhanced) already
