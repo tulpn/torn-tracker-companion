@@ -4,7 +4,7 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import feature from '../../src/features/gym-progress/index.js';
-import { readInitial, readProgress, readTrain, statValue } from '../../src/features/gym-progress/read.js';
+import { answerShape, readInitial, readProgress, readTrain, statValue, whyNoProgress } from '../../src/features/gym-progress/read.js';
 import { gymStep } from '../../src/features/gym-progress/selectors.js';
 import { checkObservation } from '../../src/core/kinds.js';
 import { runFeature } from '../feature-harness.js';
@@ -107,6 +107,61 @@ describe('CMP-206 sharing, own view only', () => {
     const none = r.logs.filter((line) => line.startsWith('gym_progress: nothing captured'));
     assert.equal(none.length, 1);
     assert.equal(r.shared.filter((o) => o.kind === 'gym_progress').length, 0);
+  });
+});
+
+describe('hq #576 the debug log says why nothing was captured', () => {
+  const doc = (html) => {
+    const r = run({ settings: { enabled: false }, html });
+    return r.doc;
+  };
+
+  test('no gym buttons, buttons with none in progress, and an unreadable gym in progress are told apart', () => {
+    assert.match(whyNoProgress(doc('<div id="gymroot"></div>')), /^no gym buttons found on the page; the markup differs/);
+    assert.match(
+      whyNoProgress(doc('<button class="gymButton___d4 active___e5"><span class="gym-1"></span></button><button class="gymButton___d4"><span class="gym-2"></span></button>')),
+      /^2 gyms on the page, none in progress \(every gym unlocked/,
+    );
+    assert.match(
+      whyNoProgress(doc('<button class="gymButton___d4 inProgress___g7"><span class="percentage___h8">62%</span></button>')),
+      /^a gym in progress is on the page, but its gym id or percentage did not read/,
+    );
+  });
+
+  test('the page log names the reason', async () => {
+    const r = run({ site: fakeSite(), html: '<button class="gymButton___d4"><span class="gym-1"></span></button>' });
+    await wait();
+    assert.deepEqual(r.logs.filter((l) => l.startsWith('gym_progress:')), [
+      'gym_progress: nothing captured (1 gyms on the page, none in progress (every gym unlocked, or the markup differs))',
+    ]);
+  });
+
+  test('a train answer’s field names, never its values, once per page', async () => {
+    assert.equal(answerShape({ success: true, stat: { name: 'strength', newValue: '1' }, message: 'x', list: [1] }), 'list, message, stat{name,newValue}, success');
+    assert.equal(answerShape(null), '');
+    assert.equal(answerShape([1, 2]), '');
+    const r = run({ site: fakeSite() });
+    r.respond(TRAIN, { success: true, energyUsed: 150, stat: { name: 'speed', newValue: '800' } });
+    r.respond(TRAIN, { success: true, energyUsed: 150, stat: { name: 'speed', newValue: '810' } });
+    const shape = r.logs.filter((l) => l.startsWith('gym_train: answer fields'));
+    assert.deepEqual(shape, ['gym_train: answer fields: energyUsed, stat{name,newValue}, success']);
+    assert.ok(!r.logs.some((l) => l.includes('800') || l.includes('150')));
+  });
+
+  test('a train that is not shared says why', async () => {
+    const r = run({ site: fakeSite() });
+    r.respond(TRAIN, { success: true, stat: { name: 'speed', newValue: '800' } });
+    r.respond(TRAIN, { success: false });
+    assert.deepEqual(r.logs.filter((l) => l.startsWith('gym_train: not shared')), [
+      "gym_train: not shared (no speed value from before this train; the page's gym info was not seen)",
+      'gym_train: not shared (the answer was not a successful train)',
+    ]);
+  });
+
+  test('the page info read is logged with the stat count and the active gym', async () => {
+    const r = run({ site: fakeSite() });
+    r.respond(INITIAL, INITIAL_ANSWER);
+    assert.ok(r.logs.includes('gym: page info read (4 stats, active gym 1)'));
   });
 });
 

@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- Gym progress: with debug on, the log says why nothing was captured (no gym buttons found,
+  none in progress, or a gym in progress that didn't read) and why a train wasn't shared,
+  and names the fields of the gym's train answer (names only, never values) (hq #576).
+
 ## 0.9.11 — 2026-11-04
 
 ### Changed
