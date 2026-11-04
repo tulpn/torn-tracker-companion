@@ -27,9 +27,12 @@ settings, under **Features**.
 ## Timers and destinations
 
 Beside each opponent's status, a countdown shows when they leave hospital or jail, and
-travellers show where they're flying (`→ Mexico`, `← Japan`). These come from your
-faction's war room on torn-tracker.com. The script never asks Torn about the other
-faction.
+travellers show where they're flying (`→ Mexico`, `← Japan`). A wait of an hour or more
+shows its hours, like `2:11:34`. These come from your faction's war room on
+torn-tracker.com. The script never asks Torn about the other faction.
+
+If another script, such as Torn War Stuff Enhanced, already shows the time or the
+destination in a status cell, the companion adds nothing there, so each row has one timer.
 
 ## Before the war: the brief strip
 

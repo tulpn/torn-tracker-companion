@@ -24,7 +24,7 @@
 
 import { el, settler } from '../../core/dom.js';
 import { badge, bar as uiBar, button as uiButton, setTone } from '../../core/ui.js';
-import { ENEMY_ROW, LISTS, MEMBER, STATUS } from './selectors.js';
+import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
 const MARK = 'ttc-war';
@@ -46,10 +46,13 @@ export function ago(ms) {
   return `${Math.floor(m / 1440)}d`;
 }
 
-/** '4:05' for a countdown; '0:00' once it has run out. */
+/** '4:05' for a countdown, '2:11:34' from an hour up; '0:00' once it has run out. */
 export function clock(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const pad = (n) => String(n).padStart(2, '0');
+  const h = Math.floor(s / 3600);
+  if (h > 0) return `${h}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`;
 }
 
 /**
@@ -231,7 +234,7 @@ export default {
           const cell = row.querySelector(MEMBER);
           if (!id || !cell || cell.querySelector(`.${MARK}-dibs`)) continue;
           const button = uiButton(doc, {
-            cls: `${MARK}-dibs`, attrs: { [`data-${MARK}`]: '', 'data-player': String(id), 'data-tour': 'war-dibs' },
+            cls: `${MARK}-dibs`, small: true, attrs: { [`data-${MARK}`]: '', 'data-player': String(id), 'data-tour': 'war-dibs' },
           });
           button.addEventListener('click', (event) => {
             event.preventDefault();
@@ -305,7 +308,8 @@ export default {
         if (!cell) continue;
         const text = statusText(s.roster.get(playerOf(row)), now());
         let label = cell.querySelector(`.${MARK}-time`);
-        if (!text) {
+        // Another script already shows the time here: one timer per row, never two.
+        if (!text || cell.matches(STATUS_TAKEN)) {
           label?.remove();
           continue;
         }

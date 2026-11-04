@@ -20,3 +20,9 @@ export const LEVEL = '.level';
 
 /** Torn marks the status cell with a class per state; "Okay" is the text otherwise. */
 export const STATUS = '.status';
+
+/**
+ * A status cell another script already draws its own countdown or destination in (Torn
+ * War Stuff Enhanced marks it so and hides Torn's text). Our timer stays out of it (hq #535).
+ */
+export const STATUS_TAKEN = '[data-twse-overridden="true"]';
