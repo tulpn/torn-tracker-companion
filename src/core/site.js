@@ -786,10 +786,12 @@ const DASHBOARD_READERS = {
   // The sidebar's war item, plus whether it runs yet, its start and end, and the member's dibs.
   war(v, skew) {
     const base = SIDEBAR_READERS.war(v, skew);
-    if (!base || !['scheduled', 'running'].includes(v.state)) return null;
+    // tc-targets #582 renames the pre-war state from `scheduled` to `matched`, as the
+    // sidebar names it (CAPI-039); both read as one state until every site sends the new name.
+    if (!base || !['scheduled', 'matched', 'running'].includes(v.state)) return null;
     const dibs = v.dibs == null ? null : SIDEBAR_READERS.dibs(v.dibs, skew);
     return {
-      ...base, state: v.state,
+      ...base, state: v.state === 'running' ? 'running' : 'scheduled',
       startsAt: v.starts_at == null ? null : time(v.starts_at, skew),
       endsAt: v.ends_at == null ? null : time(v.ends_at, skew),
       dibs: dibs ?? [],

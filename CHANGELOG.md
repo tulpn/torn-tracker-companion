@@ -15,6 +15,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   "starting". A crime that hasn't started reads **expired** once it passes its expiry, and
   counts down to it when it has no ready time yet (hq #541).
 
+### Fixed
+
+- Dashboard: the war card keeps showing a war that is set but not started when the site
+  calls it `matched` instead of `scheduled` (hq #541, tc-targets #582).
+
 ## 0.9.10 — 2026-11-04
 
 ### Changed
