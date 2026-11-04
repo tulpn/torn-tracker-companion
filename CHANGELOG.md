@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.10 — 2026-11-04
+
 ### Changed
 
 - Sidebar block: **War** opens your faction's ranked war and **OC** your faction's crimes,
