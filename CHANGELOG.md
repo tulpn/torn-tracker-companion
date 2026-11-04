@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- Sidebar: a ranked war that is set but hasn't started counts down to its start, then says
+  "starting". A crime that hasn't started reads **expired** once it passes its expiry, and
+  counts down to it when it has no ready time yet (hq #541).
+
 ## 0.9.10 — 2026-11-04
 
 ### Changed

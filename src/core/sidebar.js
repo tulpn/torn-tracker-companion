@@ -62,7 +62,9 @@ const FACTION_URL = `${SITE}/faction/`;
 const PLANNER_URL = `${SITE}/travel/`;
 const STOCKS_URL = `${SITE}/stocks/`;
 // hq #541: Torn's own pages for the war and OC lines; plain links, same tab, nothing fetched.
-// The sidebar feed carries no war id, so the war line opens the faction's ranked-war tab.
+// The feed now sends the war's id (CAPI-039), but Torn has a page by id only for a finished
+// war (the rank report); a matched or running war lives on the faction's ranked-war tab,
+// which is what Torn's own war list links to as well.
 export const WAR_PAGE = '/factions.php?step=your#/war/rank';
 export const CRIMES_PAGE = '/factions.php?step=your#/tab=crimes';
 
@@ -342,7 +344,9 @@ export function mountSidebarBlock({
       return row(h('b', null, link(WAR_PAGE, 'War')), ` vs ${w.opponent}: `,
         h('span', { class: diff < 0 ? `${P}-sb-alert` : '' }, `${diff >= 0 ? '+' : '−'}${thousands(Math.abs(diff))}`),
         ` · ${thousands(w.ours)} / ${thousands(w.target)}`,
-        ...(w.finishAt ? [' · ', until(w.finishAt, 'ending', 'ends in ~')] : []));
+        // Matched: count down to the start (CAPI-039); running: to the finish estimate.
+        ...(w.state === 'matched' && w.startsAt ? [' · ', until(w.startsAt, 'starting', 'starts in ')]
+          : w.finishAt ? [' · ', until(w.finishAt, 'ending', 'ends in ~')] : []));
     },
     // CHW-011, CHW-021: "Watching now · Lead", the next slot, or a way to sign up; and the
     // switch for watch mode, which any member may use, slot or not. hq #523: with no slot
@@ -360,11 +364,16 @@ export function mountSidebarBlock({
     dibs: (rows) => row(h('b', null, 'My dibs'), ...rows.flatMap((d, i) => [
       i ? ' · ' : ' ', link(`/loader.php?sid=attack&user2ID=${d.id}`, d.name), ' ', until(d.expiresAt, 'expired')])),
     // hq #541: the line opens the crimes tab; a crime in planning counts down to ready_at.
+    // An unstarted crime past its expiry reads expired (CAPI-039), and one with no ready time
+    // counts down to it; the next read says what Torn did with it.
     oc(o) {
-      const counting = o.readyAt && (o.state === 'planning' || o.state === 'ready');
-      const state = counting ? until(o.readyAt, 'ready', 'ready in ') : o.state;
+      const unstarted = o.state === 'recruiting' || o.state === 'planning';
+      const expired = unstarted && o.expiredAt && o.expiredAt <= now();
+      const counting = !expired && o.readyAt && (o.state === 'planning' || o.state === 'ready');
+      const state = expired ? 'expired' : counting ? until(o.readyAt, 'ready', 'ready in ')
+        : unstarted && o.expiredAt ? until(o.expiredAt, 'expired', 'expires in ') : o.state;
       return row(h('b', null, link(CRIMES_PAGE, 'OC')), ` ${o.name} · `,
-        ...(o.needsMe ? [h('span', { class: `${P}-sb-alert` }, 'needs you'), ...(counting ? [' · ', state] : [])] : [state]));
+        ...(o.needsMe ? [h('span', { class: `${P}-sb-alert` }, 'needs you'), ...(state !== o.state ? [' · ', state] : [])] : [state]));
     },
     guide: (g) => (g.done >= g.total && g.bonuses === 0 ? null
       : row(link(GUIDE_URL, `Guide ${g.done} / ${g.total}`, true),

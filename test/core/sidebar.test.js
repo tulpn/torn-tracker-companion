@@ -731,3 +731,72 @@ describe('hq #541 links and live countdowns', () => {
     assert.equal(t.timers.intervals.size, 0);
   });
 });
+
+// CAPI-039 (hq #560, #541 follow-up): the war's id, state and start, and the OC's expiry,
+// in the shapes of the site's demo replies (hq assets/backend/560/sidebar-replies.json).
+describe('CAPI-039 war start and OC expiry', () => {
+  const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const at = (ms) => new Date(T0 + ms).toISOString();
+  const MATCHED = {
+    server_time: at(0),
+    war: {
+      id: 9200001, state: 'matched', starts_at: at(5_025_000), opponent_name: 'Crimson Tide',
+      our_score: 0, their_score: 0, target: 4000, finish_eta: null, as_of: at(0),
+    },
+    oc: { crime_id: 90000, name: 'Break the Bank', state: 'ready', ready_at: at(-60_000), expired_at: at(86_400_000), needs_me: false },
+    links: [],
+  };
+  const KEYS = ['war', 'oc'];
+  const show = (reply) => mount({ html: HOME, answer: { status: 'ok', ...readSidebar(reply, KEYS, 0) } });
+  const line = (t, word) => [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => r.querySelector('b')?.textContent === word);
+
+  test('the readers keep the new fields, and null for what is missing or wrong', () => {
+    const read = readSidebar(MATCHED, KEYS, 0).items;
+    assert.deepEqual([read.get('war').id, read.get('war').state, read.get('war').startsAt], [9200001, 'matched', T0 + 5_025_000]);
+    assert.equal(read.get('oc').expiredAt, T0 + 86_400_000);
+    const odd = readSidebar({ ...MATCHED, war: { ...MATCHED.war, id: -1, state: 'over', starts_at: 'soon' }, oc: { ...MATCHED.oc, expired_at: 7 } }, KEYS, 0).items;
+    assert.deepEqual([odd.get('war').id, odd.get('war').state, odd.get('war').startsAt], [null, null, null]);
+    assert.equal(odd.get('oc').expiredAt, null);
+    const old = readSidebar({ ...MATCHED, war: { opponent_name: 'Foes', our_score: 1, their_score: 2, target: 3, finish_eta: null } }, KEYS, 0).items;
+    assert.deepEqual([old.get('war').id, old.get('war').state, old.get('war').startsAt], [null, null, null], 'an older site still reads');
+  });
+
+  test('a matched war counts down to its start, then says starting', async () => {
+    const t = show(MATCHED);
+    await settle();
+    assert.match(line(t, 'War').textContent, /vs Crimson Tide: \+0 · 0 \/ 4,000 · starts in 1:23:45$/);
+    assert.equal(line(t, 'War').querySelector('b a').getAttribute('href'), WAR_PAGE, 'a live war has no page by id');
+    t.advance(5_025_000);
+    t.timers.beat();
+    assert.match(line(t, 'War').textContent, /· starting$/);
+  });
+
+  test('a running war counts to its finish, not to a start already past', async () => {
+    const t = show({ ...MATCHED, war: { ...MATCHED.war, state: 'running', starts_at: at(-60_000), finish_eta: at(3_729_000) } });
+    await settle();
+    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
+    assert.doesNotMatch(line(t, 'War').textContent, /start/);
+  });
+
+  test('a ready crime ignores its expiry', async () => {
+    const t = show(MATCHED);
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Break the Bank · ready$/);
+  });
+
+  test('an unstarted crime counts down to its expiry, then reads expired', async () => {
+    const t = show({ ...MATCHED, oc: { ...MATCHED.oc, state: 'recruiting', ready_at: null, expired_at: at(65_000) } });
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Break the Bank · expires in 1:05$/);
+    t.advance(65_000);
+    t.timers.beat();
+    assert.match(line(t, 'OC').textContent, /· expired$/);
+  });
+
+  test('a planning crime already past its expiry reads expired, not ready in, even for a member it needs', async () => {
+    const t = show({ ...MATCHED, oc: { ...MATCHED.oc, state: 'planning', ready_at: at(65_000), expired_at: at(-1_000), needs_me: true } });
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Break the Bank · needs you · expired$/);
+  });
+});
