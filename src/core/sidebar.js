@@ -61,6 +61,12 @@ const GUIDE_URL = `${SITE}/guide/`;
 const FACTION_URL = `${SITE}/faction/`;
 const PLANNER_URL = `${SITE}/travel/`;
 const STOCKS_URL = `${SITE}/stocks/`;
+// hq #541: Torn's own pages for the war and OC lines; plain links, same tab, nothing fetched.
+// The feed now sends the war's id (CAPI-039), but Torn has a page by id only for a finished
+// war (the rank report); a matched or running war lives on the faction's ranked-war tab,
+// which is what Torn's own war list links to as well.
+export const WAR_PAGE = '/factions.php?step=your#/war/rank';
+export const CRIMES_PAGE = '/factions.php?step=your#/tab=crimes';
 
 const STYLE = `
   ${followTorn(`#${BLOCK_ID}`)}
@@ -319,19 +325,28 @@ export function mountSidebarBlock({
   const link = (href, text, external = false) => h('a', external
     ? { href, target: '_blank', rel: 'noopener noreferrer' }
     : { href }, text);
-  const until = (at) => h('span', { 'data-ttc-until': String(at) }, left(at - now()));
+  /**
+   * A countdown to a time the site sent (hq #541): "prefix 1:02:09" until it passes, then
+   * the word for done ("ready", "expired") until the next read says what happened.
+   */
+  const until = (at, done = '0:00', prefix = '') => h('span', {
+    'data-ttc-until': String(at), 'data-ttc-done': done, 'data-ttc-prefix': prefix,
+  }, countdown(at, done, prefix));
+  const countdown = (at, done, prefix) => (at > now() ? `${prefix}${left(at - now())}` : done);
 
   /** One line per item with something to say; an item without is left out. */
   const LINES = {
     chain: (c) => (c.current === 0
       ? row(h('b', null, 'Chain'), ' none')
-      : row(h('b', null, 'Chain'), ` ${thousands(c.current)} / ${thousands(c.max)}`, ...(c.timeoutAt ? [' · ', until(c.timeoutAt)] : []))),
+      : row(h('b', null, 'Chain'), ` ${thousands(c.current)} / ${thousands(c.max)}`, ...(c.timeoutAt ? [' · ', until(c.timeoutAt, 'timed out')] : []))),
     war(w) {
       const diff = w.ours - w.theirs;
-      return row(h('b', null, 'War'), ` vs ${w.opponent}: `,
+      return row(h('b', null, link(WAR_PAGE, 'War')), ` vs ${w.opponent}: `,
         h('span', { class: diff < 0 ? `${P}-sb-alert` : '' }, `${diff >= 0 ? '+' : '−'}${thousands(Math.abs(diff))}`),
         ` · ${thousands(w.ours)} / ${thousands(w.target)}`,
-        ...(w.finishAt ? [` · ends in ~${roughly(w.finishAt - now())}`] : []));
+        // Matched: count down to the start (CAPI-039); running: to the finish estimate.
+        ...(w.state === 'matched' && w.startsAt ? [' · ', until(w.startsAt, 'starting', 'starts in ')]
+          : w.finishAt ? [' · ', until(w.finishAt, 'ending', 'ends in ~')] : []));
     },
     // CHW-011, CHW-021: "Watching now · Lead", the next slot, or a way to sign up; and the
     // switch for watch mode, which any member may use, slot or not. hq #523: with no slot
@@ -347,11 +362,18 @@ export function mountSidebarBlock({
     terms: (t) => row(h('b', null, 'Terms'), ` ${t.label}`),
     partner: (p) => row(h('b', null, 'Med-out partner'), ' ', link(`/profiles.php?XID=${p.id}`, p.name)),
     dibs: (rows) => row(h('b', null, 'My dibs'), ...rows.flatMap((d, i) => [
-      i ? ' · ' : ' ', link(`/loader.php?sid=attack&user2ID=${d.id}`, d.name), ' ', until(d.expiresAt)])),
+      i ? ' · ' : ' ', link(`/loader.php?sid=attack&user2ID=${d.id}`, d.name), ' ', until(d.expiresAt, 'expired')])),
+    // hq #541: the line opens the crimes tab; a crime in planning counts down to ready_at.
+    // An unstarted crime past its expiry reads expired (CAPI-039), and one with no ready time
+    // counts down to it; the next read says what Torn did with it.
     oc(o) {
-      let state = o.state;
-      if (o.state === 'ready' && o.readyAt && o.readyAt > now()) state = `ready in ${roughly(o.readyAt - now())}`;
-      return row(h('b', null, 'OC'), ` ${o.name} · `, o.needsMe ? h('span', { class: `${P}-sb-alert` }, 'needs you') : state);
+      const unstarted = o.state === 'recruiting' || o.state === 'planning';
+      const expired = unstarted && o.expiredAt && o.expiredAt <= now();
+      const counting = !expired && o.readyAt && (o.state === 'planning' || o.state === 'ready');
+      const state = expired ? 'expired' : counting ? until(o.readyAt, 'ready', 'ready in ')
+        : unstarted && o.expiredAt ? until(o.expiredAt, 'expired', 'expires in ') : o.state;
+      return row(h('b', null, link(CRIMES_PAGE, 'OC')), ` ${o.name} · `,
+        ...(o.needsMe ? [h('span', { class: `${P}-sb-alert` }, 'needs you'), ...(state !== o.state ? [' · ', state] : [])] : [state]));
     },
     guide: (g) => (g.done >= g.total && g.bonuses === 0 ? null
       : row(link(GUIDE_URL, `Guide ${g.done} / ${g.total}`, true),
@@ -427,10 +449,12 @@ export function mountSidebarBlock({
       : `sidebar: block shown ${open ? 'open' : 'closed'}`);
   }
 
-  /** Ticks the countdowns between reads; nothing else. */
+  /** Ticks the countdowns between reads; nothing else, and nothing is asked. */
   function paint() {
     for (const node of block?.querySelectorAll('[data-ttc-until]') || []) {
-      node.textContent = left(Number(node.dataset.ttcUntil) - now());
+      const { ttcUntil, ttcDone, ttcPrefix } = node.dataset;
+      const text = countdown(Number(ttcUntil), ttcDone ?? '0:00', ttcPrefix ?? '');
+      if (node.textContent !== text) node.textContent = text;
     }
   }
 
@@ -524,13 +548,17 @@ export function mountSidebarBlock({
     placeSoon.poke();
   }, doc);
   const onVisible = () => {
-    if (doc.visibilityState !== 'hidden') refreshSidebar();
+    if (doc.visibilityState === 'hidden') return;
+    paint();
+    refreshSidebar();
   };
   doc.addEventListener('visibilitychange', onVisible);
   const stopCounting = onProfitable(() => render());
   const stopWatchMode = watch?.onChange(() => render());
+  // The one ticker for every countdown in the block (hq #541): it paints from the page's
+  // clock once a second while the block is open and the tab is seen, and asks for nothing.
   tick = timers.setInterval(() => {
-    if (isOpen()) paint();
+    if (isOpen() && doc.visibilityState !== 'hidden') paint();
   }, 1000);
   place();
 

@@ -44,7 +44,7 @@ to the shop is still your own trip to it.
 ## Get warned before you undersell
 
 On the Item Market's add-listing form and on your bazaar's add and manage pages, a price
-below what a shop pays shows a warning under the field as you type:
+below what a shop pays shows a warning on its own line under the field as you type:
 
 > Below the shop price. Big Al's Gun Shop pays $1,250 each, $310 more than this (×12: $3,720).
 

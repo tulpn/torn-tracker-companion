@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
-  BLOCK_ID, DEFAULT_POSITION, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
+  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
 } from '../../src/core/sidebar.js';
 import { readSidebar } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
@@ -55,8 +55,19 @@ function fakeTimers() {
     clearTimeout(id) {
       pending.delete(id);
     },
-    setInterval: () => 0,
-    clearInterval() {},
+    intervals: new Map(),
+    setInterval(fn, ms) {
+      const id = next++;
+      this.intervals.set(id, { fn, ms });
+      return id;
+    },
+    clearInterval(id) {
+      this.intervals.delete(id);
+    },
+    /** One beat of every interval, as the page's second would. */
+    beat() {
+      for (const t of this.intervals.values()) t.fn();
+    },
     /** Runs every timer that's waiting, once. */
     run() {
       const due = [...pending.entries()];
@@ -289,7 +300,7 @@ describe('hq #466 a page that never goes quiet', () => {
 });
 
 describe('CMP-108 AC3 links are plain navigation', () => {
-  test('every link goes to a profile, an attack page or torn-tracker.com', async () => {
+  test('every link goes to a profile, an attack page, the faction’s war or crimes tab, or torn-tracker.com', async () => {
     const t = mount();
     await settle();
     const hrefs = [...t.node().querySelectorAll('a')].map((a) => a.getAttribute('href'));
@@ -297,7 +308,7 @@ describe('CMP-108 AC3 links are plain navigation', () => {
     assert.ok(hrefs.includes('/loader.php?sid=attack&user2ID=9'));
     assert.ok(hrefs.includes('https://torn-tracker.com/war/'));
     for (const href of hrefs) {
-      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|https:\/\/torn-tracker\.com\/)/, href);
+      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|\/factions\.php\?step=your#\/(war\/rank|tab=crimes)$|https:\/\/torn-tracker\.com\/)/, href);
     }
   });
 });
@@ -629,5 +640,163 @@ describe('hq #507 a line when the account has no faction linked', () => {
     });
     await settle();
     assert.equal(line(t), null);
+  });
+});
+
+// hq #541: the war and OC lines open Torn's own pages, and every time the site sent counts
+// down from the page's clock between reads, with one ticker that rests while the tab is hidden.
+describe('hq #541 links and live countdowns', () => {
+  const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const at = (ms) => new Date(T0 + ms).toISOString();
+  const LIVE = {
+    server_time: at(0),
+    chain: { current: 412, max: 500, timeout_at: at(150_000), as_of: at(0) },
+    war: { opponent_name: 'Foes', our_score: 1200, their_score: 1000, target: 5000, finish_eta: at(3_729_000), as_of: at(0) },
+    oc: { crime_id: 3, name: 'Blast from the Past', state: 'planning', ready_at: at(65_000), needs_me: false },
+    dibs: null, terms: null, partner: null, guide: null, travel: null, loot: null, gym: null, stocks: null, watch: null,
+    links: [],
+  };
+  const live = () => mount({ html: HOME, answer: { status: 'ok', ...readSidebar(LIVE, Object.keys(LIVE), 0) } });
+  const line = (t, word) => [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => r.querySelector('b')?.textContent === word);
+
+  test('on the real Home sidebar the War and OC lines link to Torn’s own pages, same tab', async () => {
+    const t = live();
+    await settle();
+    const war = line(t, 'War').querySelector('b a');
+    const oc = line(t, 'OC').querySelector('b a');
+    assert.equal(war.getAttribute('href'), WAR_PAGE);
+    assert.equal(oc.getAttribute('href'), CRIMES_PAGE);
+    assert.equal(WAR_PAGE, '/factions.php?step=your#/war/rank');
+    assert.equal(CRIMES_PAGE, '/factions.php?step=your#/tab=crimes');
+    for (const a of [war, oc]) {
+      assert.equal(a.hasAttribute('target'), false, 'same tab');
+      assert.equal(new URL(a.href).host, 'www.torn.com');
+    }
+  });
+
+  test('each time ticks by the second from the page’s clock, without asking the site', async () => {
+    const t = live();
+    await settle();
+    assert.match(line(t, 'Chain').textContent, /· 2:30$/);
+    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
+    assert.match(line(t, 'OC').textContent, /ready in 1:05$/);
+    assert.equal(t.timers.intervals.size, 1, 'one shared ticker');
+    t.advance(1_000);
+    t.timers.beat();
+    assert.match(line(t, 'Chain').textContent, /· 2:29$/);
+    assert.match(line(t, 'War').textContent, /ends in ~1:02:08$/);
+    assert.match(line(t, 'OC').textContent, /ready in 1:04$/);
+    assert.equal(t.asked.length, 1);
+  });
+
+  test('past zero each line says what happened until the next read confirms it', async () => {
+    const t = live();
+    await settle();
+    t.advance(65_000);
+    t.timers.beat();
+    assert.match(line(t, 'OC').textContent, /· ready$/);
+    t.advance(85_000);
+    t.timers.beat();
+    assert.match(line(t, 'Chain').textContent, /· timed out$/);
+    t.advance(3_729_000);
+    t.timers.beat();
+    assert.match(line(t, 'War').textContent, /· ending$/);
+  });
+
+  test('the ticker rests while the tab is hidden and catches up when it is seen again', async () => {
+    const t = live();
+    await settle();
+    const doc = t.window.document;
+    let state = 'hidden';
+    Object.defineProperty(doc, 'visibilityState', { configurable: true, get: () => state });
+    t.advance(10_000);
+    t.timers.beat();
+    assert.match(line(t, 'Chain').textContent, /· 2:30$/, 'not painted while hidden');
+    state = 'visible';
+    doc.dispatchEvent(new t.window.Event('visibilitychange'));
+    assert.match(line(t, 'Chain').textContent, /· 2:20$/);
+  });
+
+  test('a member the crime needs sees that first, and the countdown after it', async () => {
+    const t = mount({ html: HOME, answer: { status: 'ok', ...readSidebar({ ...LIVE, oc: { ...LIVE.oc, needs_me: true } }, Object.keys(LIVE), 0) } });
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Blast from the Past · needs you · ready in 1:05$/);
+  });
+
+  test('destroy stops the ticker', async () => {
+    const t = live();
+    await settle();
+    t.block.destroy();
+    assert.equal(t.timers.intervals.size, 0);
+  });
+});
+
+// CAPI-039 (hq #560, #541 follow-up): the war's id, state and start, and the OC's expiry,
+// in the shapes of the site's demo replies (hq assets/backend/560/sidebar-replies.json).
+describe('CAPI-039 war start and OC expiry', () => {
+  const HOME = fs.readFileSync(path.join(ROOT, 'test', 'fixtures', 'pages', 'sidebar-home.html'), 'utf8');
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const at = (ms) => new Date(T0 + ms).toISOString();
+  const MATCHED = {
+    server_time: at(0),
+    war: {
+      id: 9200001, state: 'matched', starts_at: at(5_025_000), opponent_name: 'Crimson Tide',
+      our_score: 0, their_score: 0, target: 4000, finish_eta: null, as_of: at(0),
+    },
+    oc: { crime_id: 90000, name: 'Break the Bank', state: 'ready', ready_at: at(-60_000), expired_at: at(86_400_000), needs_me: false },
+    links: [],
+  };
+  const KEYS = ['war', 'oc'];
+  const show = (reply) => mount({ html: HOME, answer: { status: 'ok', ...readSidebar(reply, KEYS, 0) } });
+  const line = (t, word) => [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => r.querySelector('b')?.textContent === word);
+
+  test('the readers keep the new fields, and null for what is missing or wrong', () => {
+    const read = readSidebar(MATCHED, KEYS, 0).items;
+    assert.deepEqual([read.get('war').id, read.get('war').state, read.get('war').startsAt], [9200001, 'matched', T0 + 5_025_000]);
+    assert.equal(read.get('oc').expiredAt, T0 + 86_400_000);
+    const odd = readSidebar({ ...MATCHED, war: { ...MATCHED.war, id: -1, state: 'over', starts_at: 'soon' }, oc: { ...MATCHED.oc, expired_at: 7 } }, KEYS, 0).items;
+    assert.deepEqual([odd.get('war').id, odd.get('war').state, odd.get('war').startsAt], [null, null, null]);
+    assert.equal(odd.get('oc').expiredAt, null);
+    const old = readSidebar({ ...MATCHED, war: { opponent_name: 'Foes', our_score: 1, their_score: 2, target: 3, finish_eta: null } }, KEYS, 0).items;
+    assert.deepEqual([old.get('war').id, old.get('war').state, old.get('war').startsAt], [null, null, null], 'an older site still reads');
+  });
+
+  test('a matched war counts down to its start, then says starting', async () => {
+    const t = show(MATCHED);
+    await settle();
+    assert.match(line(t, 'War').textContent, /vs Crimson Tide: \+0 · 0 \/ 4,000 · starts in 1:23:45$/);
+    assert.equal(line(t, 'War').querySelector('b a').getAttribute('href'), WAR_PAGE, 'a live war has no page by id');
+    t.advance(5_025_000);
+    t.timers.beat();
+    assert.match(line(t, 'War').textContent, /· starting$/);
+  });
+
+  test('a running war counts to its finish, not to a start already past', async () => {
+    const t = show({ ...MATCHED, war: { ...MATCHED.war, state: 'running', starts_at: at(-60_000), finish_eta: at(3_729_000) } });
+    await settle();
+    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
+    assert.doesNotMatch(line(t, 'War').textContent, /start/);
+  });
+
+  test('a ready crime ignores its expiry', async () => {
+    const t = show(MATCHED);
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Break the Bank · ready$/);
+  });
+
+  test('an unstarted crime counts down to its expiry, then reads expired', async () => {
+    const t = show({ ...MATCHED, oc: { ...MATCHED.oc, state: 'recruiting', ready_at: null, expired_at: at(65_000) } });
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Break the Bank · expires in 1:05$/);
+    t.advance(65_000);
+    t.timers.beat();
+    assert.match(line(t, 'OC').textContent, /· expired$/);
+  });
+
+  test('a planning crime already past its expiry reads expired, not ready in, even for a member it needs', async () => {
+    const t = show({ ...MATCHED, oc: { ...MATCHED.oc, state: 'planning', ready_at: at(65_000), expired_at: at(-1_000), needs_me: true } });
+    await settle();
+    assert.match(line(t, 'OC').textContent, /Break the Bank · needs you · expired$/);
   });
 });

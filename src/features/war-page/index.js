@@ -23,8 +23,8 @@
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
 
 import { el, settler } from '../../core/dom.js';
-import { badge, bar as uiBar, button as uiButton, setTone } from '../../core/ui.js';
-import { ENEMY_ROW, LISTS, MEMBER, STATUS } from './selectors.js';
+import { badge, bar as uiBar, button as uiButton, setTone, tapDetail } from '../../core/ui.js';
+import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
 const MARK = 'ttc-war';
@@ -46,10 +46,13 @@ export function ago(ms) {
   return `${Math.floor(m / 1440)}d`;
 }
 
-/** '4:05' for a countdown; '0:00' once it has run out. */
+/** '4:05' for a countdown, '2:11:34' from an hour up; '0:00' once it has run out. */
 export function clock(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const pad = (n) => String(n).padStart(2, '0');
+  const h = Math.floor(s / 3600);
+  if (h > 0) return `${h}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`;
 }
 
 /**
@@ -231,7 +234,7 @@ export default {
           const cell = row.querySelector(MEMBER);
           if (!id || !cell || cell.querySelector(`.${MARK}-dibs`)) continue;
           const button = uiButton(doc, {
-            cls: `${MARK}-dibs`, attrs: { [`data-${MARK}`]: '', 'data-player': String(id), 'data-tour': 'war-dibs' },
+            cls: `${MARK}-dibs`, small: true, attrs: { [`data-${MARK}`]: '', 'data-player': String(id), 'data-tour': 'war-dibs' },
           });
           button.addEventListener('click', (event) => {
             event.preventDefault();
@@ -261,26 +264,28 @@ export default {
           node?.remove();
           continue;
         }
-        const words = info.hidden ? 'hidden' : [
-          ...info.flags.map((f) => FLAG_WORDS[f.flag]),
-          info.seen_at ? ago(now() - info.seen_at) : null,
-        ].filter(Boolean).join(' · ');
+        // One short word in the row Torn keeps one line high (hq #557): the strongest flag and
+        // how many more, or the age; the rest is the tap detail.
+        const flags = [...info.flags].sort((a, b) => (b.flag === 'heavy_hitter') - (a.flag === 'heavy_hitter'));
+        const words = info.hidden ? 'hidden' : flags.length
+          ? `${FLAG_WORDS[flags[0].flag] || 'Flag'}${flags.length > 1 ? ` +${flags.length - 1}` : ''}`
+          : info.seen_at ? ago(now() - info.seen_at) : '';
         if (!words) {
           node?.remove();
           continue;
         }
         if (!node) {
-          node = badge(doc, { cls: `${MARK}-ld`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-loadout' } });
+          node = badge(doc, { cls: `${MARK}-ld`, compact: true, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-loadout' } });
           cell.append(node);
         }
         if (node.textContent !== words) node.textContent = words;
         const heavy = info.flags.some((f) => f.flag === 'heavy_hitter');
         setTone(node, info.hidden ? 'neutral' : heavy ? 'bad' : info.flags.length ? 'warn' : 'neutral', { dim: info.old });
         node.dataset.old = String(info.old);
-        node.title = info.hidden ? 'Loadout hidden at the player\u2019s request' : [
-          ...info.flags.map((f) => f.reason || FLAG_WORDS[f.flag]),
-          `Seen ${info.seen_at ? ago(now() - info.seen_at) : 'some time'} ago by ${info.reporters ?? 'some'} player${info.reporters === 1 ? '' : 's'}${info.old ? ' (old)' : ''} (torn-tracker.com)`,
-        ].join('\n');
+        tapDetail(node, info.hidden ? 'Loadout hidden at the player\u2019s request.' : [
+          ...flags.map((f) => f.reason || FLAG_WORDS[f.flag]),
+          `Seen ${info.seen_at ? ago(now() - info.seen_at) : 'some time'} ago by ${info.reporters ?? 'some'} player${info.reporters === 1 ? '' : 's'}${info.old ? ' (old)' : ''} (torn-tracker.com).`,
+        ].join('. '));
       }
     }
 
@@ -305,7 +310,8 @@ export default {
         if (!cell) continue;
         const text = statusText(s.roster.get(playerOf(row)), now());
         let label = cell.querySelector(`.${MARK}-time`);
-        if (!text) {
+        // Another script already shows the time here: one timer per row, never two.
+        if (!text || cell.matches(STATUS_TAKEN)) {
           label?.remove();
           continue;
         }

@@ -291,6 +291,16 @@ describe('hq #465 the page', () => {
     assert.doesNotMatch(war, /Us/);
   });
 
+  test('hq #541: the site’s new name for it, matched, reads the same as scheduled (tc-targets #582)', async () => {
+    const data = copy();
+    data.war.state = 'matched';
+    data.war.starts_at = '2026-11-03T12:00:00Z';
+    const { root } = await opened(siteRig({ reply: () => ({ ok: true, status: 200, data }) }).site);
+    const war = root.querySelector('[data-card="war"]').textContent;
+    assert.match(war, /Starts in /);
+    assert.doesNotMatch(war, /Us/);
+  });
+
   test('a card that is off is not on the page', async () => {
     const data = copy();
     delete data.war;

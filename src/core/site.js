@@ -200,6 +200,8 @@ export function readRun(r, skew = 0) {
 /** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
 export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks']);
 const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
+/** A ranked war the sidebar holds: matched (the start is set) or running (CAPI-039). */
+const WAR_STATES = Object.freeze(['matched', 'running']);
 const count = (v, max = 1e9) => Number.isInteger(v) && v >= 0 && v <= max;
 const score = (v) => count(v, 1e7);
 const time = (v, skew) => {
@@ -271,6 +273,10 @@ const SIDEBAR_READERS = {
     return {
       opponent: v.opponent_name, ours: v.our_score, theirs: v.their_score, target: v.target,
       finishAt: v.finish_eta == null ? null : time(v.finish_eta, skew),
+      // CAPI-039 (hq #560): each null when the site doesn't hold it, or sends something else.
+      id: positiveInt(v.id) ? v.id : null,
+      state: WAR_STATES.includes(v.state) ? v.state : null,
+      startsAt: v.starts_at == null ? null : time(v.starts_at, skew),
     };
   },
   terms: (v) => (typeof v?.label === 'string' && v.label.trim() && v.label.length <= 120 ? { label: v.label.trim() } : null),
@@ -286,7 +292,11 @@ const SIDEBAR_READERS = {
   oc(v, skew) {
     if (!positiveInt(v?.crime_id) || typeof v.name !== 'string' || !v.name || v.name.length > OC_NAME) return null;
     if (!OC_STATES.includes(v.state) || typeof v.needs_me !== 'boolean') return null;
-    return { name: v.name, state: v.state, readyAt: v.ready_at == null ? null : time(v.ready_at, skew), needsMe: v.needs_me };
+    return {
+      name: v.name, state: v.state, readyAt: v.ready_at == null ? null : time(v.ready_at, skew), needsMe: v.needs_me,
+      // CAPI-039: when an unstarted crime expires; null when the site doesn't hold it.
+      expiredAt: v.expired_at == null ? null : time(v.expired_at, skew),
+    };
   },
   guide(v) {
     if (!count(v?.done, 100) || !count(v.total, 100) || v.total === 0 || !count(v.bonuses_unclaimed, 100)) return null;
@@ -776,10 +786,12 @@ const DASHBOARD_READERS = {
   // The sidebar's war item, plus whether it runs yet, its start and end, and the member's dibs.
   war(v, skew) {
     const base = SIDEBAR_READERS.war(v, skew);
-    if (!base || !['scheduled', 'running'].includes(v.state)) return null;
+    // tc-targets #582 renames the pre-war state from `scheduled` to `matched`, as the
+    // sidebar names it (CAPI-039); both read as one state until every site sends the new name.
+    if (!base || !['scheduled', 'matched', 'running'].includes(v.state)) return null;
     const dibs = v.dibs == null ? null : SIDEBAR_READERS.dibs(v.dibs, skew);
     return {
-      ...base, state: v.state,
+      ...base, state: v.state === 'running' ? 'running' : 'scheduled',
       startsAt: v.starts_at == null ? null : time(v.starts_at, skew),
       endsAt: v.ends_at == null ? null : time(v.ends_at, skew),
       dibs: dibs ?? [],

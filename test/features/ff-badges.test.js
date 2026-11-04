@@ -187,3 +187,38 @@ describe('hq #454 a busy page', () => {
     }
   });
 });
+
+describe('hq #535 the badge stays one short line in the war list', () => {
+  test('a compact badge on the captured war page, one per member', async () => {
+    // The page as it is without FF Scouter: its marks taken out of the capture.
+    const html = page('faction-war-captured.html').replaceAll('ffscouter-', 'other-');
+    const r = run({ html, url: WAR, site: fakeSite() });
+    await wait();
+    assert.equal(badges(r).length, r.doc.querySelectorAll('li.enemy, li.your').length);
+    for (const b of badges(r)) assert.ok(b.classList.contains('ttc-ui-compact'), b.className);
+    assert.deepEqual(r.violations, []);
+  });
+});
+
+describe('hq #557 no second estimate where FF Scouter shows one', () => {
+  test('rows FF Scouter has marked get no badge and need no lookup', async () => {
+    const site = fakeSite();
+    const r = run({ html: page('faction-war-captured.html'), url: WAR, site });
+    await wait();
+    assert.ok(r.doc.querySelectorAll('li.enemy .ffscouter-cell').length > 0, 'the capture has its marks');
+    assert.equal(badges(r).length, 0);
+    assert.deepEqual(site.lookups.flat(), []);
+  });
+
+  test('a badge already shown goes when FF Scouter marks the row later', async () => {
+    const r = run({ html: page('faction-war.html'), url: WAR, site: fakeSite() });
+    await wait();
+    const row = badges(r)[0].closest('li.enemy, li.your, .table-row');
+    const mark = r.doc.createElement('div');
+    mark.className = 'ffscouter-cell';
+    row.append(mark);
+    await wait();
+    assert.equal(row.querySelectorAll('.ttc-ff').length, 0);
+    assert.ok(badges(r).length > 0, 'the other rows keep theirs');
+  });
+});

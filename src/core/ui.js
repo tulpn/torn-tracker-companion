@@ -35,6 +35,8 @@ const INK = Object.freeze({
 });
 /** A small button inline in one of Torn's forms (hq #521); the class twice, see the style. */
 const INLINE = `.${P}-ui-inline.${P}-ui-inline`;
+/** A small button inside one of Torn's table rows (hq #535); the class twice, see the style. */
+const SMALL = `.${P}-ui-small.${P}-ui-small`;
 /** The shop price highlighter's tiers and the token each is drawn in. */
 const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-ff-hard'], ['blue', 'ring']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
@@ -113,6 +115,13 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-button[data-tone="bad"] { background: ${tint(INK.bad)}; border-color: transparent; color: ${INK.bad}; cursor: default; }
   .${P}-ui-button:disabled { cursor: default; }
   .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  /* Small (hq issue 535): one line inside a row Torn keeps narrow, like the war list's
+     member cell. It never wraps into a tall pill and never takes Torn's own button rules. */
+  ${SMALL} {
+    display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
+    width: auto; min-width: 0; height: 20px; min-height: 0; margin: 0 0 0 4px; padding: 0 8px;
+    font: 600 11px/18px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; text-transform: none;
+  }
   /* Inline beside one of Torn's form fields (hq issue 521): the field's height, one line, our
      accent. The class twice outweighs Torn's own form button rules, which made it black. */
   ${INLINE} {
@@ -125,9 +134,13 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   ${INLINE}:hover:not(:disabled) { background: ${tint('var(--primary)', 28)}; }
   ${INLINE}:disabled { border-color: var(--input); background: transparent; color: var(--muted-foreground); }
   /* Its field and it stay on one line inside Torn's cell, the field shrinking to make room.
-     Torn's own cell rules set display: block with a long selector, so this one is important. */
-  :has(> ${INLINE}) { display: flex !important; flex-wrap: nowrap; align-items: center; }
-  :has(> ${INLINE}) > :not(${INLINE}) { flex: 1 1 auto; min-width: 0; }
+     Torn's own cell rules set display: block with a long selector, so this one is important.
+     A block of ours in the same cell (the undersell warning, hq issue 557) takes a line of
+     its own below them: the field starts from no width, so the field and the button never
+     wrap, and only the block does. */
+  :has(> ${INLINE}) { display: flex !important; flex-wrap: wrap; align-items: center; }
+  :has(> ${INLINE}) > :not(${INLINE}, .${P}-ui-block) { flex: 1 1 0; min-width: 0; }
+  :has(> ${INLINE}) > .${P}-ui-block { flex: 0 0 100%; order: 1; box-sizing: border-box; }
   :has(> ${INLINE}) > :not(${INLINE}) input:not([type="hidden"]) { width: 100% !important; box-sizing: border-box; }
   /* The best buy abroad: its whole row is outlined, without touching Torn's own styles. */
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
@@ -178,6 +191,8 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
     ${INLINE} { min-height: 0; height: 32px; min-width: 44px; padding: 0 10px; }
+    /* Small keeps its one line but gets a finger's room (hq issue 557). */
+    ${SMALL} { min-height: 0; height: 32px; min-width: 44px; padding: 0 10px; line-height: 30px; }
   }
   /* The profile's row of our buttons (hq issue 467): one block below Torn's title row, drawn
      like Torn's own buttons (its size, radius, font and theme colours); our green only as
@@ -304,6 +319,25 @@ export function badge(doc, { cls, tone = 'neutral', block = false, compact = fal
   return node;
 }
 
+/**
+ * The detail of a compact badge (hq #522, #557): in its title for a hover, and under it on a
+ * tap. The tap goes no further, so it never reaches Torn's own handlers in the row.
+ * @param {Element} node a badge made with `compact: true`
+ * @param {string} detail
+ */
+export function tapDetail(node, detail) {
+  if (node.title !== detail) node.title = detail;
+  if (node.dataset.detail !== detail) node.dataset.detail = detail;
+  if (node.dataset.open) return node;
+  node.dataset.open = 'false';
+  node.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    node.dataset.open = String(node.dataset.open !== 'true');
+  });
+  return node;
+}
+
 /** Changes a badge's tone; `scale` sets a data colour (with dark or light ink) instead. */
 export function setTone(node, tone, { scale = null, ink = 'light', dim = false } = {}) {
   if (scale) {
@@ -382,8 +416,8 @@ export function profileAction(doc, heading, slot, node) {
  * One of our own small buttons; 44 px on touch screens. `inline` sizes it to sit beside
  * one of Torn's form fields, on the same line (hq #521).
  */
-export function button(doc, { cls, tone, inline = false, attrs = {} } = {}, ...children) {
+export function button(doc, { cls, tone, inline = false, small = false, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
-  const base = inline ? `${P}-ui-button ${P}-ui-inline` : `${P}-ui-button`;
+  const base = `${P}-ui-button${inline ? ` ${P}-ui-inline` : ''}${small ? ` ${P}-ui-small` : ''}`;
   return el('button', { type: 'button', class: classes(base, cls), 'data-tone': tone, ownerDocument: doc, ...attrs }, ...children);
 }

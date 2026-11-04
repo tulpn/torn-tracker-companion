@@ -12,7 +12,7 @@
 
 import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../core/players.js';
 import { badge, setTone } from '../../core/ui.js';
-import { HEADING, ROWS, ROW_LINK } from './selectors.js';
+import { HEADING, OTHER_SCRIPT, ROWS, ROW_LINK } from './selectors.js';
 import { describe, textColourFor } from './view.js';
 import { settler } from '../../core/dom.js';
 
@@ -35,6 +35,12 @@ export { idFromHref };
 export function findSpots(doc, loc) {
   const spots = [];
   for (const row of doc.querySelectorAll(ROWS)) {
+    // FF Scouter already shows the estimate on this row (hq #557): ours goes, even if it
+    // came first.
+    if (row.querySelector(OTHER_SCRIPT)) {
+      for (const own of row.querySelectorAll(`.${MARK}`)) own.remove();
+      continue;
+    }
     if (row.querySelector(`.${MARK}`)) continue;
     const link = row.querySelector(ROW_LINK);
     const id = idFromHref(link?.getAttribute('href'));
@@ -50,7 +56,7 @@ export function findSpots(doc, loc) {
 
 function makeBadge(doc, estimate) {
   const look = describe(estimate);
-  const node = badge(doc, { cls: MARK, attrs: { title: look.title, 'data-tour': 'ff-badge' } }, look.text);
+  const node = badge(doc, { cls: MARK, compact: true, attrs: { title: look.title, 'data-tour': 'ff-badge' } }, look.text);
   // The colour is the information here, on the scale players know from FF Scouter.
   setTone(node, null, { scale: look.background, ink: textColourFor(look.background) === '#000000' ? 'dark' : 'light' });
   return node;

@@ -9,6 +9,44 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.11 — 2026-11-04
+
+### Changed
+
+- Sidebar: a ranked war that is set but hasn't started counts down to its start, then says
+  "starting". A crime that hasn't started reads **expired** once it passes its expiry, and
+  counts down to it when it has no ready time yet (hq #541).
+
+### Fixed
+
+- Dashboard: the war card keeps showing a war that is set but not started when the site
+  calls it `matched` instead of `scheduled` (hq #541, tc-targets #582).
+
+## 0.9.10 — 2026-11-04
+
+### Changed
+
+- Sidebar block: **War** opens your faction's ranked war and **OC** your faction's crimes,
+  in the same tab. The war's end, the OC's ready time, the chain's timeout and your dibs
+  count down every second, and say **ending**, **ready**, **timed out** or **expired** at
+  zero until the next read.
+
+### Fixed
+
+- War page: one timer per opponent. Where another script (Torn War Stuff Enhanced) already
+  shows a countdown or destination in the status cell, the companion no longer draws its
+  own on top. Waits of an hour or more show hours (`2:11:34`, not `131:34`).
+- War page: the fair-fight badge and the Dibs button stay on one short line in the member
+  cell instead of wrapping into tall pills over the name.
+- The undersell warning sits on its own line under the price field and the Fill button,
+  instead of squeezing the field (hq #557).
+- No fair-fight badge on rows where FF Scouter's script already shows its estimate
+  (hq #557).
+- The war page's loadout label and the player-note badges in member lists are short, one
+  line in Torn's row: **Heavy +1**, or the note's tag. Hover or tap for the rest (hq #557).
+- The Dibs button is a finger's size on touch screens: 32 px high, at least 44 px wide
+  (hq #557).
+
 ## 0.9.9 — 2026-11-02
 
 ### Changed
