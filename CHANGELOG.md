@@ -9,17 +9,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
-### Fixed
-
-- The undersell warning sits on its own line under the price field and the Fill button,
-  instead of squeezing the field (hq #557).
-- No fair-fight badge on rows where FF Scouter's script already shows its estimate
-  (hq #557).
-- The war page's loadout label and the player-note badges in member lists are short, one
-  line in Torn's row: **Heavy +1**, or the note's tag. Hover or tap for the rest (hq #557).
-- The Dibs button is a finger's size on touch screens: 32 px high, at least 44 px wide
-  (hq #557).
-
 ## 0.9.10 — 2026-11-04
 
 ### Changed
@@ -36,6 +25,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   own on top. Waits of an hour or more show hours (`2:11:34`, not `131:34`).
 - War page: the fair-fight badge and the Dibs button stay on one short line in the member
   cell instead of wrapping into tall pills over the name.
+- The undersell warning sits on its own line under the price field and the Fill button,
+  instead of squeezing the field (hq #557).
+- No fair-fight badge on rows where FF Scouter's script already shows its estimate
+  (hq #557).
+- The war page's loadout label and the player-note badges in member lists are short, one
+  line in Torn's row: **Heavy +1**, or the note's tag. Hover or tap for the rest (hq #557).
+- The Dibs button is a finger's size on touch screens: 32 px high, at least 44 px wide
+  (hq #557).
 
 ## 0.9.9 — 2026-11-02
 
