@@ -13,7 +13,7 @@
 // Auto gym switch by Stephen Lynx (MIT) for the page's gym ids and answers. No code was
 // taken.
 
-import { readInitial, readProgress, readTrain } from './read.js';
+import { answerShape, readInitial, readProgress, readTrain, whyNoProgress } from './read.js';
 import { gymStep } from './selectors.js';
 import { badge } from '../../core/ui.js';
 import { settler } from '../../core/dom.js';
@@ -65,9 +65,9 @@ export default {
       if (!alive()) return;
       const progress = readProgress(doc);
       if (!progress && !s.toldNone) {
-        // Once per page: the reader found no gym in progress (hq #515).
+        // Once per page: the reader found no gym in progress, and why (hq #515, #576).
         s.toldNone = true;
-        ctx.log('gym_progress: nothing captured (no gym in progress found on the page)');
+        ctx.log(`gym_progress: nothing captured (${whyNoProgress(doc)})`);
       }
       if (progress) {
         const key = `${progress.gym_id}:${progress.percent}`;
@@ -93,12 +93,28 @@ export default {
         const initial = readInitial(data);
         s.stats = initial.stats;
         if (initial.active) s.active = initial.active;
+        ctx.log(`gym: page info read (${initial.stats.size} stats, active gym ${initial.active ?? 'not found'})`);
       } else if (step === 'train') {
+        if (!s.toldShape) {
+          // Once per page: the answer's field names, never its values (hq #576).
+          s.toldShape = true;
+          ctx.log(`gym_train: answer fields: ${answerShape(data) || 'none'}`);
+        }
         const train = readTrain(data);
-        if (!train) return;
+        if (!train) {
+          ctx.log('gym_train: not shared (the answer was not a successful train)');
+          return;
+        }
         const before = s.stats.get(train.stat);
         s.stats.set(train.stat, train.value);
         // A gain needs the value before; without it, this train only seeds the next one.
+        if (before === undefined) {
+          ctx.log(`gym_train: not shared (no ${train.stat} value from before this train; the page's gym info was not seen)`);
+        } else if (!s.active) {
+          ctx.log('gym_train: not shared (the active gym is not known)');
+        } else if (train.value <= before) {
+          ctx.log('gym_train: not shared (no gain)');
+        }
         if (before !== undefined && train.value > before && s.active) {
           ctx.share('gym_train', {
             gym_id: s.active,
