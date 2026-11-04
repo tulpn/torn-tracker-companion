@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.11 — 2026-11-04
+
 ### Changed
 
 - Sidebar: a ranked war that is set but hasn't started counts down to its start, then says
