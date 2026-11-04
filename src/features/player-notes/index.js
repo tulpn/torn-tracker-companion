@@ -10,7 +10,7 @@
 // rows and headings are the fair-fight badges' (ff-badges/selectors.js).
 
 import { el, settler } from '../../core/dom.js';
-import { badge, bar as uiBar, button as uiButton, note as uiNote, profileAction } from '../../core/ui.js';
+import { badge, bar as uiBar, button as uiButton, note as uiNote, profileAction, tapDetail } from '../../core/ui.js';
 import { HEADING, ROWS, ROW_LINK } from '../ff-badges/selectors.js';
 import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../core/players.js';
 
@@ -86,9 +86,13 @@ export default {
     const notes = () => (ctx.data?.() || { notes: [] }).notes;
     const noteFor = (id) => notes().find((n) => n.id === id) || null;
 
-    function makeBadge(id, note) {
-      const node = badge(doc, { cls: `${MARK} ${MARK}-badge`, tone: tagOf(note.tag).tone, attrs: { title: note.text || tagOf(note.tag).label } },
-        badgeText(note));
+    /** Beside a heading, the tag and the start of the note; in a list row, which Torn keeps
+        one line high, only the tag, with the note as the tap detail (hq #557). */
+    function makeBadge(id, note, { compact = false } = {}) {
+      const label = tagOf(note.tag).label;
+      const node = badge(doc, { cls: `${MARK} ${MARK}-badge`, tone: tagOf(note.tag).tone, compact,
+        attrs: compact ? {} : { title: note.text || label } }, compact ? label : badgeText(note));
+      if (compact) tapDetail(node, note.text.trim() || label);
       node.dataset.player = String(id);
       return node;
     }
@@ -158,7 +162,7 @@ export default {
         const link = row.querySelector(ROW_LINK);
         const id = idFromHref(link?.getAttribute('href'));
         const note = id && noteFor(id);
-        if (note) link.after(makeBadge(id, note));
+        if (note) link.after(makeBadge(id, note, { compact: true }));
       }
       const id = pageSubject(win.location);
       const page = String(win.location?.pathname || '').split('/').pop();

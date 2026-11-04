@@ -134,9 +134,13 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   ${INLINE}:hover:not(:disabled) { background: ${tint('var(--primary)', 28)}; }
   ${INLINE}:disabled { border-color: var(--input); background: transparent; color: var(--muted-foreground); }
   /* Its field and it stay on one line inside Torn's cell, the field shrinking to make room.
-     Torn's own cell rules set display: block with a long selector, so this one is important. */
-  :has(> ${INLINE}) { display: flex !important; flex-wrap: nowrap; align-items: center; }
-  :has(> ${INLINE}) > :not(${INLINE}) { flex: 1 1 auto; min-width: 0; }
+     Torn's own cell rules set display: block with a long selector, so this one is important.
+     A block of ours in the same cell (the undersell warning, hq issue 557) takes a line of
+     its own below them: the field starts from no width, so the field and the button never
+     wrap, and only the block does. */
+  :has(> ${INLINE}) { display: flex !important; flex-wrap: wrap; align-items: center; }
+  :has(> ${INLINE}) > :not(${INLINE}, .${P}-ui-block) { flex: 1 1 0; min-width: 0; }
+  :has(> ${INLINE}) > .${P}-ui-block { flex: 0 0 100%; order: 1; box-sizing: border-box; }
   :has(> ${INLINE}) > :not(${INLINE}) input:not([type="hidden"]) { width: 100% !important; box-sizing: border-box; }
   /* The best buy abroad: its whole row is outlined, without touching Torn's own styles. */
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
@@ -187,6 +191,8 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   @media (pointer: coarse) {
     .${P}-ui-button { min-height: 44px; min-width: 44px; padding: 6px 14px; }
     ${INLINE} { min-height: 0; height: 32px; min-width: 44px; padding: 0 10px; }
+    /* Small keeps its one line but gets a finger's room (hq issue 557). */
+    ${SMALL} { min-height: 0; height: 32px; min-width: 44px; padding: 0 10px; line-height: 30px; }
   }
   /* The profile's row of our buttons (hq issue 467): one block below Torn's title row, drawn
      like Torn's own buttons (its size, radius, font and theme colours); our green only as
@@ -310,6 +316,25 @@ export function badge(doc, { cls, tone = 'neutral', block = false, compact = fal
     class: classes(`${P}-ui-badge${extra}`, cls), 'data-tone': tone, ownerDocument: doc,
     ...(pin === 'under' ? { 'data-pin': 'under' } : {}), ...attrs,
   }, ...children);
+  return node;
+}
+
+/**
+ * The detail of a compact badge (hq #522, #557): in its title for a hover, and under it on a
+ * tap. The tap goes no further, so it never reaches Torn's own handlers in the row.
+ * @param {Element} node a badge made with `compact: true`
+ * @param {string} detail
+ */
+export function tapDetail(node, detail) {
+  if (node.title !== detail) node.title = detail;
+  if (node.dataset.detail !== detail) node.dataset.detail = detail;
+  if (node.dataset.open) return node;
+  node.dataset.open = 'false';
+  node.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    node.dataset.open = String(node.dataset.open !== 'true');
+  });
   return node;
 }
 

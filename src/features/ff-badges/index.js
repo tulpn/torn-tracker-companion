@@ -12,7 +12,7 @@
 
 import { ATTACK_ROUTES, idFromHref, onSubjectPage, pageSubject } from '../../core/players.js';
 import { badge, setTone } from '../../core/ui.js';
-import { HEADING, ROWS, ROW_LINK } from './selectors.js';
+import { HEADING, OTHER_SCRIPT, ROWS, ROW_LINK } from './selectors.js';
 import { describe, textColourFor } from './view.js';
 import { settler } from '../../core/dom.js';
 
@@ -35,6 +35,12 @@ export { idFromHref };
 export function findSpots(doc, loc) {
   const spots = [];
   for (const row of doc.querySelectorAll(ROWS)) {
+    // FF Scouter already shows the estimate on this row (hq #557): ours goes, even if it
+    // came first.
+    if (row.querySelector(OTHER_SCRIPT)) {
+      for (const own of row.querySelectorAll(`.${MARK}`)) own.remove();
+      continue;
+    }
     if (row.querySelector(`.${MARK}`)) continue;
     const link = row.querySelector(ROW_LINK);
     const id = idFromHref(link?.getAttribute('href'));

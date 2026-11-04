@@ -31,6 +31,9 @@ players already know.
   old it is. Some estimates come from [FFScouter](https://ffscouter.com) through
   torn-tracker.com, and the badge says so.
 
+When [FF Scouter](https://ffscouter.com)'s own script already shows its estimate on a
+row, that row gets no badge from the companion, so you never see two.
+
 The badge appears once torn-tracker.com has answered, so a page can show its players a
 moment before their badges.
 
