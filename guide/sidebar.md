@@ -26,11 +26,11 @@ Each line is one thing you'd otherwise open the website or Discord for:
 | Line | What it shows | Starts |
 |---|---|---|
 | **Chain** | your faction's chain, like "412 / 500", with the timeout counting down, then **timed out** | on |
-| **Ranked war** | how far you're ahead or behind, your score against the target, and a countdown to roughly when it ends. **War** opens your faction's ranked war on Torn | on |
+| **Ranked war** | how far you're ahead or behind, your score against the target, and a countdown to the start while the war is set but not yet begun, then to roughly when it ends. **War** opens your faction's ranked war on Torn | on |
 | **War terms** | the terms your faction agreed, or "NOT TERMED" | on |
 | **Med-out partner** | your partner, linking to their profile | on |
 | **My dibs** | the targets you hold, each with its time left, linking to its attack page | on |
-| **Organised Crime** | your OC and its state, a countdown while it's being planned, then **ready**, and **needs you** when it's waiting on you. **OC** opens your faction's crimes | on |
+| **Organised Crime** | your OC and its state, a countdown while it's being planned, then **ready**; **expired** when a crime that hasn't started runs past its expiry; and **needs you** when it's waiting on you. **OC** opens your faction's crimes | on |
 | **Guide** | your progress in the torn-tracker guide, and any bonus to claim | on |
 | **Below shop price** | on the Item Market, how many listings on screen sell below what a shop pays (see [Shop price guard](shop-price-guard.md)) | on |
 | **Quick links** | your dashboard and the guide on torn-tracker.com | on |
