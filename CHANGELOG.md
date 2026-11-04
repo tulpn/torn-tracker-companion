@@ -9,6 +9,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- War page: one timer per opponent. Where another script (Torn War Stuff Enhanced) already
+  shows a countdown or destination in the status cell, the companion no longer draws its
+  own on top. Waits of an hour or more show hours (`2:11:34`, not `131:34`).
+- War page: the fair-fight badge and the Dibs button stay on one short line in the member
+  cell instead of wrapping into tall pills over the name.
+
 ## 0.9.9 — 2026-11-02
 
 ### Changed

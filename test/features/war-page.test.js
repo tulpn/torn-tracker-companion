@@ -293,3 +293,67 @@ describe('LDT-032 loadout flags of opponents on the war page (Pro)', () => {
     assert.equal(site.calls.filter((c) => c[0] === 'warLoadouts').length, 0);
   });
 });
+
+describe('hq #535 the captured war page, with Torn War Stuff Enhanced and FF Scouter on', () => {
+  // Rows 3000001-2 okay; 3-5 in hospital with TWSE's countdown drawn over the status; 6 in
+  // hospital without it; 7 travelling and 8 abroad, both with TWSE's destination.
+  const CAPTURED = page('faction-war-captured.html');
+  const roster = [
+    { id: 3000001, state: 'Okay', until: null, description: 'Okay' },
+    { id: 3000003, state: 'Hospital', until: NOW + 786_000, description: '' },
+    { id: 3000004, state: 'Hospital', until: NOW + 1_418_000, description: '' },
+    { id: 3000005, state: 'Hospital', until: NOW + 7_894_000, description: '' },
+    { id: 3000006, state: 'Hospital', until: NOW + 7_894_000, description: '' },
+    { id: 3000007, state: 'Traveling', until: null, description: 'Returning to Torn from China' },
+    { id: 3000008, state: 'Abroad', until: null, description: 'In Switzerland' },
+  ];
+  const settings = { enabled: true, sortBy: 'torn', dibs: true, timers: true, loadouts: false };
+  const row = (r, id) => r.doc.querySelector(`li.enemy[data-player_id="${id}"]`) ?? r.doc.querySelector(`a[href$="XID=${id}"]`).closest('li');
+
+  test('one timer per row: none where TWSE already shows the time or the destination', async () => {
+    const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
+    await wait();
+    for (const id of [3000003, 3000004, 3000005, 3000007, 3000008]) {
+      assert.equal(row(r, id).querySelectorAll('.ttc-war-time').length, 0, `row ${id}`);
+    }
+    const ours = row(r, 3000006).querySelectorAll('.ttc-war-time');
+    assert.equal(ours.length, 1);
+    assert.equal(ours[0].textContent, '2:11:34', 'hours shown, not 131:34');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('a cell TWSE takes over later loses our timer on the next tick', async () => {
+    const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
+    await wait();
+    const cell = row(r, 3000006).querySelector('.status');
+    assert.equal(cell.querySelectorAll('.ttc-war-time').length, 1);
+    cell.dataset.twseOverridden = 'true';
+    await wait(1200);
+    assert.equal(cell.querySelectorAll('.ttc-war-time').length, 0);
+  });
+
+  test('the dibs button is a small one-line button in the member cell, one per row', async () => {
+    const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
+    await wait();
+    const buttons = [...r.doc.querySelectorAll('.ttc-war-dibs')];
+    assert.equal(buttons.length, r.doc.querySelectorAll('li.enemy').length);
+    for (const b of buttons) {
+      assert.ok(b.classList.contains('ttc-ui-small'), b.className);
+      assert.ok(b.closest('.member'));
+    }
+    const css = r.doc.getElementById('ttc-ui-style').textContent;
+    const rule = css.slice(css.indexOf('.ttc-ui-small.ttc-ui-small {'));
+    const body = rule.slice(0, rule.indexOf('}'));
+    assert.match(body, /white-space: nowrap/);
+    assert.match(body, /flex: none/);
+    assert.match(body, /height: 20px/);
+  });
+});
+
+describe('hq #535 clock', () => {
+  test('hours from an hour up', () => {
+    assert.equal(clock(3_599_000), '59:59');
+    assert.equal(clock(3_600_000), '1:00:00');
+    assert.equal(clock(7_894_000), '2:11:34');
+  });
+});

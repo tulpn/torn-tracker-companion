@@ -35,6 +35,8 @@ const INK = Object.freeze({
 });
 /** A small button inline in one of Torn's forms (hq #521); the class twice, see the style. */
 const INLINE = `.${P}-ui-inline.${P}-ui-inline`;
+/** A small button inside one of Torn's table rows (hq #535); the class twice, see the style. */
+const SMALL = `.${P}-ui-small.${P}-ui-small`;
 /** The shop price highlighter's tiers and the token each is drawn in. */
 const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-ff-hard'], ['blue', 'ring']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
@@ -113,6 +115,13 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-button[data-tone="bad"] { background: ${tint(INK.bad)}; border-color: transparent; color: ${INK.bad}; cursor: default; }
   .${P}-ui-button:disabled { cursor: default; }
   .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  /* Small (hq issue 535): one line inside a row Torn keeps narrow, like the war list's
+     member cell. It never wraps into a tall pill and never takes Torn's own button rules. */
+  ${SMALL} {
+    display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
+    width: auto; min-width: 0; height: 20px; min-height: 0; margin: 0 0 0 4px; padding: 0 8px;
+    font: 600 11px/18px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; text-transform: none;
+  }
   /* Inline beside one of Torn's form fields (hq issue 521): the field's height, one line, our
      accent. The class twice outweighs Torn's own form button rules, which made it black. */
   ${INLINE} {
@@ -382,8 +391,8 @@ export function profileAction(doc, heading, slot, node) {
  * One of our own small buttons; 44 px on touch screens. `inline` sizes it to sit beside
  * one of Torn's form fields, on the same line (hq #521).
  */
-export function button(doc, { cls, tone, inline = false, attrs = {} } = {}, ...children) {
+export function button(doc, { cls, tone, inline = false, small = false, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
-  const base = inline ? `${P}-ui-button ${P}-ui-inline` : `${P}-ui-button`;
+  const base = `${P}-ui-button${inline ? ` ${P}-ui-inline` : ''}${small ? ` ${P}-ui-small` : ''}`;
   return el('button', { type: 'button', class: classes(base, cls), 'data-tone': tone, ownerDocument: doc, ...attrs }, ...children);
 }

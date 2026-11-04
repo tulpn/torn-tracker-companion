@@ -8,6 +8,7 @@ Saved Torn pages and the JSON responses Torn's own pages request, for feature te
 | `travel-shop-flat.json` | the same response in its older flat form | **Synthetic**, as above |
 | `travel-shop.html` | the shop's shelves as the page renders them | **Synthetic**, class names as TornTools and Torn PDA match them |
 | `faction-war.html` | a ranked war's two member lists | **Synthetic**, classes as FF Scouter V2 and Torn War Stuff Enhanced match them |
+| `faction-war-captured.html` | a ranked war's two member lists: eight opponent rows (okay, hospital with and without Torn War Stuff Enhanced's countdown, travelling, abroad) and three of our own (hq #535) | **Captured** by the owner on 2026-11-03, with Torn War Stuff Enhanced and FF Scouter on. Names, player and faction ids, faction names, levels, estimates and activity times replaced with made-up values; the companion's nodes removed, images emptied, scripts and styles dropped |
 | `bazaar-add.html` | the bazaar's add-items list | **Synthetic**, classes as Torn Bazaar Filler (MIT) matches them |
 | `market-add.html` | the item market's sell form | **Synthetic**, classes as Torn Market Filler (MIT) matches them |
 | `trade-view.html` | a trade's two sides, `trade.php#step=view` | **Synthetic**, classes and texts as TornTools and Torn PDA (both GPLv3) match them |

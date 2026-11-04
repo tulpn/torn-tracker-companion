@@ -187,3 +187,13 @@ describe('hq #454 a busy page', () => {
     }
   });
 });
+
+describe('hq #535 the badge stays one short line in the war list', () => {
+  test('a compact badge on the captured war page, one per member', async () => {
+    const r = run({ html: page('faction-war-captured.html'), url: WAR, site: fakeSite() });
+    await wait();
+    assert.equal(badges(r).length, r.doc.querySelectorAll('li.enemy, li.your').length);
+    for (const b of badges(r)) assert.ok(b.classList.contains('ttc-ui-compact'), b.className);
+    assert.deepEqual(r.violations, []);
+  });
+});
