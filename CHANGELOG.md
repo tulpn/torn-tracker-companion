@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.12 — 2026-11-04
+
 ### Changed
 
 - Gym progress: with debug on, the log says why nothing was captured (no gym buttons found,
