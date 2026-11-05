@@ -79,7 +79,7 @@ function fakeTimers() {
 
 // The older tests below were written for the Lists place; the four places have their own
 // describe (hq #507).
-function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null } = {}) {
+function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null, kept } = {}) {
   dom.resetObserver();
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, { url: 'https://www.torn.com/' });
   windows.push(window);
@@ -87,11 +87,18 @@ function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ..
   settings.sidebar.position = position;
   change?.(settings);
   const asked = [];
+  const lastAsked = [];
   const site = {
     async sidebar(items) {
       asked.push(items);
       return typeof answer === 'function' ? answer(items) : answer;
     },
+    ...(kept === undefined ? {} : {
+      lastSidebar(items) {
+        lastAsked.push(items);
+        return typeof kept === 'function' ? kept(items) : kept;
+      },
+    }),
   };
   let clock = Date.UTC(2026, 9, 23, 12, 0, 0);
   const timers = fakeTimers();
@@ -109,7 +116,7 @@ function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ..
   });
   const node = () => window.document.getElementById(BLOCK_ID);
   return {
-    window, block, settings, asked, timers, saved, node,
+    window, block, settings, asked, lastAsked, timers, saved, node,
     advance(ms) {
       clock += ms;
     },
@@ -895,5 +902,75 @@ describe('hq #599 RDB-081 the routine badge', () => {
     assert.equal(r.url, 'https://torn-tracker.com/me/routine/');
     assert.equal(readRoutine([]), null);
     assert.equal(readRoutine({ lines: 'x' }), null);
+  });
+});
+
+// hq #606: after a crime the page loads again; its first read may fail or wait out a 429.
+// The last answer, kept from the earlier page, stands in with its age instead of "no data".
+describe('hq #606 a new page shows the last answer, not “no data”', () => {
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const keptAt = (ago) => ({ status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0), cached: true, at: T0 - ago });
+
+  test('a failed first read shows the kept rows, with their age', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: keptAt(5 * 60_000) });
+    await settle();
+    const text = t.node().textContent;
+    assert.match(text, /Chain 412 \/ 500/);
+    assert.match(text, /My dibs/);
+    assert.doesNotMatch(text, /no data/i);
+    assert.match(t.node().querySelector('[data-ttc-aged]').textContent, /^As of .+ ago$/);
+    assert.equal(t.asked.length, 1, 'no extra read');
+  });
+
+  test('a 429 on the first read shows the kept rows too, and waits as asked', async () => {
+    const t = mount({ answer: { status: 'wait', retryMs: 120_000 }, kept: keptAt(3 * 60_000) });
+    await settle();
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+    assert.ok(t.node().querySelector('[data-ttc-aged]'));
+    t.advance(READ_EVERY_MS);
+    t.timers.run();
+    await settle();
+    assert.equal(t.asked.length, 1, 'the 429 is waited out');
+  });
+
+  test('a fresh read replaces the kept rows and the age line goes', async () => {
+    let reply = { status: 'failed' };
+    const t = mount({ answer: () => reply, kept: keptAt(5 * 60_000) });
+    await settle();
+    assert.ok(t.node().querySelector('[data-ttc-aged]'));
+    reply = { status: 'ok', ...readSidebar({ ...FULL, chain: { ...FULL.chain, current: 420 } }, Object.keys(FULL), 0), at: T0 + READ_EVERY_MS };
+    t.advance(READ_EVERY_MS);
+    t.timers.run();
+    await settle();
+    assert.match(t.node().textContent, /Chain 420 \/ 500/);
+    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+  });
+
+  test('a kept answer under two minutes old says no age', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: keptAt(60_000) });
+    await settle();
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+  });
+
+  test('nothing kept: a failed first read still says so', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: null });
+    await settle();
+    assert.doesNotMatch(t.node().textContent, /Chain 412/);
+    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+  });
+
+  test('Torn redrawing the crimes page puts the rows back without a read', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: keptAt(5 * 60_000) });
+    await settle();
+    for (let spray = 0; spray < 3; spray += 1) {
+      t.window.document.getElementById('sidebar').replaceWith(JSDOM.fragment(DESKTOP));
+      await settle();
+      t.advance(5_000);
+      t.timers.run();
+      await settle();
+      assert.match(t.node().textContent, /Chain 412 \/ 500/, `after spray ${spray + 1}`);
+    }
+    assert.equal(t.asked.length, 1, 'one read, then the minute');
   });
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  SIDEBAR_KEEP_MS, SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite, siteUrl, validFf, validRoles,
 } from '../../src/core/site.js';
 
@@ -753,6 +753,37 @@ describe('CMP-108 the sidebar read', () => {
     const again = await r.site.sidebar(['chain']);
     assert.equal(again.cached, true);
     assert.equal(again.factionLinked, false);
+  });
+
+  test('hq #606 the last answer is kept 90 minutes for the next page, with when it came', async () => {
+    let clock = 0;
+    let fail = false;
+    const data = { server_time: new Date(0).toISOString(), chain: { current: 3, max: 10, timeout_at: null, as_of: null } };
+    const r = rig({ now: () => clock, clock: () => clock, reply: () => (fail ? { ok: false, status: 503, data: null } : { ok: true, status: 200, data }) });
+    assert.equal(r.site.lastSidebar(['chain']), null, 'nothing kept yet');
+    const first = await r.site.sidebar(['chain']);
+    assert.equal(first.at, 0);
+    clock = 30 * 60_000;
+    const kept = r.site.lastSidebar(['chain']);
+    assert.equal(r.calls.length, 1, 'lastSidebar asks nothing');
+    assert.equal(kept.at, 0);
+    assert.equal(kept.cached, true);
+    assert.deepEqual(kept.items, first.items);
+    fail = true;
+    assert.equal((await r.site.sidebar(['chain'])).status, 'failed', 'past 55 s it asks, and says what happened');
+    assert.equal(r.calls.length, 2);
+    assert.ok(r.site.lastSidebar(['chain']), 'a failed read keeps the last answer');
+    assert.equal(r.site.lastSidebar(['chain', 'oc']), null, 'other items are another copy');
+    clock = SIDEBAR_KEEP_MS + 1;
+    assert.equal(r.site.lastSidebar(['chain']), null, 'gone after 90 minutes');
+  });
+
+  test('hq #606 no key, no kept answer', async () => {
+    const r = rig({ reply: () => ({ ok: true, status: 200, data: { chain: null } }) });
+    await r.site.sidebar(['chain']);
+    assert.ok(r.site.lastSidebar(['chain']));
+    r.setKey('');
+    assert.equal(r.site.lastSidebar(['chain']), null);
   });
 
   test('a kept copy that does not fit is not used', () => {

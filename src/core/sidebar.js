@@ -35,6 +35,8 @@ export const BLOCK_ID = `${P}-sidebar-block`;
 export const READ_EVERY_MS = 60_000;
 /** RDB-005: a routine reading older than this says its age. */
 const STALE_MS = 90 * 60_000;
+/** An answer older than this says how old it is (hq #606): two missed reads. */
+export const AGED_MS = 2 * 60_000;
 
 /** The items, in the order the block shows them, with the spec's defaults. All Core. */
 export const SIDEBAR_ITEMS = Object.freeze([
@@ -306,7 +308,7 @@ export function mountSidebarBlock({
   /** null until the player opens or closes it: then the default for where it sits. */
   let openState = null;
   let block = null;
-  /** The last answer: status, items, links, and when it came. */
+  /** The last answer: status, items, links, and when it came (`at`, when known). */
   let answer = null;
   let lastAsked = 0;
   let notBefore = 0;
@@ -467,6 +469,9 @@ export function mountSidebarBlock({
         if (line) rows.push(line);
       }
     }
+    if (answer?.status === 'ok' && Number.isFinite(answer.at) && now() - answer.at >= AGED_MS) {
+      rows.push(h('div', { class: `${P}-sb-row ${P}-sb-muted`, 'data-ttc-aged': '' }, `As of ${roughly(now() - answer.at)} ago`));
+    }
     const below = profitableCount();
     if (settings.sidebar.items.shops === true && below > 0) {
       rows.push(row(h('b', null, 'Shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'} below what a shop pays`));
@@ -513,7 +518,9 @@ export function mountSidebarBlock({
     if (result.status === 'wait' || result.status === 'failed') {
       // A 429 or a failed read says nothing new: the rows already shown stay (hq #452).
       if (result.status === 'wait') notBefore = now() + result.retryMs;
-      if (answer?.status !== 'ok') answer = { status: 'failed' };
+      // With nothing shown yet, the last answer kept from an earlier page stands in, with its
+      // age, rather than "no data" on every row (hq #606).
+      if (answer?.status !== 'ok') answer = lastKept() ?? { status: 'failed' };
     } else {
       answer = result;
       if (result.status === 'ok' && result.items.has('watch')) onWatch?.(result.items.get('watch'));
@@ -549,6 +556,12 @@ export function mountSidebarBlock({
     return h('div', { id: BLOCK_ID, 'data-ttc-own': '', 'data-open': 'false' }, head, h('div', { class: `${P}-sb-body` }));
   }
 
+  /** The last answer kept from an earlier page, or null; it asks nothing (hq #606). */
+  function lastKept() {
+    const want = askedItems(getSettings());
+    return want.length ? site.lastSidebar?.(want) ?? null : null;
+  }
+
   function place() {
     if (stopped) return;
     if (!enabled()) {
@@ -566,6 +579,8 @@ export function mountSidebarBlock({
     say('place', `sidebar: block placed ${before ? 'before' : 'after'} ${nameOf(anchor)}`
       + (spot.position !== wanted && wanted ? ` (${spot.position}: this page has no place for ${wanted})` : ''));
     if (!block) block = build();
+    // A new page draws the last answer at once; the read on its schedule then replaces it.
+    if (!answer) answer = lastKept();
     block.dataset.position = spot.position;
     // A copy left behind by a redraw of Torn's sidebar holds old rows and a dead button.
     for (const copy of doc.querySelectorAll(`#${BLOCK_ID}`)) {

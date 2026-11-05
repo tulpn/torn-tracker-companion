@@ -20,6 +20,7 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 ### Fixed
 
 - War page with another script's line under each row (such as a stats estimate): the hospital timer and the Dibs button no longer drop out of their row onto the line below. At every window width the timer now stands in for Torn's word in the status cell (the word is in its tooltip), and Dibs is a small icon before the banner, both on one line (hq #535).
+- Sidebar block after a crime or any page load: it no longer shows "no data" on every row when its first read fails or has to wait. It shows the last answer it had, from up to 90 minutes before, with an "As of 6m ago" line once that answer is two minutes old, until the next read replaces it. It asks the site no more often than before (hq #606).
 
 ## 0.9.13 — 2026-11-05
 

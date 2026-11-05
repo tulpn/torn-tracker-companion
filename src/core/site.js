@@ -37,7 +37,13 @@ const GUIDE_TTL = 15 * 60_000;
 // The sidebar block's answer, kept just under its minute (hq #452): a Torn page load
 // shows the last rows at once instead of asking again. Under 60 s, so the block's own
 // once-a-minute read never lands on a cached copy that a slow reply made look fresh.
+/** A sidebar answer younger than this is used without asking (one read a minute). */
 const SIDEBAR_TTL = 55_000;
+/**
+ * The last sidebar answer is kept this long, to draw at once on the next page load and to
+ * stand in while a read fails or waits out a 429, with its age (hq #606).
+ */
+export const SIDEBAR_KEEP_MS = 90 * 60_000;
 const GUIDE_PAGE = `${SITE}/guide/`;
 const ROUTINE_PAGE = `${SITE}/me/routine/`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
@@ -619,7 +625,7 @@ export const SPACES = Object.freeze({
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
   guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
-  sidebar: { ttlMs: SIDEBAR_TTL, max: 1, valid: validSidebarCopy },
+  sidebar: { ttlMs: SIDEBAR_KEEP_MS, max: 1, valid: validSidebarCopy },
   trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
   lists: { ttlMs: LISTS_TTL, max: 200, valid: validLists },
   trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && onSite(v) },
@@ -1617,8 +1623,10 @@ export function createSite({
       if (!getKey()) return { status: 'no_key' };
       if (!usable()) return { status: 'refused' };
       const id = ask.join(',');
-      const kept = cache.get('sidebar', id);
-      if (kept) return { status: 'ok', ...readSidebar(kept.data, ask, kept.skew), cached: true };
+      const kept = cache.peek('sidebar', id);
+      if (kept && now() - kept.at < SIDEBAR_TTL) {
+        return { status: 'ok', ...readSidebar(kept.value.data, ask, kept.value.skew), cached: true, at: kept.at };
+      }
       const result = await exchange(`${SIDEBAR_URL}?items=${id}`, { method: 'GET' });
       if (keyRefused(result)) {
         cache.drop('sidebar', id);
@@ -1631,7 +1639,19 @@ export function createSite({
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       const skew = skewOf(result.data);
       cache.set('sidebar', id, sidebarCopy(result.data, ask, skew));
-      return { status: 'ok', ...readSidebar(result.data, ask, skew) };
+      return { status: 'ok', ...readSidebar(result.data, ask, skew), at: now() };
+    },
+
+    /**
+     * The last sidebar answer kept for these items, however old within SIDEBAR_KEEP_MS, with
+     * when it came; null when there is none. Asks nothing (hq #606).
+     * @param {string[]} asked
+     */
+    lastSidebar(asked) {
+      if (!getKey() || !usable()) return null;
+      const ask = SIDEBAR_KEYS.filter((key) => asked.includes(key));
+      const kept = cache.peek('sidebar', ask.join(','));
+      return kept ? { status: 'ok', ...readSidebar(kept.value.data, ask, kept.value.skew), cached: true, at: kept.at } : null;
     },
 
     /**
