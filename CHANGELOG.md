@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.13 — 2026-11-05
+
 ### Fixed
 
 - War page in a narrow desktop window: the hospital timer no longer lands on Torn's own
