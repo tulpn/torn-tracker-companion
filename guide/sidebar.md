@@ -32,6 +32,7 @@ Each line is one thing you'd otherwise open the website or Discord for:
 | **My dibs** | the targets you hold, each with its time left, linking to its attack page | on |
 | **Organised Crime** | your OC and its state, a countdown while it's being planned, then **ready**; **expired** when a crime that hasn't started runs past its expiry; and **needs you** when it's waiting on you. **OC** opens your faction's crimes | on |
 | **Guide** | your progress in the torn-tracker guide, and any bonus to claim | on |
+| **Routine** | how many of today's routine lines on torn-tracker.com are still undone, like "Routine 3 left today", and when the day resets. Tap it for the list: each line opens its Torn page in the same tab, and a reading older than 90 minutes says how old it is. With **Casino off** on the site, no casino line ever shows | on |
 | **Below shop price** | on the Item Market, how many listings on screen sell below what a shop pays (see [Shop price guard](shop-price-guard.md)) | on |
 | **Quick links** | your dashboard and the guide on torn-tracker.com | on |
 | **Best travel run** | your planner's best run, like "Mexico · Jaguar Plushie · +$13.5k/h" | off |

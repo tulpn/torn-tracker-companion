@@ -33,6 +33,8 @@ import { watchLine } from './rota.js';
 const P = 'ttc';
 export const BLOCK_ID = `${P}-sidebar-block`;
 export const READ_EVERY_MS = 60_000;
+/** RDB-005: a routine reading older than this says its age. */
+const STALE_MS = 90 * 60_000;
 
 /** The items, in the order the block shows them, with the spec's defaults. All Core. */
 export const SIDEBAR_ITEMS = Object.freeze([
@@ -44,6 +46,7 @@ export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'dibs', title: 'My dibs', summary: 'The targets you hold, with time left, linking to each attack page.', on: true },
   { id: 'oc', title: 'Organised Crime', summary: 'Your OC and its state, and when it needs you.', on: true },
   { id: 'guide', title: 'Guide', summary: 'Your progress in the torn-tracker guide, and bonuses to claim.', on: true },
+  { id: 'routine', title: 'Routine', summary: 'How many of today’s routine lines are still undone; tap for the list, each linking to its Torn page.', on: true },
   { id: 'travel', title: 'Best travel run', summary: 'Your planner’s best run right now, with its profit per hour.', on: false },
   { id: 'loot', title: 'NPC loot', summary: 'The next loot level per NPC and when it comes, with the source credited.', on: false },
   { id: 'gym', title: 'Gym', summary: 'How far you are towards your next gym.', on: false },
@@ -97,6 +100,17 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-muted { color: var(--muted-foreground); }
   #${BLOCK_ID} .${P}-sb-alert { color: color-mix(in srgb, var(--destructive) 65%, var(--foreground)); font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-links a { margin-right: 10px; }
+  #${BLOCK_ID} .${P}-sb-routine {
+    display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; cursor: pointer;
+    background: transparent; color: inherit; font: inherit;
+  }
+  #${BLOCK_ID} .${P}-sb-routine:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  #${BLOCK_ID} .${P}-sb-badge {
+    min-width: 18px; padding: 0 5px; border-radius: 999px; text-align: center;
+    background: var(--primary); color: var(--primary-foreground); font: 700 11px/18px var(--tt-font-sans);
+  }
+  #${BLOCK_ID} .${P}-sb-list { margin: 2px 0 0; padding: 0 0 0 14px; }
+  #${BLOCK_ID} .${P}-sb-list li { padding: 1px 0; }
   #${BLOCK_ID} .${P}-sb-switch {
     margin-left: 6px; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
     background: transparent; color: inherit; font: 600 11px/1.6 var(--tt-font-sans);
@@ -105,7 +119,8 @@ const STYLE = `
   @media (pointer: coarse) {
     #${BLOCK_ID} .${P}-sb-head { min-height: 44px; }
     #${BLOCK_ID} .${P}-sb-links a { display: inline-flex; align-items: center; min-height: 44px; }
-    #${BLOCK_ID} .${P}-sb-switch { min-height: 44px; }
+    #${BLOCK_ID} .${P}-sb-switch, #${BLOCK_ID} .${P}-sb-routine { min-height: 44px; }
+    #${BLOCK_ID} .${P}-sb-list li { padding: 6px 0; }
   }
 `;
 
@@ -298,6 +313,7 @@ export function mountSidebarBlock({
   let readTimer = null;
   let tick = null;
   let stopped = false;
+  let routineOpen = false;
   // hq #488: what the console last said about placing, reading and hiding, so that a
   // reason is said once when it changes, not on every redraw.
   const said = new Map();
@@ -383,8 +399,34 @@ export function mountSidebarBlock({
     loot: (l) => row(h('b', null, 'Loot'), ...l.npcs.map((n) => ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''};`),
       h('span', { class: `${P}-sb-muted` }, ` (${l.source})`)),
     gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
+    routine: (r) => routineLine(r),
     stocks: (s) => row(link(STOCKS_URL, `${s.crossed} of ${s.watched} watched stocks crossed`, true)),
   };
+
+  /**
+   * RDB-081: "Routine [3] left today", and the undone lines on tap, each linking to its
+   * Torn page in the same tab (RDB-004). A reading older than 90 minutes says its age
+   * (RDB-005). Open or closed is kept while the page stays open.
+   */
+  function routineLine(r) {
+    if (r.keyNeeded) return row(h('b', null, 'Routine'), ' ', link(r.url, 'add your API key on torn-tracker.com', true));
+    if (!r.lines.length) return null;
+    if (r.undone === 0) return row(h('b', null, 'Routine'), h('span', { class: `${P}-sb-muted` }, ` all ${r.lines.length} done today`));
+    const resets = r.endsAt && r.endsAt > now() ? ` · resets in ${roughly(r.endsAt - now())}` : '';
+    const button = h('button', {
+      type: 'button', class: `${P}-sb-routine`, 'aria-expanded': String(routineOpen),
+      'aria-label': `Routine: ${r.undone} of ${r.lines.length} left today. ${routineOpen ? 'Hide' : 'Show'} the list.`,
+    }, h('b', null, 'Routine'), h('span', { class: `${P}-sb-badge` }, String(r.undone)), 'left today');
+    button.addEventListener('click', () => {
+      routineOpen = !routineOpen;
+      render();
+    });
+    const list = routineOpen ? h('ul', { class: `${P}-sb-list` }, ...r.lines.filter((l) => !l.done).map((l) => h('li', null,
+      link(l.href, l.text),
+      l.asOf && now() - l.asOf > STALE_MS ? h('span', { class: `${P}-sb-muted` }, ` · ${roughly(now() - l.asOf)} old`) : null)),
+    h('li', { class: `${P}-sb-muted` }, `${r.lines.length - r.undone} done · `, link(r.url, 'the full list', true))) : null;
+    return row(button, h('span', { class: `${P}-sb-muted` }, resets), list);
+  }
 
   /** Watch mode's switch on the line (CHW-021): the player's own click, nothing else. */
   function watchSwitch() {

@@ -39,6 +39,7 @@ const GUIDE_TTL = 15 * 60_000;
 // once-a-minute read never lands on a cached copy that a slow reply made look fresh.
 const SIDEBAR_TTL = 55_000;
 const GUIDE_PAGE = `${SITE}/guide/`;
+const ROUTINE_PAGE = `${SITE}/me/routine/`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
@@ -198,7 +199,7 @@ export function readRun(r, skew = 0) {
 }
 
 /** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
-export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks']);
+export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks', 'routine']);
 const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
 /** A ranked war the sidebar holds: matched (the start is set) or running (CAPI-039). */
 const WAR_STATES = Object.freeze(['matched', 'running']);
@@ -240,6 +241,42 @@ function readClash(data) {
     free.set(slot, WATCH_ROLES.filter((r) => roles.includes(r)));
   }
   return { clashes, free };
+}
+
+/**
+ * A Torn page a routine line links to (RDB-004), as a path on this host so it opens in the
+ * same tab: `https://www.torn.com/bank.php` or `/bank.php` -> `/bank.php`. Anything else,
+ * another host included, is null.
+ */
+export function tornPath(v) {
+  if (typeof v !== 'string' || v.length > 200) return null;
+  const path = v.replace(/^https:\/\/(?:www\.)?torn\.com(?=\/)/, '');
+  return /^\/(?!\/)[\w./?=&#%:+-]*$/.test(path) ? path : null;
+}
+
+const ROUTINE_LINES = 40;
+
+/**
+ * The routine feed's lines (RDB-081, RDB-082; the shape the bot's mock serves), checked
+ * line by line: the key, the words, done or not, the Torn page and the reading's age. With
+ * "Casino off" on (RDB-045, D-211) a casino line is never kept, whatever the site sent.
+ */
+export function readRoutine(v, skew = 0) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const casinoOff = v.casino_off === true;
+  const url = siteLink(v.url) ?? ROUTINE_PAGE;
+  if (v.key_needed === true) return { keyNeeded: true, lines: [], undone: 0, endsAt: null, url };
+  if (!Array.isArray(v.lines)) return null;
+  const lines = v.lines.slice(0, ROUTINE_LINES).map((l) => ({
+    key: typeof l?.key === 'string' && /^[a-z0-9_]{1,40}$/.test(l.key) ? l.key : null,
+    text: trimmed(l?.text, 120),
+    done: typeof l?.done === 'boolean' ? l.done : null,
+    href: tornPath(l?.url),
+    asOf: l?.as_of == null ? null : time(l.as_of, skew),
+    casino: l?.casino === true,
+  })).filter((l) => l.key && l.text && l.done !== null && l.href && !(casinoOff && l.casino));
+  const endsAt = v.day_ends_at == null ? null : time(v.day_ends_at, skew);
+  return { keyNeeded: false, lines, undone: lines.filter((l) => !l.done).length, endsAt, url };
 }
 
 /** Each sidebar item's reader: the checked value, or null when it doesn't fit. */
@@ -317,6 +354,7 @@ const SIDEBAR_READERS = {
     if (typeof v?.next_gym !== 'string' || !v.next_gym || v.next_gym.length > 40 || !percent_(v.percent)) return null;
     return { nextGym: v.next_gym, percent: v.percent, energy: count(v.energy_to_next, 1e7) ? v.energy_to_next : null };
   },
+  routine: (v, skew) => readRoutine(v, skew),
   stocks: (v) => (count(v?.watched, 100) && count(v.crossed, 100) && v.watched > 0 ? { watched: v.watched, crossed: Math.min(v.crossed, v.watched) } : null),
 };
 
