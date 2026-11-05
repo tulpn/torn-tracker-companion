@@ -9,10 +9,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
-### Fixed
-
-- Gym: the energy still to your next gym is one line in Torn's welcome box at the top of the page, under Torn's own lines ("Next gym (name): 84 %, about 2,896 E to go (estimate)"), no longer a narrow pill under the next gym's tile that wrapped a word at a time over the grid (hq #610).
-
 ## 0.9.14 — 2026-11-05
 
 ### Added
@@ -27,6 +23,7 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - War page with another script's line under each row (such as a stats estimate): the hospital timer and the Dibs button no longer drop out of their row onto the line below. At every window width the timer now stands in for Torn's word in the status cell (the word is in its tooltip), and Dibs is a small icon before the banner, both on one line (hq #535).
 - Sidebar block after a crime or any page load: it no longer shows "no data" on every row when its first read fails or has to wait. It shows the last answer it had, from up to 90 minutes before, with an "As of 6m ago" line once that answer is two minutes old, until the next read replaces it. It asks the site no more often than before (hq #606).
+- Gym: the energy still to your next gym is one line in Torn's welcome box at the top of the page, under Torn's own lines ("Next gym (name): 84 %, about 2,896 E to go (estimate)"), no longer a narrow pill under the next gym's tile that wrapped a word at a time over the grid (hq #610).
 
 ## 0.9.13 — 2026-11-05
 
