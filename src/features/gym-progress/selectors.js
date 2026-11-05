@@ -16,6 +16,9 @@ export function gymStep(url) {
   }
 }
 
+/** Every gym's button, to tell "none in progress" from "markup differs" (hq #576). */
+export const GYM_BUTTON = "[class*='gymButton_']";
+
 /** The gym the player is working towards, and its percentage text. */
 export const IN_PROGRESS = "[class*='gymButton_'][class*='inProgress_']";
 export const PERCENT = "[class*='percentage_']";
