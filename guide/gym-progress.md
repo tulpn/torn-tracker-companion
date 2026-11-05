@@ -17,8 +17,11 @@ keywords: torn gym progress, energy to next gym, torn gym unlock
 
 ## Energy to the next gym
 
-Beside the gym you're working towards, the companion shows **about N energy to go (an
-estimate)**. It's an estimate because the game counts gym experience, not energy.
+In Torn's welcome box at the top of the gym, under Torn's own lines, the companion adds
+one line about the gym you're working towards, for example **Next gym (Legs, Bums and
+Tums): 84 %, about 2,896 E to go (estimate)**. It's an estimate because the game counts
+gym experience, not energy. Nothing is added on or under the gym tiles. If the welcome box
+isn't on the page, the line sits just above the gyms.
 
 ## What makes it work
 

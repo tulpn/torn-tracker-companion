@@ -380,10 +380,15 @@ describe('CMP-206 the own gym read (CAPI-035, D-073)', () => {
 
   test('the gym in progress, its percent and the estimate, each checked', async () => {
     const r = rig({ reply: reply({ gym_id: 2, percent: 62, next_gym_energy_estimate: 190, energy_by_gym: [] }) });
-    assert.deepEqual(await r.site.meGym(), { gym_id: 2, percent: 62, next_gym_energy_estimate: 190 });
+    assert.deepEqual(await r.site.meGym(), { gym_id: 2, percent: 62, next_gym_energy_estimate: 190, next_gym_energy_total: null });
     assert.equal(r.calls[0].url, ME_GYM_URL);
     const odd = rig({ reply: reply({ gym_id: 2, percent: 140, next_gym_energy_estimate: -5 }) });
-    assert.deepEqual(await odd.site.meGym(), { gym_id: 2, percent: null, next_gym_energy_estimate: null });
+    assert.deepEqual(await odd.site.meGym(), { gym_id: 2, percent: null, next_gym_energy_estimate: null, next_gym_energy_total: null });
+    // hq #610: the gym's whole estimated energy, when the site sends it.
+    assert.equal((await rig({ reply: reply({ gym_id: 2, next_gym_energy_estimate: 2896, next_gym_energy_total: 18000 }) }).site.meGym()).next_gym_energy_total, 18000);
+    for (const bad of [0, -1, 1.5, '18000', 2e7]) {
+      assert.equal((await rig({ reply: reply({ gym_id: 2, next_gym_energy_total: bad }) }).site.meGym()).next_gym_energy_total, null, String(bad));
+    }
   });
 
   test('no gym, a failure or no key: nothing', async () => {

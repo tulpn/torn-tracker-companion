@@ -1301,7 +1301,7 @@ export function createSite({
      * The player's own gym view (CAPI-035 own gym, D-073): the gym in progress, how far,
      * and the site's labelled estimate of the energy to the next gym. Never cached: it
      * changes with every train, and the gym page asks once per view.
-     * @returns {Promise<{gym_id: number, percent: number|null, next_gym_energy_estimate: number|null}|null>}
+     * @returns {Promise<{gym_id: number, percent: number|null, next_gym_energy_estimate: number|null, next_gym_energy_total: number|null}|null>}
      */
     async meGym() {
       if (!usable()) return null;
@@ -1313,6 +1313,9 @@ export function createSite({
         gym_id: data.gym_id,
         percent,
         next_gym_energy_estimate: Number.isInteger(estimate) && estimate >= 0 && estimate <= 1e7 ? estimate : null,
+        // Optional (hq #610): the gym's whole estimated energy, for "15,104 / 18,000 E".
+        next_gym_energy_total: Number.isInteger(data.next_gym_energy_total) && data.next_gym_energy_total > 0
+          && data.next_gym_energy_total <= 1e7 ? data.next_gym_energy_total : null,
       };
     },
 

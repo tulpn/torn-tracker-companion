@@ -142,6 +142,8 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   :has(> ${INLINE}) > :not(${INLINE}, .${P}-ui-block) { flex: 1 1 0; min-width: 0; }
   :has(> ${INLINE}) > .${P}-ui-block { flex: 0 0 100%; order: 1; box-sizing: border-box; }
   :has(> ${INLINE}) > :not(${INLINE}) input:not([type="hidden"]) { width: 100% !important; box-sizing: border-box; }
+  /* Gym progress (hq issue 610): a line in Torn's welcome box, in its font; wraps as a sentence. */
+  .${P}-gym { display: block; margin: 2px 0 0; font: inherit; color: inherit; white-space: normal; word-break: normal; overflow-wrap: normal; }
   /* The best buy abroad: its whole row is outlined, without touching Torn's own styles. */
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
   [class*='row___']:has(.${P}-best) { outline: 2px solid ${TOKENS.light['tt-success']}; outline-offset: -2px; border-radius: 6px; }
