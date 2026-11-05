@@ -156,6 +156,17 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   [data-${P}-bounty-hide] { display: none !important; }
   [data-${P}-bounty-soon] { outline: 2px solid ${TOKENS.light['tt-success']} !important; outline-offset: -2px; border-radius: 4px; }
   body.dark-mode [data-${P}-bounty-soon] { outline-color: ${TOKENS.dark['tt-success']} !important; }
+  /* The war page in a narrow window, where Torn draws the list compact (hq issue 535): one thing
+     per status cell, our timer standing in for Torn's word (the word is in its title), and
+     the dibs button a 24 px icon before the banner (its label in its title). */
+  @media (max-width: 1100px) {
+    [data-${P}-war-timed] { font-size: 0 !important; }
+    [data-${P}-war-timed] > .${P}-war-time { margin: 0; }
+    .member:has(> .${P}-war-dibs) { display: flex !important; flex-wrap: nowrap; align-items: center; }
+    .member:has(> .${P}-war-dibs) > :not(.${P}-war-dibs) { min-width: 0; }
+    ${SMALL}.${P}-war-dibs { order: -1; width: 24px; margin: 0 4px 0 0; padding: 0; justify-content: center; font-size: 0; }
+    ${SMALL}.${P}-war-dibs::before { content: attr(data-short); font-size: 12px; line-height: 18px; }
+  }
   .${P}-ui-bar label { display: inline-flex; align-items: center; gap: 4px; }
   .${P}-ui-bar input[type="number"] {
     box-sizing: border-box; width: 110px; min-height: 26px; padding: 2px 6px;
