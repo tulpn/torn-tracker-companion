@@ -4,7 +4,7 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import feature, { findSpots, idFromHref } from '../../src/features/ff-badges/index.js';
-import { NO_ESTIMATE, UNKNOWN_COLOUR, colourFor, describe as look, textColourFor } from '../../src/features/ff-badges/view.js';
+import { NO_ESTIMATE, UNKNOWN_COLOUR, colourFor, describe as look, difficultyOf, ffText, textColourFor } from '../../src/features/ff-badges/view.js';
 import { page, runFeature } from '../feature-harness.js';
 
 const WAR = 'https://www.torn.com/factions.php?step=your#/war/rank';
@@ -115,14 +115,33 @@ describe('CMP-101 a badge beside each player, from one batched lookup', () => {
   });
 });
 
-describe('CMP-101 colours as FF Scouter, so players read them the way they already do', () => {
-  test('FF 1 is blue, FF 5 and above red, steps in between', () => {
-    assert.equal(colourFor(1), '#1734e8');
-    assert.equal(colourFor(3), '#34e817');
-    assert.equal(colourFor(5), '#e81734');
-    assert.equal(colourFor(9), '#e81734');
-    assert.equal(colourFor(0.5), '#1734e8');
+describe('D-203 the raw fair fight, coloured by the site’s difficulty band (hq #592)', () => {
+  test('bands at the site’s edges: easy to 2.0, moderate to 3.5, difficult to 4.5, then impossible', () => {
+    assert.deepEqual([1, 2, 2.01, 3.5, 3.51, 4.5, 4.51, 25].map(difficultyOf),
+      ['easy', 'easy', 'moderate', 'moderate', 'difficult', 'difficult', 'impossible', 'impossible']);
+    const [easy, moderate, difficult, impossible] = [1.5, 3, 4, 5.91].map((ff) => colourFor(ff));
+    assert.equal(new Set([easy, moderate, difficult, impossible, UNKNOWN_COLOUR]).size, 5);
+    assert.equal(colourFor(3), moderate, 'the respect sweet spot is green');
+    assert.equal(colourFor(12.4), impossible);
     assert.equal(colourFor(null), UNKNOWN_COLOUR);
+  });
+
+  test('the band the site sends wins over the one worked out here', () => {
+    assert.equal(colourFor(3, 'impossible'), colourFor(9));
+    assert.equal(look({ ff: 3, band: null, difficulty: 'difficult' }).background, colourFor(4));
+    assert.equal(look({ ff: 3, band: null, difficulty: 'bogus' }).background, colourFor(3));
+  });
+
+  test('CMP-FF-001: two decimals below 10, one from 10 up, no cap at 3', () => {
+    assert.deepEqual([1, 2.1, 5.91, 9.99, 9.996, 12.4, 25.37].map(ffText), ['1.00', '2.10', '5.91', '9.99', '10.0', '12.4', '25.4']);
+    assert.equal(look({ ff: 5.91, band: null }).text, '5.91');
+  });
+
+  test('CMP-FF-002: the title names the figure, the band and Torn’s 3.00× cap', () => {
+    const t = look({ ff: 5.91, band: null, source: 'ffscouter', estimatedAt: null }).title;
+    assert.match(t, /^Fair fight 5\.91 · may be impossible · Torn pays respect at most 3\.00× \(estimate by FFScouter/);
+    assert.match(look({ ff: 12.4, band: '>1b' }).title, /^Fair fight 12\.4 · may be impossible · Torn pays respect at most 3\.00× · stats about >1b/);
+    assert.match(look({ ff: 2.1, band: null }).title, /^Fair fight 2\.10 · moderate · /);
   });
 
   test('text is black or white, whichever reads', () => {

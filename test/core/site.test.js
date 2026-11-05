@@ -51,7 +51,7 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
     assert.equal(r.calls[0].method, 'POST');
     assert.deepEqual(JSON.parse(r.calls[0].body), { ids: [1, 2] });
     assert.equal(r.calls[0].headers.Authorization, `Bearer ${KEY}`);
-    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', source: null, estimatedAt: null });
+    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', difficulty: null, source: null, estimatedAt: null });
   });
 
   test('a second page view inside the hour asks nothing', async () => {
@@ -74,7 +74,7 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
 
   test('a player the site does not know is "?" for the hour, never a guess and never a retry', async () => {
     const r = rig({ reply: ffReply([]) });
-    assert.deepEqual((await r.site.ff([7])).get(7), { ff: null, band: null, source: null, estimatedAt: null });
+    assert.deepEqual((await r.site.ff([7])).get(7), { ff: null, band: null, difficulty: null, source: null, estimatedAt: null });
     await r.site.ff([7]);
     assert.equal(r.calls.length, 1);
   });
@@ -86,30 +86,43 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
       { id: 3, ff: 3, band: null, source: 'someone', estimated_at: 'yesterday' },
     ]) });
     const found = await r.site.ff([1, 2, 3]);
-    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', source: 'ffscouter', estimatedAt: Date.UTC(2026, 10, 1, 12) });
-    assert.deepEqual(found.get(2), { ff: 3, band: null, source: 'index', estimatedAt: null });
-    assert.deepEqual(found.get(3), { ff: 3, band: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', difficulty: null, source: 'ffscouter', estimatedAt: Date.UTC(2026, 10, 1, 12) });
+    assert.deepEqual(found.get(2), { ff: 3, band: null, difficulty: null, source: 'index', estimatedAt: null });
+    assert.deepEqual(found.get(3), { ff: 3, band: null, difficulty: null, source: null, estimatedAt: null });
   });
 
   test('hq #492: an answer kept from before the source still reads', () => {
     assert.equal(validFf({ ff: 2, band: null }), true);
-    assert.equal(validFf({ ff: 2, band: null, source: 'ffscouter', estimatedAt: 1 }), true);
-    assert.equal(validFf({ ff: 2, band: null, source: 'other' }), false);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: null, source: 'ffscouter', estimatedAt: 1 }), true);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: null, source: 'other' }), false);
     assert.equal(validFf({ ff: 2, band: null, estimatedAt: 'x' }), false);
+  });
+
+  test('D-203: the site’s difficulty band comes along; an unknown name drops only that field (hq #592)', async () => {
+    const r = rig({ reply: ffReply([
+      { id: 1, ff: 12.4, band: null, difficulty: 'impossible' },
+      { id: 2, ff: 2.1, band: null, difficulty: 'hard' },
+    ]) });
+    const found = await r.site.ff([1, 2]);
+    assert.equal(found.get(1).difficulty, 'impossible');
+    assert.equal(found.get(1).ff, 12.4);
+    assert.equal(found.get(2).difficulty, null);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: 'moderate' }), true);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: 'hard' }), false);
   });
 
   test('an estimate above 10 is kept: the contract has no upper bound (hq #97)', async () => {
     const r = rig({ reply: ffReply([{ id: 1, ff: 14.2, band: null }, { id: 2, ff: Infinity, band: null }]) });
     const found = await r.site.ff([1, 2]);
-    assert.deepEqual(found.get(1), { ff: 14.2, band: null, source: null, estimatedAt: null });
-    assert.deepEqual(found.get(2), { ff: null, band: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(1), { ff: 14.2, band: null, difficulty: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(2), { ff: null, band: null, difficulty: null, source: null, estimatedAt: null });
   });
 
   test('a reply that does not fit is no answer: nothing cached, nothing invented', async () => {
     const r = rig({ reply: ffReply([{ id: 1, ff: 0.5 }, { id: 2, ff: '3' }, { id: 3, ff: 2, band: 'x'.repeat(41) }, { id: 4, ff: 2, band: null, extra: 'fine' }, { id: 5, ff: 2 }]) });
     const found = await r.site.ff([1, 2, 3, 4]);
-    for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null, source: null, estimatedAt: null }, `id ${id}`);
-    assert.deepEqual(found.get(4), { ff: 2, band: null, source: null, estimatedAt: null });
+    for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null, difficulty: null, source: null, estimatedAt: null }, `id ${id}`);
+    assert.deepEqual(found.get(4), { ff: 2, band: null, difficulty: null, source: null, estimatedAt: null });
     assert.equal(found.has(5), false, 'a row for an id we did not ask about is ignored');
   });
 

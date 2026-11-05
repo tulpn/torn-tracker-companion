@@ -20,14 +20,21 @@ keywords: torn fair fight, ff badge, ff estimate torn
 
 Beside each player on a profile, a faction member list, the ranked-war page and the attack
 page, a small badge shows the fair-fight estimate: how hard a fight that player is for you.
-The colours run from blue (easy) through green and yellow to red (hard), the scale many
-players already know.
+It is the full figure, the same one FFScouter shows (5.91 or 12.4, not cut off at 3.00).
+Torn pays respect for at most 3.00×, and the badge's hover text says so.
+
+The colour says how hard the fight is:
+
+- **light grey**, easy (up to 2.0);
+- **green**, moderate (up to 3.5): the most respect for the effort;
+- **amber**, difficult (up to 4.5);
+- **red**, may be impossible (above 4.5).
 
 - A **–** on grey means torn-tracker.com has no estimate for that player yet: it never
   guesses.
 - A **?** on grey means there is no exact figure, only a rough idea of the player's stats.
   Hover over it to see which.
-- Hover over any badge to see the figure, the player's stats, whose estimate it is and how
+- Hover over any badge to see the figure, how hard the fight is, the player's stats, whose estimate it is and how
   old it is. Some estimates come from [FFScouter](https://ffscouter.com) through
   torn-tracker.com, and the badge says so.
 

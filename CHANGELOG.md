@@ -13,6 +13,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - The sidebar block has a **Routine** line: how many of today's routine lines are still undone, with the list on tap, each opening its Torn page. It reads the site's routine (hq #599); until the site serves it, the line stays hidden. With Casino off, no casino line ever shows.
 
+### Changed
+
+- The fair-fight badge shows the full figure, the same one FFScouter shows (5.91 or 12.4, no longer cut off at 3.00), and its colour says how hard the fight is: easy, moderate (green), difficult (amber) or may be impossible (red). The hover text says that Torn pays respect for at most 3.00× (hq #592).
+
 ## 0.9.13 — 2026-11-05
 
 ### Fixed
