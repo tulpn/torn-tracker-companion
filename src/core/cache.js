@@ -66,6 +66,18 @@ export function createCache(spaces, { now = Date.now } = {}) {
       return fresh(space, entry) ? entry.v : undefined;
     },
 
+    /**
+     * The cached value with when it was kept, or undefined: for a caller that decides for
+     * itself how old is too old (the sidebar's last answer, hq #606).
+     * @returns {{value: unknown, at: number} | undefined}
+     */
+    peek(name, key) {
+      const space = spaces[name];
+      if (!space) throw new Error(`cache: no space "${name}"`);
+      const entry = data[name]?.[String(key)];
+      return fresh(space, entry) ? { value: entry.v, at: entry.at } : undefined;
+    },
+
     set(name, key, value) {
       const space = spaces[name];
       if (!space) throw new Error(`cache: no space "${name}"`);
