@@ -10,7 +10,7 @@ import path from 'node:path';
 import {
   BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
 } from '../../src/core/sidebar.js';
-import { readSidebar } from '../../src/core/site.js';
+import { readRoutine, readSidebar, tornPath } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults } from '../../src/core/settings.js';
@@ -156,8 +156,8 @@ describe('CMP-108 AC1 the switches', () => {
     assert.doesNotMatch(t.node().textContent, /Chain/);
   });
 
-  test('the defaults ask for the spec’s nine on-items, quick links being local', () => {
-    assert.deepEqual(askedItems(defaults(createRegistry([]))), ['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide']);
+  test('the defaults ask for the spec’s on-items, quick links being local', () => {
+    assert.deepEqual(askedItems(defaults(createRegistry([]))), ['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'routine']);
   });
 });
 
@@ -798,5 +798,102 @@ describe('CAPI-039 war start and OC expiry', () => {
     const t = show({ ...MATCHED, oc: { ...MATCHED.oc, state: 'planning', ready_at: at(65_000), expired_at: at(-1_000), needs_me: true } });
     await settle();
     assert.match(line(t, 'OC').textContent, /Break the Bank · needs you · expired$/);
+  });
+});
+
+describe('hq #599 RDB-081 the routine badge', () => {
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const at = (ms) => new Date(T0 + ms).toISOString();
+  // The routine feed's shape as the bot's mock serves it (RDB-082).
+  const line = (key, text, done, url, extra = {}) => ({ key, text, done, url, as_of: at(-12 * 60_000), casino: false, ...extra });
+  const ROUTINE = {
+    lines: [
+      line('nerve_refill', 'Nerve refill unused', false, 'https://www.torn.com/points.php'),
+      line('bank', 'No bank investment', false, '/bank.php'),
+      line('drugs', 'Drug cooldown empty, xanax 2 of 3', true, 'https://www.torn.com/item.php', { as_of: at(-3 * 3_600_000) }),
+      line('energy_refill', 'Energy refill used', true, 'https://www.torn.com/points.php'),
+      line('casino', 'Casino tokens unused', false, 'https://www.torn.com/casino.php', { casino: true }),
+    ],
+    day_ends_at: at(12 * 3_600_000),
+    casino_off: false,
+    url: 'https://torn-tracker.com/me/routine/',
+  };
+  const EMPTY = { chain: null, watch: null, war: null, terms: null, partner: null, dibs: null, oc: null, guide: null };
+  const withRoutine = (routine) => mount({ answer: { status: 'ok', ...readSidebar({ ...EMPTY, server_time: at(0), routine, links: [] }, ['routine'], 0) } });
+  const routineRow = (t) => t.node().querySelector('.ttc-sb-routine')?.closest('.ttc-sb-row');
+
+  test('the badge counts the undone lines, the same count the page shows (acceptance test 9)', async () => {
+    const t = withRoutine(ROUTINE);
+    await settle();
+    const button = t.node().querySelector('.ttc-sb-routine');
+    assert.equal(button.querySelector('.ttc-sb-badge').textContent, '3');
+    assert.equal(readRoutine(ROUTINE).undone, ROUTINE.lines.filter((l) => !l.done).length);
+    assert.equal(button.getAttribute('aria-expanded'), 'false');
+    assert.match(routineRow(t).textContent, /left today · resets in 12h$/);
+    assert.equal(t.node().querySelector('.ttc-sb-list'), null, 'the list waits for a tap');
+  });
+
+  test('a tap shows the undone lines, each linking to its Torn page in the same tab', async () => {
+    const t = withRoutine(ROUTINE);
+    await settle();
+    t.node().querySelector('.ttc-sb-routine').click();
+    const items = [...t.node().querySelectorAll('.ttc-sb-list li')];
+    const links = items.slice(0, 3).map((li) => li.querySelector('a'));
+    assert.deepEqual(links.map((a) => a.textContent), ['Nerve refill unused', 'No bank investment', 'Casino tokens unused']);
+    assert.deepEqual(links.map((a) => a.getAttribute('href')), ['/points.php', '/bank.php', '/casino.php']);
+    for (const a of links) assert.equal(a.hasAttribute('target'), false, 'same tab');
+    assert.match(items[3].textContent, /^2 done · the full list$/);
+    assert.equal(t.node().querySelector('.ttc-sb-routine').getAttribute('aria-expanded'), 'true');
+    assert.equal(t.asked.length, 1, 'a tap asks for nothing');
+    t.node().querySelector('.ttc-sb-routine').click();
+    assert.equal(t.node().querySelector('.ttc-sb-list'), null);
+  });
+
+  test('with Casino off there is never a casino line, whatever the site sent (RDB-045, D-211)', async () => {
+    const t = withRoutine({ ...ROUTINE, casino_off: true });
+    await settle();
+    assert.equal(t.node().querySelector('.ttc-sb-badge').textContent, '2');
+    t.node().querySelector('.ttc-sb-routine').click();
+    assert.doesNotMatch(t.node().textContent, /casino/i);
+  });
+
+  test('a reading older than 90 minutes says its age (RDB-005)', async () => {
+    const stale = { ...ROUTINE, lines: [line('bank', 'No bank investment', false, '/bank.php', { as_of: at(-2 * 3_600_000) })] };
+    const t = withRoutine(stale);
+    await settle();
+    t.node().querySelector('.ttc-sb-routine').click();
+    assert.match(t.node().querySelector('.ttc-sb-list li').textContent, /^No bank investment · 2h old$/);
+  });
+
+  test('all done says so; no key on the site links to where to add one', async () => {
+    const done = withRoutine({ ...ROUTINE, lines: ROUTINE.lines.map((l) => ({ ...l, done: true })) });
+    await settle();
+    assert.equal(done.node().querySelector('.ttc-sb-badge'), null);
+    assert.ok([...done.node().querySelectorAll('.ttc-sb-row')].some((r) => /^Routine all 5 done today$/.test(r.textContent)));
+    const keyless = withRoutine({ key_needed: true, casino_off: false, url: 'https://torn-tracker.com/me/routine/' });
+    await settle();
+    const a = [...keyless.node().querySelectorAll('.ttc-sb-row a')].find((x) => /API key/.test(x.textContent));
+    assert.equal(a.getAttribute('href'), 'https://torn-tracker.com/me/routine/');
+  });
+
+  test('the feed is read line by line: a line that does not fit is dropped, never another host', () => {
+    assert.equal(tornPath('https://www.torn.com/loader.php?sid=missions'), '/loader.php?sid=missions');
+    assert.equal(tornPath('https://evil.example/bank.php'), null);
+    assert.equal(tornPath('//evil.example/x'), null);
+    assert.equal(tornPath('javascript:alert(1)'), null);
+    const r = readRoutine({
+      lines: [
+        line('bank', 'No bank investment', false, 'https://evil.example/bank.php'),
+        line('Bad Key', 'x', false, '/bank.php'),
+        line('missions', '', false, '/loader.php?sid=missions'),
+        line('nerve', 'Nerve refill unused', 'no', '/points.php'),
+        line('ok', 'Kept', false, '/points.php'),
+      ],
+      url: 'https://evil.example/',
+    });
+    assert.deepEqual(r.lines.map((l) => l.key), ['ok']);
+    assert.equal(r.url, 'https://torn-tracker.com/me/routine/');
+    assert.equal(readRoutine([]), null);
+    assert.equal(readRoutine({ lines: 'x' }), null);
   });
 });
