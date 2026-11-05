@@ -356,7 +356,7 @@ describe('hq #535 the captured war page, with Torn War Stuff Enhanced and FF Sco
     assert.match(css, /@media \(pointer: coarse\) \{[^@]*\.ttc-ui-small\.ttc-ui-small \{ min-height: 0; height: 32px; min-width: 44px;/);
   });
 
-  test('narrow window: the timer is one line and stands in for Torn’s word, kept in its title (hq #535 reopened)', async () => {
+  test('every width: the timer is one line and stands in for Torn’s word, kept in its title (hq #535 reopened)', async () => {
     const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
     await wait();
     const cell = row(r, 3000006).querySelector('.status');
@@ -367,8 +367,7 @@ describe('hq #535 the captured war page, with Torn War Stuff Enhanced and FF Sco
     // Only the cells with our timer are marked; Torn's word stays everywhere else.
     assert.equal(r.doc.querySelectorAll('[data-ttc-war-timed]').length, r.doc.querySelectorAll('.status .ttc-war-time').length);
     const css = r.doc.getElementById('ttc-ui-style').textContent;
-    const narrow = css.slice(css.indexOf('@media (max-width: 1100px)'));
-    assert.match(narrow, /\[data-ttc-war-timed\] \{ font-size: 0 !important; \}/);
+    assert.match(outsideMedia(css), /\[data-ttc-war-timed\] \{ font-size: 0 !important; white-space: nowrap; \}/);
     cell.dataset.twseOverridden = 'true';
     await wait(1200);
     assert.ok(!cell.hasAttribute('data-ttc-war-timed'), 'TWSE took the cell: Torn’s word is back');
@@ -376,18 +375,54 @@ describe('hq #535 the captured war page, with Torn War Stuff Enhanced and FF Sco
     assert.equal(r.doc.querySelectorAll('[data-ttc-war-timed]').length, 0);
   });
 
-  test('narrow window: dibs is a 24 px icon before the banner, its label kept for hover and screen readers', async () => {
+  test('every width: dibs is a 24 px icon before the banner, its label kept for hover and screen readers', async () => {
     const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
     await wait();
     const b = row(r, 3000001).querySelector('.ttc-war-dibs');
     assert.equal(b.dataset.short, '⚑');
     assert.match(b.getAttribute('aria-label'), /^Dibs\. Call dibs/);
     const css = r.doc.getElementById('ttc-ui-style').textContent;
-    const narrow = css.slice(css.indexOf('@media (max-width: 1100px)'));
-    assert.match(narrow, /\.ttc-war-dibs \{ order: -1; width: 24px;/);
-    assert.match(narrow, /\.ttc-war-dibs::before \{ content: attr\(data-short\)/);
+    const flat = outsideMedia(css);
+    assert.match(flat, /\.ttc-war-dibs \{ order: -1; width: 24px;/);
+    assert.match(flat, /\.ttc-war-dibs::before \{ content: attr\(data-short\)/);
+    assert.match(flat, /\.member:has\(> \.ttc-war-dibs\) \{ display: flex !important; flex-wrap: nowrap;/);
+  });
+
+  test('a row another script made taller: timer and dibs stay inside their cells (hq #535, owner 2026-11-05 23:05)', async () => {
+    // The owner's desktop shot: TornTools adds "Stats Estimate" under every enemy row.
+    const html = CAPTURED.replaceAll('<div class="clear"></div></li>', '<div class="clear"></div><div class="tt-stats-estimate">Stats Estimate: 2m - 25m</div></li>');
+    const r = run({ html, site: fakeSite({ roster }), settings });
+    await wait();
+    const rows = [...r.doc.querySelectorAll('li.enemy')];
+    assert.ok(rows.every((li) => li.querySelector('.tt-stats-estimate')));
+    for (const li of rows) {
+      for (const ours of li.querySelectorAll('.ttc-war-dibs, .ttc-war-time')) {
+        assert.ok(ours.parentElement.matches('.member, .status'), `${ours.className} sits in ${ours.parentElement.className}`);
+      }
+      assert.equal(li.querySelector('.tt-stats-estimate').previousElementSibling.className, 'clear', 'their line is untouched, after Torn’s clear');
+    }
+    assert.ok(r.doc.querySelectorAll('.status .ttc-war-time').length >= 1);
+    assert.deepEqual(r.violations, []);
   });
 });
+
+/** The stylesheet with every @media block taken out: the rules that hold at any width. */
+function outsideMedia(css) {
+  let out = '';
+  let depth = 0;
+  let inMedia = false;
+  for (let i = 0; i < css.length; i += 1) {
+    if (!inMedia && css.startsWith('@media', i)) { inMedia = true; depth = 0; }
+    const ch = css[i];
+    if (inMedia) {
+      if (ch === '{') depth += 1;
+      else if (ch === '}') { depth -= 1; if (depth === 0) inMedia = false; }
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
 
 describe('hq #535 clock', () => {
   test('hours from an hour up', () => {

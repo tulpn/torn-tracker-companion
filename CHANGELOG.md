@@ -17,6 +17,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - The fair-fight badge shows the full figure, the same one FFScouter shows (5.91 or 12.4, no longer cut off at 3.00), and its colour says how hard the fight is: easy, moderate (green), difficult (amber) or may be impossible (red). The hover text says that Torn pays respect for at most 3.00× (hq #592).
 
+### Fixed
+
+- War page with another script's line under each row (such as a stats estimate): the hospital timer and the Dibs button no longer drop out of their row onto the line below. At every window width the timer now stands in for Torn's word in the status cell (the word is in its tooltip), and Dibs is a small icon before the banner, both on one line (hq #535).
+
 ## 0.9.13 — 2026-11-05
 
 ### Fixed
