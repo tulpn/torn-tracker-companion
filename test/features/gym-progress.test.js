@@ -4,10 +4,10 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import feature from '../../src/features/gym-progress/index.js';
-import { answerShape, gainFromMessage, listShape, readActive, readInitial, readProgress, readStatuses, readTrain, statValue, whyNoProgress } from '../../src/features/gym-progress/read.js';
+import { answerShape, gainFromMessage, gymName, listShape, progressText, readActive, readInitial, readProgress, readStatuses, readTrain, statValue, whyNoProgress } from '../../src/features/gym-progress/read.js';
 import { gymStep } from '../../src/features/gym-progress/selectors.js';
 import { checkObservation } from '../../src/core/kinds.js';
-import { runFeature } from '../feature-harness.js';
+import { page, runFeature } from '../feature-harness.js';
 
 const GYM = 'https://www.torn.com/gym.php';
 const INITIAL = 'https://www.torn.com/gym.php?step=getInitialGymInfo';
@@ -215,24 +215,95 @@ describe('hq #576 a train shared from its own answer', () => {
   });
 });
 
-describe('CMP-206 the estimate beside the gym in progress', () => {
-  test('shown, labelled as an estimate, when the site’s gym is the one on the page', async () => {
-    const r = run({ site: fakeSite() });
+// hq #610: one line in Torn's welcome box, after Torn's lines; nothing on or under a tile.
+describe('hq #610 the progress line in Torn’s welcome box', () => {
+  const OWNER_GYM = page('gym.html');
+  const CARDIO = {
+    stats: INITIAL_ANSWER.stats,
+    gyms: { heavyweight: [
+      { id: 18, name: 'Complete Cardio', status: 'active' },
+      { id: 19, name: 'Legs, Bums and Tums', status: 'available' },
+    ] },
+  };
+  const site = (extra = {}) => fakeSite({ gym_id: 19, percent: 84, next_gym_energy_estimate: 2896, ...extra });
+  const box = (doc) => doc.querySelector('[class*="notificationText_"]');
+
+  test('one line at the end of the welcome box, with the gym’s name, in thousands', async () => {
+    const r = run({ html: OWNER_GYM, site: site() });
+    r.respond(INITIAL, CARDIO);
     await wait();
-    const label = r.doc.querySelector('.ttc-gym');
-    assert.equal(label.textContent, 'about 190 energy to go (an estimate)');
-    assert.ok(label.closest('[class*="inProgress_"]'));
+    const line = r.doc.querySelector('.ttc-gym');
+    assert.equal(line.textContent, 'Next gym (Legs, Bums and Tums): 84 %, about 2,896 E to go (estimate)');
+    assert.equal(line.parentElement, box(r.doc));
+    assert.equal(box(r.doc).lastElementChild, line, 'after Torn’s own lines');
+    assert.match(line.title, /estimate/);
   });
 
-  test('not shown for another gym', async () => {
-    const r = run({ site: fakeSite({ gym_id: 9, percent: 10, next_gym_energy_estimate: 50 }) });
+  test('nothing on or under any gym tile; the tile keeps only Torn’s own percentage', async () => {
+    const r = run({ html: OWNER_GYM, site: site() });
     await wait();
-    assert.equal(r.doc.querySelector('.ttc-gym'), null);
+    assert.ok(r.doc.querySelector('.ttc-gym'));
+    assert.equal(r.doc.querySelector('[class*="gymList_"] .ttc-gym'), null);
+    assert.equal(r.doc.querySelector('[class*="inProgress_"]').textContent, '84%');
   });
 
-  test('not shown without an estimate', async () => {
-    const r = run({ site: fakeSite({ gym_id: 2, percent: 62, next_gym_energy_estimate: null }) });
+  test('with the site’s whole estimate for the gym: done and total too', async () => {
+    const r = run({ html: OWNER_GYM, site: site({ next_gym_energy_total: 18000 }) });
+    r.respond(INITIAL, CARDIO);
     await wait();
-    assert.equal(r.doc.querySelector('.ttc-gym'), null);
+    assert.equal(r.doc.querySelector('.ttc-gym').textContent, 'Next gym (Legs, Bums and Tums): 15,104 / 18,000 E, 84 %, about 2,896 E to go (estimate)');
+  });
+
+  test('with Torn Stats’ line in the box: ours comes after it, once', async () => {
+    const withTs = OWNER_GYM.replace('energy available to use.</p>', 'energy available to use.</p><p class="tornstats-gym">Estimated Energy progress: <span>15,120/18,000E</span>.</p>');
+    const r = run({ html: withTs, site: site() });
+    await wait();
+    const lines = r.doc.querySelectorAll('.ttc-gym');
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].previousElementSibling.className, 'tornstats-gym');
+  });
+
+  test('a welcome box that is one element with <br> between its lines', async () => {
+    const html = OWNER_GYM.replace(/<div class="notificationText___n1">[\s\S]*?<\/div>/, '<div class="notificationText___n1">Welcome to <b>Complete Cardio</b>!<br>You have <span>90/150</span> energy available to use.</div>');
+    const r = run({ html, site: site() });
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-gym').parentElement, box(r.doc));
+  });
+
+  test('no welcome box: the line sits directly above the gym grid', async () => {
+    const html = OWNER_GYM.replace(/<div class="gymContent___k1">[\s\S]*?<ul /, '<ul ');
+    const r = run({ html, site: site() });
+    await wait();
+    const line = r.doc.querySelector('.ttc-gym');
+    assert.ok(line.nextElementSibling.matches('[class*="gymList_"]'));
+  });
+
+  test('no name from the page: the line still reads', async () => {
+    const r = run({ html: OWNER_GYM, site: site() });
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-gym').textContent, 'Next gym: 84 %, about 2,896 E to go (estimate)');
+  });
+
+  test('not shown for another gym, or without an estimate; gone when the feature stops', async () => {
+    const other = run({ html: OWNER_GYM, site: site({ gym_id: 9 }) });
+    const none = run({ html: OWNER_GYM, site: site({ next_gym_energy_estimate: null }) });
+    const shown = run({ html: OWNER_GYM, site: site() });
+    await wait();
+    assert.equal(other.doc.querySelector('.ttc-gym'), null);
+    assert.equal(none.doc.querySelector('.ttc-gym'), null);
+    assert.ok(shown.doc.querySelector('.ttc-gym'));
+    shown.stop();
+    assert.equal(shown.doc.querySelector('.ttc-gym'), null);
+  });
+
+  test('a gym name is plain words or nothing', () => {
+    assert.equal(gymName('  Legs, Bums  and Tums '), 'Legs, Bums and Tums');
+    assert.equal(gymName('George’s'), 'George’s');
+    for (const bad of [null, 5, '', '<b>x</b>', 'x'.repeat(41)]) assert.equal(gymName(bad), null, String(bad));
+  });
+
+  test('the words', () => {
+    assert.equal(progressText({ percent: 62, toGo: 190 }), 'Next gym: 62 %, about 190 E to go (estimate)');
+    assert.equal(progressText({ name: 'Gym', percent: 1, toGo: 1200, total: 1000 }), 'Next gym (Gym): 1 %, about 1,200 E to go (estimate)', 'a total under what is left is dropped');
   });
 });

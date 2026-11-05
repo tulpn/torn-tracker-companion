@@ -9,6 +9,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- Gym: the energy still to your next gym is one line in Torn's welcome box at the top of the page, under Torn's own lines ("Next gym (name): 84 %, about 2,896 E to go (estimate)"), no longer a narrow pill under the next gym's tile that wrapped a word at a time over the grid (hq #610).
+
 ## 0.9.14 — 2026-11-05
 
 ### Added
