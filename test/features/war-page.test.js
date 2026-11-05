@@ -355,6 +355,38 @@ describe('hq #535 the captured war page, with Torn War Stuff Enhanced and FF Sco
     // On a touch screen it gets a finger's room, still on one line (hq #557 A4).
     assert.match(css, /@media \(pointer: coarse\) \{[^@]*\.ttc-ui-small\.ttc-ui-small \{ min-height: 0; height: 32px; min-width: 44px;/);
   });
+
+  test('narrow window: the timer is one line and stands in for Torn’s word, kept in its title (hq #535 reopened)', async () => {
+    const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
+    await wait();
+    const cell = row(r, 3000006).querySelector('.status');
+    const label = cell.querySelector('.ttc-war-time');
+    assert.ok(label.classList.contains('ttc-ui-compact'), 'one line, never a tall pill');
+    assert.ok(cell.hasAttribute('data-ttc-war-timed'));
+    assert.equal(label.title, 'Hospital');
+    // Only the cells with our timer are marked; Torn's word stays everywhere else.
+    assert.equal(r.doc.querySelectorAll('[data-ttc-war-timed]').length, r.doc.querySelectorAll('.status .ttc-war-time').length);
+    const css = r.doc.getElementById('ttc-ui-style').textContent;
+    const narrow = css.slice(css.indexOf('@media (max-width: 1100px)'));
+    assert.match(narrow, /\[data-ttc-war-timed\] \{ font-size: 0 !important; \}/);
+    cell.dataset.twseOverridden = 'true';
+    await wait(1200);
+    assert.ok(!cell.hasAttribute('data-ttc-war-timed'), 'TWSE took the cell: Torn’s word is back');
+    r.stop();
+    assert.equal(r.doc.querySelectorAll('[data-ttc-war-timed]').length, 0);
+  });
+
+  test('narrow window: dibs is a 24 px icon before the banner, its label kept for hover and screen readers', async () => {
+    const r = run({ html: CAPTURED, site: fakeSite({ roster }), settings });
+    await wait();
+    const b = row(r, 3000001).querySelector('.ttc-war-dibs');
+    assert.equal(b.dataset.short, '⚑');
+    assert.match(b.getAttribute('aria-label'), /^Dibs\. Call dibs/);
+    const css = r.doc.getElementById('ttc-ui-style').textContent;
+    const narrow = css.slice(css.indexOf('@media (max-width: 1100px)'));
+    assert.match(narrow, /\.ttc-war-dibs \{ order: -1; width: 24px;/);
+    assert.match(narrow, /\.ttc-war-dibs::before \{ content: attr\(data-short\)/);
+  });
 });
 
 describe('hq #535 clock', () => {

@@ -95,6 +95,14 @@ export function sortList(list, compare) {
   return true;
 }
 
+/** Marks a status cell whose timer stands in for Torn's word where room is short (hq #535). */
+export const TIMED = `data-${MARK}-timed`;
+
+/** Torn's own word in a status cell ("Hospital"), without anything of ours. */
+function tornWord(cell) {
+  return [...cell.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
+}
+
 function ownNode(node) {
   const element = node?.nodeType === 1 ? node : node?.parentElement;
   return Boolean(element?.closest?.(`[data-${MARK}]`));
@@ -197,6 +205,9 @@ export default {
       if (note) title = `${note}. ${title}`;
       if (button.textContent !== text) button.textContent = text;
       button.title = title;
+      // The icon it shrinks to where the member cell is narrow (hq #535); the label stays.
+      button.dataset.short = { free: '⚑', mine: '✓', taken: '✕' }[look];
+      button.setAttribute('aria-label', `${text}. ${title}`);
       button.dataset.state = look;
       button.dataset.tone = { free: '', mine: 'good', taken: 'bad' }[look] || '';
       button.disabled = look === 'taken' || s.pending.has(id);
@@ -313,12 +324,19 @@ export default {
         // Another script already shows the time here: one timer per row, never two.
         if (!text || cell.matches(STATUS_TAKEN)) {
           label?.remove();
+          if (cell.hasAttribute(TIMED)) cell.removeAttribute(TIMED);
           continue;
         }
         if (!label) {
-          label = badge(doc, { cls: `${MARK}-time`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-timer' } });
+          // One line, never wrapping into a tall pill (hq #535).
+          label = badge(doc, { cls: `${MARK}-time`, compact: true, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-timer' } });
           cell.append(label);
         }
+        // Where the cell can't hold both, the timer stands in for Torn's word (hq #535): the
+        // cell is marked, the stylesheet hides Torn's text, and the word goes in the title.
+        if (!cell.hasAttribute(TIMED)) cell.setAttribute(TIMED, '');
+        const word = tornWord(cell);
+        if (word && label.title !== word) label.title = word;
         if (label.textContent !== text) label.textContent = text;
         // A countdown out of hospital or jail is a wait; a destination is information.
         setTone(label, /^\d/.test(text) ? 'warn' : 'info');
@@ -406,5 +424,6 @@ export default {
     s.timers.clearInterval(s.tick);
     if (s.onVisible) s.doc.removeEventListener('visibilitychange', s.onVisible);
     for (const node of s.doc.querySelectorAll(`[data-${MARK}]`)) node.remove();
+    for (const cell of s.doc.querySelectorAll(`[${TIMED}]`)) cell.removeAttribute(TIMED);
   },
 };

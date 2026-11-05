@@ -9,6 +9,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- War page in a narrow desktop window: the hospital timer no longer lands on Torn's own
+  status text. It stays on one line, and where the cell has room for only one thing it
+  stands in for Torn's word, which moves to its tooltip. The Dibs button no longer covers
+  the member's banner: it becomes a small icon before it, its label in the tooltip
+  (hq #535).
+
 ## 0.9.12 — 2026-11-04
 
 ### Changed
