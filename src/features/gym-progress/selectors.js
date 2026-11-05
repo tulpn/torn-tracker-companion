@@ -23,7 +23,10 @@ export const GYM_BUTTON = "[class*='gymButton_']";
 export const IN_PROGRESS = "[class*='gymButton_'][class*='inProgress_']";
 export const PERCENT = "[class*='percentage_']";
 
-/** A child of each gym button carries a class gym-<id>. */
-export const GYM_ID_CLASS = /(?:^|\s)gym-(\d+)(?:\s|$)/;
+/** A child of each gym button carries a class gym-<id> (or gym-<id>___hash, hq #576). */
+export const GYM_ID_CLASS = /(?:^|\s)gym-?(\d+)(?=\s|$|_)/;
+
+/** The gym the player trains at now. */
+export const ACTIVE = "[class*='gymButton_'][class*='active_']";
 
 export const STATS = Object.freeze(['strength', 'defense', 'speed', 'dexterity']);

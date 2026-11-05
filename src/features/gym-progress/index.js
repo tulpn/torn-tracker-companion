@@ -13,7 +13,7 @@
 // Auto gym switch by Stephen Lynx (MIT) for the page's gym ids and answers. No code was
 // taken.
 
-import { answerShape, readInitial, readProgress, readTrain, whyNoProgress } from './read.js';
+import { answerShape, listShape, readActive, readInitial, readProgress, readStatuses, readTrain, whyNoProgress } from './read.js';
 import { gymStep } from './selectors.js';
 import { badge } from '../../core/ui.js';
 import { settler } from '../../core/dom.js';
@@ -69,14 +69,15 @@ export default {
         s.toldNone = true;
         ctx.log(`gym_progress: nothing captured (${whyNoProgress(doc)})`);
       }
-      if (progress) {
-        const key = `${progress.gym_id}:${progress.percent}`;
-        if (!s.sent.has(key)) {
-          s.sent.add(key);
-          ctx.share('gym_progress', { gym_id: progress.gym_id, percent: progress.percent });
-        }
-      }
+      if (progress) shareProgress(progress);
       label();
+    }
+
+    function shareProgress(progress) {
+      const key = `${progress.gym_id}:${progress.percent}`;
+      if (s.sent.has(key)) return;
+      s.sent.add(key);
+      ctx.share('gym_progress', { gym_id: progress.gym_id, percent: progress.percent });
     }
 
     async function refreshEstimate() {
@@ -91,7 +92,7 @@ export default {
       const step = gymStep(url);
       if (step === 'getInitialGymInfo') {
         const initial = readInitial(data);
-        s.stats = initial.stats;
+        for (const [stat, value] of initial.stats) s.stats.set(stat, value);
         if (initial.active) s.active = initial.active;
         ctx.log(`gym: page info read (${initial.stats.size} stats, active gym ${initial.active ?? 'not found'})`);
       } else if (step === 'train') {
@@ -99,7 +100,12 @@ export default {
           // Once per page: the answer's field names, never its values (hq #576).
           s.toldShape = true;
           ctx.log(`gym_train: answer fields: ${answerShape(data) || 'none'}`);
+          ctx.log(`gym_train: gymsStatuses entry fields: ${listShape(data?.gymsStatuses) || 'none'}`);
         }
+        const statuses = readStatuses(data?.gymsStatuses);
+        if (statuses.active) s.active = statuses.active;
+        // The train answer's own gym progress, when the page's didn't read (hq #576).
+        if (statuses.progress && !readProgress(doc)) shareProgress(statuses.progress);
         const train = readTrain(data);
         if (!train) {
           ctx.log('gym_train: not shared (the answer was not a successful train)');
@@ -107,21 +113,22 @@ export default {
         }
         const before = s.stats.get(train.stat);
         s.stats.set(train.stat, train.value);
-        // A gain needs the value before; without it, this train only seeds the next one.
-        if (before === undefined) {
-          ctx.log(`gym_train: not shared (no ${train.stat} value from before this train; the page's gym info was not seen)`);
-        } else if (!s.active) {
+        // The gain from the answer's message; else the new value less the one before.
+        const gained = train.gain ?? (before !== undefined && train.value > before ? train.value - before : null);
+        const gymId = s.active || readActive(doc);
+        if (gained === null) {
+          ctx.log(before === undefined
+            ? `gym_train: not shared (the answer's message named no gain, and no ${train.stat} value from before this train)`
+            : 'gym_train: not shared (no gain)');
+        } else if (!gymId) {
           ctx.log('gym_train: not shared (the active gym is not known)');
-        } else if (train.value <= before) {
-          ctx.log('gym_train: not shared (no gain)');
-        }
-        if (before !== undefined && train.value > before && s.active) {
+        } else {
           ctx.share('gym_train', {
-            gym_id: s.active,
+            gym_id: gymId,
             stat: train.stat,
-            gained: Math.round((train.value - before) * 100) / 100,
-            trains: null,
-            energy: null,
+            gained: Math.round(gained * 100) / 100,
+            trains: train.trains,
+            energy: train.energy,
           });
         }
         refreshEstimate().catch((err) => ctx.log('gym estimate', err));
