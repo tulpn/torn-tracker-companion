@@ -4,7 +4,7 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import feature from '../../src/features/gym-progress/index.js';
-import { answerShape, readInitial, readProgress, readTrain, statValue, whyNoProgress } from '../../src/features/gym-progress/read.js';
+import { answerShape, gainFromMessage, listShape, readActive, readInitial, readProgress, readStatuses, readTrain, statValue, whyNoProgress } from '../../src/features/gym-progress/read.js';
 import { gymStep } from '../../src/features/gym-progress/selectors.js';
 import { checkObservation } from '../../src/core/kinds.js';
 import { runFeature } from '../feature-harness.js';
@@ -62,7 +62,7 @@ describe('CMP-206 reading the gym page', () => {
     const initial = readInitial(INITIAL_ANSWER);
     assert.equal(initial.active, 1);
     assert.equal(initial.stats.get('strength'), 1000.5);
-    assert.deepEqual(readTrain({ success: true, stat: { name: 'strength', newValue: '1,010.75' } }), { stat: 'strength', value: 1010.75 });
+    assert.deepEqual(readTrain({ success: true, stat: { name: 'strength', newValue: '1,010.75' } }), { stat: 'strength', value: 1010.75, gain: null, energy: null, trains: null });
     assert.equal(readTrain({ success: false, stat: { name: 'strength', newValue: '1' } }), null);
     assert.equal(readTrain({ success: true, stat: { name: 'endurance', newValue: '1' } }), null);
   });
@@ -124,7 +124,7 @@ describe('hq #576 the debug log says why nothing was captured', () => {
     );
     assert.match(
       whyNoProgress(doc('<button class="gymButton___d4 inProgress___g7"><span class="percentage___h8">62%</span></button>')),
-      /^a gym in progress is on the page, but its gym id or percentage did not read/,
+      /^a gym in progress is on the page, but its gym id did not read \(classes: gymButton inProgress percentage\)/,
     );
   });
 
@@ -153,7 +153,7 @@ describe('hq #576 the debug log says why nothing was captured', () => {
     r.respond(TRAIN, { success: true, stat: { name: 'speed', newValue: '800' } });
     r.respond(TRAIN, { success: false });
     assert.deepEqual(r.logs.filter((l) => l.startsWith('gym_train: not shared')), [
-      "gym_train: not shared (no speed value from before this train; the page's gym info was not seen)",
+      "gym_train: not shared (the answer's message named no gain, and no speed value from before this train)",
       'gym_train: not shared (the answer was not a successful train)',
     ]);
   });
@@ -162,6 +162,56 @@ describe('hq #576 the debug log says why nothing was captured', () => {
     const r = run({ site: fakeSite() });
     r.respond(INITIAL, INITIAL_ANSWER);
     assert.ok(r.logs.includes('gym: page info read (4 stats, active gym 1)'));
+  });
+});
+
+describe('hq #576 a train shared from its own answer', () => {
+  /** The owner's train answer's shape (2026-11-05), with made-up values. */
+  const ANSWER = {
+    success: true,
+    energy: { available: 0, max: 150, step: 5 },
+    energySpent: 150,
+    repeats: 30,
+    gainMessage: 'You used 150 energy training your dexterity 30 times in Average Joes. You gained 1,234.56 dexterity.',
+    gymsStatuses: [{ id: 1, status: 'available' }, { id: 2, status: 'active' }, { id: 3, status: 'inProgress', percentage: 41.5 }],
+    message: 'x',
+    percentages: { strength: 1, defense: 1, speed: 1, dexterity: 1 },
+    reload: false,
+    stat: { name: 'dexterity', newValue: '20,000.00' },
+  };
+
+  test('the gain from the message, the energy and the trains from the answer', () => {
+    assert.equal(gainFromMessage(ANSWER.gainMessage, 'dexterity'), 1234.56);
+    assert.equal(gainFromMessage('12.5 <b>defence</b>', 'defense'), 12.5);
+    assert.equal(gainFromMessage('nothing here', 'speed'), null);
+    assert.deepEqual(readTrain(ANSWER), { stat: 'dexterity', value: 20000, gain: 1234.56, energy: 150, trains: 30 });
+  });
+
+  test('the active gym and the gym in progress from gymsStatuses, its shape by name only', () => {
+    assert.deepEqual(readStatuses(ANSWER.gymsStatuses), { active: 2, progress: { gym_id: 3, percent: 41.5 } });
+    assert.deepEqual(readStatuses('x'), { active: null, progress: null });
+    assert.equal(listShape(ANSWER.gymsStatuses), 'id, percentage, status');
+  });
+
+  test('without the page’s gym info and with an unreadable page, the train and the progress are still shared', async () => {
+    const r = run({ site: fakeSite(), html: '<button class="gymButton___d4 inProgress___g7"><span class="percentage___h8">62%</span></button>' });
+    r.respond(TRAIN, ANSWER);
+    await wait();
+    assert.deepEqual(r.shared.map(({ kind, ...f }) => [kind, f]), [
+      ['gym_progress', { gym_id: 3, percent: 41.5 }],
+      ['gym_train', { gym_id: 2, stat: 'dexterity', gained: 1234.56, trains: 30, energy: 150 }],
+    ]);
+    for (const { kind, ...fields } of r.shared) {
+      assert.equal(checkObservation({ kind, observed_at: '2026-11-05T12:00:00Z', script_version: '0.9.13', ...fields }).error, undefined);
+    }
+    assert.ok(r.logs.includes('gym_train: gymsStatuses entry fields: id, percentage, status'));
+    assert.ok(!r.logs.some((l) => l.includes('1,234') || l.includes('20,000') || l.includes('1234')));
+  });
+
+  test('the page’s gym ids with a hashed class, and the active gym from the page', () => {
+    const r = run({ settings: { enabled: false }, html: '<button class="gymButton___d4 active___e5"><span class="gym-7___x1"></span></button><button class="gymButton___d4 inProgress___g7"><span class="gym-8___x1"></span><span>55%</span></button>' });
+    assert.equal(readActive(r.doc), 7);
+    assert.deepEqual({ ...readProgress(r.doc), button: undefined }, { gym_id: 8, percent: 55, button: undefined });
   });
 });
 

@@ -9,6 +9,23 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.13 — 2026-11-05
+
+### Fixed
+
+- War page in a narrow desktop window: the hospital timer no longer lands on Torn's own
+  status text. It stays on one line, and where the cell has room for only one thing it
+  stands in for Torn's word, which moves to its tooltip. The Dibs button no longer covers
+  the member's banner: it becomes a small icon before it, its label in the tooltip
+  (hq #535).
+
+- Gym progress: a train is shared from the gym's own answer to it, with the gain its
+  message names, the energy spent and the number of trains, so it no longer needs the
+  page's gym info first. The gym in progress is read from that answer too when the page's
+  buttons don't read, and the page's gym ids now read with Torn's hashed class names. The
+  debug log names which part of the gym button didn't read, and Torn's class names in it
+  (hq #576).
+
 ## 0.9.12 — 2026-11-04
 
 ### Changed
