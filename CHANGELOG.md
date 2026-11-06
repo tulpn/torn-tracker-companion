@@ -11,6 +11,7 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Changed
 
+- The script wears the torn-tracker raven: it is the icon in your script manager, and it heads the sidebar block in place of the old “TT” badge. The icon is carried inside the script, so nothing is fetched for it (hq #639).
 - On the war page, a traveller's destination is a two-letter code (`→ UK`, `in KY`) that fits the status cell on one line; the full name is in its hover text (hq #557).
 
 ## 0.9.14 — 2026-11-05

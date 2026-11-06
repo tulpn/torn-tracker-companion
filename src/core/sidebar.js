@@ -22,6 +22,7 @@
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
 
+import { MARK } from '../data/brand.js';
 import { el, ownChange, settler } from './dom.js';
 import { log } from './log.js';
 import { SITE } from '../hosts.js';
@@ -83,9 +84,8 @@ const STYLE = `
     font: 700 13px/1 var(--tt-font-sans); text-align: left;
   }
   #${BLOCK_ID} .${P}-sb-head:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
-  #${BLOCK_ID} .${P}-sb-head::before {
-    content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--primary);
-  }
+  /* The mark stands where the accent bar was (hq BRAND-050). */
+  #${BLOCK_ID} .${P}-sb-mark { flex: none; width: 16px; height: 16px; display: block; }
   #${BLOCK_ID} .${P}-sb-head::after { content: "▾"; margin-left: auto; transition: transform var(--tt-duration-fast) var(--tt-ease); }
   #${BLOCK_ID}[data-open="false"] .${P}-sb-head { border-radius: var(--radius); }
   #${BLOCK_ID}[data-open="false"] .${P}-sb-head::after { transform: rotate(-90deg); }
@@ -549,9 +549,22 @@ export function mountSidebarBlock({
     if (openState) refreshSidebar();
   }
 
+  /** The torn-tracker mark from favicon.svg (hq BRAND-050), drawn node by node. */
+  function brandMark() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const node = (tag, attrs) => {
+      const n = doc.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      return n;
+    };
+    const svg = node('svg', { class: `${P}-sb-mark`, viewBox: MARK.viewBox, 'aria-hidden': 'true', focusable: 'false' });
+    svg.append(node('rect', MARK.tile), node('path', { ...MARK.raven, 'fill-rule': 'evenodd' }));
+    return svg;
+  }
+
   function build() {
     const head = h('button', { type: 'button', class: `${P}-sb-head`, 'aria-expanded': 'false', 'data-tour': 'companion-sidebar' },
-      h('span', { class: `${P}-mark`, 'aria-hidden': 'true' }, 'TT'), 'Torn Tracker');
+      brandMark(), 'Torn Tracker');
     head.addEventListener('click', toggle);
     return h('div', { id: BLOCK_ID, 'data-ttc-own': '', 'data-open': 'false' }, head, h('div', { class: `${P}-sb-body` }));
   }

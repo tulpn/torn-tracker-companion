@@ -17,6 +17,7 @@ import { defaults } from '../../src/core/settings.js';
 import * as dom from '../../src/core/dom.js';
 import { setDebug } from '../../src/core/log.js';
 import { ROOT } from '../helpers.js';
+import { MARK } from '../../src/data/brand.js';
 
 const windows = [];
 after(() => windows.forEach((w) => w.close()));
@@ -972,5 +973,21 @@ describe('hq #606 a new page shows the last answer, not “no data”', () => {
       assert.match(t.node().textContent, /Chain 412 \/ 500/, `after spray ${spray + 1}`);
     }
     assert.equal(t.asked.length, 1, 'one read, then the minute');
+  });
+});
+
+describe('BRAND-050 the block header carries the torn-tracker mark', () => {
+  test('an inline svg of favicon.svg, hidden from screen readers, in place of the TT badge', async () => {
+    const t = mount();
+    await settle();
+    const head = t.node().querySelector('.ttc-sb-head');
+    const svg = head.querySelector('svg.ttc-sb-mark');
+    assert.ok(svg, 'the mark is drawn');
+    assert.equal(svg.namespaceURI, 'http://www.w3.org/2000/svg');
+    assert.equal(svg.getAttribute('aria-hidden'), 'true');
+    assert.equal(svg.getAttribute('viewBox'), MARK.viewBox);
+    assert.equal(svg.querySelector('rect').getAttribute('fill'), MARK.tile.fill);
+    assert.equal(svg.querySelector('path').getAttribute('d'), MARK.raven.d);
+    assert.equal(head.textContent, 'Torn Tracker', 'the name is the only text; no "TT"');
   });
 });

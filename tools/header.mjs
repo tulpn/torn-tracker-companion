@@ -3,6 +3,8 @@
 // Shared by the build and by test/meta.test.js, so the test checks the same text players
 // install rather than a second copy of the rules.
 
+import { ICON_48 } from '../src/data/icon.js';
+
 // GPLv3 asks for the notice to travel with the file, not only with the repository.
 // The `!` keeps esbuild's legal-comment handling from dropping it.
 export const LICENCE_NOTICE = `/*!
@@ -28,6 +30,7 @@ const FIELDS = [
   ['version', 'version'],
   ['description', 'description'],
   ['author', 'author'],
+  ['icon', 'icon'],
   ['homepageURL', 'homepageURL'],
   ['supportURL', 'supportURL'],
   ['license', 'license'],
@@ -51,7 +54,8 @@ export function buildHeader(meta, version) {
   if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(String(version))) {
     throw new Error(`version is not semver: ${version}`);
   }
-  const values = { ...meta, version };
+  // The torn-tracker mark as a data: URI, so the manager fetches nothing (hq BRAND-050).
+  const values = { icon: ICON_48, ...meta, version };
   const lines = ['// ==UserScript=='];
   for (const [key, tag] of FIELDS) {
     const value = values[key];
