@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.15 — 2026-11-06
+
 ### Changed
 
 - The script wears the torn-tracker raven: it is the icon in your script manager, and it heads the sidebar block in place of the old “TT” badge. The icon is carried inside the script, so nothing is fetched for it (hq #639).
