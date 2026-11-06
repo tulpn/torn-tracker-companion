@@ -9,6 +9,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- On the war page, a traveller's destination is a two-letter code (`→ UK`, `in KY`) that fits the status cell on one line; the full name is in its hover text (hq #557).
+
 ## 0.9.14 — 2026-11-05
 
 ### Added

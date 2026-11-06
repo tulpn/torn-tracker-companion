@@ -4,7 +4,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { clock, sortList, statusText } from '../../src/features/war-page/index.js';
+import feature, { clock, sortList, statusText, travelDetail } from '../../src/features/war-page/index.js';
 import { comparator, levelOf, statusOf } from '../../src/features/war-page/order.js';
 import { page, runFeature } from '../feature-harness.js';
 
@@ -212,11 +212,21 @@ describe('CMP-102 timers and destinations from the site roster (CAPI-034, hq #98
   test('what goes beside the status', () => {
     assert.equal(statusText({ state: 'Hospital', until: NOW + 61_000, description: '' }, NOW), '1:01');
     assert.equal(statusText({ state: 'Jail', until: NOW - 1, description: '' }, NOW), '');
-    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to Mexico' }, NOW), '→ Mexico');
-    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Returning to Torn from Japan' }, NOW), '← Japan');
-    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Cayman Islands' }, NOW), 'in Cayman Islands');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to Mexico' }, NOW), '→ MX');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Returning to Torn from Japan' }, NOW), '← JP');
+    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Cayman Islands' }, NOW), 'in KY');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to United Kingdom' }, NOW), '→ UK');
+    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Atlantis' }, NOW), 'in Atlantis');
     assert.equal(statusText({ state: 'Okay', until: null, description: 'Okay' }, NOW), '');
     assert.equal(statusText(undefined, NOW), '');
+  });
+
+  test('the full destination goes in the title (hq #557 A5)', () => {
+    assert.equal(travelDetail({ state: 'Traveling', description: 'Traveling to United Kingdom' }), 'Traveling to United Kingdom');
+    assert.equal(travelDetail({ state: 'Abroad', description: 'In South Africa' }), 'In South Africa');
+    assert.equal(travelDetail({ state: 'Hospital', description: 'In hospital for 4 mins' }), '');
+    assert.equal(travelDetail({ state: 'Traveling', description: '<b>odd</b>' }), '');
+    assert.equal(travelDetail(undefined), '');
   });
 
   test('a countdown in the status cell of the opponent in hospital, a destination for the traveller', async () => {
@@ -225,7 +235,9 @@ describe('CMP-102 timers and destinations from the site roster (CAPI-034, hq #98
     const label = (id) => r.doc.querySelector(`a[href$="XID=${id}"]`).closest('li').querySelector('.status .ttc-war-time')?.textContent;
     assert.equal(label(101), '4:05');
     assert.equal(label(102), undefined);
-    assert.equal(label(103), '→ Mexico');
+    assert.equal(label(103), '→ MX');
+    const traveller = r.doc.querySelector('a[href$="XID=103"]').closest('li').querySelector('.status .ttc-war-time');
+    assert.equal(traveller.title, 'Traveling to Mexico');
     assert.deepEqual(r.violations, []);
   });
 

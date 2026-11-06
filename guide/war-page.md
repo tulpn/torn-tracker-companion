@@ -27,7 +27,8 @@ settings, under **Features**.
 ## Timers and destinations
 
 Beside each opponent's status, a countdown shows when they leave hospital or jail, and
-travellers show where they're flying (`→ Mexico`, `← Japan`). A wait of an hour or more
+travellers show where they're flying as a two-letter code (`→ MX`, `← JP`, `in UK`); hover or
+tap it for the full name. A wait of an hour or more
 shows its hours, like `2:11:34`. These come from your faction's war room on
 torn-tracker.com. The script never asks Torn about the other faction.
 
