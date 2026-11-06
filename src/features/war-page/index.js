@@ -56,6 +56,35 @@ export function clock(ms) {
 }
 
 /**
+ * Torn's travel destinations as two letters, so a destination fits the status cell on one
+ * line (hq #557 A5); the full name goes in the title. A name not listed stays as it is.
+ */
+export const COUNTRY_CODES = Object.freeze({
+  Mexico: 'MX',
+  'Cayman Islands': 'KY',
+  Canada: 'CA',
+  Hawaii: 'HI',
+  'United Kingdom': 'UK',
+  Argentina: 'AR',
+  Switzerland: 'CH',
+  Japan: 'JP',
+  China: 'CN',
+  UAE: 'AE',
+  'United Arab Emirates': 'AE',
+  'South Africa': 'ZA',
+});
+
+const code = (country) => (Object.hasOwn(COUNTRY_CODES, country) ? COUNTRY_CODES[country] : country);
+
+/** Where a travelling or abroad player is, in Torn's words; empty otherwise. */
+export function travelDetail(status) {
+  if (!status) return '';
+  const state = status.state.toLowerCase();
+  if (state !== 'traveling' && state !== 'abroad') return '';
+  return /^(Returning to Torn from|Traveling to|In) .+$/.test(status.description) ? status.description : '';
+}
+
+/**
  * What goes beside Torn's status: a countdown for hospital and jail, where they are
  * flying for travel. Empty when there is nothing to add.
  */
@@ -68,11 +97,11 @@ export function statusText(status, now) {
   if (state === 'traveling' || state === 'abroad') {
     const d = status.description;
     let m = /^Returning to Torn from (.+)$/.exec(d);
-    if (m) return `← ${m[1]}`;
+    if (m) return `← ${code(m[1])}`;
     m = /^Traveling to (.+)$/.exec(d);
-    if (m) return `→ ${m[1]}`;
+    if (m) return `→ ${code(m[1])}`;
     m = /^In (.+)$/.exec(d);
-    if (m) return `in ${m[1]}`;
+    if (m) return `in ${code(m[1])}`;
   }
   return '';
 }
@@ -319,7 +348,8 @@ export default {
       for (const row of doc.querySelectorAll(ENEMY_ROW)) {
         const cell = row.querySelector(STATUS);
         if (!cell) continue;
-        const text = statusText(s.roster.get(playerOf(row)), now());
+        const status = s.roster.get(playerOf(row));
+        const text = statusText(status, now());
         let label = cell.querySelector(`.${MARK}-time`);
         // Another script already shows the time here: one timer per row, never two.
         if (!text || cell.matches(STATUS_TAKEN)) {
@@ -335,7 +365,8 @@ export default {
         // Where the cell can't hold both, the timer stands in for Torn's word (hq #535): the
         // cell is marked, the stylesheet hides Torn's text, and the word goes in the title.
         if (!cell.hasAttribute(TIMED)) cell.setAttribute(TIMED, '');
-        const word = tornWord(cell);
+        // The title carries what the label shortens: the full destination, else Torn's word.
+        const word = travelDetail(status) || tornWord(cell);
         if (word && label.title !== word) label.title = word;
         if (label.textContent !== text) label.textContent = text;
         // A countdown out of hospital or jail is a wait; a destination is information.
