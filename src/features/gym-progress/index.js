@@ -4,8 +4,8 @@
 // only by you: how far you are into the gym you are working towards (`gym_progress`, from
 // the page), and each train's gain (`gym_train`: the stat and the new value less the
 // previous one, both from the page's own answers). torn-tracker.com uses them only for
-// your own gym view and never publishes them. Beside the gym in progress, the site's
-// estimate of the energy still to go is shown, labelled as an estimate.
+// your own gym view and never publishes them. In Torn's welcome box, one line gives the
+// site's estimate of the energy still to the next gym, labelled as an estimate (hq #610).
 //
 // Nothing is trained, switched or clicked: only what the page showed and answered.
 //
@@ -13,9 +13,8 @@
 // Auto gym switch by Stephen Lynx (MIT) for the page's gym ids and answers. No code was
 // taken.
 
-import { answerShape, listShape, readActive, readInitial, readProgress, readStatuses, readTrain, whyNoProgress } from './read.js';
+import { answerShape, lineSpot, listShape, progressText, readActive, readInitial, readProgress, readStatuses, readTrain, whyNoProgress } from './read.js';
 import { gymStep } from './selectors.js';
-import { badge } from '../../core/ui.js';
 import { settler } from '../../core/dom.js';
 
 const MARK = 'ttc-gym';
@@ -40,25 +39,36 @@ export default {
     const { doc } = ctx;
     const win = ctx.win || globalThis;
     const s = {
-      doc, win, stats: new Map(), active: null, sent: new Set(), estimate: null, timer: null,
+      doc, win, stats: new Map(), names: new Map(), active: null, sent: new Set(), estimate: null, timer: null,
       unsubscribe: null, stopWatching: null,
     };
     state = s;
     const alive = () => state === s;
 
+    // One line in Torn's welcome box, never on a gym tile (hq #610).
     function label() {
       const progress = readProgress(doc);
       const old = doc.querySelector(`.${MARK}`);
       const estimate = s.estimate;
-      if (!progress || !estimate || estimate.gym_id !== progress.gym_id || estimate.next_gym_energy_estimate === null) {
+      const spot = lineSpot(doc);
+      if (!progress || !spot || !estimate || estimate.gym_id !== progress.gym_id || estimate.next_gym_energy_estimate === null) {
         old?.remove();
         return;
       }
-      const text = `about ${estimate.next_gym_energy_estimate.toLocaleString('en-US')} energy to go (an estimate)`;
-      const node = old || badge(doc, { cls: MARK, tone: 'info', block: true });
+      const text = progressText({
+        name: s.names.get(progress.gym_id) ?? null,
+        percent: progress.percent,
+        toGo: estimate.next_gym_energy_estimate,
+        total: estimate.next_gym_energy_total ?? null,
+      });
+      const node = old || doc.createElement('div');
+      node.className = MARK;
+      node.dataset.ttcOwn = '';
       if (node.textContent !== text) node.textContent = text;
       node.title = 'torn-tracker.com’s estimate: the game counts gym experience, not energy';
-      if (!old) progress.button.append(node);
+      if (node.parentElement !== spot.parent || (spot.before && node.nextSibling !== spot.before)) {
+        spot.parent.insertBefore(node, spot.before);
+      }
     }
 
     function look() {
@@ -94,6 +104,8 @@ export default {
         const initial = readInitial(data);
         for (const [stat, value] of initial.stats) s.stats.set(stat, value);
         if (initial.active) s.active = initial.active;
+        for (const [id, name] of initial.names) s.names.set(id, name);
+        label();
         ctx.log(`gym: page info read (${initial.stats.size} stats, active gym ${initial.active ?? 'not found'})`);
       } else if (step === 'train') {
         if (!s.toldShape) {

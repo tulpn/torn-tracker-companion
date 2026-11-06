@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
+  SIDEBAR_KEEP_MS, SIDEBAR_URL, TRAVEL_RUNS_URL, STOCK_SIGNALS_URL, APPLICANTS_URL, WAR_BRIEF_URL, AUCTION_VALUE_URL, CRIME_VALUE_URL, DEMAND_URL, DIBS_URL, FF_URL, MAX_IDS, ME_GYM_URL, ME_MUGS_URL, OC_URL, OPEN_LOADOUT_URL, PRICES_URL, SPACES,
   WAR_LOADOUTS_URL, createSite, siteUrl, validFf, validRoles,
 } from '../../src/core/site.js';
 
@@ -51,7 +51,7 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
     assert.equal(r.calls[0].method, 'POST');
     assert.deepEqual(JSON.parse(r.calls[0].body), { ids: [1, 2] });
     assert.equal(r.calls[0].headers.Authorization, `Bearer ${KEY}`);
-    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', source: null, estimatedAt: null });
+    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', difficulty: null, source: null, estimatedAt: null });
   });
 
   test('a second page view inside the hour asks nothing', async () => {
@@ -74,7 +74,7 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
 
   test('a player the site does not know is "?" for the hour, never a guess and never a retry', async () => {
     const r = rig({ reply: ffReply([]) });
-    assert.deepEqual((await r.site.ff([7])).get(7), { ff: null, band: null, source: null, estimatedAt: null });
+    assert.deepEqual((await r.site.ff([7])).get(7), { ff: null, band: null, difficulty: null, source: null, estimatedAt: null });
     await r.site.ff([7]);
     assert.equal(r.calls.length, 1);
   });
@@ -86,30 +86,43 @@ describe('CMP-101 fair-fight estimates: one batched lookup, cached for an hour',
       { id: 3, ff: 3, band: null, source: 'someone', estimated_at: 'yesterday' },
     ]) });
     const found = await r.site.ff([1, 2, 3]);
-    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', source: 'ffscouter', estimatedAt: Date.UTC(2026, 10, 1, 12) });
-    assert.deepEqual(found.get(2), { ff: 3, band: null, source: 'index', estimatedAt: null });
-    assert.deepEqual(found.get(3), { ff: 3, band: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(1), { ff: 2.5, band: '1m–5m', difficulty: null, source: 'ffscouter', estimatedAt: Date.UTC(2026, 10, 1, 12) });
+    assert.deepEqual(found.get(2), { ff: 3, band: null, difficulty: null, source: 'index', estimatedAt: null });
+    assert.deepEqual(found.get(3), { ff: 3, band: null, difficulty: null, source: null, estimatedAt: null });
   });
 
   test('hq #492: an answer kept from before the source still reads', () => {
     assert.equal(validFf({ ff: 2, band: null }), true);
-    assert.equal(validFf({ ff: 2, band: null, source: 'ffscouter', estimatedAt: 1 }), true);
-    assert.equal(validFf({ ff: 2, band: null, source: 'other' }), false);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: null, source: 'ffscouter', estimatedAt: 1 }), true);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: null, source: 'other' }), false);
     assert.equal(validFf({ ff: 2, band: null, estimatedAt: 'x' }), false);
+  });
+
+  test('D-203: the site’s difficulty band comes along; an unknown name drops only that field (hq #592)', async () => {
+    const r = rig({ reply: ffReply([
+      { id: 1, ff: 12.4, band: null, difficulty: 'impossible' },
+      { id: 2, ff: 2.1, band: null, difficulty: 'hard' },
+    ]) });
+    const found = await r.site.ff([1, 2]);
+    assert.equal(found.get(1).difficulty, 'impossible');
+    assert.equal(found.get(1).ff, 12.4);
+    assert.equal(found.get(2).difficulty, null);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: 'moderate' }), true);
+    assert.equal(validFf({ ff: 2, band: null, difficulty: 'hard' }), false);
   });
 
   test('an estimate above 10 is kept: the contract has no upper bound (hq #97)', async () => {
     const r = rig({ reply: ffReply([{ id: 1, ff: 14.2, band: null }, { id: 2, ff: Infinity, band: null }]) });
     const found = await r.site.ff([1, 2]);
-    assert.deepEqual(found.get(1), { ff: 14.2, band: null, source: null, estimatedAt: null });
-    assert.deepEqual(found.get(2), { ff: null, band: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(1), { ff: 14.2, band: null, difficulty: null, source: null, estimatedAt: null });
+    assert.deepEqual(found.get(2), { ff: null, band: null, difficulty: null, source: null, estimatedAt: null });
   });
 
   test('a reply that does not fit is no answer: nothing cached, nothing invented', async () => {
     const r = rig({ reply: ffReply([{ id: 1, ff: 0.5 }, { id: 2, ff: '3' }, { id: 3, ff: 2, band: 'x'.repeat(41) }, { id: 4, ff: 2, band: null, extra: 'fine' }, { id: 5, ff: 2 }]) });
     const found = await r.site.ff([1, 2, 3, 4]);
-    for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null, source: null, estimatedAt: null }, `id ${id}`);
-    assert.deepEqual(found.get(4), { ff: 2, band: null, source: null, estimatedAt: null });
+    for (const id of [1, 2, 3]) assert.deepEqual(found.get(id), { ff: null, band: null, difficulty: null, source: null, estimatedAt: null }, `id ${id}`);
+    assert.deepEqual(found.get(4), { ff: 2, band: null, difficulty: null, source: null, estimatedAt: null });
     assert.equal(found.has(5), false, 'a row for an id we did not ask about is ignored');
   });
 
@@ -367,10 +380,15 @@ describe('CMP-206 the own gym read (CAPI-035, D-073)', () => {
 
   test('the gym in progress, its percent and the estimate, each checked', async () => {
     const r = rig({ reply: reply({ gym_id: 2, percent: 62, next_gym_energy_estimate: 190, energy_by_gym: [] }) });
-    assert.deepEqual(await r.site.meGym(), { gym_id: 2, percent: 62, next_gym_energy_estimate: 190 });
+    assert.deepEqual(await r.site.meGym(), { gym_id: 2, percent: 62, next_gym_energy_estimate: 190, next_gym_energy_total: null });
     assert.equal(r.calls[0].url, ME_GYM_URL);
     const odd = rig({ reply: reply({ gym_id: 2, percent: 140, next_gym_energy_estimate: -5 }) });
-    assert.deepEqual(await odd.site.meGym(), { gym_id: 2, percent: null, next_gym_energy_estimate: null });
+    assert.deepEqual(await odd.site.meGym(), { gym_id: 2, percent: null, next_gym_energy_estimate: null, next_gym_energy_total: null });
+    // hq #610: the gym's whole estimated energy, when the site sends it.
+    assert.equal((await rig({ reply: reply({ gym_id: 2, next_gym_energy_estimate: 2896, next_gym_energy_total: 18000 }) }).site.meGym()).next_gym_energy_total, 18000);
+    for (const bad of [0, -1, 1.5, '18000', 2e7]) {
+      assert.equal((await rig({ reply: reply({ gym_id: 2, next_gym_energy_total: bad }) }).site.meGym()).next_gym_energy_total, null, String(bad));
+    }
   });
 
   test('no gym, a failure or no key: nothing', async () => {
@@ -740,6 +758,37 @@ describe('CMP-108 the sidebar read', () => {
     const again = await r.site.sidebar(['chain']);
     assert.equal(again.cached, true);
     assert.equal(again.factionLinked, false);
+  });
+
+  test('hq #606 the last answer is kept 90 minutes for the next page, with when it came', async () => {
+    let clock = 0;
+    let fail = false;
+    const data = { server_time: new Date(0).toISOString(), chain: { current: 3, max: 10, timeout_at: null, as_of: null } };
+    const r = rig({ now: () => clock, clock: () => clock, reply: () => (fail ? { ok: false, status: 503, data: null } : { ok: true, status: 200, data }) });
+    assert.equal(r.site.lastSidebar(['chain']), null, 'nothing kept yet');
+    const first = await r.site.sidebar(['chain']);
+    assert.equal(first.at, 0);
+    clock = 30 * 60_000;
+    const kept = r.site.lastSidebar(['chain']);
+    assert.equal(r.calls.length, 1, 'lastSidebar asks nothing');
+    assert.equal(kept.at, 0);
+    assert.equal(kept.cached, true);
+    assert.deepEqual(kept.items, first.items);
+    fail = true;
+    assert.equal((await r.site.sidebar(['chain'])).status, 'failed', 'past 55 s it asks, and says what happened');
+    assert.equal(r.calls.length, 2);
+    assert.ok(r.site.lastSidebar(['chain']), 'a failed read keeps the last answer');
+    assert.equal(r.site.lastSidebar(['chain', 'oc']), null, 'other items are another copy');
+    clock = SIDEBAR_KEEP_MS + 1;
+    assert.equal(r.site.lastSidebar(['chain']), null, 'gone after 90 minutes');
+  });
+
+  test('hq #606 no key, no kept answer', async () => {
+    const r = rig({ reply: () => ({ ok: true, status: 200, data: { chain: null } }) });
+    await r.site.sidebar(['chain']);
+    assert.ok(r.site.lastSidebar(['chain']));
+    r.setKey('');
+    assert.equal(r.site.lastSidebar(['chain']), null);
   });
 
   test('a kept copy that does not fit is not used', () => {

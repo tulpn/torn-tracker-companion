@@ -10,7 +10,7 @@ import path from 'node:path';
 import {
   BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
 } from '../../src/core/sidebar.js';
-import { readSidebar } from '../../src/core/site.js';
+import { readRoutine, readSidebar, tornPath } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults } from '../../src/core/settings.js';
@@ -79,7 +79,7 @@ function fakeTimers() {
 
 // The older tests below were written for the Lists place; the four places have their own
 // describe (hq #507).
-function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null } = {}) {
+function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null, kept } = {}) {
   dom.resetObserver();
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, { url: 'https://www.torn.com/' });
   windows.push(window);
@@ -87,11 +87,18 @@ function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ..
   settings.sidebar.position = position;
   change?.(settings);
   const asked = [];
+  const lastAsked = [];
   const site = {
     async sidebar(items) {
       asked.push(items);
       return typeof answer === 'function' ? answer(items) : answer;
     },
+    ...(kept === undefined ? {} : {
+      lastSidebar(items) {
+        lastAsked.push(items);
+        return typeof kept === 'function' ? kept(items) : kept;
+      },
+    }),
   };
   let clock = Date.UTC(2026, 9, 23, 12, 0, 0);
   const timers = fakeTimers();
@@ -109,7 +116,7 @@ function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ..
   });
   const node = () => window.document.getElementById(BLOCK_ID);
   return {
-    window, block, settings, asked, timers, saved, node,
+    window, block, settings, asked, lastAsked, timers, saved, node,
     advance(ms) {
       clock += ms;
     },
@@ -156,8 +163,8 @@ describe('CMP-108 AC1 the switches', () => {
     assert.doesNotMatch(t.node().textContent, /Chain/);
   });
 
-  test('the defaults ask for the spec’s nine on-items, quick links being local', () => {
-    assert.deepEqual(askedItems(defaults(createRegistry([]))), ['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide']);
+  test('the defaults ask for the spec’s on-items, quick links being local', () => {
+    assert.deepEqual(askedItems(defaults(createRegistry([]))), ['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'routine']);
   });
 });
 
@@ -798,5 +805,172 @@ describe('CAPI-039 war start and OC expiry', () => {
     const t = show({ ...MATCHED, oc: { ...MATCHED.oc, state: 'planning', ready_at: at(65_000), expired_at: at(-1_000), needs_me: true } });
     await settle();
     assert.match(line(t, 'OC').textContent, /Break the Bank · needs you · expired$/);
+  });
+});
+
+describe('hq #599 RDB-081 the routine badge', () => {
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const at = (ms) => new Date(T0 + ms).toISOString();
+  // The routine feed's shape as the bot's mock serves it (RDB-082).
+  const line = (key, text, done, url, extra = {}) => ({ key, text, done, url, as_of: at(-12 * 60_000), casino: false, ...extra });
+  const ROUTINE = {
+    lines: [
+      line('nerve_refill', 'Nerve refill unused', false, 'https://www.torn.com/points.php'),
+      line('bank', 'No bank investment', false, '/bank.php'),
+      line('drugs', 'Drug cooldown empty, xanax 2 of 3', true, 'https://www.torn.com/item.php', { as_of: at(-3 * 3_600_000) }),
+      line('energy_refill', 'Energy refill used', true, 'https://www.torn.com/points.php'),
+      line('casino', 'Casino tokens unused', false, 'https://www.torn.com/casino.php', { casino: true }),
+    ],
+    day_ends_at: at(12 * 3_600_000),
+    casino_off: false,
+    url: 'https://torn-tracker.com/me/routine/',
+  };
+  const EMPTY = { chain: null, watch: null, war: null, terms: null, partner: null, dibs: null, oc: null, guide: null };
+  const withRoutine = (routine) => mount({ answer: { status: 'ok', ...readSidebar({ ...EMPTY, server_time: at(0), routine, links: [] }, ['routine'], 0) } });
+  const routineRow = (t) => t.node().querySelector('.ttc-sb-routine')?.closest('.ttc-sb-row');
+
+  test('the badge counts the undone lines, the same count the page shows (acceptance test 9)', async () => {
+    const t = withRoutine(ROUTINE);
+    await settle();
+    const button = t.node().querySelector('.ttc-sb-routine');
+    assert.equal(button.querySelector('.ttc-sb-badge').textContent, '3');
+    assert.equal(readRoutine(ROUTINE).undone, ROUTINE.lines.filter((l) => !l.done).length);
+    assert.equal(button.getAttribute('aria-expanded'), 'false');
+    assert.match(routineRow(t).textContent, /left today · resets in 12h$/);
+    assert.equal(t.node().querySelector('.ttc-sb-list'), null, 'the list waits for a tap');
+  });
+
+  test('a tap shows the undone lines, each linking to its Torn page in the same tab', async () => {
+    const t = withRoutine(ROUTINE);
+    await settle();
+    t.node().querySelector('.ttc-sb-routine').click();
+    const items = [...t.node().querySelectorAll('.ttc-sb-list li')];
+    const links = items.slice(0, 3).map((li) => li.querySelector('a'));
+    assert.deepEqual(links.map((a) => a.textContent), ['Nerve refill unused', 'No bank investment', 'Casino tokens unused']);
+    assert.deepEqual(links.map((a) => a.getAttribute('href')), ['/points.php', '/bank.php', '/casino.php']);
+    for (const a of links) assert.equal(a.hasAttribute('target'), false, 'same tab');
+    assert.match(items[3].textContent, /^2 done · the full list$/);
+    assert.equal(t.node().querySelector('.ttc-sb-routine').getAttribute('aria-expanded'), 'true');
+    assert.equal(t.asked.length, 1, 'a tap asks for nothing');
+    t.node().querySelector('.ttc-sb-routine').click();
+    assert.equal(t.node().querySelector('.ttc-sb-list'), null);
+  });
+
+  test('with Casino off there is never a casino line, whatever the site sent (RDB-045, D-211)', async () => {
+    const t = withRoutine({ ...ROUTINE, casino_off: true });
+    await settle();
+    assert.equal(t.node().querySelector('.ttc-sb-badge').textContent, '2');
+    t.node().querySelector('.ttc-sb-routine').click();
+    assert.doesNotMatch(t.node().textContent, /casino/i);
+  });
+
+  test('a reading older than 90 minutes says its age (RDB-005)', async () => {
+    const stale = { ...ROUTINE, lines: [line('bank', 'No bank investment', false, '/bank.php', { as_of: at(-2 * 3_600_000) })] };
+    const t = withRoutine(stale);
+    await settle();
+    t.node().querySelector('.ttc-sb-routine').click();
+    assert.match(t.node().querySelector('.ttc-sb-list li').textContent, /^No bank investment · 2h old$/);
+  });
+
+  test('all done says so; no key on the site links to where to add one', async () => {
+    const done = withRoutine({ ...ROUTINE, lines: ROUTINE.lines.map((l) => ({ ...l, done: true })) });
+    await settle();
+    assert.equal(done.node().querySelector('.ttc-sb-badge'), null);
+    assert.ok([...done.node().querySelectorAll('.ttc-sb-row')].some((r) => /^Routine all 5 done today$/.test(r.textContent)));
+    const keyless = withRoutine({ key_needed: true, casino_off: false, url: 'https://torn-tracker.com/me/routine/' });
+    await settle();
+    const a = [...keyless.node().querySelectorAll('.ttc-sb-row a')].find((x) => /API key/.test(x.textContent));
+    assert.equal(a.getAttribute('href'), 'https://torn-tracker.com/me/routine/');
+  });
+
+  test('the feed is read line by line: a line that does not fit is dropped, never another host', () => {
+    assert.equal(tornPath('https://www.torn.com/loader.php?sid=missions'), '/loader.php?sid=missions');
+    assert.equal(tornPath('https://evil.example/bank.php'), null);
+    assert.equal(tornPath('//evil.example/x'), null);
+    assert.equal(tornPath('javascript:alert(1)'), null);
+    const r = readRoutine({
+      lines: [
+        line('bank', 'No bank investment', false, 'https://evil.example/bank.php'),
+        line('Bad Key', 'x', false, '/bank.php'),
+        line('missions', '', false, '/loader.php?sid=missions'),
+        line('nerve', 'Nerve refill unused', 'no', '/points.php'),
+        line('ok', 'Kept', false, '/points.php'),
+      ],
+      url: 'https://evil.example/',
+    });
+    assert.deepEqual(r.lines.map((l) => l.key), ['ok']);
+    assert.equal(r.url, 'https://torn-tracker.com/me/routine/');
+    assert.equal(readRoutine([]), null);
+    assert.equal(readRoutine({ lines: 'x' }), null);
+  });
+});
+
+// hq #606: after a crime the page loads again; its first read may fail or wait out a 429.
+// The last answer, kept from the earlier page, stands in with its age instead of "no data".
+describe('hq #606 a new page shows the last answer, not “no data”', () => {
+  const T0 = Date.UTC(2026, 9, 23, 12, 0, 0);
+  const keptAt = (ago) => ({ status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0), cached: true, at: T0 - ago });
+
+  test('a failed first read shows the kept rows, with their age', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: keptAt(5 * 60_000) });
+    await settle();
+    const text = t.node().textContent;
+    assert.match(text, /Chain 412 \/ 500/);
+    assert.match(text, /My dibs/);
+    assert.doesNotMatch(text, /no data/i);
+    assert.match(t.node().querySelector('[data-ttc-aged]').textContent, /^As of .+ ago$/);
+    assert.equal(t.asked.length, 1, 'no extra read');
+  });
+
+  test('a 429 on the first read shows the kept rows too, and waits as asked', async () => {
+    const t = mount({ answer: { status: 'wait', retryMs: 120_000 }, kept: keptAt(3 * 60_000) });
+    await settle();
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+    assert.ok(t.node().querySelector('[data-ttc-aged]'));
+    t.advance(READ_EVERY_MS);
+    t.timers.run();
+    await settle();
+    assert.equal(t.asked.length, 1, 'the 429 is waited out');
+  });
+
+  test('a fresh read replaces the kept rows and the age line goes', async () => {
+    let reply = { status: 'failed' };
+    const t = mount({ answer: () => reply, kept: keptAt(5 * 60_000) });
+    await settle();
+    assert.ok(t.node().querySelector('[data-ttc-aged]'));
+    reply = { status: 'ok', ...readSidebar({ ...FULL, chain: { ...FULL.chain, current: 420 } }, Object.keys(FULL), 0), at: T0 + READ_EVERY_MS };
+    t.advance(READ_EVERY_MS);
+    t.timers.run();
+    await settle();
+    assert.match(t.node().textContent, /Chain 420 \/ 500/);
+    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+  });
+
+  test('a kept answer under two minutes old says no age', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: keptAt(60_000) });
+    await settle();
+    assert.match(t.node().textContent, /Chain 412 \/ 500/);
+    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+  });
+
+  test('nothing kept: a failed first read still says so', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: null });
+    await settle();
+    assert.doesNotMatch(t.node().textContent, /Chain 412/);
+    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+  });
+
+  test('Torn redrawing the crimes page puts the rows back without a read', async () => {
+    const t = mount({ answer: { status: 'failed' }, kept: keptAt(5 * 60_000) });
+    await settle();
+    for (let spray = 0; spray < 3; spray += 1) {
+      t.window.document.getElementById('sidebar').replaceWith(JSDOM.fragment(DESKTOP));
+      await settle();
+      t.advance(5_000);
+      t.timers.run();
+      await settle();
+      assert.match(t.node().textContent, /Chain 412 \/ 500/, `after spray ${spray + 1}`);
+    }
+    assert.equal(t.asked.length, 1, 'one read, then the minute');
   });
 });

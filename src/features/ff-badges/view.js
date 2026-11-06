@@ -1,23 +1,50 @@
 // What a badge looks like (CMP-101). Pure: an estimate in, text and colours out.
 //
-// The colours follow FF Scouter V2's default scale so players read them the way they
-// already do: FF 1 to 5 in eleven steps from blue (easy) through green and yellow to red
-// (hard). A player the site has no figure for gets a dash on grey, never a guess (hq #492);
+// The figure is the raw fair fight, the same number FFScouter shows (D-203, hq #592): 1.00
+// to 9.99 with two decimals, 10.0 and above with one. Torn pays respect at most 3.00×, and
+// the hover text says so once. The colour is the site's difficulty band (D-203): easy up to
+// 2.0 muted, moderate to 3.5 green (the respect sweet spot), difficult to 4.5 amber, then
+// red. A player the site has no figure for gets a dash on grey, never a guess (hq #492);
 // one it knows only a band for gets "?" with the band on hover. An estimate from
 // FFScouter says so on hover, as their terms ask (D-171).
 
-const SCALE = [
-  '#1734e8', '#1788e8', '#17dbe8', '#17e8a1', '#17e84e', '#34e817',
-  '#88e817', '#dbe817', '#e8a117', '#e84e17', '#e81734',
-];
+import { FF_DIFFICULTIES as DIFFICULTIES } from '../../core/site.js';
+
+const BAND_COLOUR = Object.freeze({
+  easy: '#9aa3ad',
+  moderate: '#2f9e44',
+  difficult: '#f0a020',
+  impossible: '#d9342b',
+});
+
+const BAND_WORDS = Object.freeze({
+  easy: 'easy',
+  moderate: 'moderate',
+  difficult: 'difficult',
+  impossible: 'may be impossible',
+});
 
 export const UNKNOWN_COLOUR = '#555555';
 
-/** The background for an FF value; FF above 5 is as hard as the scale goes. */
-export function colourFor(ff) {
-  if (typeof ff !== 'number' || !Number.isFinite(ff)) return UNKNOWN_COLOUR;
-  const clamped = Math.min(5, Math.max(1, ff));
-  return SCALE[Math.min(SCALE.length - 1, Math.floor(((clamped - 1) / 4) * 10))];
+/** The site's band for a fair fight, with its edges: 2.0 is easy, 3.5 moderate, 4.5 difficult. */
+export function difficultyOf(ff) {
+  if (typeof ff !== 'number' || !Number.isFinite(ff)) return null;
+  if (ff <= 2) return 'easy';
+  if (ff <= 3.5) return 'moderate';
+  if (ff <= 4.5) return 'difficult';
+  return 'impossible';
+}
+
+/** The background for a band, or for an FF value when the site sent no band. */
+export function colourFor(ff, difficulty = null) {
+  const band = DIFFICULTIES.includes(difficulty) ? difficulty : difficultyOf(ff);
+  return band ? BAND_COLOUR[band] : UNKNOWN_COLOUR;
+}
+
+/** "2.35", "9.99", "12.4": two decimals below 10, one from 10 up, never wrapped. */
+export function ffText(ff) {
+  const two = ff.toFixed(2);
+  return Number(two) >= 10 ? ff.toFixed(1) : two;
 }
 
 /** Black or white, whichever reads on the background. */
@@ -44,7 +71,7 @@ function by(source) {
 }
 
 /**
- * @param {{ff: number|null, band: string|null, source?: string|null, estimatedAt?: number|null} | undefined} estimate
+ * @param {{ff: number|null, band: string|null, difficulty?: string|null, source?: string|null, estimatedAt?: number|null} | undefined} estimate
  * @param {number} [now]
  */
 export function describe(estimate, now = Date.now()) {
@@ -57,6 +84,12 @@ export function describe(estimate, now = Date.now()) {
     }
     return { text: NO_ESTIMATE, title: 'Fair fight: no estimate for this player yet', background: UNKNOWN_COLOUR };
   }
-  const about = band ? `, stats about ${band}` : '';
-  return { text: ff.toFixed(2), title: `Fair fight ${ff.toFixed(2)}${about} (${by(estimate.source)}${when})`, background: colourFor(ff) };
+  const about = band ? ` · stats about ${band}` : '';
+  const level = DIFFICULTIES.includes(estimate.difficulty) ? estimate.difficulty : difficultyOf(ff);
+  const text = ffText(ff);
+  return {
+    text,
+    title: `Fair fight ${text} · ${BAND_WORDS[level]} · Torn pays respect at most 3.00×${about} (${by(estimate.source)}${when})`,
+    background: colourFor(ff, level),
+  };
 }

@@ -37,8 +37,15 @@ const GUIDE_TTL = 15 * 60_000;
 // The sidebar block's answer, kept just under its minute (hq #452): a Torn page load
 // shows the last rows at once instead of asking again. Under 60 s, so the block's own
 // once-a-minute read never lands on a cached copy that a slow reply made look fresh.
+/** A sidebar answer younger than this is used without asking (one read a minute). */
 const SIDEBAR_TTL = 55_000;
+/**
+ * The last sidebar answer is kept this long, to draw at once on the next page load and to
+ * stand in while a read fails or waits out a 429, with its age (hq #606).
+ */
+export const SIDEBAR_KEEP_MS = 90 * 60_000;
 const GUIDE_PAGE = `${SITE}/guide/`;
+const ROUTINE_PAGE = `${SITE}/me/routine/`;
 const TRAVEL_RUNS_TTL = 5 * 60_000;
 const STOCK_SIGNALS_TTL = 5 * 60_000;
 export const APPLICANTS_URL = `${SITE}/api/feeds/jobs/applicants`;
@@ -91,17 +98,20 @@ const positiveInt = (v) => Number.isInteger(v) && v > 0;
 
 /** Whose FF figure it is: the site's own index, or FFScouter's estimate (hq #492, D-171). */
 export const FF_SOURCES = Object.freeze(['index', 'ffscouter']);
+/** The site's difficulty bands for a fair fight (D-203); anything else is dropped. */
+export const FF_DIFFICULTIES = Object.freeze(['easy', 'moderate', 'difficult', 'impossible']);
 
 /**
  * An FF result: a number of at least 1, or null when the site does not know the player.
- * The contract sets no upper bound (estimates above 10 exist); the badge clamps for display.
- * `source` and `estimatedAt` (local-clock ms) say whose figure it is and how old; an
+ * The contract sets no upper bound: the figure is the raw ratio, 12.4 or 25 (D-203).
+ * `difficulty` is the site's band for it, when sent (hq #591). `source` and `estimatedAt` (local-clock ms) say whose figure it is and how old; an
  * answer kept from before hq #492 has neither.
  */
 export function validFf(v) {
   return Boolean(v) && typeof v === 'object'
     && (v.ff === null || (typeof v.ff === 'number' && Number.isFinite(v.ff) && v.ff >= 1))
     && (v.band === null || (typeof v.band === 'string' && v.band.length <= BAND))
+    && (v.difficulty == null || FF_DIFFICULTIES.includes(v.difficulty))
     && (v.source == null || FF_SOURCES.includes(v.source))
     && (v.estimatedAt == null || (typeof v.estimatedAt === 'number' && Number.isFinite(v.estimatedAt)));
 }
@@ -109,8 +119,9 @@ export function validFf(v) {
 /** One CAPI-033 row as the badge keeps it; a bad source or time is dropped, not the row. */
 export function readFfRow(row, skew = 0) {
   const source = FF_SOURCES.includes(row?.source) ? row.source : null;
+  const difficulty = FF_DIFFICULTIES.includes(row?.difficulty) ? row.difficulty : null;
   const estimatedAt = typeof row?.estimated_at === 'string' && row.estimated_at.length <= 40 ? time(row.estimated_at, skew) : null;
-  return { ff: row?.ff ?? null, band: row?.band ?? null, source, estimatedAt };
+  return { ff: row?.ff ?? null, band: row?.band ?? null, difficulty, source, estimatedAt };
 }
 
 /**
@@ -198,7 +209,7 @@ export function readRun(r, skew = 0) {
 }
 
 /** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
-export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks']);
+export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks', 'routine']);
 const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
 /** A ranked war the sidebar holds: matched (the start is set) or running (CAPI-039). */
 const WAR_STATES = Object.freeze(['matched', 'running']);
@@ -240,6 +251,42 @@ function readClash(data) {
     free.set(slot, WATCH_ROLES.filter((r) => roles.includes(r)));
   }
   return { clashes, free };
+}
+
+/**
+ * A Torn page a routine line links to (RDB-004), as a path on this host so it opens in the
+ * same tab: `https://www.torn.com/bank.php` or `/bank.php` -> `/bank.php`. Anything else,
+ * another host included, is null.
+ */
+export function tornPath(v) {
+  if (typeof v !== 'string' || v.length > 200) return null;
+  const path = v.replace(/^https:\/\/(?:www\.)?torn\.com(?=\/)/, '');
+  return /^\/(?!\/)[\w./?=&#%:+-]*$/.test(path) ? path : null;
+}
+
+const ROUTINE_LINES = 40;
+
+/**
+ * The routine feed's lines (RDB-081, RDB-082; the shape the bot's mock serves), checked
+ * line by line: the key, the words, done or not, the Torn page and the reading's age. With
+ * "Casino off" on (RDB-045, D-211) a casino line is never kept, whatever the site sent.
+ */
+export function readRoutine(v, skew = 0) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const casinoOff = v.casino_off === true;
+  const url = siteLink(v.url) ?? ROUTINE_PAGE;
+  if (v.key_needed === true) return { keyNeeded: true, lines: [], undone: 0, endsAt: null, url };
+  if (!Array.isArray(v.lines)) return null;
+  const lines = v.lines.slice(0, ROUTINE_LINES).map((l) => ({
+    key: typeof l?.key === 'string' && /^[a-z0-9_]{1,40}$/.test(l.key) ? l.key : null,
+    text: trimmed(l?.text, 120),
+    done: typeof l?.done === 'boolean' ? l.done : null,
+    href: tornPath(l?.url),
+    asOf: l?.as_of == null ? null : time(l.as_of, skew),
+    casino: l?.casino === true,
+  })).filter((l) => l.key && l.text && l.done !== null && l.href && !(casinoOff && l.casino));
+  const endsAt = v.day_ends_at == null ? null : time(v.day_ends_at, skew);
+  return { keyNeeded: false, lines, undone: lines.filter((l) => !l.done).length, endsAt, url };
 }
 
 /** Each sidebar item's reader: the checked value, or null when it doesn't fit. */
@@ -317,6 +364,7 @@ const SIDEBAR_READERS = {
     if (typeof v?.next_gym !== 'string' || !v.next_gym || v.next_gym.length > 40 || !percent_(v.percent)) return null;
     return { nextGym: v.next_gym, percent: v.percent, energy: count(v.energy_to_next, 1e7) ? v.energy_to_next : null };
   },
+  routine: (v, skew) => readRoutine(v, skew),
   stocks: (v) => (count(v?.watched, 100) && count(v.crossed, 100) && v.watched > 0 ? { watched: v.watched, crossed: Math.min(v.crossed, v.watched) } : null),
 };
 
@@ -577,7 +625,7 @@ export const SPACES = Object.freeze({
   ocRoles: { ttlMs: HOUR, max: 200, valid: validRoles },
   crimeValue: { ttlMs: HOUR, max: 100, valid: validCrimeValue },
   guide: { ttlMs: GUIDE_TTL, max: 1, valid: validGuide },
-  sidebar: { ttlMs: SIDEBAR_TTL, max: 1, valid: validSidebarCopy },
+  sidebar: { ttlMs: SIDEBAR_KEEP_MS, max: 1, valid: validSidebarCopy },
   trust: { ttlMs: TRUST_TTL, max: 500, valid: validTrust },
   lists: { ttlMs: LISTS_TTL, max: 200, valid: validLists },
   trustLink: { ttlMs: DAY, max: 1, valid: (v) => typeof v === 'string' && v.length <= 500 && onSite(v) },
@@ -990,7 +1038,7 @@ export function createSite({
     /**
      * Fair-fight estimates for players (CAPI-033).
      * @param {number[]} ids
-     * @returns {Promise<Map<number, {ff: number|null, band: string|null, source?: string|null, estimatedAt?: number|null}>>}
+     * @returns {Promise<Map<number, {ff: number|null, band: string|null, difficulty?: string|null, source?: string|null, estimatedAt?: number|null}>>}
      */
     async ff(ids) {
       const { found, missing } = split('ff', ids.filter(positiveInt));
@@ -1017,7 +1065,7 @@ export function createSite({
       if (data) {
         for (const id of ask) {
           if (!answered.has(id)) {
-            const unknown = { ff: null, band: null, source: null, estimatedAt: null };
+            const unknown = { ff: null, band: null, difficulty: null, source: null, estimatedAt: null };
             cache.set('ff', id, unknown);
             found.set(id, unknown);
           }
@@ -1253,7 +1301,7 @@ export function createSite({
      * The player's own gym view (CAPI-035 own gym, D-073): the gym in progress, how far,
      * and the site's labelled estimate of the energy to the next gym. Never cached: it
      * changes with every train, and the gym page asks once per view.
-     * @returns {Promise<{gym_id: number, percent: number|null, next_gym_energy_estimate: number|null}|null>}
+     * @returns {Promise<{gym_id: number, percent: number|null, next_gym_energy_estimate: number|null, next_gym_energy_total: number|null}|null>}
      */
     async meGym() {
       if (!usable()) return null;
@@ -1265,6 +1313,9 @@ export function createSite({
         gym_id: data.gym_id,
         percent,
         next_gym_energy_estimate: Number.isInteger(estimate) && estimate >= 0 && estimate <= 1e7 ? estimate : null,
+        // Optional (hq #610): the gym's whole estimated energy, for "15,104 / 18,000 E".
+        next_gym_energy_total: Number.isInteger(data.next_gym_energy_total) && data.next_gym_energy_total > 0
+          && data.next_gym_energy_total <= 1e7 ? data.next_gym_energy_total : null,
       };
     },
 
@@ -1575,8 +1626,10 @@ export function createSite({
       if (!getKey()) return { status: 'no_key' };
       if (!usable()) return { status: 'refused' };
       const id = ask.join(',');
-      const kept = cache.get('sidebar', id);
-      if (kept) return { status: 'ok', ...readSidebar(kept.data, ask, kept.skew), cached: true };
+      const kept = cache.peek('sidebar', id);
+      if (kept && now() - kept.at < SIDEBAR_TTL) {
+        return { status: 'ok', ...readSidebar(kept.value.data, ask, kept.value.skew), cached: true, at: kept.at };
+      }
       const result = await exchange(`${SIDEBAR_URL}?items=${id}`, { method: 'GET' });
       if (keyRefused(result)) {
         cache.drop('sidebar', id);
@@ -1589,7 +1642,19 @@ export function createSite({
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       const skew = skewOf(result.data);
       cache.set('sidebar', id, sidebarCopy(result.data, ask, skew));
-      return { status: 'ok', ...readSidebar(result.data, ask, skew) };
+      return { status: 'ok', ...readSidebar(result.data, ask, skew), at: now() };
+    },
+
+    /**
+     * The last sidebar answer kept for these items, however old within SIDEBAR_KEEP_MS, with
+     * when it came; null when there is none. Asks nothing (hq #606).
+     * @param {string[]} asked
+     */
+    lastSidebar(asked) {
+      if (!getKey() || !usable()) return null;
+      const ask = SIDEBAR_KEYS.filter((key) => asked.includes(key));
+      const kept = cache.peek('sidebar', ask.join(','));
+      return kept ? { status: 'ok', ...readSidebar(kept.value.data, ask, kept.value.skew), cached: true, at: kept.at } : null;
     },
 
     /**
