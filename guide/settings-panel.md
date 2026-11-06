@@ -37,9 +37,8 @@ from any other page, or from the address above.
 Type in **Search settings**, the bar right under the page's title, to find any switch or
 option, in any section. **✕** beside it clears the search. The title bar itself shows the
 companion's version and whether a script key is saved.
-Changes are kept until you press **Save**, so you can move between sections freely; leaving
-without saving throws them away. After **Save** you stay on the page, and it says
-**Saved.** The page opens on the section you used last.
+Every change saves as you make it, and the page says **Saved.** A switch or menu saves at
+once, a typed field when you leave it. The page opens on the section you used last.
 
 ## The sections
 

@@ -44,7 +44,8 @@ item are published.
 
 **Sends:** on the auction house, each listing you see: the item, the seller (none when
 anonymous), the bid and number of bids, the time left, rarity, stats and bonuses. Never the
-high bidder. Again only when a bid changes, at most every ten minutes.
+high bidder. A listing is sent at most once every ten minutes while its bid stays the same,
+and again as soon as its bid changes.
 **Kept and published:** reports for 90 days. Price history per item and bonus is published.
 
 ## Item market prices
@@ -52,6 +53,14 @@ high bidder. Again only when a bid changes, at most every ten minutes.
 **Sends:** on the item market, prices and quantities of up to 50 listings of the item you
 opened, never who's selling. Only for items torn-tracker.com asks for right then.
 **Kept and published:** reports for 7 days. A price index per item is published.
+
+## Jail difficulty bands
+
+**Sends:** on the jail page, for each prisoner, only their level as a band (like 26-50) and
+their time left as a band (like 1-3 hours). At most once per prisoner every ten minutes, and
+only while the tab is on screen. Never who they are.
+**Kept and published:** torn-tracker.com does not accept these reports yet, so nothing from
+the jail page is kept or published.
 
 ## Your crime outcomes
 
@@ -63,6 +72,7 @@ published, once at least 20 players have reported it, never by whom.
 ## Your gym progress and trains
 
 **Sends:** on the gym page, the gym you're working towards and how far in you are; when you
-train, the stat and how much it went up.
+train, the stat, how much it went up, and, when the page's answer gives them, the energy
+you spent and how many trains it was.
 **Kept and published:** only for your own gym view, on the site and in the bot. Never shown
 to anyone else, never published, not even in totals. Kept 30 days.

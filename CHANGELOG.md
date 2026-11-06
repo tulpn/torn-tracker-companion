@@ -9,6 +9,18 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- The sharing lines now say exactly what the code sends: a gym train includes the energy and
+  the number of trains when Torn's answer gives them; jail bands aren't kept or published,
+  because the site doesn't accept them yet; and an auction listing goes again as soon as its
+  bid changes, otherwise at most every ten minutes. The wording changed, so if you share,
+  read the new lines and agree again (hq #649).
+- The README and the guide now say that Applicant badges sends the applicants' ids to
+  torn-tracker.com, that features showing the site's data look up the ids they need, and
+  that settings save as you change them, with no Save button. The guide has a section for
+  jail difficulty bands (hq #649).
+
 ## 0.9.15 — 2026-11-06
 
 ### Changed

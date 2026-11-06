@@ -21,9 +21,10 @@ keywords: torn scripting rules, is the companion allowed, safe torn userscript
 - **No loops on Torn.** No timers, observers or repeats that make requests to Torn.
 - **Two hosts only:** torn-tracker.com and Torn's own API. Your script manager shows both
   when you install it.
-- **Nothing is shared until you say so.** Every kind starts off.
-- **Never your keys in the open.** Your script key stays on your device and is never
-  written to the console.
+- **Nothing is shared until you say so.** Every kind starts off. Features that show
+  torn-tracker.com data ask the site with only the ids they need, such as the players on the page.
+- **Never your keys in the open.** Your script key is kept only on this device, sent only to
+  torn-tracker.com, and never written to the console.
 - **Almost nothing about your device.** Each request to torn-tracker.com says only the
   script's version and whether it runs in Torn PDA or a desktop browser, so the guide can
   tick [Use it on your other device](second-device.md) by itself. Torn's API is told

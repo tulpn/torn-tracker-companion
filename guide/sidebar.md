@@ -58,7 +58,7 @@ chain, war and dibs**, linking to the faction page on torn-tracker.com.
 1. Open the [settings](settings-panel.md) and go to **General → Sidebar block**.
 2. Pick a place: **At the top, above Areas** (the default), **After Areas**, **After
    Lists** or **At the bottom**.
-3. Press **Save**. The choice is kept on this device, and holds on a phone too.
+3. It saves at once. The choice is kept on this device, and holds on a phone too.
 
 A page whose sidebar has no such place (some pages have no Lists) shows the block at the
 next place down.
@@ -71,7 +71,7 @@ back where it was.
 
 1. Open the [settings](settings-panel.md) and go to **Sidebar**.
 2. Switch the block off altogether, or switch single lines on or off.
-3. Press **Save**. The block changes straight away.
+3. It saves at once. The block changes straight away.
 
 ## What it never does
 

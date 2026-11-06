@@ -30,7 +30,7 @@ it, and **✕** closes it. **See it and share** opens your achievements on torn-
 
 1. Open the [settings](settings-panel.md) and go to **General**.
 2. Under **Achievements**, switch off the toast.
-3. Press **Save**.
+3. It saves at once.
 
 With the toast off, the companion stops asking torn-tracker.com about achievements.
 

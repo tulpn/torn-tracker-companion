@@ -17,7 +17,7 @@
 // panel in hq #454 without a bump: what is shared did not change, only which button.)
 
 export const DISCLOSURE = Object.freeze({
-  version: 9,
+  version: 10,
   /** Shown once, above the sharing switches, before any kind can be switched on. */
   firstRun: [
     'Sharing sends torn-tracker.com what Torn showed you on pages you opened yourself, so it can',
@@ -35,8 +35,8 @@ export const DISCLOSURE = Object.freeze({
     jail_difficulty: [
       "On the jail page: for each prisoner, only their level as a band (like 26-50) and their time",
       'left as a band (like 1-3 hours), at most once per prisoner every ten minutes and only while',
-      'the tab is on screen. Never who they are. The site uses them only to count prisoners per',
-      'band, never who.',
+      'the tab is on screen. Never who they are. The site does not accept these reports yet; until',
+      'it does, nothing from the jail page is kept or published.',
     ].join(' '),
     item_market_snapshot: [
       "On the item market: the prices and quantities of up to 50 listings of the item you opened,",
@@ -50,8 +50,9 @@ export const DISCLOSURE = Object.freeze({
       'anyone else, never published, not even in totals, and kept for 30 days.',
     ].join(' '),
     gym_train: [
-      'When you train: the gym, the stat, and how much it went up (the new value the page gives',
-      'less the one before). Only for your own gym view on torn-tracker.com and in the bot: never',
+      'When you train: the gym, the stat, how much it went up, and, when the page\'s answer gives',
+      'them, the energy you spent and how many trains it was. Only for your own gym view on',
+      'torn-tracker.com and in the bot: never',
       'shown to anyone else, never published, not even in totals, and kept for 30 days.',
     ].join(' '),
     crime_outcome: [
@@ -63,8 +64,9 @@ export const DISCLOSURE = Object.freeze({
     auction_listing: [
       'On the auction house: each listing the page shows you, with its id, the item and its own id,',
       "the seller's id (none when anonymous), the current bid and number of bids, the time left, its",
-      'rarity, damage, accuracy or armour, and its bonuses. Never the high bidder. Again only when a',
-      'bid changed, at most once every ten minutes, and only while the tab is on screen. The site',
+      'rarity, damage, accuracy or armour, and its bonuses. Never the high bidder. A listing is sent',
+      'at most once every ten minutes while its bid stays the same, and again as soon as its bid',
+      'changes, and only while the tab is on screen. The site',
       'keeps reports for 90 days and publishes price history per item and bonus.',
     ].join(' '),
     bazaar_listing: [
