@@ -20,7 +20,7 @@ keywords: torn tracker dashboard, torn dashboard in game, torn tracker companion
 
 1. Open the [settings](settings-panel.md) and go to **General**.
 2. Tick **Dashboard (preview)**.
-3. Press **Save**.
+3. It saves at once.
 
 A **Dashboard** link shows at the top of the settings page. It opens the dashboard in
 Torn's main column, at `torn.com/index.php#/torn-tracker/dashboard`.

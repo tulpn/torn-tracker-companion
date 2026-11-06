@@ -38,8 +38,8 @@ list (right under **TornTools Settings** if you have TornTools). It opens the co
 
 ## Add your script key
 
-In the settings, under **Keys**, paste your [script key](website:script-key.md) and press
-**Save**. Without it, the features that show torn-tracker.com's data stay quiet; the
+In the settings, under **Keys**, paste your [script key](website:script-key.md). It saves
+when you leave the field. Without it, the features that show torn-tracker.com's data stay quiet; the
 helpers that only read the page still work.
 
 ## Updates

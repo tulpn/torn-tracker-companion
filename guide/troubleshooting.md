@@ -48,7 +48,7 @@ under **General** in the settings is the one that runs.
 ## Your key is refused
 
 Script keys can be revoked on torn-tracker.com. Create a new one, paste it in the **Keys**
-tab and press **Save**.
+tab. It saves when you leave the field.
 
 ## See what the script does
 
@@ -56,7 +56,7 @@ The settings can show you, step by step, what the companion does on a page. This
 first thing a bug report asks for.
 
 1. Open the settings, go to **General** and, under **Troubleshooting**, tick **Log what
-   the script does to the browser console**. Press **Save**.
+   the script does to the browser console**. It saves at once.
 2. Open the browser's console: F12 on a computer, then the **Console** tab.
 3. Reload the Torn page and do what went wrong again.
 4. The lines starting `[torn-tracker-companion]` say what the script did: each request to
