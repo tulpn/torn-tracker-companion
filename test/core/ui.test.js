@@ -178,3 +178,17 @@ describe('hq #557 A9 a tap detail stays on a 360 px screen', () => {
     assert.match(css, /\[data-flip="end"\]::after \{ left: auto; right: 0; \}/);
   });
 });
+
+describe('hq #557 23 a badge that is a link looks like one', () => {
+  test('a trailing arrow, a deeper tint and an underline on hover or focus, a focus ring', () => {
+    const doc = page();
+    ensureStyle(doc);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    assert.match(css, /a\.ttc-ui-badge:not\(\.ttc-ui-compact\)::after \{ content: '\\203A';/);
+    assert.match(css, /a\.ttc-ui-badge:hover, a\.ttc-ui-badge:focus-visible \{ background: color-mix\(in srgb, var\(--ttc-ink\) 28%, transparent\); color: var\(--ttc-ink\); text-decoration: underline; \}/);
+    assert.match(css, /a\.ttc-ui-badge:focus-visible \{ outline: 2px solid var\(--ring\)/);
+    const link = badge(doc, { tag: 'a', attrs: { href: 'https://torn-tracker.com/' } }, 'Listed');
+    assert.equal(link.tagName, 'A');
+    assert.equal(link.textContent, 'Listed', 'the arrow is drawn by the style, not in the words');
+  });
+});

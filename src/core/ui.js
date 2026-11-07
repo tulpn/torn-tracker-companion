@@ -85,7 +85,12 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-badge[data-tone="scale"] { background: var(--ttc-tone-bg); color: #fff; min-width: 34px; justify-content: center; }
   .${P}-ui-badge[data-tone="scale"][data-ink="dark"] { color: #111; }
   .${P}-ui-badge[data-dim="true"] { opacity: .5; }
-  a.${P}-ui-badge:hover { filter: brightness(.95); text-decoration: underline; }
+  /* A badge that is a link (hq issue 557, 23): a trailing arrow says it goes somewhere, and on
+     hover or focus its tint deepens and the words underline. The ink follows the theme. */
+  a.${P}-ui-badge:not(.${P}-ui-compact)::after { content: '\\203A'; font-weight: 700; }
+  a.${P}-ui-badge { cursor: pointer; }
+  a.${P}-ui-badge:hover, a.${P}-ui-badge:focus-visible { background: ${tint('var(--ttc-ink)', 28)}; color: var(--ttc-ink); text-decoration: underline; }
+  a.${P}-ui-badge:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
   /* Compact (hq issue 522): one short line in a row whose height Torn fixes. The class twice
      outweighs Torn's own span and button rules in that row. A badge with a data-detail shows
