@@ -83,7 +83,7 @@ export const TOURS = Object.freeze([
       {
         target: 'ff-badge',
         title: 'Fair fight at a glance',
-        body: 'An estimate from torn-tracker.com: blue is an easy hit, red a hard one, ? means no estimate yet.',
+        body: 'An estimate from torn-tracker.com: green is the best respect, grey an easy hit, amber and red harder ones. ? means no estimate yet.',
         example: { lines: ['Ares · level 74 · Okay', 'FF 2.41: good respect for one hit'] },
         requires: 'feature:ff-badges',
       },

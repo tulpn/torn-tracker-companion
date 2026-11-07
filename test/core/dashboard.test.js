@@ -16,6 +16,8 @@ import { CHART_COLOURS, SERIES_ORDER, barChart, chartDeclarations, compact, dayL
 import { routeOf } from '../../src/core/page.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, normalize } from '../../src/core/settings.js';
+import { MARK } from '../../src/data/brand.js';
+import { TOKENS } from '../../src/data/tokens.js';
 import { ROOT } from '../helpers.js';
 
 const KEY = `tt_feed_${'D'.repeat(43)}`;
@@ -439,6 +441,21 @@ describe('hq #465 the charts', () => {
     }
   });
 
+  test('hq #679: the series are the site’s chart tokens, each 3:1 against the card', () => {
+    const lum = (hex) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+        .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+    for (const theme of ['light', 'dark']) {
+      assert.deepEqual([...CHART_COLOURS[theme]], [1, 2, 3, 4].map((n) => TOKENS[theme][`chart-${n}`]));
+      for (const colour of CHART_COLOURS[theme]) {
+        assert.ok(ratio(colour, TOKENS[theme].card) >= 3, `${theme} ${colour} on the card`);
+      }
+    }
+  });
+
   test('the dashboard stays small', () => {
     for (const [file, budget] of [['chart.js', 11_000], ['dashboard.js', 18_000]]) {
       const size = fs.statSync(path.join(ROOT, 'src', 'core', file)).size;
@@ -454,5 +471,17 @@ describe('hq #557 11 the dashboard on a 360 px screen', () => {
     const narrow = source.slice(source.indexOf('@container (max-width: 480px)'));
     assert.match(narrow, /-body \{ padding: 12px 12px 14px; \}/);
     assert.ok(source.indexOf('@container (max-width: 480px)') > source.indexOf('-dcard {'), 'after the base rules, so it wins');
+  });
+});
+
+describe('hq #675 the raven mark in the dashboard header', () => {
+  test('the header draws the favicon mark, not the letters TT', async () => {
+    const { root } = await opened(siteRig().site);
+    const head = root.querySelector(`#${DASH_ID} .ttc-head`);
+    const logo = head.querySelector('svg.ttc-logo');
+    assert.ok(logo, 'the mark is drawn');
+    assert.equal(logo.getAttribute('aria-hidden'), 'true');
+    assert.equal(logo.querySelector('path').getAttribute('d'), MARK.raven.d);
+    assert.doesNotMatch(head.textContent, /\bTT\b/);
   });
 });

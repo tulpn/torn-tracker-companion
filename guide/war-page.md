@@ -44,7 +44,9 @@ Between the match and the war's start, the faction page of the faction you're ab
 fight shows a short strip: a one-line comparison of both sides (members, respect, average
 level, rank and recent form) and a link to the full pre-war brief on torn-tracker.com. Pro
 factions also see the brief's headline. A Core faction is told once that the full brief is a
-Pro feature; the link reads the same for both. The strip never names any member.
+Pro feature; the link reads the same for both. The strip never names any member. Once it has
+shown on that faction's page, its place shows "Loading…" on the next visit while the answer
+comes, so the page doesn't jump.
 
 ## Call dibs
 

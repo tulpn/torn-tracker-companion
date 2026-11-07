@@ -5,6 +5,7 @@
 // each chart so no number lives only in a colour. The series colours are CSS variables the
 // page declares per theme (`--ttc-chart-1` …), assigned in a fixed order, never cycled.
 
+import { TOKENS } from '../data/tokens.js';
 import { el } from './dom.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -164,11 +165,9 @@ export const CHART_STYLE = `
   .ttc-values th:first-child { text-align: left; }
 `;
 
-/** The series colours per theme, validated against the card surfaces (dataviz palette). */
-export const CHART_COLOURS = Object.freeze({
-  light: Object.freeze(['#1971c2', '#2f9e44', '#e8590c', '#6741d9']),
-  dark: Object.freeze(['#339af0', '#66a80f', '#e8590c', '#9775fa']),
-});
+/** The series colours per theme: the site's own chart-1 to chart-4 (hq #679). */
+const seriesOf = (theme) => Object.freeze([1, 2, 3, 4].map((n) => TOKENS[theme][`chart-${n}`]));
+export const CHART_COLOURS = Object.freeze({ light: seriesOf('light'), dark: seriesOf('dark') });
 
 /** `--ttc-chart-N: colour;` for a theme. */
 export function chartDeclarations(theme) {

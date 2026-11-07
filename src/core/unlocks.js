@@ -43,7 +43,7 @@ const STYLE = `
     border: 1px solid var(--border); border-left: 4px solid var(--tt-warning); border-radius: var(--radius);
     box-shadow: var(--tt-shadow-sm); background: var(--card); color: var(--card-foreground);
     font: 13px/1.45 var(--tt-font-sans); overflow-wrap: anywhere;
-    animation: ${P}-unlock-in var(--tt-duration-fast, .2s) var(--tt-ease, ease-out);
+    animation: ${P}-unlock-in var(--motion-fast, .2s) var(--ease-out, ease-out);
   }
   #${TOAST_ID} .${P}-unlock-eyebrow { display: block; font: 700 12px/1.4 var(--tt-font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
   #${TOAST_ID} .${P}-unlock-name { display: block; margin: 2px 0; font-weight: 700; font-size: 14px; }

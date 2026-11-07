@@ -1,6 +1,6 @@
-// Writes src/data/icon.js (the userscript's @icon) and src/data/brand.js (the mark for the
-// sidebar block's header) from the torn-tracker brand files (hq BRAND-050). Two files,
-// because only the header needs the icon: the bundle imports brand.js alone.
+// Writes src/data/icon.js (the userscript's @icon) and src/data/brand.js (the mark drawn by
+// src/core/brand.js) from the torn-tracker brand files (hq BRAND-050). Two files,
+// because only the mark needs the drawing: the bundle imports brand.js alone.
 //
 // The sources are copies of the brand files in assets/brand/ (favicon-48.png and
 // favicon.svg, from the suite's brand set). The script carries them, so the manager and
@@ -68,7 +68,7 @@ export const ICON_48 = ${JSON.stringify(icon)};
 export function markModule(mark) {
   const obj = (o) => `Object.freeze({ ${Object.entries(o).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} })`;
   return `${NOTE}
-/** favicon.svg: the lavender raven on its rounded ink tile, for the sidebar block's header. */
+/** favicon.svg: the lavender raven on its rounded ink tile, drawn by src/core/brand.js. */
 export const MARK = Object.freeze({
   viewBox: ${JSON.stringify(mark.viewBox)},
   tile: ${obj(mark.tile)},
