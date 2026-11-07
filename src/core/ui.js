@@ -33,7 +33,8 @@ const INK = Object.freeze({
   warn: 'var(--tt-nerve)',
   // The destructive red is a fill colour; as text on a dark card it needs lifting.
   bad: 'color-mix(in srgb, var(--destructive) 65%, var(--foreground))',
-  info: 'var(--ring)',
+  // The site's own information blue (hq #675): --ring is the brand's violet now.
+  info: 'var(--tt-info)',
 });
 /** A small button inline in one of Torn's forms (hq #521); the class twice, see the style. */
 const INLINE = `.${P}-ui-inline.${P}-ui-inline`;
@@ -42,7 +43,8 @@ const SMALL = `.${P}-ui-small.${P}-ui-small`;
 /** The shop price highlighter's tiers and the token each is drawn in. */
 // Every tier is a profit, so none is red (hq #557 E35): green, yellow, blue, then grey for the
 // smallest. The keys stay as saved in settings; the names the player sees are Best to Small.
-const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'ring'], ['blue', 'muted-foreground']]);
+// The blue is the site's information blue (hq #675), not --ring, which is the brand's violet.
+const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-info'], ['blue', 'muted-foreground']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
 
 const each = (selectors, suffix) => selectors.split(',').map((one) => `${one.trim()}${suffix}`).join(', ');
@@ -62,7 +64,7 @@ export function buttonCss(sel, primary) {
     border: 1px solid var(--input); border-radius: var(--radius); cursor: pointer; text-decoration: none;
     font: 600 13px/18px var(--tt-font-sans);
     background: var(--card); color: var(--card-foreground);
-    transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
+    transition: background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
   }
   ${each(sel, ':hover:not(:disabled)')} { border-color: var(--primary); text-decoration: none; }
   ${each(sel, ':focus-visible')} { outline: 2px solid var(--ring); outline-offset: 2px; }
@@ -139,7 +141,7 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   }
   .${P}-ui-strip[data-tone="warn"] { --ttc-ink: ${INK.warn}; }
   .${P}-ui-strip[data-tone="bad"] { --ttc-ink: var(--destructive); }
-  .${P}-ui-strip[data-tone="info"] { --ttc-ink: var(--primary); }
+  .${P}-ui-strip[data-tone="info"] { --ttc-ink: var(--tt-info); }
   .${P}-ui-strip strong:first-child { display: block; margin-bottom: 4px; font-size: 13px; }
   .${P}-ui-strip ol, .${P}-ui-strip ul { margin: 4px 0 6px 18px; padding: 0; }
   .${P}-ui-strip li { margin: 2px 0; }
@@ -297,7 +299,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     display: flex; align-items: center; gap: 12px; box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 6px 10px;
     border: 0; border-radius: 8px; background: transparent; color: inherit; box-shadow: none; text-shadow: none;
     font: 600 14px/1.4 var(--tt-font-sans); text-align: left; text-transform: none; cursor: pointer;
-    transition: background-color var(--tt-duration-fast) var(--tt-ease);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
   ${MENU} .${P}-lists-item:hover:not(:disabled) { background: var(--muted); }
   ${MENU} .${P}-lists-item:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
@@ -322,7 +324,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
     min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 8px;
     color: var(--primary); font: 600 13px/1.4 var(--tt-font-sans); text-decoration: none;
-    transition: background-color var(--tt-duration-fast) var(--tt-ease);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
   ${MENU} a.${P}-lists-open:hover { background: var(--muted); color: var(--primary); text-decoration: underline; }
   ${MENU} a.${P}-lists-open:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }

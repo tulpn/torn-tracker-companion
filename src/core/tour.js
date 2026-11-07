@@ -29,15 +29,15 @@ const STYLE = `
   #${LAYER_ID} .${P}-tour-ring {
     position: fixed; border-radius: var(--radius); pointer-events: none;
     box-shadow: 0 0 0 3px var(--ring), 0 0 0 9999px color-mix(in srgb, #000 55%, transparent);
-    transition: top var(--tt-duration-normal) var(--tt-ease), left var(--tt-duration-normal) var(--tt-ease),
-      width var(--tt-duration-normal) var(--tt-ease), height var(--tt-duration-normal) var(--tt-ease);
+    transition: top var(--motion-base) var(--ease-out), left var(--motion-base) var(--ease-out),
+      width var(--motion-base) var(--ease-out), height var(--motion-base) var(--ease-out);
   }
   #${LAYER_ID} .${P}-tour-card {
     position: fixed; box-sizing: border-box; width: min(340px, calc(100vw - 24px)); padding: 14px 16px 12px;
     pointer-events: auto; border-radius: var(--radius); border: 1px solid var(--border);
     background: var(--popover); color: var(--popover-foreground); box-shadow: var(--tt-shadow-md);
     font: 14px/1.5 var(--tt-font-sans); overflow-wrap: anywhere;
-    animation: ${P}-tour-in var(--tt-duration-normal) var(--tt-ease);
+    animation: ${P}-tour-in var(--motion-base) var(--ease-out);
   }
   #${LAYER_ID} .${P}-tour-card:focus { outline: none; }
   #${LAYER_ID} .${P}-tour-count { margin: 0 0 2px; font-size: 12px; color: var(--muted-foreground); }
@@ -76,7 +76,7 @@ const STYLE = `
   @keyframes ${P}-tour-up { from { opacity: 0; transform: translateY(24px); } }
   @media (prefers-reduced-motion: reduce) {
     #${LAYER_ID} .${P}-tour-ring { transition: none; }
-    #${LAYER_ID} .${P}-tour-card { animation: ${P}-tour-fade var(--tt-duration-normal) linear; }
+    #${LAYER_ID} .${P}-tour-card { animation: ${P}-tour-fade var(--motion-base) linear; }
     @keyframes ${P}-tour-fade { from { opacity: 0; } }
   }
 `;

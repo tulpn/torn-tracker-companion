@@ -9,6 +9,19 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- The torn-tracker raven replaces the letters "TT" everywhere: on the sidebar entry, the
+  settings page and the dashboard, the same mark as the sidebar block's (hq #675).
+- The companion's colours follow torn-tracker.com's current theme: violet buttons, switches and
+  links in place of the old blue, in Torn's dark and light modes. The status colours keep their
+  meaning: the shop's "Fair" tier, the Ally tag and information strips stay blue (hq #675).
+
+### Fixed
+
+- The fair-fight step of the tour named the old colours. It now says green is the best respect,
+  grey an easy hit, and amber and red harder ones (hq #675).
+
 ## 0.9.16 — 2026-11-07
 
 ### Fixed

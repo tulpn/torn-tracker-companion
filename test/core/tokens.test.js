@@ -106,6 +106,22 @@ describe('the tokens as CSS', () => {
       assert.doesNotMatch(style, /#[0-9a-f]{3,6}\b|rgba?\(/i, file);
     }
   });
+
+  test('every site token a stylesheet names is one the script carries (hq #675)', () => {
+    // The companion's own --ttc-* names and Torn's own (--default-*, --btn-*) are set
+    // elsewhere; every other var() must come from the site's tokens, or it falls through
+    // silently when the site renames one.
+    const names = new Set(['dark', 'light', 'static'].flatMap((part) => Object.keys(TOKENS[part])));
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true })
+      .flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.js') ? [path.join(dir, e.name)] : []));
+    const missing = [];
+    for (const file of walk(path.join(ROOT, 'src'))) {
+      for (const [, name] of fs.readFileSync(file, 'utf8').matchAll(/var\(--([a-z0-9-]+)/g)) {
+        if (!/^(ttc|default|btn)-/.test(name) && !names.has(name)) missing.push(`${path.relative(ROOT, file)}: --${name}`);
+      }
+    }
+    assert.deepEqual(missing, []);
+  });
 });
 
 describe('which theme', () => {

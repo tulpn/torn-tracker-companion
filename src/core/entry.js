@@ -27,6 +27,7 @@
 // the two places it looks for Areas; that The Contract (torncontracts.online) clones an
 // Areas entry and routes its page through the hash. No code was taken from either.
 
+import { brandMark } from './brand.js';
 import { el, ownChange, settler } from './dom.js';
 import { log } from './log.js';
 import { followTorn } from './tokens.js';
@@ -64,13 +65,10 @@ export const OURS = `#${LINK_ID}, [data-ttc-own]`;
 
 const STYLE = `
   ${followTorn(`.${P}-mark`)}
-  .${P}-mark {
-    display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none;
-    border-radius: 4px; background: var(--primary); color: var(--primary-foreground); font: 700 9px/1 Arial, sans-serif; letter-spacing: -.02em;
-  }
+  .${P}-entry-mark { width: 18px; height: 18px; flex: none; }
   .${P}-mark.${P}-entry-mark { display: none; }
-  #${LINK_ID} .${P}-mark.${P}-entry-mark { display: inline-flex; }
-  #${LINK_ID} svg { display: none; }
+  #${LINK_ID} .${P}-mark.${P}-entry-mark { display: block; }
+  #${LINK_ID} svg:not(.${P}-mark) { display: none; }
   #${LINK_ID}[data-ttc-plain] {
     display: flex; align-items: center; gap: 6px; min-height: 23px; margin: 2px 0; padding: 0 6px;
     border-top-right-radius: 5px; border-bottom-right-radius: 5px; text-decoration: none;
@@ -87,8 +85,8 @@ function addStyle(doc) {
   doc.head.appendChild(style);
 }
 
-/** Our mark: the letters TT on our green, drawn with text, never with markup. */
-const mark = (doc) => el('span', { class: `${P}-mark ${P}-entry-mark`, 'aria-hidden': 'true', ownerDocument: doc }, 'TT');
+/** Our mark: the raven on its ink tile (hq #675), the same drawing as the sidebar block's. */
+const mark = (doc) => brandMark(doc, `${P}-mark ${P}-entry-mark`);
 
 /** TornTools' own entry, found by its words: it has no stable id. */
 function tornToolsEntry(parent) {

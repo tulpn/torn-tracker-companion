@@ -50,3 +50,25 @@ describe('BRAND-050 @icon in both built files', () => {
     assert.equal(text.split(ICON_48).length - 1, 1);
   });
 });
+
+describe('hq #675 one drawing of the mark, and no "TT" left', () => {
+  test('brandMark draws the favicon mark with the given class', async () => {
+    const { JSDOM } = await import('jsdom');
+    const { brandMark } = await import('../../src/core/brand.js');
+    const doc = new JSDOM('<!doctype html><body></body>').window.document;
+    const svg = brandMark(doc, 'ttc-a ttc-b');
+    assert.equal(svg.namespaceURI, 'http://www.w3.org/2000/svg');
+    assert.equal(svg.getAttribute('class'), 'ttc-a ttc-b');
+    assert.equal(svg.getAttribute('aria-hidden'), 'true');
+    assert.equal(svg.getAttribute('focusable'), 'false');
+    assert.equal(svg.getAttribute('viewBox'), MARK.viewBox);
+    assert.equal(svg.querySelector('rect').getAttribute('fill'), MARK.tile.fill);
+    assert.equal(svg.querySelector('path').getAttribute('d'), MARK.raven.d);
+    assert.notEqual(brandMark(doc, 'x'), svg, 'a fresh node each time');
+  });
+
+  test('the built script prints no "TT" mark anywhere', () => {
+    const built = fs.readFileSync(SCRIPT_PATH, 'utf8');
+    assert.doesNotMatch(built, /['"`]TT['"`]/);
+  });
+});

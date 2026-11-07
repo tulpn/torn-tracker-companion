@@ -12,6 +12,7 @@ import { defaults } from '../../src/core/settings.js';
 import { DISCLOSURE } from '../../src/core/disclosure.js';
 import { emptyKeys } from '../../src/core/keys.js';
 import { UNWORDED, WORDED, descriptor } from '../fixtures.js';
+import { MARK } from '../../src/data/brand.js';
 
 const KEY = `tt_feed_${'C'.repeat(43)}`;
 const windows = [];
@@ -968,5 +969,18 @@ describe('hq #557 C21 the dashboard link shows while the dashboard is off', () =
     await settle();
     assert.equal(t.$('[data-dashboard-link]').hidden, false);
     assert.equal(t.$('[data-dashboard-off]').hidden, true);
+  });
+});
+
+describe('hq #675 the raven mark in the settings page header', () => {
+  test('the header draws the favicon mark, not the letters TT', () => {
+    const t = mount();
+    t.open();
+    const logo = t.$('.ttc-head svg.ttc-logo');
+    assert.ok(logo, 'the mark is drawn');
+    assert.equal(logo.namespaceURI, 'http://www.w3.org/2000/svg');
+    assert.equal(logo.getAttribute('aria-hidden'), 'true');
+    assert.equal(logo.querySelector('path').getAttribute('d'), MARK.raven.d);
+    assert.doesNotMatch(t.$('.ttc-head').textContent, /\bTT\b/);
   });
 });
