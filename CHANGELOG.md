@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The trade value line now sits under the whole trade at full width, not inside the narrow
+  column of one side, where it wrapped a word at a time (hq #557 A10).
 - The travel agency's best runs panel holds its place with "Loading…" from the start, and
   the OC weights credit line sits under the crimes, so neither pushes the page down when it
   arrives (hq #557 A6).

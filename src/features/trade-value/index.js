@@ -1,6 +1,6 @@
 // Trade value calculator (CMP-201).
 //
-// On the trade page, under the other trader's side, a line totals their money and items
+// On the trade page, under the whole trade (hq #557 A10), a line totals their money and items
 // at torn-tracker.com's market value (CAPI-035, one lookup per change of the offer,
 // cached for ten minutes), with a Copy button for a receipt to paste in the chat. It only
 // shows: the script never accepts, adds or removes anything.
@@ -26,6 +26,9 @@ import { bar as uiBar, button as uiButton, strip } from '../../core/ui.js';
 
 const MARK = 'ttc-trade';
 const SETTLE_MS = 250;
+
+/** "their" or "own": which side of the trade a line prices. */
+const sideName = (side) => (side.matches(OWN_SIDE) ? 'own' : 'their');
 
 let state = null;
 
@@ -67,12 +70,20 @@ export default {
     const alive = () => state === s;
 
 
+    /** Our line for this side, if it's there. */
+    const shownFor = (side) => {
+      const node = doc.querySelector(`.${MARK}`);
+      return node && node.dataset.side === sideName(side) ? node : null;
+    };
+
+    // Under the whole trade, at full width, not inside the 170 px side column, where it
+    // wrapped a word at a time (hq #557 A10). It says which side it prices.
     function box(side) {
-      let node = side.querySelector(`:scope > .${MARK}`);
-      if (!node) {
-        node = strip(doc, { cls: MARK, attrs: { 'data-tour': 'trade-value' } });
-        side.append(node);
-      }
+      const under = side.parentElement || side;
+      let node = doc.querySelector(`.${MARK}`);
+      if (!node) node = strip(doc, { cls: MARK, attrs: { 'data-tour': 'trade-value' } });
+      if (node.dataset.side !== sideName(side)) node.dataset.side = sideName(side);
+      if (under.nextElementSibling !== node) under.after(node);
       return node;
     }
 
@@ -134,13 +145,13 @@ export default {
       // A buy list prices items only: the money on the side isn't bought.
       const offer = asked ? { cash: 0, items: read.items } : read;
       if (offer.cash === 0 && offer.items.length === 0) {
-        side.querySelector(`:scope > .${MARK}`)?.remove();
+        doc.querySelector(`.${MARK}`)?.remove();
         s.seen = '';
         return;
       }
       // Only a changed offer is priced again.
       const key = JSON.stringify(offer);
-      if (key === s.seen && side.querySelector(`:scope > .${MARK}`)) return;
+      if (key === s.seen && shownFor(side)) return;
       s.seen = key;
       const trader = doc.querySelector(`${THEIR_SIDE} ${THEIR_NAME}`)?.textContent.trim() || '';
       if (asked) {
