@@ -65,27 +65,50 @@ export default {
     state = s;
     if (!ctx.site?.travelRuns) return;
 
+    // The panel's place is held from the start with a one-line "Loading" strip of the same
+    // shape, and filled in place, so the page under it doesn't jump when the answer comes
+    // (hq #557 A6).
+    function reserve() {
+      let panel = doc.querySelector(`.${MARK}`);
+      if (panel) return panel;
+      const anchor = doc.querySelector('.content-title') || doc.querySelector('.content-wrapper')?.firstElementChild;
+      const wrapper = doc.querySelector('.content-wrapper');
+      if (!anchor && !wrapper) return null;
+      panel = strip(doc, { cls: MARK, attrs: { 'data-tour': 'travel-runs', 'data-loading': 'true' } },
+        el('strong', { ownerDocument: doc }, 'Your best runs (torn-tracker.com)'),
+        el('div', { ownerDocument: doc }, 'Loading…'));
+      if (anchor) anchor.after(panel);
+      else wrapper.prepend(panel);
+      return panel;
+    }
+    reserve();
+
     s.timer = win.setTimeout(async () => {
       try {
         const answer = await ctx.site.travelRuns(3);
-        if (state !== s || !answer || doc.querySelector(`.${MARK}`)) return;
-        const panel = strip(doc, { cls: MARK, attrs: { 'data-tour': 'travel-runs' } });
-        panel.append(el('strong', { ownerDocument: doc }, 'Your best runs (torn-tracker.com)'));
+        if (state !== s) return;
+        const panel = reserve();
+        if (!answer) {
+          panel?.remove();
+          return;
+        }
+        if (!panel) return;
+        const body = [el('strong', { ownerDocument: doc }, 'Your best runs (torn-tracker.com)')];
         if (answer.runs.length) {
           const list = el('ol', { ownerDocument: doc });
           for (const run of answer.runs) list.append(el('li', { ownerDocument: doc }, runLine(run)));
-          panel.append(list);
+          body.push(list);
         } else if (answer.reason === 'no_capacity') {
-          panel.append(el('div', { ownerDocument: doc },
+          body.push(el('div', { ownerDocument: doc },
             "The planner doesn't know how much you can carry yet. Open a foreign shop once while abroad, or add a key on torn-tracker.com."));
         } else {
-          panel.append(el('div', { ownerDocument: doc }, 'No runs to suggest right now.'));
+          body.push(el('div', { ownerDocument: doc }, 'No runs to suggest right now.'));
         }
-        panel.append(el('a', { href: PLANNER, target: '_blank', rel: 'noopener noreferrer', ownerDocument: doc }, 'Open the travel planner'));
-        const anchor = doc.querySelector('.content-title') || doc.querySelector('.content-wrapper')?.firstElementChild;
-        if (anchor) anchor.after(panel);
-        else doc.querySelector('.content-wrapper')?.prepend(panel);
+        body.push(el('a', { href: PLANNER, target: '_blank', rel: 'noopener noreferrer', ownerDocument: doc }, 'Open the travel planner'));
+        panel.replaceChildren(...body);
+        panel.removeAttribute('data-loading');
       } catch (err) {
+        doc.querySelector(`.${MARK}`)?.remove();
         ctx.log('travel runs', err);
       }
     }, SETTLE_MS);

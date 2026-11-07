@@ -19,7 +19,7 @@ keywords: torn travel profit, foreign shop best buy, torn abroad stock
 
 On Torn's travel agency, before you fly, a small panel lists your top three runs from the
 torn-tracker.com planner: where to go, what and how many to buy, the profit per hour, when
-you'd land (Torn time) and how sure the restock estimate is. It links to the full planner.
+you'd land (Torn time) and how sure the restock estimate is. It links to the full planner. The panel holds its place with "Loading…" until the planner answers, so the page doesn't jump.
 Nothing is booked or bought for you.
 
 ## Best buy

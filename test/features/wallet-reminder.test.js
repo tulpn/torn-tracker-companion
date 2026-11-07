@@ -42,6 +42,8 @@ describe('wallet reminder', () => {
     assert.equal(shown[0].querySelector('.ttc-wallet-text').textContent, reminderText(2_500_000));
     assert.match(reminderText(2_500_000), /^You're carrying \$2,500,000\. .*bank it before you list\.$/);
     assert.equal(shown[0].nextElementSibling, r.doc.querySelector('ul.items-cont'));
+    assert.ok(shown[0].classList.contains('ttc-ui-strip'), 'hq #557 E36: a warn strip, not a pill');
+    assert.equal(shown[0].dataset.tone, 'warn');
   });
 
   test('on the item market form too', () => {

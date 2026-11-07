@@ -95,6 +95,9 @@ describe('CMP-001 the build is readable', () => {
   test('it is not minified', () => {
     const lines = built.split('\n');
     assert.ok(lines.length > 200, `only ${lines.length} lines; minified?`);
-    assert.ok(lines.every((line) => line.length < 500), 'a very long line suggests minification');
+    // The one exception is the @icon line, a data: URI of the mark (hq BRAND-050): data, not code.
+    const code = lines.filter((line) => !/^\/\/ @icon\s+data:image\/png;base64,/.test(line));
+    assert.equal(code.length, lines.length - 1, 'exactly one @icon line');
+    assert.ok(code.every((line) => line.length < 500), 'a very long line suggests minification');
   });
 });

@@ -6,7 +6,7 @@
 // the page only, asks nothing, and "Not now" hides it for this page view.
 
 import { el, readMoney, settler } from '../../core/dom.js';
-import { badge, button } from '../../core/ui.js';
+import { button, strip } from '../../core/ui.js';
 import { FORMS, formFor } from '../price-filler/selectors.js';
 import { MONEY } from './selectors.js';
 
@@ -76,7 +76,8 @@ export default {
         s.dismissed = true;
         doc.querySelector(`.${MARK}`)?.remove();
       });
-      const node = badge(doc, { cls: MARK, tone: 'warn', block: true, attrs: { role: 'note' } },
+      // A sentence and a button: a strip, not a pill (hq #557 E36).
+      const node = strip(doc, { cls: MARK, tone: 'warn', attrs: { role: 'note' } },
         el('span', { class: `${MARK}-text`, ownerDocument: doc }, text), ' ', notNow);
       row.parentElement.before(node);
     }

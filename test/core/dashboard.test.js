@@ -249,6 +249,7 @@ describe('hq #465 the page', () => {
       assert.equal(a.rel, 'noopener noreferrer');
     }
     assert.match(root.querySelector('[data-card="gym"]').textContent, /estimate/);
+    assert.equal(root.querySelector('[data-card="chain_watch"] h3').textContent, 'Watch rota', 'hq #557 F24');
     assert.equal(root.getElementById(DASH_ID).dataset.theme, 'dark');
   });
 
@@ -353,6 +354,33 @@ describe('hq #465 the page', () => {
     assert.match((await say({ status: 'failed' })).text, /Couldn't reach/);
   });
 
+  test('hq #557 F18 failed and wait offer a Retry button, which reads again once per press', async () => {
+    for (const first of [{ status: 'failed' }, { status: 'wait', retryMs: 60_000 }]) {
+      let reads = 0;
+      const site = { dashboard: async () => { reads += 1; return reads === 1 ? first : { status: 'no_key' }; } };
+      const { root, dash } = pageRig(site);
+      dash.open();
+      await settle();
+      const retry = root.querySelector('[role="status"] button');
+      assert.equal(retry?.textContent, 'Retry', first.status);
+      assert.equal(retry.type, 'button');
+      retry.click();
+      await settle();
+      assert.equal(reads, 2);
+      assert.match(root.querySelector('[role="status"]').textContent, /script key/);
+      assert.equal(root.querySelector('[role="status"] button'), null, 'no Retry once the answer changes');
+    }
+  });
+
+  test('no key and refused send the player to Keys, with no Retry', async () => {
+    for (const status of ['no_key', 'refused']) {
+      const { root, dash } = pageRig({ dashboard: async () => ({ status }) });
+      dash.open();
+      await settle();
+      assert.equal(root.querySelector('[role="status"] button'), null, status);
+    }
+  });
+
   test('the light theme follows the setting', () => {
     const { root, dash } = pageRig({ dashboard: async () => ({ status: 'failed' }) }, { look: 'light' });
     dash.open();
@@ -416,5 +444,15 @@ describe('hq #465 the charts', () => {
       const size = fs.statSync(path.join(ROOT, 'src', 'core', file)).size;
       assert.ok(size <= budget, `${file} is ${size} bytes, budget ${budget}`);
     }
+  });
+});
+
+describe('hq #557 11 the dashboard on a 360 px screen', () => {
+  test('a card is never wider than the screen, and the sheet takes the narrow padding', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'src', 'core', 'dashboard.js'), 'utf8');
+    assert.match(source, /minmax\(min\(280px, 100%\), 1fr\)/);
+    const narrow = source.slice(source.indexOf('@container (max-width: 480px)'));
+    assert.match(narrow, /-body \{ padding: 12px 12px 14px; \}/);
+    assert.ok(source.indexOf('@container (max-width: 480px)') > source.indexOf('-dcard {'), 'after the base rules, so it wins');
   });
 });

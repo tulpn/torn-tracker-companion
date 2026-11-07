@@ -6,8 +6,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
-import { badge, bar, button, ensureStyle, note, setTone, strip } from '../../src/core/ui.js';
+import { badge, bar, button, buttonCss, ensureStyle, note, setTone, strip, tapDetail } from '../../src/core/ui.js';
 import { ROOT } from '../helpers.js';
+import { TOKENS } from '../../src/data/tokens.js';
 
 const page = () => new JSDOM('<!doctype html><html><head></head><body></body></html>').window.document;
 
@@ -18,6 +19,21 @@ describe('the shared look', () => {
     badge(doc, {}, 'a');
     strip(doc, {}, 'b');
     assert.equal(doc.querySelectorAll('#ttc-ui-style').length, 1);
+  });
+
+  test('hq #557 E35: no shop price tier is drawn red, since every tier is a profit', () => {
+    const doc = page();
+    ensureStyle(doc);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    const ink = (tier) => css.match(new RegExp(`\\[data-ttc-shop="${tier}"\\][^{]*\\{ --ttc-shop-ink: ([^;]+);`))[1];
+    assert.equal(ink('red'), TOKENS.light.ring);
+    assert.equal(ink('blue'), TOKENS.light['muted-foreground']);
+    assert.match(css, /\.ttc-ui-badge\[data-tone="warn"\] \{ --ttc-ink: var\(--tt-nerve\); \}/, 'caution is amber in both themes');
+    assert.match(css, /\.ttc-ui-strip\[data-tone="warn"\] \{ --ttc-ink: var\(--tt-nerve\); \}/, 'hq #557 E36: a warn strip');
+    for (const tier of ['green', 'yellow', 'red', 'blue']) {
+      assert.notEqual(ink(tier), TOKENS.light['tt-ff-hard']);
+      assert.notEqual(ink(tier), TOKENS.light.destructive);
+    }
   });
 
   test('it follows Torn’s dark theme and wraps on a phone', () => {
@@ -63,6 +79,31 @@ describe('the shared look', () => {
   });
 });
 
+describe('hq #557 E33 one button look', () => {
+  test('a primary button is the filled one; a plain one has no variant', () => {
+    const doc = page();
+    assert.equal(button(doc, { primary: true }, 'Save').dataset.variant, 'primary');
+    assert.equal(button(doc, {}, 'Cancel').dataset.variant, undefined);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    assert.ok(css.includes('.ttc-ui-button[data-variant="primary"]'));
+  });
+
+  test('every hover, focus and disabled rule covers each selector it is given', () => {
+    const css = buttonCss('#a button, #a a.b', '#a .p');
+    assert.ok(css.includes('#a button:hover:not(:disabled), #a a.b:hover:not(:disabled) {'));
+    assert.ok(css.includes('#a button:focus-visible, #a a.b:focus-visible {'));
+    assert.ok(css.includes('#a .p { background: var(--primary);'));
+  });
+
+  test('the panel, the dashboard and the page buttons all draw from it, with no colour of their own', () => {
+    for (const file of ['panel.js', 'dashboard.js']) {
+      const source = fs.readFileSync(path.join(ROOT, 'src', 'core', file), 'utf8');
+      assert.match(source, /\$\{buttonCss\(/, file);
+      assert.doesNotMatch(source, /-btn \{[^}]*(background|border-radius)/, file);
+    }
+  });
+});
+
 describe('no feature styles itself', () => {
   const files = [];
   const walk = (dir) => {
@@ -81,5 +122,73 @@ describe('no feature styles itself', () => {
       if (/el\('style'|STYLE = `|\.style\.(cssText|background|color|font|margin|padding)\b/.test(source)) offenders.push(path.relative(ROOT, file));
     }
     assert.deepEqual(offenders, []);
+  });
+});
+
+describe('hq #557 A9 a tap detail stays on a 360 px screen', () => {
+  const at = (left) => {
+    const { window } = new JSDOM('<!doctype html><html><body></body></html>');
+    Object.defineProperty(window, 'innerWidth', { value: 360 });
+    const doc = window.document;
+    const node = badge(doc, { compact: true }, 'x');
+    doc.body.append(node);
+    node.getBoundingClientRect = () => ({ left, right: left + 30, top: 0, bottom: 16, width: 30, height: 16 });
+    tapDetail(node, 'The full detail');
+    return { window, node };
+  };
+  const tap = ({ window, node }) => node.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+  test('near the right edge it opens leftwards; with room it opens rightwards', () => {
+    const edge = at(300);
+    tap(edge);
+    assert.equal(edge.node.dataset.open, 'true');
+    assert.equal(edge.node.dataset.flip, 'end');
+    const roomy = at(20);
+    tap(roomy);
+    assert.equal(roomy.node.dataset.flip, undefined);
+  });
+
+  test('hq #557 F39: a tap detail is a button to the keyboard, unless it already has a role', () => {
+    const { node } = at(20);
+    assert.equal(node.getAttribute('role'), 'button');
+    assert.equal(node.tabIndex, 0);
+    const doc = page();
+    const status = tapDetail(badge(doc, { attrs: { role: 'status' } }, 'x'), 'd');
+    assert.equal(status.getAttribute('role'), 'status');
+    assert.equal(status.getAttribute('aria-expanded'), null);
+    ensureStyle(doc);
+    assert.ok(doc.getElementById('ttc-ui-style').textContent.includes('.ttc-ui-compact.ttc-ui-compact[role="button"]:focus-visible { outline: 2px solid var(--ring)'), 'a focus ring');
+  });
+
+  test('closing and opening again reads the place again', () => {
+    const r = at(300);
+    tap(r);
+    tap(r);
+    assert.equal(r.node.dataset.open, 'false');
+    r.node.getBoundingClientRect = () => ({ left: 10, right: 40, top: 0, bottom: 16, width: 30, height: 16 });
+    tap(r);
+    assert.equal(r.node.dataset.flip, undefined);
+  });
+
+  test('the detail is never wider than the screen, and the flip anchors it on the right', () => {
+    const doc = page();
+    ensureStyle(doc);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    assert.match(css, /max-width: min\(220px, 90vw\)/);
+    assert.match(css, /\[data-flip="end"\]::after \{ left: auto; right: 0; \}/);
+  });
+});
+
+describe('hq #557 23 a badge that is a link looks like one', () => {
+  test('a trailing arrow, a deeper tint and an underline on hover or focus, a focus ring', () => {
+    const doc = page();
+    ensureStyle(doc);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    assert.match(css, /a\.ttc-ui-badge:not\(\.ttc-ui-compact\)::after \{ content: '\\203A';/);
+    assert.match(css, /a\.ttc-ui-badge:hover, a\.ttc-ui-badge:focus-visible \{ background: color-mix\(in srgb, var\(--ttc-ink\) 28%, transparent\); color: var\(--ttc-ink\); text-decoration: underline; \}/);
+    assert.match(css, /a\.ttc-ui-badge:focus-visible \{ outline: 2px solid var\(--ring\)/);
+    const link = badge(doc, { tag: 'a', attrs: { href: 'https://torn-tracker.com/' } }, 'Listed');
+    assert.equal(link.tagName, 'A');
+    assert.equal(link.textContent, 'Listed', 'the arrow is drawn by the style, not in the words');
   });
 });

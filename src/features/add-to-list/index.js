@@ -30,7 +30,7 @@ export const SAY = Object.freeze({
   not_allowed: 'This player can\'t be added to a list.',
   busy: 'torn-tracker.com is busy. Try again in a minute.',
   failed: 'That didn\'t work. Try again later.',
-  no_key: 'Your script key can\'t change lists. Add a key with the lists scope.',
+  no_key: 'Your script key can\'t change lists. Make one with Lists ticked on torn-tracker.com and add it under Keys.',
 });
 
 let state = null;
@@ -42,7 +42,7 @@ const plural = (n) => `${n} ${n === 1 ? 'list' : 'lists'}`;
  * @returns {{text: string, act: 'add'|'menu'|'retry', list: object|null}}
  */
 export function mainAction(menu) {
-  if (!menu || menu.status !== 'ok') return { text: 'Lists: try again', act: 'retry', list: null };
+  if (!menu || menu.status !== 'ok') return { text: "Lists didn't load. Retry", act: 'retry', list: null };
   const on = menu.lists.filter((l) => l.contains).length;
   const last = menu.lists.find((l) => l.uuid === menu.lastUsed) || null;
   if (last && !last.contains) return { text: `Add to ${last.name}`, act: 'add', list: last };
@@ -118,13 +118,13 @@ export default {
       // Until the site serves the lists, or while it is down, the profile looks as it did.
       if (s.menu?.quiet) return;
       if (s.menu?.status === 'no_key') {
-        const link = el('a', { href: KEYS_HREF, class: `${MARK} ${MARK}-key ttc-ui-button`, title: 'Lists need a script key with the lists scope.', ownerDocument: doc },
+        const link = el('a', { href: KEYS_HREF, class: `${MARK} ${MARK}-key ttc-ui-button`, title: 'Lists need a script key made with Lists ticked.', ownerDocument: doc },
           'Add your script key');
         profileAction(doc, heading, 'lists', link);
         return;
       }
       const action = mainAction(s.menu);
-      const main = button(doc, { cls: `${MARK}-main`, attrs: { disabled: s.busy } }, action.text);
+      const main = button(doc, { cls: `${MARK}-main`, primary: action.act === 'add', attrs: { disabled: s.busy } }, action.text);
       main.addEventListener('click', (event) => {
         stop(event);
         if (s.busy) return;

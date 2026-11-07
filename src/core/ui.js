@@ -28,7 +28,9 @@ const COMPACT = `.${P}-ui-compact.${P}-ui-compact`;
 const INK = Object.freeze({
   good: 'var(--tt-success)',
   neutral: 'var(--muted-foreground)',
-  warn: 'var(--tt-warning)',
+  // Amber, never red (hq #557 E35): the site's --tt-warning is red in its light theme, so
+  // caution and bad looked the same there. --tt-nerve is orange in both themes.
+  warn: 'var(--tt-nerve)',
   // The destructive red is a fill colour; as text on a dark card it needs lifting.
   bad: 'color-mix(in srgb, var(--destructive) 65%, var(--foreground))',
   info: 'var(--ring)',
@@ -38,8 +40,36 @@ const INLINE = `.${P}-ui-inline.${P}-ui-inline`;
 /** A small button inside one of Torn's table rows (hq #535); the class twice, see the style. */
 const SMALL = `.${P}-ui-small.${P}-ui-small`;
 /** The shop price highlighter's tiers and the token each is drawn in. */
-const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-ff-hard'], ['blue', 'ring']]);
+// Every tier is a profit, so none is red (hq #557 E35): green, yellow, blue, then grey for the
+// smallest. The keys stay as saved in settings; the names the player sees are Best to Small.
+const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'ring'], ['blue', 'muted-foreground']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
+
+const each = (selectors, suffix) => selectors.split(',').map((one) => `${one.trim()}${suffix}`).join(', ');
+
+/**
+ * The one button look (hq #557 E33): the settings panel, the dashboard and the buttons on
+ * Torn's pages all draw theirs from here, so a button is the same shape, weight and colour
+ * wherever it shows. Each place sets only its size. `primary` is the selector of the one
+ * main action in a group, filled with the accent.
+ * @param {string} sel the plain button selector(s), comma separated
+ * @param {string} primary the primary variant's selector(s)
+ */
+export function buttonCss(sel, primary) {
+  return `
+  ${sel} {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box;
+    border: 1px solid var(--input); border-radius: var(--radius); cursor: pointer; text-decoration: none;
+    font: 600 13px/18px var(--tt-font-sans);
+    background: var(--card); color: var(--card-foreground);
+    transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
+  }
+  ${each(sel, ':hover:not(:disabled)')} { border-color: var(--primary); text-decoration: none; }
+  ${each(sel, ':focus-visible')} { outline: 2px solid var(--ring); outline-offset: 2px; }
+  ${each(sel, ':disabled')} { cursor: default; opacity: .6; }
+  ${primary} { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+  ${each(primary, ':hover:not(:disabled)')} { filter: brightness(1.05); color: var(--primary-foreground); }`;
+}
 
 const STYLE = `
   ${followTorn(OWN)}
@@ -47,7 +77,7 @@ const STYLE = `
     --ttc-ink: ${INK.neutral};
     display: inline-flex; align-items: center; gap: 4px; max-width: 100%; box-sizing: border-box;
     margin: 1px 0 1px 6px; padding: 1px 8px; border-radius: 999px;
-    font: 600 11px/16px var(--tt-font-sans); letter-spacing: .01em;
+    font: 600 12px/16px var(--tt-font-sans); letter-spacing: .01em;
     vertical-align: middle; white-space: normal; overflow-wrap: anywhere; text-decoration: none;
     background: ${tint('var(--ttc-ink)')}; color: var(--ttc-ink);
   }
@@ -55,8 +85,21 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-badge[data-tone="scale"] { background: var(--ttc-tone-bg); color: #fff; min-width: 34px; justify-content: center; }
   .${P}-ui-badge[data-tone="scale"][data-ink="dark"] { color: #111; }
   .${P}-ui-badge[data-dim="true"] { opacity: .5; }
-  a.${P}-ui-badge:hover { filter: brightness(.95); text-decoration: underline; }
+  /* A badge that is a link (hq issue 557, 23): a trailing arrow says it goes somewhere, and on
+     hover or focus its tint deepens and the words underline. The ink follows the theme. */
+  a.${P}-ui-badge:not(.${P}-ui-compact)::after { content: '\\203A'; font-weight: 700; }
+  a.${P}-ui-badge { cursor: pointer; }
+  a.${P}-ui-badge:hover, a.${P}-ui-badge:focus-visible { background: ${tint('var(--ttc-ink)', 28)}; color: var(--ttc-ink); text-decoration: underline; }
+  a.${P}-ui-badge:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
+  /* A note the player can put away (hq issue 557, 30): a small cross at its end. */
+  .${P}-ui-dismiss {
+    all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; margin-left: 2px; border-radius: 999px; cursor: pointer;
+    font: 700 13px/1 var(--tt-font-sans); color: inherit;
+  }
+  .${P}-ui-dismiss:hover { background: ${tint('var(--ttc-ink)', 28)}; }
+  .${P}-ui-dismiss:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
   /* Compact (hq issue 522): one short line in a row whose height Torn fixes. The class twice
      outweighs Torn's own span and button rules in that row. A badge with a data-detail shows
      it below itself while data-open is true (a tap, set by the feature). */
@@ -66,17 +109,20 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
     font: 600 12px/16px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; vertical-align: middle;
   }
   ${COMPACT}[data-detail] { cursor: help; }
+  ${COMPACT}[role="button"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   ${COMPACT}[data-open="true"]::after {
     content: attr(data-detail); position: absolute; top: calc(100% + 4px); left: 0; z-index: 10;
-    width: max-content; max-width: 220px; padding: 6px 8px; white-space: normal; text-align: left;
+    width: max-content; max-width: min(220px, 90vw); padding: 6px 8px; white-space: normal; text-align: left;
     font: 400 12px/1.4 var(--tt-font-sans); border: 1px solid var(--border); border-radius: var(--radius);
     background: var(--popover); color: var(--popover-foreground); box-shadow: var(--tt-shadow-md);
   }
+  /* Near the right edge the detail opens leftwards, so it stays on a 360 px screen (hq issue 557, A9). */
+  ${COMPACT}[data-open="true"][data-flip="end"]::after { left: auto; right: 0; }
   /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
   .${P}-ui-badge[data-pin="under"] {
     position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); z-index: 1; margin: 0;
-    padding: 0 7px; white-space: nowrap; font-size: 10px; line-height: 15px; pointer-events: none;
+    padding: 0 7px; white-space: nowrap; font-size: 12px; line-height: 16px; pointer-events: none;
     --ttc-pin-under: var(--default-bg-panel-color, var(--card));
     background: linear-gradient(${tint('var(--ttc-ink)')}, ${tint('var(--ttc-ink)')}), var(--ttc-pin-under);
     box-shadow: 0 0 0 2px var(--ttc-pin-under);
@@ -91,43 +137,34 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
     background: var(--card); color: var(--card-foreground);
     overflow-wrap: anywhere;
   }
+  .${P}-ui-strip[data-tone="warn"] { --ttc-ink: ${INK.warn}; }
   .${P}-ui-strip[data-tone="bad"] { --ttc-ink: var(--destructive); }
   .${P}-ui-strip[data-tone="info"] { --ttc-ink: var(--primary); }
   .${P}-ui-strip strong:first-child { display: block; margin-bottom: 4px; font-size: 13px; }
   .${P}-ui-strip ol, .${P}-ui-strip ul { margin: 4px 0 6px 18px; padding: 0; }
   .${P}-ui-strip li { margin: 2px 0; }
   .${P}-ui-strip a { color: var(--ring); font-weight: 600; }
-  .${P}-ui-note { display: block; margin-top: 2px; font: 11px/1.4 var(--tt-font-sans); color: var(--muted-foreground); overflow-wrap: anywhere; }
+  .${P}-ui-note { display: block; margin-top: 2px; font: 12px/1.4 var(--tt-font-sans); color: var(--muted-foreground); overflow-wrap: anywhere; }
   .${P}-ui-bar {
     display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0;
     font: 12px var(--tt-font-sans);
   }
-  .${P}-ui-button {
-    min-height: 26px; padding: 2px 12px; border: 1px solid var(--input); border-radius: 999px; cursor: pointer;
-    font: 600 11px/18px var(--tt-font-sans);
-    background: var(--card); color: var(--card-foreground);
-    transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
-  }
-  .${P}-ui-button:hover:not(:disabled) { border-color: var(--primary); }
-  .${P}-ui-button[aria-pressed="true"], .${P}-ui-button[data-tone="good"] {
-    background: var(--primary); border-color: var(--primary); color: var(--primary-foreground);
-  }
+  ${buttonCss(`.${P}-ui-button`, `.${P}-ui-button[data-variant="primary"], .${P}-ui-button[aria-pressed="true"], .${P}-ui-button[data-tone="good"]`)}
+  .${P}-ui-button { min-height: 26px; padding: 2px 12px; }
   .${P}-ui-button[data-tone="bad"] { background: ${tint(INK.bad)}; border-color: transparent; color: ${INK.bad}; cursor: default; }
-  .${P}-ui-button:disabled { cursor: default; }
-  .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   /* Small (hq issue 535): one line inside a row Torn keeps narrow, like the war list's
      member cell. It never wraps into a tall pill and never takes Torn's own button rules. */
   ${SMALL} {
     display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
     width: auto; min-width: 0; height: 20px; min-height: 0; margin: 0 0 0 4px; padding: 0 8px;
-    font: 600 11px/18px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; text-transform: none;
+    font: 600 13px/18px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; text-transform: none;
   }
   /* Inline beside one of Torn's form fields (hq issue 521): the field's height, one line, our
      accent. The class twice outweighs Torn's own form button rules, which made it black. */
   ${INLINE} {
     display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
     min-height: 0; min-width: 0; height: 24px; margin: 0 0 0 4px; padding: 0 8px; white-space: nowrap;
-    font: 600 11px/1 var(--tt-font-sans); text-transform: none; box-shadow: none; text-shadow: none;
+    font: 600 13px/1 var(--tt-font-sans); text-transform: none; box-shadow: none; text-shadow: none;
     border: 1px solid var(--primary); border-radius: var(--radius);
     background: ${tint('var(--primary)')}; color: var(--foreground);
   }
@@ -185,8 +222,12 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     margin: 0 4px 0 6px; vertical-align: middle; background: var(--${P}-shop-ink);
   }
   [data-${P}-shop-label]::after {
-    content: attr(data-${P}-shop-label); margin-left: 4px; font-weight: 700; font-size: .9em;
+    content: attr(data-${P}-shop-label) attr(data-${P}-shop-total); margin-left: 4px; font-weight: 700; font-size: max(12px, .9em);
     white-space: nowrap; color: var(--${P}-shop-ink);
+  }
+  /* Narrow listings: the profit each only; the total stays in the title (hq issue 557, B15). */
+  @media (max-width: 400px) {
+    [data-${P}-shop-label]::after { content: attr(data-${P}-shop-label); }
   }
   /* Text the player is about to send, shown as it will read; a part it lacks is flagged. */
   .${P}-ui-preview {
@@ -249,7 +290,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     background: var(--card); color: var(--card-foreground); font: 14px/1.4 var(--tt-font-sans); text-align: left;
   }
   ${MENU} .${P}-lists-head {
-    padding: 6px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 6px 10px 4px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
     color: var(--muted-foreground);
   }
   ${MENU} .${P}-lists-item {
@@ -271,7 +312,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   }
   ${MENU} .${P}-lists-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   ${MENU} .${P}-lists-tag {
-    flex: none; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
+    flex: none; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 18px;
     background: ${tint('var(--primary)')}; color: var(--muted-foreground);
   }
   /* Each list's row: the tick button, then Open to that list's page on the site (hq issue 486). */
@@ -334,8 +375,33 @@ export function badge(doc, { cls, tone = 'neutral', block = false, compact = fal
 }
 
 /**
+ * A small cross at the end of a note that puts it away (hq #557 30). The tap goes no further
+ * than the cross, so it never reaches Torn's own handlers around the note.
+ * @param {Element} node the note
+ * @param {() => void} [onDismiss] what else the feature does: remember it, take other copies off
+ */
+export function dismissible(node, onDismiss) {
+  const doc = node.ownerDocument;
+  ensureStyle(doc);
+  const cross = el('button', {
+    type: 'button', class: `${P}-ui-dismiss`, 'aria-label': 'Dismiss', title: 'Dismiss', ownerDocument: doc,
+  }, '×');
+  cross.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    node.remove();
+    onDismiss?.();
+  });
+  node.append(cross);
+  return node;
+}
+
+/**
  * The detail of a compact badge (hq #522, #557): in its title for a hover, and under it on a
  * tap. The tap goes no further, so it never reaches Torn's own handlers in the row.
+ * From the keyboard (hq #557 F39) it is a button: Tab reaches it, Enter or Space opens and
+ * closes it, and `aria-expanded` says which. A badge that already has a role (a status line)
+ * keeps it and opens by tap only.
  * @param {Element} node a badge made with `compact: true`
  * @param {string} detail
  */
@@ -344,12 +410,45 @@ export function tapDetail(node, detail) {
   if (node.dataset.detail !== detail) node.dataset.detail = detail;
   if (node.dataset.open) return node;
   node.dataset.open = 'false';
-  node.addEventListener('click', (e) => {
+  const keyboard = !node.hasAttribute('role');
+  if (keyboard) {
+    node.setAttribute('role', 'button');
+    node.tabIndex = 0;
+    node.setAttribute('aria-expanded', 'false');
+  }
+  const toggle = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    node.dataset.open = String(node.dataset.open !== 'true');
-  });
+    const open = node.dataset.open !== 'true';
+    if (open) flipNearEdge(node);
+    node.dataset.open = String(open);
+    if (keyboard) node.setAttribute('aria-expanded', String(open));
+  };
+  node.addEventListener('click', toggle);
+  if (keyboard) {
+    node.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') toggle(e);
+      else if (e.key === 'Escape' && node.dataset.open === 'true') toggle(e);
+    });
+  }
   return node;
+}
+
+/** The widest a detail opens, as in the CSS above. */
+const DETAIL_WIDTH = 220;
+
+/**
+ * Opens a badge's detail leftwards when it would run past the right edge of the window
+ * (hq #557 A9). Read once, on the tap.
+ * @param {Element} node
+ */
+export function flipNearEdge(node) {
+  const view = node.ownerDocument?.defaultView;
+  const width = view?.innerWidth || node.ownerDocument?.documentElement?.clientWidth || 0;
+  const { left } = node.getBoundingClientRect();
+  const room = width - left;
+  if (width > 0 && room < Math.min(DETAIL_WIDTH, width * 0.9)) node.dataset.flip = 'end';
+  else delete node.dataset.flip;
 }
 
 /** Changes a badge's tone; `scale` sets a data colour (with dark or light ink) instead. */
@@ -430,8 +529,10 @@ export function profileAction(doc, heading, slot, node) {
  * One of our own small buttons; 44 px on touch screens. `inline` sizes it to sit beside
  * one of Torn's form fields, on the same line (hq #521).
  */
-export function button(doc, { cls, tone, inline = false, small = false, attrs = {} } = {}, ...children) {
+export function button(doc, { cls, tone, primary = false, inline = false, small = false, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
   const base = `${P}-ui-button${inline ? ` ${P}-ui-inline` : ''}${small ? ` ${P}-ui-small` : ''}`;
-  return el('button', { type: 'button', class: classes(base, cls), 'data-tone': tone, ownerDocument: doc, ...attrs }, ...children);
+  return el('button', {
+    type: 'button', class: classes(base, cls), 'data-tone': tone, 'data-variant': primary ? 'primary' : undefined, ownerDocument: doc, ...attrs,
+  }, ...children);
 }

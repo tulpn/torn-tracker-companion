@@ -37,21 +37,21 @@ from any other page, or from the address above.
 Type in **Search settings**, the bar right under the page's title, to find any switch or
 option, in any section. **✕** beside it clears the search. The title bar itself shows the
 companion's version and whether a script key is saved.
-Changes are kept until you press **Save**, so you can move between sections freely; leaving
-without saving throws them away. After **Save** you stay on the page, and it says
-**Saved.** The page opens on the section you used last.
+Every change saves as you make it, and the page says **Saved.** A switch or menu saves at
+once, a typed field when you leave it. The page opens on the section you used last.
 
 ## The sections
 
-- **General:** the version, a link to check for an update, the page's **Look**, where the
-  [sidebar block](sidebar.md) sits, the switch for the [achievements](achievements.md) toast, and console logging for
+- **General:** the version, a link to check for an update, the page's **Look**, the
+  switch for the [achievements](achievements.md) toast, and console logging for
   troubleshooting.
 - **Features:** every feature, grouped by area (war, travel, market, crimes, gym, jobs),
   each with its switch, one line on what it does, its options, and a **Learn more** link to
   its page here. A feature that's off doesn't run at all. **Reset settings to defaults** is
-  at the bottom.
-- **Sidebar:** the [Torn Tracker sidebar block](sidebar.md): switch it off, or choose
-  which lines it shows.
+  at the bottom; it asks for a second tap before it resets anything, and keeps your keys,
+  notes and templates.
+- **Sidebar:** the [Torn Tracker sidebar block](sidebar.md): switch it off, choose where
+  it sits, or choose which lines it shows.
 - **Sharing:** a switch for each kind of data the companion can share, every one off to
   start with. See [Choose what to share](what-is-shared.md). It also shows what's waiting
   to be sent and, if sharing has stopped, why.
@@ -70,7 +70,7 @@ the Torn forum.
 
 ## Your next guide step
 
-If you started the torn-tracker guide on the website, every section of the settings page
+If you started the Torn Tracker guide on the website, every section of the settings page
 starts with your next step: what it gets you, and a button straight to where it's done,
 plus a link to the whole guide. If you haven't started it, one line offers it; once you
 dismiss the guide on the website, that line is gone. Steps still tick only on the website,
@@ -92,15 +92,15 @@ until the tour itself changes, and then it shows only what's new.
 - Press **?** at the top of the settings page to see it again.
 - **Help → Tours** lists every tour and whether you've done it. A tour of another page,
   such as the ranked-war page, starts when you next open that page (within ten minutes).
-- When you switch a feature on and save, its page's tour starts at that feature the next
+- When you switch a feature on, its page's tour starts at that feature the next
   time you open the page (within ten minutes), unless you've seen that step already.
 
 Tours never start on their own while you're attacking or typing in a field. A step about
 a feature you've switched off is left out. Which tours you've seen is kept on this
 device and goes with [Forget me](forget-me.md).
 
-The page is dark to start with, in torn-tracker.com's colours. Under **General → Look**
-you can make it light, or **Same as Torn** to follow Torn's own light or dark theme. What
+The page, like the dashboard, follows Torn's own light or dark theme to start with. Under
+**General → Look** you can make it always dark or always light instead. What
 the companion adds to Torn's pages (labels, panels, the sidebar block) always follows
 Torn's theme, so it matches the page around it. When it's narrower than 600 px (on a phone
 or in PDA), its menu moves to the top and scrolls sideways; every button is big enough

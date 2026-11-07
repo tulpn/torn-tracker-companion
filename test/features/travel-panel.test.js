@@ -73,3 +73,30 @@ describe('TRV-050 on the travel agency', () => {
     assert.equal(panel(r), null);
   });
 });
+
+describe('hq #557 A6 the panel holds its place from the start', () => {
+  test('a Loading panel is there before the answer, and the same panel is filled in place', async () => {
+    let answer;
+    const site = { travelRuns: () => new Promise((resolve) => { answer = resolve; }) };
+    const r = run({ site });
+    const held = panel(r);
+    assert.ok(held, 'reserved at once');
+    assert.equal(held.dataset.loading, 'true');
+    assert.equal(held.previousElementSibling.className, 'content-title');
+    assert.match(held.textContent, /Loading/);
+    await wait();
+    answer({ runs: RUNS, reason: null, basis: 'profit_per_hour' });
+    await wait(50);
+    assert.equal(panel(r), held);
+    assert.equal(held.dataset.loading, undefined);
+    assert.equal(held.querySelectorAll('li').length, 2);
+    assert.equal(r.doc.querySelectorAll('.ttc-runs').length, 1);
+  });
+
+  test('a failed read takes the held place away', async () => {
+    const r = run({ site: { travelRuns: async () => { throw new Error('down'); } } });
+    assert.ok(panel(r));
+    await wait();
+    assert.equal(panel(r), null);
+  });
+});

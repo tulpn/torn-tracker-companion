@@ -1,6 +1,6 @@
 {
   "name": "torn-tracker-companion",
-  "version": "0.9.14",
+  "version": "0.9.15",
   "private": true,
   "type": "module",
   "description": "The companion userscript of the torn-tracker.com suite",
@@ -9,6 +9,7 @@
     "build": "node tools/build.mjs",
     "data:items": "node tools/build-items.mjs",
     "data:tokens": "node tools/build-tokens.mjs",
+    "data:brand": "node tools/build-brand.mjs",
     "guide": "node tools/build-guide.mjs",
     "check": "node --check dist/torn-tracker-companion.user.js",
     "contract": "node tools/build-contract.mjs",

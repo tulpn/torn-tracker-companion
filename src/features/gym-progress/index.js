@@ -16,6 +16,7 @@
 import { answerShape, lineSpot, listShape, progressText, readActive, readInitial, readProgress, readStatuses, readTrain, whyNoProgress } from './read.js';
 import { gymStep } from './selectors.js';
 import { settler } from '../../core/dom.js';
+import { shownByOther } from '../../core/neighbours.js';
 
 const MARK = 'ttc-gym';
 const SETTLE_MS = 500;
@@ -51,7 +52,8 @@ export default {
       const old = doc.querySelector(`.${MARK}`);
       const estimate = s.estimate;
       const spot = lineSpot(doc);
-      if (!progress || !spot || !estimate || estimate.gym_id !== progress.gym_id || estimate.next_gym_energy_estimate === null) {
+      // TornTools already shows the energy to go: ours stays off (hq #557 F40).
+      if (shownByOther(doc, 'gymProgress') || !progress || !spot || !estimate || estimate.gym_id !== progress.gym_id || estimate.next_gym_energy_estimate === null) {
         old?.remove();
         return;
       }

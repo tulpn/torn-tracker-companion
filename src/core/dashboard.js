@@ -16,13 +16,14 @@ import { ROLE_NAMES } from './rota.js';
 import { DASHBOARD_CARDS } from './site.js';
 import { left, roughly } from './sidebar.js';
 import { declarations, lookTheme } from './tokens.js';
+import { buttonCss } from './ui.js';
 
 const P = 'ttc';
 export const DASH_ID = `${P}-dash`;
 const MONEY_DAYS = 7;
 
 const CARD_TITLE = Object.freeze({
-  alerts: 'Alerts', war: 'Ranked war', chain_watch: 'Chain watch', chain: 'Chain', oc: 'Organized crime',
+  alerts: 'Alerts', war: 'Ranked war', chain_watch: 'Watch rota', chain: 'Chain', oc: 'Organized crime',
   awards: 'Nearest awards', education: 'Education', gym: 'Next gym', goals: 'Savings goals',
   achievements: 'Next achievements', guide: 'Getting started', money: 'Money, last 7 days',
 });
@@ -46,17 +47,16 @@ const STYLE = `
     background: var(--primary); color: var(--primary-foreground); font: 800 13px/1 var(--tt-font-sans);
   }
   #${DASH_ID} h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  #${DASH_ID} h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--muted-foreground); }
+  #${DASH_ID} h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
   #${DASH_ID} a { color: var(--ring); }
-  #${DASH_ID} .${P}-btn {
-    display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--background); color: var(--foreground); font-weight: 600; text-decoration: none;
-  }
+  ${buttonCss(`#${DASH_ID} .${P}-btn`, `#${DASH_ID} .${P}-btn.${P}-primary`)}
+  #${DASH_ID} .${P}-btn { min-height: 44px; padding: 0 14px; }
   #${DASH_ID} .${P}-body { padding: 14px 16px 18px; }
   #${DASH_ID} .${P}-state { margin: 0 0 12px; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-state:empty { display: none; }
-  #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  #${DASH_ID} .${P}-retry { min-height: 32px; margin-left: 4px; }
+  #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
   #${DASH_ID} .${P}-dcard {
     display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 14px;
     background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--tt-shadow-sm);
@@ -73,9 +73,16 @@ const STYLE = `
   #${DASH_ID} .${P}-meter[data-over] > span { background: var(--tt-warning); }
   #${DASH_ID} .${P}-more { margin-top: auto; display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
   #${DASH_ID} .${P}-sub { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--muted-foreground); }
-  #${DASH_ID} .${P}-tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  #${DASH_ID} .${P}-tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
     background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   ${CHART_STYLE}
+  /* On a phone the sheet keeps the panel's narrow padding, and a card never overflows (hq issue 557, 11). */
+  @container (max-width: 480px) {
+    #${DASH_ID} .${P}-head { padding: 10px 12px; }
+    #${DASH_ID} .${P}-body { padding: 12px 12px 14px; }
+    #${DASH_ID} .${P}-grid { gap: 10px; }
+    #${DASH_ID} .${P}-dcard { padding: 10px 12px; }
+  }
 `;
 
 const thousands = (n) => n.toLocaleString('en-US');
@@ -98,7 +105,7 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
   }
   const state = h('p', { class: `${P}-state`, role: 'status' });
   const grid = h('div', { class: `${P}-grid` });
-  const siteLink = h('a', { class: `${P}-btn`, href: 'https://www.torn-tracker.com/dashboard/', target: '_blank', rel: 'noopener noreferrer' }, 'Open on torn-tracker.com');
+  const siteLink = h('a', { class: `${P}-btn ${P}-primary`, href: 'https://www.torn-tracker.com/dashboard/', target: '_blank', rel: 'noopener noreferrer' }, 'Open on torn-tracker.com');
   const element = h('div', { id: DASH_ID, role: 'region', 'aria-label': 'Torn Tracker dashboard', hidden: true },
     h('div', { class: `${P}-sheet` },
       h('div', { class: `${P}-head` },
@@ -154,7 +161,7 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
       : [
         h('p', null, h('strong', null, v.nextGym), h('span', { class: `${P}-tag` }, ' estimate')),
         meter(v.percent, 100, `${v.nextGym}: about ${v.percent}%`),
-        h('p', { class: `${P}-muted` }, `About ${v.percent}% there${v.energy != null ? `, roughly ${thousands(v.energy)} energy to go` : ''}. An estimate, not Torn's figure.`),
+        h('p', { class: `${P}-muted` }, `About ${v.percent}% there${v.energy != null ? `, roughly ${thousands(v.energy)} energy to go` : ''}. Worked out by torn-tracker.com, not Torn's own figure.`),
       ]),
     goals: (v) => [
       v.saved != null ? h('p', null, h('span', { class: `${P}-big` }, dollars(v.saved)), h('span', { class: `${P}-muted` }, ' saved')) : null,
@@ -243,6 +250,14 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     state.replaceChildren(words, ...(link ? [' ', h('a', { href: link.href }, link.text)] : []));
   }
 
+  /** The words, and a Retry button that reads the dashboard again: one read per press (hq #557 F18). */
+  function sayRetry(words) {
+    const retry = h('button', { type: 'button', class: `${P}-btn ${P}-retry` }, 'Retry');
+    retry.addEventListener('click', () => { if (open) load(); });
+    say(words);
+    state.append(' ', retry);
+  }
+
   async function load() {
     const mine = ++generation;
     say('Loading your dashboard…');
@@ -255,9 +270,9 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     if (mine !== generation || !open) return;
     if (result?.status === 'ok') show(result);
     else if (result?.status === 'no_key') say('The dashboard needs your torn-tracker.com script key.', { href: '#/torn-tracker/keys', text: 'Add it in Keys' });
-    else if (result?.status === 'refused') say('torn-tracker.com refused the script key. Check it in Keys.', { href: '#/torn-tracker/keys', text: 'Open Keys' });
-    else if (result?.status === 'wait') say(`torn-tracker.com asked to wait. Try again in ${roughly(result.retryMs ?? 60_000)}.`);
-    else say("Couldn't reach torn-tracker.com. Try again in a minute.");
+    else if (result?.status === 'refused') say('torn-tracker.com didn’t accept your script key. Check it under Keys.', { href: '#/torn-tracker/keys', text: 'Open Keys' });
+    else if (result?.status === 'wait') sayRetry(`torn-tracker.com asked to wait. Try again in ${roughly(result.retryMs ?? 60_000)}.`);
+    else sayRetry("Couldn't reach torn-tracker.com. Try again in a minute.");
   }
 
   return {

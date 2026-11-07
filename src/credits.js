@@ -22,7 +22,7 @@ export const CREDITS = Object.freeze([
     author: 'Mephiles and contributors',
     licence: 'GPL-3.0',
     url: 'https://github.com/Mephiles/torntools_extension',
-    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, how to set a React field so the form sees it, totalling each side of a trade, and where its settings entry sits in the sidebar',
+    taken: 'where the foreign shop and the attack page keep their data, where the shop shows your money and capacity, how to set a React field so the form sees it, totalling each side of a trade, where its settings entry sits in the sidebar, and the marks its OC weights and gym progress leave on the page',
     merged: false,
   },
   {
@@ -102,7 +102,7 @@ export const CREDITS = Object.freeze([
     author: 'tobytorn',
     licence: 'MIT',
     url: 'https://github.com/tobytorn/crime-morale',
-    taken: "that crime morale is 100 minus the crimes page's demoralisation, and that burglary targets carry when they expire",
+    taken: "that crime morale is 100 minus the crimes page's demoralisation, and that burglary targets carry when they expire, and the mark its morale leaves in the crimes header",
     merged: false,
   },
   {
@@ -110,7 +110,15 @@ export const CREDITS = Object.freeze([
     author: 'Strigwulf, with JohnNash and Seberus',
     licence: 'GPL-3.0',
     url: 'https://greasyfork.org/scripts/577968',
-    taken: "role weights beside each slot of an organized crime, and where the crime cards and slots are",
+    taken: "role weights beside each slot of an organized crime, where the crime cards and slots are, and the marks its weight and success boxes leave",
+    merged: false,
+  },
+  {
+    name: 'Bustr+',
+    author: 'cowboyup',
+    licence: 'MIT',
+    url: 'https://greasyfork.org/scripts/586532',
+    taken: 'where the jail rows, levels and times are, and the mark its score leaves in each row',
     merged: false,
   },
   {

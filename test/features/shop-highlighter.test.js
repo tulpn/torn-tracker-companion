@@ -169,3 +169,17 @@ describe('the readers', () => {
     assert.equal(findRow(r.doc.querySelector('ul.sellerList___s')), null);
   });
 });
+
+describe('hq #557 B15 the total stays off narrow listings', () => {
+  test('the total is its own attribute; under 400 px the label shows the profit each only', async () => {
+    const r = run({ html: page(listing(206, 900, 4)), url: MARKET, site: fakeSite() });
+    await wait();
+    const price = rows(r)[0].querySelector("[class*='price___']");
+    assert.equal(price.getAttribute('data-ttc-shop-label'), '+100');
+    assert.equal(price.getAttribute('data-ttc-shop-total'), ' (400)');
+    assert.match(price.getAttribute('title'), /4 listed: \$400 in all/);
+    const css = [...r.doc.querySelectorAll('style')].map((n) => n.textContent).join('\n');
+    assert.match(css, /content: attr\(data-ttc-shop-label\) attr\(data-ttc-shop-total\);/);
+    assert.match(css, /@media \(max-width: 400px\) \{\s*\[data-ttc-shop-label\]::after \{ content: attr\(data-ttc-shop-label\); \}/);
+  });
+});

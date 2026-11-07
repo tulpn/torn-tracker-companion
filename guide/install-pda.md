@@ -49,6 +49,6 @@ press it.
 
 ## Add your script key
 
-In the settings, under **Keys**, paste your [script key](website:script-key.md) and press
-**Save**. You can use the same key as on your computer: see
+In the settings, under **Keys**, paste your [script key](website:script-key.md). It saves
+when you leave the field. You can use the same key as on your computer: see
 [Use it on your other device](second-device.md).

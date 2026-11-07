@@ -53,7 +53,7 @@ describe('JOB-072 which list this is', () => {
 
   test('the badge words', () => {
     assert.equal(badgeText({ merits: 10, job_points: 1234, fit: 'good' }), '10 merits · 1,234 job points · good fit');
-    assert.equal(badgeText({ merits: null, job_points: null, fit: null }), 'shared card');
+    assert.equal(badgeText({ merits: null, job_points: null, fit: null }), 'shared with torn-tracker.com');
   });
 });
 
@@ -66,6 +66,9 @@ describe('JOB-072 on the list', () => {
     assert.equal(badge(r, 101).textContent, '10 merits · 1,234 job points · good fit');
     assert.equal(badge(r, 101).getAttribute('href'), 'https://torn-tracker.com/jobs/c/1/');
     assert.equal(badge(r, 102).textContent, 'poor fit');
+    // hq #557 E35: green for a good fit, amber for a poor one, never red or blue.
+    assert.equal(badge(r, 101).dataset.tone, 'good');
+    assert.equal(badge(r, 102).dataset.tone, 'warn');
     assert.equal(badge(r, 103), null);
     assert.deepEqual(r.shared, [], 'nothing from application pages is ever shared');
     assert.deepEqual(r.violations, []);

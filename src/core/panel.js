@@ -38,6 +38,7 @@ import { DISCLOSURE, TOS_COLUMNS, hasTosTable, kindOffered, sharingOffered } fro
 import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
+import { buttonCss } from './ui.js';
 import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
 import { POSITIONS, POSITION_LABELS, SIDEBAR_ITEMS } from './sidebar.js';
@@ -64,9 +65,9 @@ export const SECTIONS = Object.freeze([
 
 /** One line under each section's heading: what it's for, in plain words. */
 const INTROS = Object.freeze({
-  general: 'Your version, updates, and help when something misbehaves.',
+  general: 'Your version and updates, the page’s look, the achievement toast, the guide line, the dashboard preview, and logging for when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Each change is saved at once.',
-  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits under General. Choose what it shows. All of it is Core (free).',
+  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits and what it shows. All of it is Core (free).',
   watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
@@ -119,11 +120,12 @@ const STYLE = `
     background: var(--ttc-accent); color: var(--ttc-accent-text); font: 800 13px/1 var(--tt-font-sans); letter-spacing: -.02em;
   }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
+  #${P}-panel .${P}-head h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--ttc-muted); }
   #${P}-panel .${P}-keystate { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 999px;
     font-size: 12px; font-weight: 600; background: var(--ttc-accent-soft); color: var(--ttc-text); }
   #${P}-panel .${P}-keystate[data-key="none"] { background: color-mix(in srgb, var(--ttc-warn) 18%, transparent); }
-  #${P}-panel .${P}-head .${P}-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  #${P}-panel .${P}-head .${P}-dashnav { display: flex; margin-left: auto; }
+  #${P}-panel .${P}-head .${P}-tools { display: flex; align-items: center; gap: 8px; }
   #${P}-panel .${P}-find {
     grid-area: find; display: flex; align-items: center; gap: 8px; padding: 12px 18px;
     background: var(--ttc-surface); border-bottom: 1px solid var(--ttc-line);
@@ -135,17 +137,21 @@ const STYLE = `
   #${P}-panel .${P}-guide { border-left: 4px solid var(--primary); }
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head { min-width: 0; }
-  #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
-    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
-    background: var(--ttc-accent-soft); color: var(--ttc-muted);
+  /* One "needs a key" badge, a link to Keys (hq issue 557 E37). */
+  #${P}-panel a.${P}-needs {
+    display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; text-decoration: none;
+    background: var(--ttc-accent-soft); color: var(--ttc-text); border: 1px solid transparent;
   }
+  #${P}-panel a.${P}-needs:hover { border-color: var(--ttc-accent); }
+  #${P}-panel a.${P}-needs:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   #${P}-panel nav { grid-area: nav; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
   #${P}-panel nav a {
     display: flex; align-items: center; min-height: 44px; margin: 2px 0; padding: 0 12px; border-radius: 8px;
     color: var(--ttc-text); font-weight: 500; text-decoration: none;
   }
   #${P}-panel nav a:hover { background: var(--ttc-bg); text-decoration: none; }
-  #${P}-panel nav a[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-link); font-weight: 700; }
+  #${P}-panel nav a[aria-current=page] { background: var(--ttc-accent-soft); color: var(--ttc-link); font-weight: 700; }
   #${P}-panel nav select.${P}-sections { display: none; }
   #${P}-panel main { grid-area: main; padding: 18px 26px 26px; }
   #${P}-panel main > * { max-width: 760px; }
@@ -179,17 +185,17 @@ const STYLE = `
   }
   #${P}-panel input:focus-visible, #${P}-panel select:focus-visible { outline: 2px solid var(--ttc-accent); outline-offset: 1px; }
   #${P}-panel .${P}-option { margin-left: 52px; }
-  #${P}-panel button, #${P}-panel a.${P}-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font: inherit; font-weight: 600;
-    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line); text-decoration: none;
-  }
-  #${P}-panel button:hover, #${P}-panel a.${P}-btn:hover { border-color: var(--ttc-accent); text-decoration: none; }
-  #${P}-panel .${P}-primary, #${P}-panel a.${P}-btn.${P}-primary { background: var(--ttc-accent); color: var(--ttc-accent-text); border-color: var(--ttc-accent); }
-  #${P}-panel .${P}-primary:hover { filter: brightness(1.05); }
+  #${P}-panel .${P}-exact { margin-top: 4px; }
+  #${P}-panel .${P}-exact > summary { min-height: 24px; cursor: pointer; color: var(--ttc-link); font-weight: 600; }
+  #${P}-panel .${P}-exact[open] > summary { margin-bottom: 4px; }
+  ${buttonCss(`#${P}-panel button, #${P}-panel a.${P}-btn`, `#${P}-panel .${P}-primary, #${P}-panel a.${P}-btn.${P}-primary`)}
+  #${P}-panel button, #${P}-panel a.${P}-btn { min-height: 44px; min-width: 44px; padding: 8px 16px; }
   #${P}-panel button.${P}-danger { border-color: var(--ttc-danger); color: var(--ttc-danger); }
   #${P}-panel .${P}-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
   #${P}-panel .${P}-muted { color: var(--ttc-muted); font-size: 13px; margin-top: 2px; }
+  #${P}-panel .${P}-field-error { color: var(--ttc-danger); font-size: 13px; font-weight: 600; margin: 4px 0 0; }
+  #${P}-panel .${P}-field-error[hidden] { display: none; }
+  #${P}-panel input[aria-invalid=true] { border-color: var(--ttc-danger); }
   #${P}-panel a { color: var(--ttc-link); font-weight: 600; text-decoration: none; }
   #${P}-panel a:hover { text-decoration: underline; }
   #${P}-panel .${P}-notice {
@@ -234,8 +240,10 @@ const STYLE = `
     #${P}-panel .${P}-head { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
     /* hq issue 489: the title gives way, so the key state and ✕ stay on its row at 360 px. */
     #${P}-panel .${P}-brand { flex: 1 1 0; min-width: 0; }
-    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 11px; }
-    #${P}-panel .${P}-head .${P}-tools { gap: 4px; }
+    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 12px; }
+    #${P}-panel .${P}-head .${P}-tools { gap: 4px; margin-left: auto; }
+    /* The dashboard link would squeeze the title under the key state: it takes its own row. */
+    #${P}-panel .${P}-head .${P}-dashnav { order: 9; flex: 1 1 100%; margin-left: 0; }
     #${P}-panel .${P}-head .${P}-x { padding: 6px 10px; }
     #${P}-panel .${P}-find { padding: 10px 12px; }
     #${P}-panel .${P}-find input[type=search] { min-width: 0; max-width: none; }
@@ -313,6 +321,15 @@ export function importText(registry, text) {
   return Object.keys(picked).length ? picked : null;
 }
 
+/** What each upload outcome (core/upload.js) means, for the queue line. */
+const ANSWER_WORDS = Object.freeze({
+  'key refused': 'torn-tracker.com didn’t accept your script key',
+  'update needed': 'torn-tracker.com needs a newer companion',
+  'slowed down': 'torn-tracker.com asked to wait a while',
+  refused: 'torn-tracker.com turned it down',
+  unreachable: 'torn-tracker.com couldn’t be reached',
+});
+
 export function mountPanel({
   doc = globalThis.document,
   root = doc.body,
@@ -350,16 +367,42 @@ export function mountPanel({
   const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
   const clear = h('button', { type: 'button', class: `${P}-clear`, 'data-act': 'clear-search', 'aria-label': 'Clear the search', title: 'Clear', hidden: true }, '\u2715');
   const keyState = h('span', { class: `${P}-keystate`, 'data-keystate': '' });
-  // The way into the dashboard page (hq #465), while its preview switch is on.
-  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '', hidden: getSettings().dashboard !== true }, 'Dashboard');
+  // The way into the dashboard page (hq #465), while its preview switch is on. While it is
+  // off, the same place shows "Dashboard · turn on", which opens General at that switch, so
+  // the page can be found without knowing where the switch is (hq #557 C21).
+  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '' }, 'Dashboard');
+  // A plain link to General, like the section tabs, so Back and the tabs keep working.
+  const dashboardOff = h('a', {
+    href: '#/torn-tracker/general', class: `${P}-btn ${P}-x`, 'data-dashboard-off': '',
+    title: 'The dashboard is off. Turn it on under General.',
+  }, 'Dashboard · turn on');
+  let focusDashboard = false;
+  function toDashboardSwitch() {
+    focusDashboard = false;
+    const toggle = panel.querySelector('[data-setting="dashboard"]');
+    toggle?.scrollIntoView?.({ block: 'center' });
+    toggle?.focus();
+  }
+  dashboardOff.addEventListener('click', () => {
+    // Already on General: the address doesn't change, so no route event comes.
+    if (active && section === 'general') toDashboardSwitch();
+    else focusDashboard = true;
+  });
+  function syncDashboard() {
+    const on = getSettings().dashboard === true;
+    dashboardLink.hidden = !on;
+    dashboardOff.hidden = on;
+  }
+  syncDashboard();
   panel.append(h('div', { class: `${P}-toastbox` }, status), h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       keyState,
+      // Its own place, so on a phone it takes the row under the title (hq #557 C21).
+      h('div', { class: `${P}-dashnav` }, dashboardLink, dashboardOff),
       h('div', { class: `${P}-tools` },
-        dashboardLink,
         ...(tours ? [h('button', {
           type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
           'aria-label': 'Show me around this page', title: 'Show me around',
@@ -376,6 +419,10 @@ export function mountPanel({
   let active = false;
   let query = '';
   let armedForget = false;
+  /** A mistyped key, shown under its own field as well as in the toast (hq #557 42). */
+  let keyError = null;
+  /** Reset asks for a second tap, as Forget me does (hq #557 41). */
+  let armedReset = false;
   /** The settings as the page shows them; each change is saved from here at once. */
   let draft = null;
   /** Saves run one after another, in the order the changes were made. */
@@ -427,6 +474,12 @@ export function mountPanel({
     return h('label', { class: `${P}-field ${P}-option` }, h('span', null, option.label), input);
   }
 
+  /** The one "needs a key" badge (hq #557 E37): it says which key, and leads to Keys. */
+  function needsKey(kind) {
+    const text = kind === 'api' ? 'Needs Torn API key' : 'Needs script key';
+    return h('a', { href: sectionHref('keys'), class: `${P}-needs`, 'data-needs': kind, title: `${text}: add it under Keys` }, text);
+  }
+
   function featureCard(d) {
     const keys = draft.keys;
     const card = h('div', { class: `${P}-card`, 'data-card': d.id },
@@ -437,9 +490,12 @@ export function mountPanel({
         }),
         d.title),
       h('div', { class: `${P}-muted ${P}-option` }, d.summary, ' ', link(`${GUIDE}${d.guide}/`, 'Learn more')));
-    if (d.needs.scriptKey && !keys.script) card.dataset.needsKey = 'true';
-    if (d.needs.apiKey && !keys.api && !keys.usePdaKey) {
-      card.append(h('div', { class: `${P}-warn ${P}-option` }, 'Needs a Torn API key (Keys).'));
+    const missing = [];
+    if (d.needs.scriptKey && !keys.script) missing.push(needsKey('script'));
+    if (d.needs.apiKey && !keys.api && !keys.usePdaKey) missing.push(needsKey('api'));
+    if (missing.length) {
+      card.dataset.needsKey = 'true';
+      card.append(h('div', { class: `${P}-row ${P}-option` }, ...missing));
     }
     for (const [key, option] of Object.entries(d.options || {})) card.append(optionInput(d, key, option));
     return card;
@@ -460,7 +516,7 @@ export function mountPanel({
       if (items.length === 0) continue;
       rows.push(h('h4', null, title), ...items.map(featureCard));
     }
-    if (!query) rows.push(h('div', { class: `${P}-row` }, h('button', { type: 'button', 'data-act': 'reset' }, 'Reset settings to defaults')));
+    if (!query) rows.push(h('div', { class: `${P}-row` }, h('button', { type: 'button', class: `${P}-danger`, 'data-act': 'reset' }, armedReset ? 'Really reset every setting?' : 'Reset settings to defaults')));
     return rows;
   }
 
@@ -476,7 +532,16 @@ export function mountPanel({
           'Show the Torn Tracker block in the sidebar'),
         h('div', { class: `${P}-muted ${P}-option` },
           'It asks torn-tracker.com at most once a minute, only while it’s open and you’re looking at the tab. ',
-          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more'))));
+          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more')),
+        // Where it sits, here with the block it places, not under General (hq #557 C19).
+        h('label', { class: `${P}-field` }, h('span', null, 'Where the block sits'),
+          h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
+            value: at, selected: at === sb.position,
+          }, POSITION_LABELS[at])))),
+        sb.moved
+          ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
+            'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
+          : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.')));
     }
     const items = SIDEBAR_ITEMS.filter((item) => matches(item.title, item.summary));
     if (items.length && !query) rows.push(h('h4', null, 'What it shows'));
@@ -525,20 +590,22 @@ export function mountPanel({
       lines.push(h('div', { class: `${P}-warn` }, 'Add your script key under Keys to start sharing.'));
     }
     if (queue.retryAt) {
-      lines.push(h('div', { class: `${P}-warn` }, `torn-tracker.com asked the script to wait. Sharing carries on at ${clock(queue.retryAt)}.`));
+      lines.push(h('div', { class: `${P}-warn` }, `torn-tracker.com asked the companion to wait. Sharing carries on at ${clock(queue.retryAt)}.`));
     }
     for (const [kind, min] of Object.entries(queue.blocked)) {
       lines.push(h('div', { class: `${P}-warn` },
-        `Update the script to keep sharing ${kindTitle(kind).toLowerCase()}${min === '?' ? '' : ` (${min} or newer)`}.`));
+        `Update the companion to keep sharing ${kindTitle(kind).toLowerCase()}${min === '?' ? '' : ` (${min} or newer)`}.`));
     }
     // The live state of the queue, in one line, so uploads can be seen without the console (hq #454).
+    // hq #557 D27: the answer in words; the HTTP status stays in the title for troubleshooting.
     const last = queue.last;
-    const upload = last
-      ? `${ago(Date.now() - last.at)}${last.outcome === 'sent' ? ` (${last.accepted} accepted)` : ''}`
-      : 'none yet';
-    const answer = last ? `${last.status || last.outcome}` : '—';
-    lines.push(h('div', { class: `${P}-muted`, id: `${P}-queue-line` },
-      `Queue: ${queue.queued} waiting · last upload ${upload} · last answer ${answer}`));
+    const said = last ? (ANSWER_WORDS[last.outcome] ?? last.outcome) : '';
+    const words = !last ? 'nothing sent yet'
+      : last.outcome === 'sent' ? `last sent ${ago(Date.now() - last.at)}, ${last.accepted} accepted`
+        : `last try ${ago(Date.now() - last.at)}: ${said}`;
+    lines.push(h('div', {
+      class: `${P}-muted`, id: `${P}-queue-line`, ...(last?.status ? { title: `HTTP ${last.status}` } : {}),
+    }, `${queue.queued} waiting to send · ${words}`));
     return lines;
   }
 
@@ -554,7 +621,7 @@ export function mountPanel({
     if (consent === 0) {
       // Never agreed: ticking a kind is the choice and the agreement. The wording is on this screen.
       return [h('div', { class: `${P}-notice`, id: `${P}-consent-state` },
-        'Nothing is shared yet. Ticking a kind shares it from then on: that is your agreement to the lines above.')];
+        'Nothing is shared yet. Ticking a kind shares it from then on: that is your agreement to its full wording, under Exactly what is sent.')];
     }
     // Agreed to an older wording: a separate press, so the new wording is read first.
     return [
@@ -565,6 +632,36 @@ export function mountPanel({
     ];
   }
 
+  const plain = (value) => typeof value === 'string' && value.trim() !== '';
+
+  /**
+   * The first-run notice: one plain line, the full wording under "How sharing works" (hq #557
+   * F13). Without a short line, the full wording shows as it always did.
+   */
+  function firstRunNotice() {
+    if (!plain(disclosure.firstRunShort)) {
+      return h('div', { class: `${P}-notice`, id: `${P}-first-run` }, disclosure.firstRun);
+    }
+    return h('div', { class: `${P}-notice` },
+      h('div', null, disclosure.firstRunShort),
+      h('details', { class: `${P}-exact` },
+        h('summary', null, 'How sharing works'),
+        h('div', { id: `${P}-first-run` }, disclosure.firstRun)));
+  }
+
+  /** A kind's plain line, and its full wording under "Exactly what is sent" (hq #557 F13). */
+  function kindLines(kind) {
+    const full = disclosure.kinds[kind];
+    const short = disclosure.short?.[kind];
+    if (!plain(short)) return [h('div', { class: `${P}-muted ${P}-option` }, full)];
+    return [
+      h('div', { class: `${P}-muted ${P}-option` }, short),
+      h('details', { class: `${P}-exact ${P}-option`, 'data-exact': kind },
+        h('summary', null, 'Exactly what is sent'),
+        h('div', { class: `${P}-muted` }, full)),
+    ];
+  }
+
   function sharingBody() {
     const kinds = shareKinds(registry);
     const rows = [];
@@ -572,11 +669,11 @@ export function mountPanel({
       rows.push(h('div', { class: `${P}-muted` },
         'Nothing is shared by this version. The sharing switches appear once the notice saying exactly what each one shares is ready.'));
     } else {
-      if (!query) rows.push(h('div', { class: `${P}-notice`, id: `${P}-first-run` }, disclosure.firstRun));
+      if (!query) rows.push(firstRunNotice());
       if (kinds.length === 0) rows.push(h('div', { class: `${P}-muted` }, 'No feature in this build shares anything.'));
       for (const kind of kinds) {
         const offered = kindOffered(kind, disclosure);
-        if (!matches(kindTitle(kind), offered ? disclosure.kinds[kind] : '')) continue;
+        if (!matches(kindTitle(kind), offered ? disclosure.kinds[kind] : '', offered ? disclosure.short?.[kind] ?? '' : '')) continue;
         const card = h('div', { class: `${P}-card` },
           h('label', { class: `${P}-check`, 'data-off': !offered },
             h('input', {
@@ -584,7 +681,7 @@ export function mountPanel({
               checked: offered && draft.settings.shares[kind] === true, disabled: !offered,
             }),
             kindTitle(kind)));
-        if (offered) card.append(h('div', { class: `${P}-muted ${P}-option` }, disclosure.kinds[kind]));
+        if (offered) card.append(...kindLines(kind));
         rows.push(card);
       }
       if (!query) rows.push(...consentLines(kinds));
@@ -595,6 +692,30 @@ export function mountPanel({
 
   // ------------------------------------------------------------ Keys
 
+  /** The line under a key field that says what is wrong with it; empty and hidden when nothing is. */
+  function fieldError(field) {
+    const text = keyError?.field === field ? keyError.error : '';
+    return h('p', { id: `${P}-key-${field}-error`, class: `${P}-field-error`, hidden: !text }, text);
+  }
+
+  /** Puts a key check's result under the fields as they stand, without a redraw under the finger. */
+  function showKeyError(typed) {
+    keyError = typed.error ? { field: typed.field, error: typed.error } : null;
+    for (const field of ['script', 'api']) {
+      const input = panel.querySelector(`#${P}-key-${field}`);
+      const line = panel.querySelector(`#${P}-key-${field}-error`);
+      const wrong = keyError?.field === field;
+      if (input) {
+        if (wrong) input.setAttribute('aria-invalid', 'true');
+        else input.removeAttribute('aria-invalid');
+      }
+      if (line) {
+        line.textContent = wrong ? keyError.error : '';
+        line.hidden = !wrong;
+      }
+    }
+  }
+
   function keysBody() {
     const keys = draft.keys;
     const rows = [
@@ -604,10 +725,12 @@ export function mountPanel({
         h('input', {
           type: 'password', id: `${P}-key-script`, 'data-key': 'script', value: keys.script,
           placeholder: 'tt_feed_…', autocomplete: 'off', spellcheck: 'false',
-        })),
+          'aria-describedby': `${P}-key-script-error`, 'aria-invalid': keyError?.field === 'script' ? 'true' : null,
+        }),
+        fieldError('script')),
       h('p', { class: `${P}-muted` },
-        'Add to list, on profiles, also needs the key’s lists scope: it lets the companion add players to your target lists, '
-        + 'and take them off, when you press its button. Tick it when you make the key on torn-tracker.com.'),
+        'Add to list, on profiles, also needs a key that may change your lists: tick Lists when you make the key on '
+        + 'torn-tracker.com. It lets the companion add players to your target lists, and take them off, when you press its button.'),
       h('h4', null, 'Torn API key (optional)'),
     ];
     if (hasTosTable(disclosure)) {
@@ -618,7 +741,9 @@ export function mountPanel({
         h('input', {
           type: 'password', id: `${P}-key-api`, 'data-key': 'api', value: keys.api,
           autocomplete: 'off', spellcheck: 'false', disabled: keys.usePdaKey,
-        })));
+          'aria-describedby': `${P}-key-api-error`, 'aria-invalid': keyError?.field === 'api' ? 'true' : null,
+        }),
+        fieldError('api')));
       if (pda) {
         rows.push(h('label', { class: `${P}-check` },
           h('input', { type: 'checkbox', id: `${P}-key-pda`, 'data-key': 'usePdaKey', checked: keys.usePdaKey }),
@@ -644,15 +769,6 @@ export function mountPanel({
           value: look, selected: look === draft.settings.look,
         }, LOOK_LABELS[look])))),
       h('div', { class: `${P}-muted` }, 'What the companion adds to Torn’s own pages always follows Torn’s theme.'),
-      h('h4', null, 'Sidebar block'),
-      h('label', { class: `${P}-field` }, h('span', null, 'Where the Torn Tracker block sits'),
-        h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
-          value: at, selected: at === draft.settings.sidebar.position,
-        }, POSITION_LABELS[at])))),
-      draft.settings.sidebar.moved
-        ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
-          'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
-        : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.'),
       h('h4', null, 'Achievements'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-achievements': 'toast', checked: draft.settings.achievements?.toast !== false }),
@@ -666,19 +782,19 @@ export function mountPanel({
       h('h4', null, 'Guide'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-setting': 'guideStrip', checked: draft.settings.guideStrip !== false }),
-        'Show my next step in the torn-tracker guide at the top of this page'),
+        'Show my next step in the Torn Tracker guide at the top of this page'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion asks torn-tracker.com for it when you open a Torn page, at most every 15 minutes.'),
       h('h4', null, 'Dashboard (preview)'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-setting': 'dashboard', checked: draft.settings.dashboard === true }),
-        'Show my torn-tracker dashboard inside Torn'),
+        'Show my Torn Tracker dashboard inside Torn'),
       h('div', { class: `${P}-muted` },
-        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page.'),
+        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page, which reads “Dashboard · turn on” while this is off.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
-        'Log what the script does to the browser console'),
+        'Log what the companion does to the browser console'),
       h('div', { class: `${P}-muted` },
         'Every request to torn-tracker.com, and for each report why it was or wasn’t shared, under [torn-tracker-companion]. Your keys are never written there.'),
     ];
@@ -688,7 +804,7 @@ export function mountPanel({
     const kept = registry.filter((d) => d.data);
     return [
       h('div', { class: `${P}-card` },
-        h('div', null, `Everything the script keeps is stored only on this device (${backendName()}):`),
+        h('div', null, `Everything the companion keeps is stored only on this device (${backendName()}):`),
         h('ul', null,
           h('li', null, 'your settings, sharing choices, saved templates and player notes'),
           h('li', null, 'your script key, and your Torn API key if you add one'),
@@ -805,7 +921,7 @@ export function mountPanel({
     if (!strip) return null;
     if (strip.kind === 'offer') {
       return h('div', { class: `${P}-card ${P}-guide`, id: `${P}-guide` },
-        h('div', null, h('b', null, 'Get the most out of torn-tracker. '),
+        h('div', null, h('b', null, 'Get the most out of Torn Tracker. '),
           'A short guide, one step at a time: the bot, alerts, target lists and this companion.'),
         h('div', { class: `${P}-row` }, link(strip.url, 'Start the guide')));
     }
@@ -816,12 +932,14 @@ export function mountPanel({
   }
 
   function render(message = '', tone = '') {
-    dashboardLink.hidden = getSettings().dashboard !== true;
+    syncDashboard();
     drawKeyState();
     clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
+    // Plain links to each section's route, so no tab roles without a tablist (hq #557 42);
+    // the one on screen says so with aria-current.
     nav.replaceChildren(sectionMenu, ...SECTIONS.map(([id, title]) => h('a', {
-      href: sectionHref(id), role: 'tab', 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-selected': String(!query && id === section),
+      href: sectionHref(id), 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-current': !query && id === section ? 'page' : null,
     }, title)));
     sectionMenu.value = section;
     const title = SECTIONS.find(([id]) => id === section)[1];
@@ -936,6 +1054,7 @@ export function mountPanel({
    */
   function persist(what) {
     const typed = checkTyped(draft.keys);
+    if (what === 'key') showKeyError(typed);
     if (typed.error && what === 'key') {
       flash(typed.error);
       return saving;
@@ -965,7 +1084,7 @@ export function mountPanel({
       else if (redraw) render(done, 'good');
       else {
         drawKeyState();
-        dashboardLink.hidden = getSettings().dashboard !== true;
+        syncDashboard();
         flash(done, 'good');
       }
     }).catch(() => {
@@ -980,6 +1099,8 @@ export function mountPanel({
     if (active) tours?.stop();
     active = false;
     armedForget = false;
+    keyError = null;
+    armedReset = false;
     draft = null;
     transferText = '';
   }
@@ -1014,6 +1135,7 @@ export function mountPanel({
       return;
     }
     if (act !== 'forget') armedForget = false;
+    if (act !== 'reset') armedReset = false;
 
     if (act === 'consent') {
       await save({ ...draft.settings, sharingConsent: disclosure.version });
@@ -1031,6 +1153,12 @@ export function mountPanel({
       const names = registry.filter((d) => d.id in picked).map((d) => d.title).join(', ');
       await save({ ...draft.settings, featureData: { ...draft.settings.featureData, ...picked } }, `Imported: ${names}.`);
     } else if (act === 'reset') {
+      if (!armedReset) {
+        armedReset = true;
+        render('This puts every setting back to its default. Your keys, notes and templates stay.');
+        return;
+      }
+      armedReset = false;
       await onReset();
       freshDraft();
       render('Back to defaults.', 'good');
@@ -1061,12 +1189,14 @@ export function mountPanel({
     if (!active) {
       freshDraft();
       armedForget = false;
+      armedReset = false;
       active = true;
     }
     query = '';
     search.value = '';
     showBanned();
     render();
+    if (focusDashboard) toDashboardSwitch();
     // The first time the page opens (and for each new version), the settings tour.
     tours?.auto('settings', tourOptions());
   }

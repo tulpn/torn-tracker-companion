@@ -22,6 +22,7 @@
 // with "Forget me" (CMP-008).
 
 import { el } from './dom.js';
+import { showToast } from './toasts.js';
 import { followTorn } from './tokens.js';
 import { matchRoute } from './routes.js';
 import { TIERS } from './site.js';
@@ -37,16 +38,16 @@ const ID = /^[a-z0-9][a-z0-9_-]{0,59}$/;
 const STYLE = `
   ${followTorn(`#${TOAST_ID}`)}
   #${TOAST_ID} {
-    position: fixed; right: 16px; bottom: 16px; z-index: 100000; box-sizing: border-box;
+    position: relative; box-sizing: border-box;
     width: min(340px, calc(100vw - 32px)); padding: 12px 44px 12px 14px;
     border: 1px solid var(--border); border-left: 4px solid var(--tt-warning); border-radius: var(--radius);
     box-shadow: var(--tt-shadow-sm); background: var(--card); color: var(--card-foreground);
     font: 13px/1.45 var(--tt-font-sans); overflow-wrap: anywhere;
     animation: ${P}-unlock-in var(--tt-duration-fast, .2s) var(--tt-ease, ease-out);
   }
-  #${TOAST_ID} .${P}-unlock-eyebrow { display: block; font: 700 11px/1.4 var(--tt-font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
+  #${TOAST_ID} .${P}-unlock-eyebrow { display: block; font: 700 12px/1.4 var(--tt-font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
   #${TOAST_ID} .${P}-unlock-name { display: block; margin: 2px 0; font-weight: 700; font-size: 14px; }
-  #${TOAST_ID} .${P}-unlock-tier { margin-left: 6px; padding: 0 7px; border-radius: 999px; font: 600 11px/16px var(--tt-font-sans); background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
+  #${TOAST_ID} .${P}-unlock-tier { margin-left: 6px; padding: 0 7px; border-radius: 999px; font: 600 12px/16px var(--tt-font-sans); background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   #${TOAST_ID} .${P}-unlock-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
   #${TOAST_ID} a { color: var(--ring); font-weight: 600; }
   #${TOAST_ID} .${P}-unlock-x {
@@ -57,7 +58,7 @@ const STYLE = `
   @keyframes ${P}-unlock-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   @keyframes ${P}-unlock-fade { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { #${TOAST_ID} { animation-name: ${P}-unlock-fade; } }
-  @media (max-width: 640px) { #${TOAST_ID} { left: 16px; right: 16px; width: auto; bottom: 72px; } }
+  @media (max-width: 640px) { #${TOAST_ID} { width: auto; } }
 `;
 
 function addStyle(doc) {
@@ -138,7 +139,7 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     toast.addEventListener('mouseleave', wait);
     toast.addEventListener('focusin', () => timers.clearTimeout(hideTimer));
     toast.addEventListener('focusout', wait);
-    (doc.body || doc.documentElement).append(toast);
+    showToast(doc, toast);
     wait();
   }
 

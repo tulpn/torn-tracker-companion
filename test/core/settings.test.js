@@ -66,10 +66,10 @@ describe('CMP-008 settings from storage are validated field by field', () => {
   });
 
   test('the settings page\'s look is dark, light or Torn\'s, and dark otherwise', () => {
-    assert.equal(normalize({}, registry).look, 'dark');
-    assert.equal(normalize({ look: 'torn' }, registry).look, 'torn');
-    assert.equal(normalize({ look: 'purple' }, registry).look, 'dark');
-    assert.equal(normalize({ look: 1 }, registry).look, 'dark');
+    assert.equal(normalize({}, registry).look, 'torn');
+    assert.equal(normalize({ look: 'dark' }, registry).look, 'dark');
+    assert.equal(normalize({ look: 'purple' }, registry).look, 'torn');
+    assert.equal(normalize({ look: 1 }, registry).look, 'torn');
   });
 
   test('NaN and Infinity are not numbers we keep', () => {

@@ -239,6 +239,19 @@ describe('hq #610 the progress line in Torn’s welcome box', () => {
     assert.match(line.title, /estimate/);
   });
 
+  test('hq #557 F40: with TornTools’ energy line in the box, ours stays off', async () => {
+    const r = run({ html: OWNER_GYM, site: site() });
+    r.respond(INITIAL, CARDIO);
+    await wait();
+    assert.ok(r.doc.querySelector('.ttc-gym'));
+    // What TornTools' gym-progress appends to the gym's notification.
+    const theirs = r.doc.createElement('p');
+    theirs.className = 'tt-gym-energy-progress';
+    box(r.doc).append(theirs);
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-gym'), null);
+  });
+
   test('nothing on or under any gym tile; the tile keeps only Torn’s own percentage', async () => {
     const r = run({ html: OWNER_GYM, site: site() });
     await wait();

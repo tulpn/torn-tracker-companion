@@ -19,14 +19,15 @@ outcomes need your script key.
 ## Morale
 
 Torn doesn't show your crime morale. The companion reads it from what the crimes page
-loaded and shows it in the header: **Morale 87%**.
+loaded and shows it in the header: **Morale 87%**. If the **Crime Morale** script already
+shows your morale there, the companion leaves it out.
 
 ## Value per nerve
 
 Beside each crime option, a line like **$311/nerve** shows the average money and item
 value players got from it, for each nerve it costs. It comes from torn-tracker.com, worked
 out from players' shared outcomes, and shows only once at least 20 players have reported
-that crime. Hover it to see how many, and how often it succeeds.
+that crime. Hover or tap it to see how many, and how often it succeeds. The morale and time-left badges work the same way.
 
 ## Burglary targets
 

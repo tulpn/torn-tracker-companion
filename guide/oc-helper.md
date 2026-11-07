@@ -22,7 +22,11 @@ On your faction's crimes tab, each slot shows its role's weight in a small badge
 the role, such as `30.9%`: how much that role counts towards the crime's success. Hover
 over the badge, or tap it on a phone, to read what the figure means; tap again to close it. Put your strongest members where the weight is highest.
 The weights come from **tornprobability.com**, through torn-tracker.com, and the page says
-so above the crimes. The companion never contacts tornprobability.com itself.
+so under the crimes. The companion never contacts tornprobability.com itself.
+
+If **TornTools** or **OC2.0 Helper** already shows the weights on a crime, the companion
+leaves its own off that crime; the same goes for OC2.0 Helper's success figure. It only
+looks at what they put on the page, never at their settings.
 
 ## Success estimates
 

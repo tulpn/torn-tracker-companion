@@ -19,7 +19,7 @@ keywords: torn chain watch, torn chain timer, torn chain watcher, torn chain bar
 ## What you see
 
 Torn's chain bar is small and easy to miss from another window. Watch mode puts a large
-box over the Torn page you're on with the time the chain has left, the chain count, and
+box, the **Watch timer**, over the Torn page you're on with the time the chain has left, the chain count, and
 where the timer came from:
 
 | Time left | The box | It says |
@@ -72,7 +72,7 @@ Under **Chain watch** in the settings:
 
 ## Your faction's rota
 
-Below watch mode's settings is your faction's chain watch rota: 30-minute slots, each with
+Below watch mode's settings is your faction's **Watch rota**: 30-minute slots, each with
 a Lead and two backups. It asks nothing until you press **Show the next 24 hours**; then it
 reads the rota from torn-tracker.com with your script key, and again after each change or
 when you press **Refresh**.
@@ -90,9 +90,9 @@ Your faction's leaders manage the rota on torn-tracker.com.
 
 ## When your slot starts
 
-When one of your slots starts and watch mode is off, a small notice at the bottom of the
-page says "Your chain watch (Lead) starts now", with a **Turn on watch mode** button and a
-✕. It never turns watch mode on by itself, and each slot is announced once. With pause
+When one of your slots starts and watch mode is off, a small notice in the bottom corner
+of the page, above Torn's chat bar and stacked with any achievement toast, says "Your
+chain watch (Lead) starts now", with a **Turn on watch mode** button and a ✕. It never turns watch mode on by itself, and each slot is announced once. With pause
 all on, or companion toasts off, in your notification settings on torn-tracker.com, it
 stays quiet.
 
@@ -100,7 +100,7 @@ stays quiet.
 
 The Torn Tracker block in Torn's sidebar has a **Watch** line: "Watching now · Lead", your
 next slot like "Next watch 03:00 TCT · Backup 1", or "Sign up to watch". It adds how many
-slots in the next 24 hours have no Lead, and has a switch for watch mode. You can hide the
+slots in the next 24 hours have no Lead, and has a **Watch** switch that reads on or off. You can hide the
 line under Settings → Sidebar.
 
 > **What it reads and sends.** It reads Torn's chain bar on the page you're on. When

@@ -37,6 +37,7 @@ function mount({
   windows.push(window);
   if (pda) window.PDA_httpGet = () => {};
   const saves = [];
+  let resets = 0;
   let current = settings;
   let currentKeys = keys;
   // The page lives in a Shadow DOM host, as core/page.js mounts it.
@@ -57,7 +58,7 @@ function mount({
       currentKeys = k;
       return true;
     },
-    onReset: async () => {},
+    onReset: async () => { resets += 1; },
     onForget: async () => true,
     disclosure,
     credits,
@@ -73,22 +74,22 @@ function mount({
   };
   // What the router does: arriving on #/torn-tracker, or on #/torn-tracker/<tab>.
   const open = (tab) => panel.open(tab ?? '');
-  return { panel, root, window, saves, $, click, change, open, text: () => panel.panel.textContent };
+  return { panel, root, window, saves, $, click, change, open, resets: () => resets, text: () => panel.panel.textContent };
 }
 
 describe('CMP-107 the settings page has a section for each job', () => {
   test('General, Features, Sidebar, Chain watch, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
     const t = mount();
     t.open();
-    const tabs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((b) => b.textContent);
+    const tabs = [...t.panel.panel.querySelectorAll('nav a[data-tab]')].map((b) => b.textContent);
     assert.deepEqual(tabs, ['General', 'Features', 'Sidebar', 'Chain watch', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Features');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Features');
   });
 
   test('each section is a plain link to its own route, so Back and Forward work', () => {
     const t = mount();
     t.open();
-    const hrefs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((a) => [a.tagName, a.getAttribute('href')]);
+    const hrefs = [...t.panel.panel.querySelectorAll('nav a[data-tab]')].map((a) => [a.tagName, a.getAttribute('href')]);
     assert.ok(hrefs.every(([tag]) => tag === 'A'));
     assert.deepEqual(hrefs.map(([, href]) => href).slice(0, 2), ['#/torn-tracker/general', '#/torn-tracker/features']);
   });
@@ -96,13 +97,13 @@ describe('CMP-107 the settings page has a section for each job', () => {
   test('AC5: a named section opens on it, an unknown one opens General, none keeps the last', () => {
     const t = mount();
     t.open('sharing');
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Sharing');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Sharing');
     t.open('nonsense');
-    assert.equal(t.$('[aria-selected=true]').textContent, 'General');
+    assert.equal(t.$('[aria-current=page]').textContent, 'General');
     t.open('keys');
     t.panel.close();
     t.open();
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Keys');
   });
 
   test('an edit survives moving between tabs and is saved with the rest', async () => {
@@ -154,7 +155,7 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.equal(menu.value, 'general');
     assert.deepEqual([...menu.options].map((o) => o.value), [...t.panel.panel.querySelectorAll('nav a')].map((a) => a.getAttribute('href').split('/').pop()));
     t.change(menu, 'keys');
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Keys');
     assert.equal(t.$('select[data-sections]').value, 'keys');
     assert.equal(t.saves.length, 0, 'moving section saves nothing');
   });
@@ -177,6 +178,30 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.match(t.text(), /Add your script key to see torn-tracker\.com data/);
     assert.equal(t.$('[data-card="war-enhancer"]').dataset.needsKey, 'true');
     assert.equal(t.$('.ttc-keyhint a').getAttribute('href'), '#/torn-tracker/keys');
+  });
+
+  test('hq #557 C21 at 360 px: the dashboard link has its own row, so the title and key state keep theirs', () => {
+    const t = mount();
+    t.open();
+    assert.ok(t.$('.ttc-head > .ttc-dashnav [data-dashboard-off]'), 'beside the tools, not inside them');
+    assert.equal(t.$('.ttc-tools [data-dashboard-off]'), null);
+    const css = [...t.panel.panel.getRootNode().querySelectorAll('style')].map((n) => n.textContent).join('');
+    assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.ttc-dashnav \{ order: 9; flex: 1 1 100%;/);
+  });
+
+  test('hq #557 E37: one badge per missing key, saying which, and leading to Keys', () => {
+    const both = descriptor({ needs: { apiKey: true, scriptKey: true } });
+    const t = mount({ registry: createRegistry([both]) });
+    t.open();
+    const badges = [...t.panel.panel.querySelectorAll('[data-card="war-enhancer"] a.ttc-needs')];
+    assert.deepEqual(badges.map((a) => a.textContent), ['Needs script key', 'Needs Torn API key']);
+    for (const a of badges) assert.equal(a.getAttribute('href'), '#/torn-tracker/keys');
+    assert.doesNotMatch(t.text(), /Needs a Torn API key \(Keys\)/);
+    assert.equal(t.$('[data-card="war-enhancer"] .ttc-warn'), null);
+    const keyed = mount({ registry: createRegistry([both]), keys: { ...emptyKeys(), script: KEY, api: 'A'.repeat(16) } });
+    keyed.open();
+    assert.equal(keyed.$('a.ttc-needs'), null);
+    assert.equal(keyed.$('[data-card="war-enhancer"]').dataset.needsKey, undefined);
   });
 
   test('with a script key: no banner', () => {
@@ -211,6 +236,51 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     assert.equal(t.$('#ttc-first-run').textContent, WORDED.firstRun);
     assert.equal(t.$('#ttc-share-loadout').checked, false);
     assert.match(t.text(), /TEST loadout line\./);
+  });
+
+  test('hq #557 F13: one plain line per card, the full wording under "Exactly what is sent"', () => {
+    const SHORT = { ...WORDED, firstRunShort: 'TEST short notice.', short: { loadout: 'TEST short loadout.' } };
+    const t = mount({ disclosure: SHORT });
+    t.open('sharing');
+    const notice = t.$('#ttc-first-run').closest('details');
+    assert.equal(notice.querySelector('summary').textContent, 'How sharing works');
+    assert.equal(notice.open, false, 'the notice starts folded');
+    assert.equal(t.$('#ttc-first-run').textContent, WORDED.firstRun, 'the full notice, unchanged');
+    assert.match(notice.parentElement.textContent, /^TEST short notice\./);
+
+    const card = t.$('#ttc-share-loadout').closest('.ttc-card');
+    const exact = card.querySelector('details[data-exact="loadout"]');
+    assert.equal(exact.querySelector('summary').textContent, 'Exactly what is sent');
+    assert.equal(exact.open, false);
+    assert.match(exact.textContent, /TEST loadout line\./, 'the full line, unchanged');
+    assert.equal(card.querySelector('.ttc-option').textContent, 'TEST short loadout.');
+  });
+
+  test('hq #557 F13: a search finds a kind by its plain line or its full wording', () => {
+    const SHORT = { ...WORDED, firstRunShort: 'TEST short notice.', short: { loadout: 'TEST short loadout.' } };
+    const t = mount({ disclosure: SHORT });
+    t.open('sharing');
+    const search = (text) => {
+      const field = t.$('#ttc-search');
+      field.value = text;
+      field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    };
+    search('short loadout');
+    assert.ok(t.$('#ttc-share-loadout'));
+    search('loadout line');
+    assert.ok(t.$('#ttc-share-loadout'));
+    search('zzz nothing');
+    assert.equal(t.$('#ttc-share-loadout'), null);
+  });
+
+  test('hq #557 F13: the shipped wording has a plain line for every kind', () => {
+    assert.ok(DISCLOSURE.firstRunShort.length <= 160);
+    for (const kind of Object.keys(DISCLOSURE.kinds)) {
+      const short = DISCLOSURE.short[kind];
+      assert.equal(typeof short, 'string', kind);
+      assert.ok(short.length <= 110, `${kind}: ${short.length} characters`);
+    }
+    assert.deepEqual(Object.keys(DISCLOSURE.short).sort(), Object.keys(DISCLOSURE.kinds).sort());
   });
 
   test('"Share the kinds I picked" records agreement to a changed wording with the picks', async () => {
@@ -287,9 +357,9 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     });
     t.open('sharing');
     assert.match(t.text(), /did not accept your script key/);
-    assert.match(t.text(), /asked the script to wait/);
-    assert.match(t.text(), /Update the script to keep sharing loadouts \(1\.4\.0 or newer\)/);
-    assert.match(t.text(), /Queue: 3 waiting · last upload none yet · last answer —/);
+    assert.match(t.text(), /asked the companion to wait/);
+    assert.match(t.text(), /Update the companion to keep sharing loadouts \(1\.4\.0 or newer\)/);
+    assert.match(t.text(), /3 waiting to send · nothing sent yet/);
   });
 
   test('hq #454: the queue line shows waiting, the last upload and the last answer, live', () => {
@@ -299,17 +369,18 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     };
     const t = mount({ queue });
     t.open('sharing');
-    assert.equal(t.$('#ttc-queue-line').textContent, 'Queue: 2 waiting · last upload 2m ago (5 accepted) · last answer 200');
+    assert.equal(t.$('#ttc-queue-line').textContent, '2 waiting to send · last sent 2m ago, 5 accepted');
     // A flush answered 429: updateQueue redraws the line without touching the draft.
     t.change(t.$('#ttc-share-loadout'), true);
     Object.assign(queue, { queued: 0, retryAt: Date.now() + 60_000, last: { outcome: 'slowed down', at: Date.now() - 1000, accepted: 0, status: 429 } });
     t.panel.updateQueue();
-    assert.equal(t.$('#ttc-queue-line').textContent, 'Queue: 0 waiting · last upload just now · last answer 429');
+    assert.equal(t.$('#ttc-queue-line').textContent, '0 waiting to send · last try just now: torn-tracker.com asked to wait a while');
+    assert.equal(t.$('#ttc-queue-line').getAttribute('title'), 'HTTP 429', 'the status stays in the title (hq #557 D27)');
     assert.equal(t.$('#ttc-share-loadout').checked, true);
     // No answer at all: the outcome stands in for the status.
     Object.assign(queue, { last: { outcome: 'unreachable', at: Date.now() - 3_600_000, accepted: 0, status: 0 } });
     t.panel.updateQueue();
-    assert.match(t.$('#ttc-queue-line').textContent, /last upload 1h ago · last answer unreachable$/);
+    assert.match(t.$('#ttc-queue-line').textContent, /last try 1h ago: torn-tracker.com couldn’t be reached$/);
   });
 
   test('ADM-068 Q-ADM-5 a banned account sees the neutral notice, with no reason', () => {
@@ -345,7 +416,7 @@ describe('CMP-011 CMP-012 the keys', () => {
     t.open('keys');
     assert.equal(t.$('#ttc-key-script').type, 'password');
     assert.match(t.text(), /It is not a Torn API key/);
-    assert.match(t.text(), /also needs the key’s lists scope/);
+    assert.match(t.text(), /also needs a key that may change your lists: tick Lists/);
   });
 
   test('a mistyped key is not saved; the panel says what is wrong', async () => {
@@ -355,6 +426,32 @@ describe('CMP-011 CMP-012 the keys', () => {
     await settle();
     assert.equal(t.saves.length, 0);
     assert.match(t.$('[role=status]').textContent, /looks like a Torn API key/);
+  });
+
+  test('hq #557 42: the mistake shows under its own field, and goes once the key is right', async () => {
+    const t = mount();
+    t.open('keys');
+    const input = t.$('#ttc-key-script');
+    const line = t.$('#ttc-key-script-error');
+    assert.equal(input.getAttribute('aria-describedby'), 'ttc-key-script-error');
+    assert.ok(line.hidden);
+    t.change(input, 'abcdEFGH12345678');
+    await settle();
+    assert.equal(input.getAttribute('aria-invalid'), 'true');
+    assert.ok(!line.hidden);
+    assert.match(line.textContent, /looks like a Torn API key/);
+    t.change(input, KEY);
+    await settle();
+    assert.equal(input.getAttribute('aria-invalid'), null);
+    assert.ok(line.hidden);
+  });
+
+  test('hq #557 42: the section links are plain links, the open one marked aria-current', () => {
+    const t = mount();
+    t.open('keys');
+    assert.equal(t.$('[role=tab]'), null);
+    assert.equal(t.$('[aria-selected]'), null);
+    assert.deepEqual([...t.root.querySelectorAll('nav a[aria-current]')].map((a) => a.textContent), ['Keys']);
   });
 
   test('without the terms table there is no Torn API key field', () => {
@@ -473,8 +570,18 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.doesNotMatch(t.root.querySelector('#ttc-style').textContent, /position: fixed/);
   });
 
-  test('its look is dark by default, even on Torn\u2019s light theme (WP-UI-8)', () => {
+  test('by default its look follows Torn\u2019s theme (hq #557 F32)', () => {
     const t = mount();
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'light');
+    t.panel.close();
+    t.window.document.body.classList.add('dark-mode');
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'dark');
+  });
+
+  test('set to dark, it stays dark on Torn\u2019s light theme (WP-UI-8)', () => {
+    const t = mount({ settings: { ...defaults(createRegistry([descriptor()])), look: 'dark' } });
     t.open();
     assert.equal(t.panel.panel.dataset.theme, 'dark');
   });
@@ -516,6 +623,39 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.match(t.text(), /stored only on this device/);
     t.click(t.$('button[data-act="forget"]'));
     assert.equal(t.$('button[data-act="forget"]').textContent, 'Really forget everything?');
+  });
+
+  test('hq #557 41 Reset settings asks for a second tap, as Forget me does', async () => {
+    const t = mount();
+    t.open('features');
+    const reset = () => t.$('button[data-act="reset"]');
+    assert.equal(reset().textContent, 'Reset settings to defaults');
+    assert.ok(reset().classList.contains('ttc-danger'));
+    t.click(reset());
+    await settle();
+    assert.equal(t.resets(), 0, 'one tap resets nothing');
+    assert.equal(reset().textContent, 'Really reset every setting?');
+    assert.match(t.text(), /Your keys, notes and templates stay/);
+    t.click(reset());
+    await settle();
+    assert.equal(t.resets(), 1);
+    assert.equal(reset().textContent, 'Reset settings to defaults');
+    assert.match(t.text(), /Back to defaults/);
+  });
+
+  test('hq #557 41 another button in between disarms the reset', async () => {
+    const t = mount();
+    t.open('features');
+    t.click(t.$('button[data-act="reset"]'));
+    await settle();
+    t.open('data');
+    t.click(t.$('button[data-act="forget"]'));
+    await settle();
+    t.open('features');
+    assert.equal(t.$('button[data-act="reset"]').textContent, 'Reset settings to defaults');
+    t.click(t.$('button[data-act="reset"]'));
+    await settle();
+    assert.equal(t.resets(), 0, 'the first tap after the disarm only arms it again');
   });
 
   test('notes and templates export as text and import back, each kind checked by its feature', async () => {
@@ -631,7 +771,7 @@ describe('WP-UX-4 tours from the settings page (UXT-022)', () => {
     const [act, id, opts] = tours.calls[0];
     assert.deepEqual([act, id], ['auto', 'settings']);
     assert.equal(opts.roots[0], t.root);
-    assert.equal(opts.theme, 'dark');
+    assert.equal(opts.theme, 'light', 'Torn’s theme, which the page follows by default');
   });
 
   test('"?" in the header shows this page’s tour again', () => {
@@ -692,6 +832,7 @@ describe('hq #489 the search bar, the header, and no stray null', () => {
       if (/\b(null|undefined)\b/.test(n.textContent)) bad.push(`text: ${n.textContent.trim().slice(0, 60)}`);
     }
     for (const p of main.querySelectorAll('p, .ttc-muted')) {
+      if (p.hidden) continue;
       if (!p.textContent.trim() && !p.children.length) bad.push(`empty ${p.tagName.toLowerCase()}.${p.className}`);
     }
     return bad;
@@ -761,23 +902,25 @@ describe('hq #489 the search bar, the header, and no stray null', () => {
   });
 });
 
-describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => {
+describe('hq #507, #557 C19 Settings → Sidebar: where the sidebar block sits', () => {
   test('a select with the four places, Top chosen on a fresh install, and no note', () => {
     const t = mount();
-    t.open('general');
+    t.open('sidebar');
     const select = t.$('#ttc-sidebar-position');
     assert.ok(select);
     assert.deepEqual([...select.options].map((o) => o.value), ['top', 'areas', 'lists', 'bottom']);
     assert.equal(select.value, 'top');
     assert.equal(t.$('[data-sidebar-moved]'), null);
     assert.match(t.text(), /On this device/);
+    t.open('general');
+    assert.equal(t.$('#ttc-sidebar-position'), null, 'no longer under General');
   });
 
   test('an install that was moved says so until a sidebar setting changes', async () => {
     const settings = defaults(createRegistry([]));
     settings.sidebar.moved = true;
     const t = mount({ registry: createRegistry([]), settings });
-    t.open('general');
+    t.open('sidebar');
     assert.match(t.$('[data-sidebar-moved]').textContent, /moved to the top of Torn.s sidebar in 0\.9\.8/);
     t.change(t.$('#ttc-sidebar-position'), 'lists');
     await settle();
@@ -789,7 +932,7 @@ describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => 
 
   test('a value that is not a place is not taken', async () => {
     const t = mount();
-    t.open('general');
+    t.open('sidebar');
     const select = t.$('#ttc-sidebar-position');
     const bad = t.window.document.createElement('option');
     bad.value = 'middle';
@@ -798,7 +941,32 @@ describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => 
     await settle();
     assert.equal(t.saves.length, 0);
     t.panel.close();
-    t.open('general');
+    t.open('sidebar');
     assert.equal(t.$('#ttc-sidebar-position').value, 'top');
+  });
+});
+
+describe('hq #557 C21 the dashboard link shows while the dashboard is off', () => {
+  test('off: the header reads "Dashboard · turn on", a link to General that lands on the switch', () => {
+    const t = mount();
+    t.open('features');
+    const off = t.$('[data-dashboard-off]');
+    assert.equal(off.hidden, false);
+    assert.equal(t.$('[data-dashboard-link]').hidden, true);
+    assert.match(off.textContent, /Dashboard · turn on/);
+    assert.equal(off.getAttribute('href'), '#/torn-tracker/general');
+    t.click(off);
+    t.open('general');
+    const toggle = t.$('[data-setting="dashboard"]');
+    assert.equal(t.root.activeElement, toggle);
+  });
+
+  test('on: the plain Dashboard link, and the off link hides', async () => {
+    const t = mount();
+    t.open('general');
+    t.change(t.$('[data-setting="dashboard"]'), true);
+    await settle();
+    assert.equal(t.$('[data-dashboard-link]').hidden, false);
+    assert.equal(t.$('[data-dashboard-off]').hidden, true);
   });
 });

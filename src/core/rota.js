@@ -16,6 +16,8 @@
 // Times are TCT (UTC), with the member's local time beside them (CHW-001).
 
 import { el } from './dom.js';
+import { followTorn } from './tokens.js';
+import { showToast } from './toasts.js';
 import { WATCH_ROLES } from './site.js';
 import { SITE } from '../hosts.js';
 
@@ -151,7 +153,7 @@ const ROTA_ID = `${P}-rota`;
 /** Words for an answer that isn't the rota. */
 const TROUBLE = Object.freeze({
   no_key: 'Add your script key under Keys to see and join your faction’s rota.',
-  refused: 'torn-tracker.com refused your script key. Check it under Keys.',
+  refused: 'torn-tracker.com didn’t accept your script key. Check it under Keys.',
   no_faction: 'You’re not in a faction on torn-tracker.com, so there’s no rota to show.',
   wait: 'torn-tracker.com asked to wait a little. Try again in a minute.',
   failed: 'torn-tracker.com didn’t answer. Try again in a moment.',
@@ -285,8 +287,8 @@ export const ROTA_STYLE = `
   #${P}-panel table.${P}-rota th small { font-weight: 400; opacity: .75; }
   #${P}-panel table.${P}-rota button { min-height: 32px; padding: 2px 10px; }
   #${P}-panel .${P}-rota-mine { background: var(--ttc-accent-soft); }
-  #${P}-panel .${P}-rota-gap th { box-shadow: inset 3px 0 0 #f97316; }
-  #${P}-panel .${P}-rota-flag { color: #c2410c; font-weight: 700; }
+  #${P}-panel .${P}-rota-gap th { box-shadow: inset 3px 0 0 var(--ttc-warn); }
+  #${P}-panel .${P}-rota-flag { color: var(--ttc-warn); font-weight: 700; }
   @media (pointer: coarse) { #${P}-panel table.${P}-rota button { min-height: 44px; } }
 `;
 
@@ -330,7 +332,7 @@ export function mountSlotNotice({ doc, watch, timers = doc.defaultView || global
     node = h('div', { id: NOTICE_ID, 'data-ttc-own': '', role: 'status' },
       h('span', null, `Your chain watch (${ROLE_NAMES[role]}) starts now`), on, close);
     addStyle(doc);
-    (doc.body || doc.documentElement).append(node);
+    showToast(doc, node);
   }
 
   // A timer that only shows a notice: it asks nothing.
@@ -382,15 +384,17 @@ export function mountSlotNotice({ doc, watch, timers = doc.defaultView || global
   };
 }
 
+// hq #557 E34: the suite's tokens, light or dark as Torn's page is, like the achievement toast.
 const NOTICE_STYLE = `
+  ${followTorn(`#${NOTICE_ID}`)}
   #${NOTICE_ID} {
-    position: fixed; z-index: 2147481000; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: calc(100vw - 32px);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 12px;
-    background: #111827; color: #ffffff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 600;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+    box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px;
+    border: 1px solid var(--border); border-left: 4px solid var(--ring); border-radius: var(--radius);
+    background: var(--card); color: var(--card-foreground); font: 600 14px/1.45 var(--tt-font-sans);
+    box-shadow: var(--tt-shadow-md);
   }
   #${NOTICE_ID} button { min-height: 44px; min-width: 44px; border: 0; border-radius: 8px; padding: 0 12px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; }
-  #${NOTICE_ID} .${P}-watch-notice-on { background: #16a34a; color: #000000; }
+  #${NOTICE_ID} .${P}-watch-notice-on { background: var(--primary); color: var(--primary-foreground); }
   #${NOTICE_ID} .${P}-watch-notice-close { background: transparent; color: inherit; }
 `;
 

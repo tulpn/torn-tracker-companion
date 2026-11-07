@@ -22,6 +22,7 @@
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
 
+import { MARK } from '../data/brand.js';
 import { el, ownChange, settler } from './dom.js';
 import { log } from './log.js';
 import { SITE } from '../hosts.js';
@@ -46,11 +47,11 @@ export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'terms', title: 'War terms', summary: 'The terms your faction agreed for this war, or “NOT TERMED”. Only during a war.', on: true },
   { id: 'partner', title: 'Med-out partner', summary: 'Your partner, linking to their profile. Hidden when you have none.', on: true },
   { id: 'dibs', title: 'My dibs', summary: 'The targets you hold, with time left, linking to each attack page.', on: true },
-  { id: 'oc', title: 'Organised Crime', summary: 'Your OC and its state, and when it needs you.', on: true },
-  { id: 'guide', title: 'Guide', summary: 'Your progress in the torn-tracker guide, and bonuses to claim.', on: true },
+  { id: 'oc', title: 'Organized crime', summary: 'Your OC and its state, and when it needs you.', on: true },
+  { id: 'guide', title: 'Guide', summary: 'Your progress in the Torn Tracker guide, and bonuses to claim.', on: true },
   { id: 'routine', title: 'Routine', summary: 'How many of today’s routine lines are still undone; tap for the list, each linking to its Torn page.', on: true },
   { id: 'travel', title: 'Best travel run', summary: 'Your planner’s best run right now, with its profit per hour.', on: false },
-  { id: 'loot', title: 'NPC loot', summary: 'The next loot level per NPC and when it comes, with the source credited.', on: false },
+  { id: 'loot', title: 'NPC loot', summary: 'The NPC whose next loot level comes soonest, and when, with the source credited.', on: false },
   { id: 'gym', title: 'Gym', summary: 'How far you are towards your next gym.', on: false },
   { id: 'stocks', title: 'Stock watches', summary: 'How many of your watched stocks crossed their line.', on: false },
   { id: 'shops', title: 'Below shop price', summary: 'On the Item Market: how many listings on screen sell below what a shop pays.', on: true, local: true },
@@ -83,9 +84,8 @@ const STYLE = `
     font: 700 13px/1 var(--tt-font-sans); text-align: left;
   }
   #${BLOCK_ID} .${P}-sb-head:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
-  #${BLOCK_ID} .${P}-sb-head::before {
-    content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--primary);
-  }
+  /* The mark stands where the accent bar was (hq BRAND-050). */
+  #${BLOCK_ID} .${P}-sb-mark { flex: none; width: 16px; height: 16px; display: block; }
   #${BLOCK_ID} .${P}-sb-head::after { content: "▾"; margin-left: auto; transition: transform var(--tt-duration-fast) var(--tt-ease); }
   #${BLOCK_ID}[data-open="false"] .${P}-sb-head { border-radius: var(--radius); }
   #${BLOCK_ID}[data-open="false"] .${P}-sb-head::after { transform: rotate(-90deg); }
@@ -99,6 +99,7 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-row b { font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-row a { color: var(--ring); text-decoration: none; }
   #${BLOCK_ID} .${P}-sb-row a:hover { text-decoration: underline; }
+  #${BLOCK_ID} .${P}-sb-ext { font-size: 0.85em; }
   #${BLOCK_ID} .${P}-sb-muted { color: var(--muted-foreground); }
   #${BLOCK_ID} .${P}-sb-alert { color: color-mix(in srgb, var(--destructive) 65%, var(--foreground)); font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-links a { margin-right: 10px; }
@@ -109,15 +110,17 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-routine:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   #${BLOCK_ID} .${P}-sb-badge {
     min-width: 18px; padding: 0 5px; border-radius: 999px; text-align: center;
-    background: var(--primary); color: var(--primary-foreground); font: 700 11px/18px var(--tt-font-sans);
+    background: var(--primary); color: var(--primary-foreground); font: 700 12px/18px var(--tt-font-sans);
   }
   #${BLOCK_ID} .${P}-sb-list { margin: 2px 0 0; padding: 0 0 0 14px; }
   #${BLOCK_ID} .${P}-sb-list li { padding: 1px 0; }
   #${BLOCK_ID} .${P}-sb-switch {
     margin-left: 6px; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
-    background: transparent; color: inherit; font: 600 11px/1.6 var(--tt-font-sans);
+    background: transparent; color: inherit; font: 600 13px/1.5 var(--tt-font-sans);
   }
   #${BLOCK_ID} .${P}-sb-switch[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  #${BLOCK_ID} .${P}-sb-switch, #${BLOCK_ID} .${P}-sb-state { white-space: nowrap; }
+  #${BLOCK_ID} .${P}-sb-state { font-weight: 400; }
   @media (pointer: coarse) {
     #${BLOCK_ID} .${P}-sb-head { min-height: 44px; }
     #${BLOCK_ID} .${P}-sb-links a { display: inline-flex; align-items: center; min-height: 44px; }
@@ -174,6 +177,16 @@ export const POSITION_LABELS = Object.freeze({
 });
 
 /** The items that need a faction the site manages: the empty-state line's case (hq #507). */
+/**
+ * The NPC whose next loot level comes soonest; with no time to come, the first in the list.
+ * @param {{ name: string, level: number, nextAt: number|null }[]} npcs at least one
+ * @param {number} at now, in ms
+ */
+export function nextLoot(npcs, at) {
+  const coming = npcs.filter((n) => n.nextAt !== null && n.nextAt > at);
+  return coming.length ? coming.reduce((a, b) => (b.nextAt < a.nextAt ? b : a)) : npcs[0];
+}
+
 const FACTION_ITEMS = Object.freeze(['chain', 'war', 'dibs', 'loot']);
 
 /** One of Torn's sidebar entries (Friends, Enemies, Targets under Lists). */
@@ -340,9 +353,12 @@ export function mountSidebarBlock({
     return h('div', { class: `${P}-sb-row` }, ...children);
   }
 
-  const link = (href, text, external = false) => h('a', external
-    ? { href, target: '_blank', rel: 'noopener noreferrer' }
-    : { href }, text);
+  // A link to torn-tracker.com opens a new tab, and says so with ↗ and its title; Torn's own
+  // pages open in the same tab, as before (hq #557 C22).
+  const link = (href, text, external = false) => (external
+    ? h('a', { href, target: '_blank', rel: 'noopener noreferrer', title: 'Opens torn-tracker.com in a new tab' },
+      text, h('span', { class: `${P}-sb-ext`, 'aria-hidden': 'true' }, ' ↗'))
+    : h('a', { href }, text));
   /**
    * A countdown to a time the site sent (hq #541): "prefix 1:02:09" until it passes, then
    * the word for done ("ready", "expired") until the next read says what happened.
@@ -359,7 +375,7 @@ export function mountSidebarBlock({
       : row(h('b', null, 'Chain'), ` ${thousands(c.current)} / ${thousands(c.max)}`, ...(c.timeoutAt ? [' · ', until(c.timeoutAt, 'timed out')] : []))),
     war(w) {
       const diff = w.ours - w.theirs;
-      return row(h('b', null, link(WAR_PAGE, 'War')), ` vs ${w.opponent}: `,
+      return row(h('b', null, link(WAR_PAGE, 'Ranked war')), ` vs ${w.opponent}: `,
         h('span', { class: diff < 0 ? `${P}-sb-alert` : '' }, `${diff >= 0 ? '+' : '−'}${thousands(Math.abs(diff))}`),
         ` · ${thousands(w.ours)} / ${thousands(w.target)}`,
         // Matched: count down to the start (CAPI-039); running: to the finish estimate.
@@ -396,10 +412,15 @@ export function mountSidebarBlock({
     guide: (g) => (g.done >= g.total && g.bonuses === 0 ? null
       : row(link(GUIDE_URL, `Guide ${g.done} / ${g.total}`, true),
         g.bonuses ? ` · ${g.bonuses} bonus${g.bonuses === 1 ? '' : 'es'} to claim` : '')),
+    // Only the country is the link, so the rest of the line reads as plain words (C22).
     travel: (r) => row(h('b', null, 'Travel'), ' ',
-      link(PLANNER_URL, `${r.country.replace(/-/g, ' ')} · ${r.item_name} · +${short(r.profit_per_hour)}/h`, true)),
-    loot: (l) => row(h('b', null, 'Loot'), ...l.npcs.map((n) => ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''};`),
-      h('span', { class: `${P}-sb-muted` }, ` (${l.source})`)),
+      link(PLANNER_URL, r.country.replace(/-/g, ' '), true), ` · ${r.item_name} · +${short(r.profit_per_hour)}/h`),
+    // Only the next NPC to reach a new level; the full list is on the site (hq #557 17).
+    loot: (l) => {
+      const n = nextLoot(l.npcs, now());
+      return row(h('b', null, 'Loot'), ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''}`,
+        h('span', { class: `${P}-sb-muted` }, ` (${l.source})`));
+    },
     gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
     routine: (r) => routineLine(r),
     stocks: (s) => row(link(STOCKS_URL, `${s.crossed} of ${s.watched} watched stocks crossed`, true)),
@@ -434,8 +455,11 @@ export function mountSidebarBlock({
   function watchSwitch() {
     if (!watch) return null;
     const on = watch.isOn();
-    const button = h('button', { type: 'button', class: `${P}-sb-switch`, 'aria-pressed': String(on), title: 'Watch mode: a big chain timer over the page' },
-      on ? 'Watch mode on' : 'Watch mode off');
+    // "Watch" and its state in a short word, so the row fits 172 px (hq #557 B16).
+    const button = h('button', {
+      type: 'button', class: `${P}-sb-switch`, 'aria-pressed': String(on), 'aria-label': 'Watch mode',
+      title: `Watch mode is ${on ? 'on' : 'off'}: a big chain timer over the page`,
+    }, 'Watch ', h('span', { class: `${P}-sb-state` }, on ? 'on' : 'off'));
     button.addEventListener('click', () => watch.toggle());
     return button;
   }
@@ -452,7 +476,7 @@ export function mountSidebarBlock({
     } else if (answer.status !== 'ok') {
       for (const id of want) {
         const item = SIDEBAR_ITEMS.find((i) => i.id === id);
-        rows.push(row(h('b', null, item.title), h('span', { class: `${P}-sb-muted` }, ' no data')));
+        rows.push(row(h('b', null, item.title), h('span', { class: `${P}-sb-muted` }, ' didn’t load; retrying each minute')));
       }
     } else {
       // hq #507: the site says the account has no faction it manages, and every faction
@@ -474,7 +498,7 @@ export function mountSidebarBlock({
     }
     const below = profitableCount();
     if (settings.sidebar.items.shops === true && below > 0) {
-      rows.push(row(h('b', null, 'Shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'} below what a shop pays`));
+      rows.push(row(h('b', null, 'Below shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'}`));
     }
     if (showLinks) {
       const links = answer?.status === 'ok' && answer.links.length ? answer.links : LINKS;
@@ -549,9 +573,22 @@ export function mountSidebarBlock({
     if (openState) refreshSidebar();
   }
 
+  /** The torn-tracker mark from favicon.svg (hq BRAND-050), drawn node by node. */
+  function brandMark() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const node = (tag, attrs) => {
+      const n = doc.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      return n;
+    };
+    const svg = node('svg', { class: `${P}-sb-mark`, viewBox: MARK.viewBox, 'aria-hidden': 'true', focusable: 'false' });
+    svg.append(node('rect', MARK.tile), node('path', { ...MARK.raven, 'fill-rule': 'evenodd' }));
+    return svg;
+  }
+
   function build() {
     const head = h('button', { type: 'button', class: `${P}-sb-head`, 'aria-expanded': 'false', 'data-tour': 'companion-sidebar' },
-      h('span', { class: `${P}-mark`, 'aria-hidden': 'true' }, 'TT'), 'Torn Tracker');
+      brandMark(), 'Torn Tracker');
     head.addEventListener('click', toggle);
     return h('div', { id: BLOCK_ID, 'data-ttc-own': '', 'data-open': 'false' }, head, h('div', { class: `${P}-sb-body` }));
   }

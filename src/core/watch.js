@@ -329,7 +329,7 @@ export function mountWatch({
       return { state: 'nodata', time: '–:––', count: '', source: 'No chain bar on this page. Add your script key to use torn-tracker’s timer.', preview: false };
     }
     if ((!reading || reading.source === 'site') && siteRefused) {
-      return { state: 'nodata', time: '–:––', count: '', source: 'No chain bar on this page, and torn-tracker refused the script key.', preview: false };
+      return { state: 'nodata', time: '–:––', count: '', source: 'No chain bar on this page, and torn-tracker.com didn’t accept your script key.', preview: false };
     }
     if (!reading) return { state: 'nodata', time: '–:––', count: '', source: 'Waiting for a timer…', preview: false };
     if (at - reading.seenAt > STALE_AFTER_MS) {
@@ -359,9 +359,9 @@ export function mountWatch({
   // ------------------------------------------------------------ drawing
 
   function build() {
-    const handle = h('div', { class: `${P}-watch-handle`, role: 'button', tabindex: '0', 'aria-label': 'Move the chain watch box (arrow keys move it too)' }, '⠿ Chain watch');
+    const handle = h('div', { class: `${P}-watch-handle`, role: 'button', tabindex: '0', 'aria-label': 'Move the watch timer (arrow keys move it too)' }, '⠿ Watch timer');
     const close = h('button', { type: 'button', class: `${P}-watch-close`, 'aria-label': 'Turn watch mode off', title: 'Turn watch mode off' }, '✕');
-    const node = h('div', { id: BOX_ID, 'data-ttc-own': '', 'data-state': 'nodata', role: 'group', 'aria-label': 'Chain watch' },
+    const node = h('div', { id: BOX_ID, 'data-ttc-own': '', 'data-state': 'nodata', role: 'group', 'aria-label': 'Watch timer' },
       h('div', { class: `${P}-watch-bar` }, handle, close),
       h('div', { class: `${P}-watch-time`, 'aria-hidden': 'true' }, '–:––'),
       h('div', { class: `${P}-watch-state`, role: 'status', 'aria-live': 'polite' }, ''),
@@ -455,7 +455,7 @@ export function mountWatch({
       const node = box.querySelector(`.${P}-watch-${cls}`);
       if (node.textContent !== text) node.textContent = text;
     };
-    set('handle', v.preview ? '⠿ Chain watch · Preview' : '⠿ Chain watch');
+    set('handle', v.preview ? '⠿ Watch timer · Preview' : '⠿ Watch timer');
     set('time', v.time);
     set('state', label);
     set('count', v.count);

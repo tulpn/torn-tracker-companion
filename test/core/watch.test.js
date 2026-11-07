@@ -363,7 +363,7 @@ describe('acceptance test 11: a stale box never looks safe', () => {
   test('a refused key: No data, saying why', async () => {
     const t = await mount({ answer: () => ({ status: 'refused' }) });
     assert.equal(t.state(), 'nodata');
-    assert.match(t.text('source'), /refused/);
+    assert.match(t.text('source'), /didn’t accept your script key/);
   });
 });
 
@@ -423,6 +423,13 @@ describe('CHW-025, CHW-027 size, place and colours, kept on this device', () => 
     assert.equal(t.box().style.getPropertyValue('width'), '55vw');
     assert.equal(t.box().style.getPropertyValue('top'), '50vh');
     assert.equal(t.watch.settings().colours.ok, '#123456');
+  });
+
+  test('hq #557 F24 the box is named the Watch timer, not "Chain watch"', async () => {
+    const t = await mount({ html: BAR('1:30') });
+    assert.equal(t.box().getAttribute('aria-label'), 'Watch timer');
+    assert.match(t.box().querySelector('.ttc-watch-handle').textContent, /Watch timer/);
+    assert.doesNotMatch(t.box().textContent, /Chain watch/);
   });
 
   test('arrow keys on the handle move the box, and it stays on screen', async () => {

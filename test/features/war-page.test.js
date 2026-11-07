@@ -4,7 +4,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { clock, sortList, statusText } from '../../src/features/war-page/index.js';
+import feature, { clock, sortList, statusText, travelDetail } from '../../src/features/war-page/index.js';
 import { comparator, levelOf, statusOf } from '../../src/features/war-page/order.js';
 import { page, runFeature } from '../feature-harness.js';
 
@@ -71,6 +71,13 @@ const wait = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const enemies = (r) => [...r.doc.querySelectorAll('li.enemy a')].map((a) => a.textContent);
 const dibsButton = (r, id) => r.doc.querySelector(`.ttc-war-dibs[data-player="${id}"]`);
 
+/** The player's own pick in our Sort select (hq #557 B14). */
+function pick(r, order) {
+  const select = r.doc.querySelector('.ttc-war-order');
+  select.value = order;
+  select.dispatchEvent(new r.doc.defaultView.Event('change', { bubbles: true }));
+}
+
 /** The player's own press of one of our buttons. */
 function press(r, node) {
   node.dispatchEvent(new r.window.MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -110,24 +117,25 @@ describe('CMP-102 the sort bar', () => {
     const bars = r.doc.querySelectorAll('.ttc-war-bar');
     assert.equal(bars.length, 1);
     assert.ok(bars[0].nextElementSibling.querySelector('li.enemy'));
-    assert.deepEqual([...bars[0].querySelectorAll('button')].map((b) => b.dataset.order), ['torn', 'status', 'leave', 'level', 'ff']);
+    assert.deepEqual([...bars[0].querySelectorAll('select option')].map((o) => o.value), ['torn', 'status', 'leave', 'level', 'ff']);
+    assert.equal(bars[0].querySelectorAll('button').length, 0, 'one select, not a row of buttons');
   });
 
   test('pressing Level, then Status, then Torn\'s order moves Torn\'s rows and puts them back', async () => {
     const r = run({ site: fakeSite() });
     await wait();
     const rows = [...r.doc.querySelectorAll('li.enemy')];
-    press(r, r.doc.querySelector('[data-order="level"]'));
+    pick(r, 'level');
     await wait(50);
     assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy Three', 'Enemy One']);
-    press(r, r.doc.querySelector('[data-order="status"]'));
+    pick(r, 'status');
     await wait(50);
     assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy One', 'Enemy Three']);
-    press(r, r.doc.querySelector('[data-order="torn"]'));
+    pick(r, 'torn');
     await wait(50);
     assert.deepEqual(enemies(r), ['Enemy One', 'Enemy Two', 'Enemy Three']);
     assert.ok([...r.doc.querySelectorAll('li.enemy')].every((row, i) => row === rows[i]), 'the same nodes, never copies');
-    assert.equal(r.doc.querySelector('[data-order="torn"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(r.doc.querySelector('.ttc-war-order').value, 'torn');
     assert.deepEqual(r.violations, []);
   });
 
@@ -135,6 +143,15 @@ describe('CMP-102 the sort bar', () => {
     const r = run({ site: fakeSite(), settings: { enabled: true, sortBy: 'level', dibs: false } });
     await wait();
     assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy Three', 'Enemy One']);
+    assert.equal(r.doc.querySelector('.ttc-war-order').value, 'level');
+  });
+
+  test('hq #557 B14: with Torn War Stuff Enhanced on the page, no Sort select and no sorting', async () => {
+    const r = run({ site: fakeSite(), settings: { enabled: true, sortBy: 'level', dibs: false } });
+    r.doc.querySelector('li.enemy .status')?.setAttribute('data-twse-overridden', 'true');
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-war-bar'), null);
+    assert.deepEqual(enemies(r), ['Enemy One', 'Enemy Two', 'Enemy Three'], "Torn's order, left to the other script");
   });
 
   test('FF order asks the site once, for opponents only', async () => {
@@ -151,7 +168,9 @@ describe('CMP-102 dibs: shown from the site, called with one press, one site act
     const site = fakeSite({ dibs: [{ target: 101, holder: { id: 5, name: 'Ares' }, expiresAt: NOW + 245_000, mine: false }] });
     const r = run({ site });
     await wait();
-    assert.equal(dibsButton(r, 101).textContent, 'Ares 4:05');
+    assert.equal(dibsButton(r, 101).textContent, 'Taken 4:05');
+    assert.match(dibsButton(r, 101).title, /^Ares has dibs/);
+    assert.match(dibsButton(r, 101).getAttribute('aria-label'), /Ares has dibs/);
     assert.equal(dibsButton(r, 101).disabled, true);
     assert.equal(dibsButton(r, 102).textContent, 'Dibs');
     assert.equal(dibsButton(r, 102).disabled, false);
@@ -179,7 +198,7 @@ describe('CMP-102 dibs: shown from the site, called with one press, one site act
     await wait();
     press(r, dibsButton(r, 102));
     await wait(50);
-    assert.equal(dibsButton(r, 102).textContent, 'Ares 1:00');
+    assert.equal(dibsButton(r, 102).textContent, 'Taken 1:00');
     assert.match(dibsButton(r, 102).title, /Someone else called dibs first/);
   });
 
@@ -212,11 +231,21 @@ describe('CMP-102 timers and destinations from the site roster (CAPI-034, hq #98
   test('what goes beside the status', () => {
     assert.equal(statusText({ state: 'Hospital', until: NOW + 61_000, description: '' }, NOW), '1:01');
     assert.equal(statusText({ state: 'Jail', until: NOW - 1, description: '' }, NOW), '');
-    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to Mexico' }, NOW), '→ Mexico');
-    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Returning to Torn from Japan' }, NOW), '← Japan');
-    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Cayman Islands' }, NOW), 'in Cayman Islands');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to Mexico' }, NOW), '→ MX');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Returning to Torn from Japan' }, NOW), '← JP');
+    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Cayman Islands' }, NOW), 'in KY');
+    assert.equal(statusText({ state: 'Traveling', until: null, description: 'Traveling to United Kingdom' }, NOW), '→ UK');
+    assert.equal(statusText({ state: 'Abroad', until: null, description: 'In Atlantis' }, NOW), 'in Atlantis');
     assert.equal(statusText({ state: 'Okay', until: null, description: 'Okay' }, NOW), '');
     assert.equal(statusText(undefined, NOW), '');
+  });
+
+  test('the full destination goes in the title (hq #557 A5)', () => {
+    assert.equal(travelDetail({ state: 'Traveling', description: 'Traveling to United Kingdom' }), 'Traveling to United Kingdom');
+    assert.equal(travelDetail({ state: 'Abroad', description: 'In South Africa' }), 'In South Africa');
+    assert.equal(travelDetail({ state: 'Hospital', description: 'In hospital for 4 mins' }), '');
+    assert.equal(travelDetail({ state: 'Traveling', description: '<b>odd</b>' }), '');
+    assert.equal(travelDetail(undefined), '');
   });
 
   test('a countdown in the status cell of the opponent in hospital, a destination for the traveller', async () => {
@@ -225,7 +254,9 @@ describe('CMP-102 timers and destinations from the site roster (CAPI-034, hq #98
     const label = (id) => r.doc.querySelector(`a[href$="XID=${id}"]`).closest('li').querySelector('.status .ttc-war-time')?.textContent;
     assert.equal(label(101), '4:05');
     assert.equal(label(102), undefined);
-    assert.equal(label(103), '→ Mexico');
+    assert.equal(label(103), '→ MX');
+    const traveller = r.doc.querySelector('a[href$="XID=103"]').closest('li').querySelector('.status .ttc-war-time');
+    assert.equal(traveller.title, 'Traveling to Mexico');
     assert.deepEqual(r.violations, []);
   });
 
@@ -289,6 +320,28 @@ describe('LDT-032 loadout flags of opponents on the war page (Pro)', () => {
     await wait();
     assert.equal(r.doc.querySelectorAll('.ttc-war-ld').length, 0);
     assert.match(r.doc.querySelector('.ttc-war-note').textContent, /Pro feature/);
+  });
+
+  test('hq #557 30 the Pro note shows on one visit only, and its cross puts it away', async () => {
+    const core = { pro: false, war: false, opponents: new Map() };
+    const first = run({ site: fakeSite({ loadouts: core }) });
+    await wait();
+    const note = first.doc.querySelector('.ttc-war-note');
+    assert.deepEqual(first.stored(), { proNoteSeen: true }, 'remembered as soon as it shows');
+    const cross = note.querySelector('button.ttc-ui-dismiss');
+    assert.equal(cross.getAttribute('aria-label'), 'Dismiss');
+    let reached = false;
+    note.parentElement.addEventListener('click', () => { reached = true; });
+    cross.dispatchEvent(new first.doc.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    assert.equal(first.doc.querySelector('.ttc-war-note'), null);
+    assert.equal(reached, false, 'the tap never reaches Torn');
+    await wait();
+    assert.equal(first.doc.querySelector('.ttc-war-note'), null, 'a rescan does not bring it back');
+    first.stop();
+    const next = run({ site: fakeSite({ loadouts: core }), data: { proNoteSeen: true } });
+    await wait();
+    assert.equal(next.doc.querySelector('.ttc-war-note'), null);
+    assert.deepEqual(next.violations, []);
   });
 
   test('switched off: not asked', async () => {

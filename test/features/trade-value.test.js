@@ -72,7 +72,8 @@ describe('CMP-201 on the trade page', () => {
     const r = run({ site });
     await wait();
     assert.deepEqual(site.lookups, [[206, 367]]);
-    assert.ok(box(r).closest('.user.right'));
+    assert.equal(box(r).dataset.side, 'their');
+    assert.equal(box(r).previousElementSibling, r.doc.querySelector('.trade-cont'));
     assert.equal(r.doc.querySelectorAll('.ttc-trade').length, 1);
     // $1,000,000 + 3 x $800,000 + 2 x $12,000,000
     assert.equal(box(r).querySelector('strong').textContent, '$27,400,000');
@@ -139,7 +140,8 @@ describe('CMP-309 at a buy list', () => {
     const r = run({ site, settings: { enabled: true, priceAt: 'mine', trader: '' } });
     await wait();
     assert.deepEqual(site.asked, ['me']);
-    assert.ok(box(r).closest('.user.right'));
+    assert.equal(box(r).dataset.side, 'their');
+    assert.equal(box(r).previousElementSibling, r.doc.querySelector('.trade-cont'));
     // 3 x $790,000; the coupon and the new item aren't on the list, the $1,000,000 isn't bought.
     assert.equal(box(r).querySelector('strong').textContent, '$2,370,000');
     assert.match(box(r).textContent, /Items at ExampleTrader's buy list/);
@@ -155,8 +157,8 @@ describe('CMP-309 at a buy list', () => {
     Object.defineProperty(r.window.navigator, 'clipboard', { value: { writeText: async (t) => { copied = t; } }, configurable: true });
     await wait();
     assert.deepEqual(site.asked, ['ExampleTrader']);
-    assert.ok(box(r).closest('.user.left'));
-    assert.equal(r.doc.querySelector('.user.right .ttc-trade'), null);
+    assert.equal(box(r).dataset.side, 'own');
+    assert.equal(r.doc.querySelector('.user .ttc-trade'), null);
     box(r).querySelector('button').dispatchEvent(new r.window.MouseEvent('click', { bubbles: true }));
     await wait(10);
     assert.equal(copied, [

@@ -1,6 +1,6 @@
 // The ranked-war page (CMP-102).
 //
-// Above the opponents' list, a row of buttons sorts it by what the page already shows:
+// Above the opponents' list, one Sort select orders it by what the page already shows:
 // status, level, or the fair-fight estimate from torn-tracker.com. Beside each opponent,
 // a dibs button shows who in our faction has called them, and pressing it claims or
 // releases the target on torn-tracker.com. That is one site action per press; nothing is
@@ -23,8 +23,8 @@
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
 
 import { el, settler } from '../../core/dom.js';
-import { badge, bar as uiBar, button as uiButton, setTone, tapDetail } from '../../core/ui.js';
-import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN } from './selectors.js';
+import { badge, bar as uiBar, button as uiButton, dismissible, setTone, tapDetail } from '../../core/ui.js';
+import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN, TWSE } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
 const MARK = 'ttc-war';
@@ -56,6 +56,35 @@ export function clock(ms) {
 }
 
 /**
+ * Torn's travel destinations as two letters, so a destination fits the status cell on one
+ * line (hq #557 A5); the full name goes in the title. A name not listed stays as it is.
+ */
+export const COUNTRY_CODES = Object.freeze({
+  Mexico: 'MX',
+  'Cayman Islands': 'KY',
+  Canada: 'CA',
+  Hawaii: 'HI',
+  'United Kingdom': 'UK',
+  Argentina: 'AR',
+  Switzerland: 'CH',
+  Japan: 'JP',
+  China: 'CN',
+  UAE: 'AE',
+  'United Arab Emirates': 'AE',
+  'South Africa': 'ZA',
+});
+
+const code = (country) => (Object.hasOwn(COUNTRY_CODES, country) ? COUNTRY_CODES[country] : country);
+
+/** Where a travelling or abroad player is, in Torn's words; empty otherwise. */
+export function travelDetail(status) {
+  if (!status) return '';
+  const state = status.state.toLowerCase();
+  if (state !== 'traveling' && state !== 'abroad') return '';
+  return /^(Returning to Torn from|Traveling to|In) .+$/.test(status.description) ? status.description : '';
+}
+
+/**
  * What goes beside Torn's status: a countdown for hospital and jail, where they are
  * flying for travel. Empty when there is nothing to add.
  */
@@ -68,11 +97,11 @@ export function statusText(status, now) {
   if (state === 'traveling' || state === 'abroad') {
     const d = status.description;
     let m = /^Returning to Torn from (.+)$/.exec(d);
-    if (m) return `← ${m[1]}`;
+    if (m) return `← ${code(m[1])}`;
     m = /^Traveling to (.+)$/.exec(d);
-    if (m) return `→ ${m[1]}`;
+    if (m) return `→ ${code(m[1])}`;
     m = /^In (.+)$/.exec(d);
-    if (m) return `in ${m[1]}`;
+    if (m) return `in ${code(m[1])}`;
   }
   return '';
 }
@@ -108,6 +137,11 @@ function ownNode(node) {
   return Boolean(element?.closest?.(`[data-${MARK}]`));
 }
 
+/** The page's own saved data: whether the Pro note was shown once already (hq #557 30). */
+export function validateWarData(value) {
+  return { proNoteSeen: value?.proNoteSeen === true };
+}
+
 export default {
   id: 'war-page',
   wave: 1,
@@ -128,6 +162,7 @@ export default {
   shares: [],
   needs: { apiKey: false, scriptKey: true },
   credits: ['Torn War Stuff Enhanced (MIT)'],
+  data: { empty: { proNoteSeen: false }, validate: validateWarData },
 
   start(ctx) {
     const { doc } = ctx;
@@ -150,6 +185,8 @@ export default {
       dibsTimer: null,
       tick: null,
       stopWatching: null,
+      /** The Pro note shows on one visit only, and goes on a tap of its cross (hq #557 30). */
+      proNote: validateWarData(ctx.data?.()).proNoteSeen ? 'off' : 'on',
     };
     state = s;
     const alive = () => state === s;
@@ -159,20 +196,21 @@ export default {
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
 
 
+    // One select, not a row of five buttons that wrapped to three lines (hq #557 B14).
     function bar(list) {
       const prev = list.previousElementSibling;
       if (prev?.classList.contains(`${MARK}-bar`)) return prev;
-      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-sort' } }, el('strong', { ownerDocument: doc }, 'Sort'));
-      for (const order of ORDERS) {
-        const button = uiButton(doc, { attrs: { 'data-order': order } }, LABELS[order]);
-        button.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          s.order = order;
-          scan().catch((err) => ctx.log('war page', err));
-        });
-        node.append(button);
-      }
+      const select = el('select', { class: `${MARK}-order`, 'aria-label': 'Sort opponents by', ownerDocument: doc },
+        ...ORDERS.map((order) => el('option', { value: order, ownerDocument: doc }, LABELS[order])));
+      select.value = s.order;
+      select.addEventListener('change', (event) => {
+        event.stopPropagation();
+        if (!ORDERS.includes(select.value)) return;
+        s.order = select.value;
+        scan().catch((err) => ctx.log('war page', err));
+      });
+      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-sort' } },
+        el('label', { ownerDocument: doc }, el('strong', { ownerDocument: doc }, 'Sort '), select));
       list.before(node);
       return node;
     }
@@ -198,7 +236,9 @@ export default {
         title = 'Your dibs. Press to release them.';
         look = 'mine';
       } else if (live) {
-        text = `${live.holder.name} ${clock(live.expiresAt - now())}`;
+        // "Taken 4:05": a long holder name overflowed the button, so it moved to the title
+        // and the spoken label (hq #557 D29).
+        text = `Taken ${clock(live.expiresAt - now())}`;
         title = `${live.holder.name} has dibs on this target`;
         look = 'taken';
       }
@@ -260,10 +300,20 @@ export default {
     function loadoutLabels() {
       if (!showLoadouts || !s.loadouts) return;
       if (!s.loadouts.pro) {
+        if (s.proNote === 'off') return;
+        const off = () => {
+          s.proNote = 'off';
+          for (const node of doc.querySelectorAll(`.${MARK}-note`)) node.remove();
+        };
         for (const bar of doc.querySelectorAll(`.${MARK}-bar`)) {
           if (!bar.querySelector(`.${MARK}-note`)) {
-            bar.append(badge(doc, { cls: `${MARK}-note`, tone: 'info' }, "Opponents' loadouts are a Pro feature"));
+            bar.append(dismissible(badge(doc, { cls: `${MARK}-note`, tone: 'info' }, "Opponents' loadouts are a Pro feature"), off));
           }
+        }
+        // Shown once: the next visit leaves it off.
+        if (s.proNote === 'on') {
+          s.proNote = 'shown';
+          Promise.resolve(ctx.saveData?.({ proNoteSeen: true })).catch((err) => ctx.log('war page note', err));
         }
         return;
       }
@@ -319,7 +369,8 @@ export default {
       for (const row of doc.querySelectorAll(ENEMY_ROW)) {
         const cell = row.querySelector(STATUS);
         if (!cell) continue;
-        const text = statusText(s.roster.get(playerOf(row)), now());
+        const status = s.roster.get(playerOf(row));
+        const text = statusText(status, now());
         let label = cell.querySelector(`.${MARK}-time`);
         // Another script already shows the time here: one timer per row, never two.
         if (!text || cell.matches(STATUS_TAKEN)) {
@@ -335,7 +386,8 @@ export default {
         // Where the cell can't hold both, the timer stands in for Torn's word (hq #535): the
         // cell is marked, the stylesheet hides Torn's text, and the word goes in the title.
         if (!cell.hasAttribute(TIMED)) cell.setAttribute(TIMED, '');
-        const word = tornWord(cell);
+        // The title carries what the label shortens: the full destination, else Torn's word.
+        const word = travelDetail(status) || tornWord(cell);
         if (word && label.title !== word) label.title = word;
         if (label.textContent !== text) label.textContent = text;
         // A countdown out of hospital or jail is a wait; a destination is information.
@@ -347,15 +399,19 @@ export default {
       times();
       loadoutLabels();
       for (const button of doc.querySelectorAll(`.${MARK}-dibs`)) render(button, Number(button.dataset.player));
-      for (const button of doc.querySelectorAll(`.${MARK}-bar button`)) {
-        button.setAttribute('aria-pressed', String(button.dataset.order === s.order));
+      for (const select of doc.querySelectorAll(`.${MARK}-order`)) {
+        if (select.value !== s.order) select.value = s.order;
       }
     }
 
     async function scan() {
       const lists = enemyLists(doc);
       if (lists.length === 0) return;
-      for (const list of lists) bar(list);
+      // Torn War Stuff Enhanced sorts the same rows: with it on the page (seen by its own
+      // mark in the DOM, never its storage), ours stands aside (hq #557 B14).
+      const other = Boolean(doc.querySelector(TWSE));
+      if (other) for (const node of doc.querySelectorAll(`.${MARK}-bar`)) node.remove();
+      else for (const list of lists) bar(list);
       for (const list of lists) {
         for (const row of list.querySelectorAll(ENEMY_ROW)) if (!s.seen.has(row)) s.seen.set(row, s.seenCount++);
       }
@@ -363,7 +419,7 @@ export default {
       if (!alive()) return;
       const compare = comparator(s.order, s.ff, s.roster, now())
         || ((a, b) => (s.seen.get(a) ?? Infinity) - (s.seen.get(b) ?? Infinity));
-      for (const list of lists) sortList(list, compare);
+      if (!other) for (const list of lists) sortList(list, compare);
       placeDibs(lists);
       paint();
     }

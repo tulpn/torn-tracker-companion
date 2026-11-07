@@ -20,7 +20,8 @@
 
 import { el, settler } from '../../core/dom.js';
 import { CARD, CARD_ID, NAME, SLOT, SLOT_HEADER, SLOT_TITLE } from './selectors.js';
-import { badge, note } from '../../core/ui.js';
+import { badge, note, tapDetail } from '../../core/ui.js';
+import { shownByOther } from '../../core/neighbours.js';
 
 const MARK = 'ttc-oc';
 const SETTLE_MS = 250;
@@ -34,6 +35,11 @@ export function roleKey(label) {
 
 const CREDIT = 'ttc-oc-credit';
 
+/**
+ * The success estimate's tone, from its value (hq #557 E35): green only when the crime is
+ * likely to succeed, red when it is likely to fail.
+ */
+export const successTone = (n) => (n >= 70 ? 'good' : n >= 40 ? 'warn' : 'bad');
 const pct = (n) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`;
 
 export default {
@@ -64,37 +70,35 @@ export default {
      * The detail is in its title (hover) and opens under it on a tap; the tap goes no further,
      * so it never reaches Torn's own handlers on the slot. A span, not a button: Torn's slot
      * header is itself a button (seen on a capture of 2026-11-02), and buttons don't nest.
+     * The shared tap detail gives it the button role, Tab, Enter and Space (hq #557 F39).
      */
-    function label(parent, text, detail, kind) {
+    function label(parent, text, detail, kind, tone = 'info') {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
         // The tour's anchors (hq #238), one per kind of label.
         const anchor = kind === 'success' ? { 'data-tour': 'oc-success' } : { 'data-tour': 'oc-weight' };
         node = badge(doc, {
-          cls: MARK, tone: kind === 'success' ? 'good' : 'info', compact: true,
-          attrs: { 'data-kind': kind, 'data-open': 'false', ...anchor },
-        });
-        node.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          node.dataset.open = String(node.dataset.open !== 'true');
+          cls: MARK, tone, compact: true,
+          attrs: { 'data-kind': kind, ...anchor },
         });
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
-      if (node.title !== detail) node.title = detail;
-      if (node.dataset.detail !== detail) node.dataset.detail = detail;
+      if (node.dataset.tone !== tone) node.dataset.tone = tone;
+      tapDetail(node, detail);
     }
 
-    /** One visible credit line above the first crime card, once any weight shows. */
+    /**
+     * One visible credit line under the last crime card, once any weight shows. Below the
+     * cards, not above, so its late arrival never pushes the crimes down (hq #557 A6).
+     */
     function credit(card, source) {
       const text = `Role weights: ${source}, via torn-tracker.com`;
       let node = doc.querySelector(`.${CREDIT}`);
-      if (!node) {
-        node = note(doc, { cls: `${MARK} ${CREDIT}`, attrs: { 'data-kind': 'credit' } });
-        const first = doc.querySelector(CARD);
-        (first || card).before(node);
-      }
+      if (!node) node = note(doc, { cls: `${MARK} ${CREDIT}`, attrs: { 'data-kind': 'credit' } });
+      const cards = doc.querySelectorAll(CARD);
+      const last = cards[cards.length - 1] || card;
+      if (last.nextElementSibling !== node) last.after(node);
       if (node.textContent !== text) node.textContent = text;
     }
 
@@ -102,8 +106,15 @@ export default {
       const id = Number(card.dataset[CARD_ID]);
       const success = answer.crimes.get(id);
       const name = card.querySelector(NAME);
-      if (name?.parentElement && typeof success === 'number') {
-        label(name.parentElement, `~${pct(success)}`, "torn-tracker.com's success estimate for this crime", 'success');
+      // OC2.0 Helper already shows its own success figure on this crime (hq #557 F40).
+      if (shownByOther(card, 'ocSuccess')) card.querySelector(`.${MARK}[data-kind="success"]`)?.remove();
+      else if (name?.parentElement && typeof success === 'number') {
+        label(name.parentElement, `~${pct(success)}`, "torn-tracker.com's success estimate for this crime", 'success', successTone(success));
+      }
+      // TornTools or OC2.0 Helper already shows the weights on this crime: ours stay off it (hq #557 F40).
+      if (shownByOther(card, 'ocWeights')) {
+        for (const node of card.querySelectorAll(`.${MARK}[data-kind="weight"]`)) node.remove();
+        return;
       }
       const weights = new Map((answer.roles || []).map((r) => [roleKey(r.label), r.weight]));
       for (const slot of card.querySelectorAll(SLOT)) {
@@ -126,6 +137,8 @@ export default {
         if (!alive()) return;
         if (card.isConnected) paint(card, answer);
       }
+      // The credit goes with the last weight of ours.
+      if (!doc.querySelector(`.${MARK}[data-kind="weight"]`)) doc.querySelector(`.${CREDIT}`)?.remove();
     }
 
     function later() {

@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
-  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
+  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, nextLoot, placementOf, readLine,
 } from '../../src/core/sidebar.js';
 import { readRoutine, readSidebar, tornPath } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
@@ -17,6 +17,7 @@ import { defaults } from '../../src/core/settings.js';
 import * as dom from '../../src/core/dom.js';
 import { setDebug } from '../../src/core/log.js';
 import { ROOT } from '../helpers.js';
+import { MARK } from '../../src/data/brand.js';
 
 const windows = [];
 after(() => windows.forEach((w) => w.close()));
@@ -276,7 +277,7 @@ describe('hq #452 the rows survive Torn redrawing its sidebar', () => {
       assert.equal(t.asked.length, 2, next.status);
       // Every row is still there; only the countdowns moved on by the minute.
       assert.equal(t.node().textContent, before.replaceAll('2:31', '1:31'), `${next.status} keeps the rows`);
-      assert.doesNotMatch(t.node().textContent, /no data/);
+      assert.doesNotMatch(t.node().textContent, /didn’t load/);
     }
   });
 });
@@ -345,10 +346,10 @@ describe('CMP-108 AC5 nothing to say, nothing shown', () => {
     }
   });
 
-  test('until the site serves the read, each item says "no data"', async () => {
+  test('until the site serves the read, each item says it didn’t load and is retried (hq #557 D27)', async () => {
     const t = mount({ answer: { status: 'failed' } });
     await settle();
-    assert.match(t.node().textContent, /Chain no data/);
+    assert.match(t.node().textContent, /Chain didn’t load; retrying each minute/);
   });
 });
 
@@ -360,11 +361,11 @@ describe('CMP-109 the shop price count', () => {
     });
     await settle();
     assert.equal(t.asked.flat().includes('shops'), false);
-    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    assert.doesNotMatch(t.node().textContent, /shop price/i);
     setProfitable(3);
-    assert.match(t.node().textContent, /Shop price 3 listings below what a shop pays/);
+    assert.match(t.node().textContent, /Below shop price 3 listings/);
     setProfitable(0);
-    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    assert.doesNotMatch(t.node().textContent, /shop price/i);
     t.block.destroy();
   });
 
@@ -372,7 +373,7 @@ describe('CMP-109 the shop price count', () => {
     const t = mount({ change: (s) => { s.sidebar.items.shops = false; } });
     await settle();
     setProfitable(1);
-    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    assert.doesNotMatch(t.node().textContent, /shop price/i);
     setProfitable(0);
     t.block.destroy();
   });
@@ -424,6 +425,18 @@ describe('CHW-011, CHW-021 the watch line', () => {
     assert.equal(t.node().querySelector('.ttc-sb-switch').getAttribute('aria-pressed'), 'true');
   });
 
+  test('hq #557 B16: the switch says Watch with its state as on or off', async () => {
+    const watch = fakeWatch();
+    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: NEXT }, ['watch'], 0) }, watch });
+    await settle();
+    const sw = () => t.node().querySelector('.ttc-sb-switch');
+    assert.equal(sw().textContent, 'Watch off');
+    assert.equal(sw().getAttribute('aria-label'), 'Watch mode');
+    sw().dispatchEvent(new t.window.MouseEvent('click', { bubbles: true }));
+    assert.equal(sw().textContent, 'Watch on');
+    assert.match(sw().title, /^Watch mode is on/);
+  });
+
   test('hq #523: no slot, and a watch open: a way to sign up', async () => {
     const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0, open: true } }, ['watch', 'war'], 0) } });
     await settle();
@@ -434,7 +447,7 @@ describe('CHW-011, CHW-021 the watch line', () => {
     for (const watchItem of [{ now: null, next: null, gaps_24h: 48, open: false }, { now: null, next: null, gaps_24h: 48 }]) {
       const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: watchItem, war: FULL.war }, ['watch', 'war'], 0) } });
       await settle();
-      assert.match(t.node().textContent, /War vs/);
+      assert.match(t.node().textContent, /Ranked war vs/);
       assert.doesNotMatch(t.node().textContent, /Watch|Sign up/);
     }
   });
@@ -482,7 +495,7 @@ describe('hq #488 on Torn’s Home page', () => {
     assert.equal(t.node().dataset.open, 'true');
     assert.equal(t.node().hidden, false);
     assert.match(t.node().textContent, /Chain 412 \/ 500/);
-    assert.match(t.node().textContent, /War vs Ares/);
+    assert.match(t.node().textContent, /Ranked war vs Ares/);
   });
 
   test('a sidebar Torn draws late is found within the settler’s second, and read once', async () => {
@@ -626,7 +639,7 @@ describe('hq #507 a line when the account has no faction linked', () => {
     const t = mount({ answer: answerOf({ ...EMPTY, faction_linked: false }) });
     await settle();
     assert.ok(line(t));
-    assert.equal(line(t).textContent, 'Link your faction on torn-tracker.com to see chain, war and dibs');
+    assert.equal(line(t).textContent, 'Link your faction on torn-tracker.com ↗ to see chain, war and dibs');
     const a = line(t).querySelector('a');
     assert.equal(a.getAttribute('href'), 'https://torn-tracker.com/faction/');
     assert.equal(t.node().hidden, false);
@@ -670,7 +683,7 @@ describe('hq #541 links and live countdowns', () => {
   test('on the real Home sidebar the War and OC lines link to Torn’s own pages, same tab', async () => {
     const t = live();
     await settle();
-    const war = line(t, 'War').querySelector('b a');
+    const war = line(t, 'Ranked war').querySelector('b a');
     const oc = line(t, 'OC').querySelector('b a');
     assert.equal(war.getAttribute('href'), WAR_PAGE);
     assert.equal(oc.getAttribute('href'), CRIMES_PAGE);
@@ -686,13 +699,13 @@ describe('hq #541 links and live countdowns', () => {
     const t = live();
     await settle();
     assert.match(line(t, 'Chain').textContent, /· 2:30$/);
-    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
+    assert.match(line(t, 'Ranked war').textContent, /ends in ~1:02:09$/);
     assert.match(line(t, 'OC').textContent, /ready in 1:05$/);
     assert.equal(t.timers.intervals.size, 1, 'one shared ticker');
     t.advance(1_000);
     t.timers.beat();
     assert.match(line(t, 'Chain').textContent, /· 2:29$/);
-    assert.match(line(t, 'War').textContent, /ends in ~1:02:08$/);
+    assert.match(line(t, 'Ranked war').textContent, /ends in ~1:02:08$/);
     assert.match(line(t, 'OC').textContent, /ready in 1:04$/);
     assert.equal(t.asked.length, 1);
   });
@@ -708,7 +721,7 @@ describe('hq #541 links and live countdowns', () => {
     assert.match(line(t, 'Chain').textContent, /· timed out$/);
     t.advance(3_729_000);
     t.timers.beat();
-    assert.match(line(t, 'War').textContent, /· ending$/);
+    assert.match(line(t, 'Ranked war').textContent, /· ending$/);
   });
 
   test('the ticker rests while the tab is hidden and catches up when it is seen again', async () => {
@@ -772,18 +785,18 @@ describe('CAPI-039 war start and OC expiry', () => {
   test('a matched war counts down to its start, then says starting', async () => {
     const t = show(MATCHED);
     await settle();
-    assert.match(line(t, 'War').textContent, /vs Crimson Tide: \+0 · 0 \/ 4,000 · starts in 1:23:45$/);
-    assert.equal(line(t, 'War').querySelector('b a').getAttribute('href'), WAR_PAGE, 'a live war has no page by id');
+    assert.match(line(t, 'Ranked war').textContent, /vs Crimson Tide: \+0 · 0 \/ 4,000 · starts in 1:23:45$/);
+    assert.equal(line(t, 'Ranked war').querySelector('b a').getAttribute('href'), WAR_PAGE, 'a live war has no page by id');
     t.advance(5_025_000);
     t.timers.beat();
-    assert.match(line(t, 'War').textContent, /· starting$/);
+    assert.match(line(t, 'Ranked war').textContent, /· starting$/);
   });
 
   test('a running war counts to its finish, not to a start already past', async () => {
     const t = show({ ...MATCHED, war: { ...MATCHED.war, state: 'running', starts_at: at(-60_000), finish_eta: at(3_729_000) } });
     await settle();
-    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
-    assert.doesNotMatch(line(t, 'War').textContent, /start/);
+    assert.match(line(t, 'Ranked war').textContent, /ends in ~1:02:09$/);
+    assert.doesNotMatch(line(t, 'Ranked war').textContent, /start/);
   });
 
   test('a ready crime ignores its expiry', async () => {
@@ -849,7 +862,7 @@ describe('hq #599 RDB-081 the routine badge', () => {
     assert.deepEqual(links.map((a) => a.textContent), ['Nerve refill unused', 'No bank investment', 'Casino tokens unused']);
     assert.deepEqual(links.map((a) => a.getAttribute('href')), ['/points.php', '/bank.php', '/casino.php']);
     for (const a of links) assert.equal(a.hasAttribute('target'), false, 'same tab');
-    assert.match(items[3].textContent, /^2 done · the full list$/);
+    assert.match(items[3].textContent, /^2 done · the full list ↗$/);
     assert.equal(t.node().querySelector('.ttc-sb-routine').getAttribute('aria-expanded'), 'true');
     assert.equal(t.asked.length, 1, 'a tap asks for nothing');
     t.node().querySelector('.ttc-sb-routine').click();
@@ -917,7 +930,7 @@ describe('hq #606 a new page shows the last answer, not “no data”', () => {
     const text = t.node().textContent;
     assert.match(text, /Chain 412 \/ 500/);
     assert.match(text, /My dibs/);
-    assert.doesNotMatch(text, /no data/i);
+    assert.doesNotMatch(text, /didn’t load/i);
     assert.match(t.node().querySelector('[data-ttc-aged]').textContent, /^As of .+ ago$/);
     assert.equal(t.asked.length, 1, 'no extra read');
   });
@@ -972,5 +985,82 @@ describe('hq #606 a new page shows the last answer, not “no data”', () => {
       assert.match(t.node().textContent, /Chain 412 \/ 500/, `after spray ${spray + 1}`);
     }
     assert.equal(t.asked.length, 1, 'one read, then the minute');
+  });
+});
+
+describe('BRAND-050 the block header carries the torn-tracker mark', () => {
+  test('an inline svg of favicon.svg, hidden from screen readers, in place of the TT badge', async () => {
+    const t = mount();
+    await settle();
+    const head = t.node().querySelector('.ttc-sb-head');
+    const svg = head.querySelector('svg.ttc-sb-mark');
+    assert.ok(svg, 'the mark is drawn');
+    assert.equal(svg.namespaceURI, 'http://www.w3.org/2000/svg');
+    assert.equal(svg.getAttribute('aria-hidden'), 'true');
+    assert.equal(svg.getAttribute('viewBox'), MARK.viewBox);
+    assert.equal(svg.querySelector('rect').getAttribute('fill'), MARK.tile.fill);
+    assert.equal(svg.querySelector('path').getAttribute('d'), MARK.raven.d);
+    assert.equal(head.textContent, 'Torn Tracker', 'the name is the only text; no "TT"');
+  });
+});
+
+describe('hq #557 C22 links to torn-tracker.com say they open a new tab', () => {
+  const RUN = {
+    country: 'south-africa', item_id: 206, item_name: 'Xanax', quantity: 29, profit_per_hour: 812000,
+    lands_at: '2026-11-07T03:00:00Z', hours: 4.5,
+  };
+
+  test('the travel row links only the country, with ↗; the rest is plain words', async () => {
+    const data = { ...FULL, travel: RUN };
+    const t = mount({
+      change: (s) => { s.sidebar.items.travel = true; },
+      answer: { status: 'ok', ...readSidebar(data, Object.keys(data), 0) },
+    });
+    await settle();
+    const row = [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => /^Travel/.test(r.textContent));
+    assert.ok(row);
+    const a = row.querySelector('a');
+    assert.equal(a.getAttribute('target'), '_blank');
+    assert.equal(a.textContent, 'south africa ↗');
+    assert.equal(a.title, 'Opens torn-tracker.com in a new tab');
+    assert.match(row.textContent, /· Xanax · \+\$812k\/h$/);
+    assert.equal(row.querySelectorAll('a').length, 1);
+  });
+
+  test('Torn’s own pages keep a plain link in the same tab, with no arrow', async () => {
+    const t = mount();
+    await settle();
+    for (const a of t.node().querySelectorAll('a')) {
+      const external = a.getAttribute('target') === '_blank';
+      assert.equal(Boolean(a.querySelector('.ttc-sb-ext')), external, a.getAttribute('href'));
+    }
+  });
+});
+
+describe('hq #557 17 the loot line shows the next NPC only', () => {
+  const at = (min) => new Date(Date.UTC(2026, 9, 23, 12, min)).toISOString();
+  const LOOT = [
+    { npc_id: 4, name: 'Duke', level: 4, next_level_at: at(90) },
+    { npc_id: 15, name: 'Leslie', level: 2, next_level_at: at(25) },
+    { npc_id: 19, name: 'Jimmy', level: 5, next_level_at: null },
+  ];
+
+  test('the soonest to reach a new level, without a trailing separator', async () => {
+    const data = { ...FULL, loot: LOOT, source: 'loot.example' };
+    const t = mount({
+      change: (s) => { s.sidebar.items.loot = true; },
+      answer: { status: 'ok', ...readSidebar(data, Object.keys(data), 0) },
+    });
+    await settle();
+    const row = [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => /^Loot/.test(r.textContent));
+    assert.ok(row);
+    assert.match(row.textContent, /^Loot Leslie L2 → L3 in .+ \(loot\.example\)$/);
+    assert.doesNotMatch(row.textContent, /Duke|Jimmy|;/);
+  });
+
+  test('with no level to come, the first NPC; a time already past does not count', () => {
+    const now = Date.UTC(2026, 9, 23, 12);
+    assert.equal(nextLoot([{ name: 'A', level: 5, nextAt: null }, { name: 'B', level: 5, nextAt: null }], now).name, 'A');
+    assert.equal(nextLoot([{ name: 'A', level: 3, nextAt: now - 1 }, { name: 'B', level: 2, nextAt: now + 5 }], now).name, 'B');
   });
 });

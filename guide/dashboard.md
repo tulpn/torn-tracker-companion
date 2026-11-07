@@ -18,11 +18,12 @@ keywords: torn tracker dashboard, torn dashboard in game, torn tracker companion
 
 ## Switch it on
 
-1. Open the [settings](settings-panel.md) and go to **General**.
+1. Open the [settings](settings-panel.md). While the dashboard is off, the top of the page
+   shows **Dashboard · turn on**. Press it, or go to **General** yourself.
 2. Tick **Dashboard (preview)**.
-3. Press **Save**.
+3. It saves at once.
 
-A **Dashboard** link shows at the top of the settings page. It opens the dashboard in
+The link at the top of the settings page then reads **Dashboard**. It opens the dashboard in
 Torn's main column, at `torn.com/index.php#/torn-tracker/dashboard`.
 
 ## What you see
@@ -34,11 +35,11 @@ top:
   and a link to its page.
 - **Ranked war:** the score while it runs, and **Your dibs** with the time each has left.
   Before it starts, when it starts.
-- **Chain watch:** who is on watch now and next, with you marked. An empty slot says
+- **Watch rota:** who is on watch now and next, with you marked. An empty slot says
   **Nobody on watch.** You also see your own next watch and how many slots in the next
   24 hours have no Lead. When the chain is running, it shows here too.
 - **Chain** and **Organized crime**, the same as the sidebar block shows. The Chain card is
-  left out when the chain is already on the Chain watch card.
+  left out when the chain is already on the Watch rota card.
 - **Nearest awards:** the honors and medals you are closest to, with how far you are.
 - **Education:** the course you are taking and when it ends, how far you are in its
   branch, and your next pick.

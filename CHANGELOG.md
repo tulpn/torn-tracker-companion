@@ -9,6 +9,121 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- Screen readers: the settings sections are plain links, the open one marked as the current
+  page, instead of tabs with no tab list. A mistyped key is named under its own field, as well
+  as in the toast, and the field is marked as invalid (hq #557 42).
+- "Reset settings to defaults" asks for a second tap, as "Forget me" does, and says that your
+  keys, notes and templates stay (hq #557 41).
+- Bust safety no longer shows a bare number: the badge names its band before the score, such as
+  "Easy 18" or "Hard 600". It stays a score, not a percentage, since it isn't Torn's odds
+  (hq #557 31).
+- The "Pro feature" notes on the war page and in the pre-war brief show once, not on every
+  visit, and the war page's note has a × that puts it away. The brief's link reads "Open the
+  brief on torn-tracker.com" for Pro and Core alike (hq #557 30).
+- A badge that is a link, such as the listed-mugger badge or an applicant's fit, now looks like
+  one: a trailing ›, and on hover or keyboard focus a deeper tint, an underline and a focus
+  ring, in light and dark (hq #557 23).
+- The sidebar's loot line names only the NPC whose next loot level comes soonest, instead of
+  every NPC with a trailing ";" (hq #557 17).
+- On a phone the dashboard's cards fit the screen, with the same narrow padding as the settings
+  page (hq #557 11).
+- No figure twice: where another script already shows the same thing, the companion leaves
+  its own out. That covers OC role weights (TornTools, OC2.0 Helper), the OC success figure
+  (OC2.0 Helper), crime morale (Crime Morale), the jail score (Bustr+) and the energy to the
+  next gym (TornTools). They are found only by what they put on the page (hq #557 F40).
+- The OC role badges open from the keyboard too: Tab to one, then Enter or Space opens its
+  detail and Escape closes it. The key never reaches Torn's slot button (hq #557 F39).
+- On a phone, the settings page's "Dashboard · turn on" link no longer squeezes the title under
+  the key state: it takes its own row under them (hq #557 C21).
+- In settings, a feature that needs a key shows one badge for each missing key, "Needs script
+  key" or "Needs Torn API key", and the badge opens Keys (hq #557 E37).
+- Buttons look the same everywhere: the settings panel, the dashboard and the buttons on
+  Torn's pages share one shape and colour, and the main action is the filled one ("Add to
+  <list>" on profiles, "Open on torn-tracker.com" on the dashboard) (hq #557 E33).
+- The bazaar and item market cash reminder is now an amber notice strip, and your mug history
+  on profiles a plain information strip, instead of small pills (hq #557 E36).
+- Red now only means bad (hq #557 E35). The shop price highlighter's tiers are named Best,
+  Good, Fair and Small, drawn green, yellow, blue and grey (your saved thresholds are kept);
+  the OC success estimate is green from 70 %, amber from 40 % and red below; the war brief has
+  a blue edge, not red; an applicant's badge is green for a good fit, amber for a poor one.
+  Caution badges (bust safety, crime morale, time left, notes) are amber in Torn's light
+  theme too, where they were red.
+- The chain watch slot notice and the rota table's gap marks use the suite's colours, and
+  the notice is light or dark as Torn's page is, instead of always dark (hq #557 E34).
+- Plainer, consistent words (hq #557 D26-D29): **Torn Tracker** for the product,
+  **torn-tracker.com** for the site and **the companion** for the script; "Organized crime",
+  "Ranked war" and "Below shop price" everywhere. A refused key now reads "didn't accept your
+  script key", the Sharing queue line says what happened in words (the HTTP status is in its
+  tooltip), and a sidebar row that didn't load says it is retried each minute. A taken Dibs
+  button reads "Taken 4:05", with the holder in its tooltip. The General intro and the tour
+  match what the settings hold, and the gym line says "estimate" once.
+- Sidebar links to torn-tracker.com carry ↗ and say they open a new tab, and the travel
+  line links only the country, not the whole line (hq #557 C22).
+- The settings page shows **Dashboard · turn on** at the top while the dashboard is off,
+  so it can be found without knowing the switch is under General (hq #557 C21).
+- Where the sidebar block sits is now chosen under **Settings → Sidebar**, with the block
+  itself, not under General (hq #557 C19).
+- The settings and sidebar guides no longer mention saving: every change saves at once
+  (hq #557 C20).
+- The war page's Sort bar is one select instead of five buttons that wrapped to three
+  lines, and it stands aside when Torn War Stuff Enhanced is on the page (hq #557 B14).
+- The listing's total on the shop price highlighter is left off the label on screens under
+  400 px, so narrow listings no longer overflow; it stays in the tooltip (hq #557 B15).
+- The sidebar Watch line's switch now reads **Watch on** or **Watch off**, so the line fits
+  the sidebar (hq #557 B16).
+- The trade value line now sits under the whole trade at full width, not inside the narrow
+  column of one side, where it wrapped a word at a time (hq #557 A10).
+- The travel agency's best runs panel holds its place with "Loading…" from the start, and
+  the OC weights credit line sits under the crimes, so neither pushes the page down when it
+  arrives (hq #557 A6).
+- The crime helper's badges (value per nerve, morale and time left) are now compact and
+  never wrap inside Torn's crime rows; tap one for its words (hq #557 A7).
+- The achievement toast and the chain watch notice no longer cover Torn's chat bar: both sit
+  in one stack above it, and never on top of each other (hq #557 A8).
+- A badge's detail, opened with a tap, now stays on a phone's screen: near the right edge
+  it opens to the left (hq #557 A9).
+- Text the companion adds to Torn and its own pages is now 12 px at least, and its buttons
+  13 px, so badges, notes, pills and buttons stay readable on a phone (hq #557 F12).
+- During a tour, Enter, the arrow keys, Esc and Tab typed into a field elsewhere on the page,
+  such as Torn's chat, now reach the field instead of moving the tour (hq #557 F38).
+- When the dashboard can't reach torn-tracker.com, or the site asks it to wait, it now has a
+  **Retry** button; each press reads the dashboard once (hq #557 F18).
+- The shop price guard's warning under a sell price is now one short line, such as "Shop
+  pays $1,000 (+$100)", so it no longer squeezes the row; tap or hover it for the shop and
+  the total (hq #557 F25).
+
+### Changed
+
+- The Sharing section is shorter: each kind shows one plain line on what it sends, and its
+  full wording sits under **Exactly what is sent**; the notice at the top folds under **How
+  sharing works**. The full wording is unchanged, and it is still what ticking a kind agrees
+  to (hq #557 F13).
+- The two chain watch pieces now have their own names: the dashboard card is the **Watch
+  rota**, and the box you drag around a page is the **Watch timer**. The settings section
+  keeps the name Chain watch, since it covers both (hq #557 F24).
+- The settings page and the dashboard now follow Torn's light or dark theme unless you pick
+  one under General → Look; they used to start dark. If you have saved settings before,
+  your look stays as it was: pick **Same as Torn** under General → Look to follow Torn
+  (hq #557 F32).
+- The sharing lines now say exactly what the code sends: a gym train includes the energy and
+  the number of trains when Torn's answer gives them; jail bands aren't kept or published,
+  because the site doesn't accept them yet; and an auction listing goes again as soon as its
+  bid changes, otherwise at most every ten minutes. The wording changed, so if you share,
+  read the new lines and agree again (hq #649).
+- The README and the guide now say that Applicant badges sends the applicants' ids to
+  torn-tracker.com, that features showing the site's data look up the ids they need, and
+  that settings save as you change them, with no Save button. The guide has a section for
+  jail difficulty bands (hq #649).
+
+## 0.9.15 — 2026-11-06
+
+### Changed
+
+- The script wears the torn-tracker raven: it is the icon in your script manager, and it heads the sidebar block in place of the old “TT” badge. The icon is carried inside the script, so nothing is fetched for it (hq #639).
+- On the war page, a traveller's destination is a two-letter code (`→ UK`, `in KY`) that fits the status cell on one line; the full name is in its hover text (hq #557).
+
 ## 0.9.14 — 2026-11-05
 
 ### Added

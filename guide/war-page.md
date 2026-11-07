@@ -19,15 +19,19 @@ your script key.
 
 ## Sort your opponents
 
-Above the opponents' list, choose an order: **Torn's order**, **Status** (hittable first),
+Above the opponents' list, pick an order in the **Sort** list: **Torn's order**, **Status** (hittable first),
 **Out soonest** (who leaves hospital next), **Level** or **Fair fight**. Torn's own rows
 are moved, never copied, and **Torn's order** puts them back. Pick the default in the
 settings, under **Features**.
 
+If Torn War Stuff Enhanced is running and has marked the list, the companion leaves the
+sorting to it: there's no **Sort** list, and the rows stay as that script and Torn put them.
+
 ## Timers and destinations
 
 Beside each opponent's status, a countdown shows when they leave hospital or jail, and
-travellers show where they're flying (`→ Mexico`, `← Japan`). A wait of an hour or more
+travellers show where they're flying as a two-letter code (`→ MX`, `← JP`, `in UK`); hover or
+tap it for the full name. A wait of an hour or more
 shows its hours, like `2:11:34`. These come from your faction's war room on
 torn-tracker.com. The script never asks Torn about the other faction.
 
@@ -39,8 +43,8 @@ destination in a status cell, the companion adds nothing there, so each row has 
 Between the match and the war's start, the faction page of the faction you're about to
 fight shows a short strip: a one-line comparison of both sides (members, respect, average
 level, rank and recent form) and a link to the full pre-war brief on torn-tracker.com. Pro
-factions also see the brief's headline; for a Core faction, the full brief is a Pro
-feature. The strip never names any member.
+factions also see the brief's headline. A Core faction is told once that the full brief is a
+Pro feature; the link reads the same for both. The strip never names any member.
 
 ## Call dibs
 
@@ -48,7 +52,7 @@ Each opponent has a dibs button:
 
 - **Dibs**: nobody has called them. Press it to claim them for a few minutes.
 - **Mine 4:12**: your dibs, with the time left. Press to release them.
-- **Ares 2:40**: someone else in your faction has them.
+- **Taken 2:40**: someone else in your faction has them; hover the button to see who.
 
 Pressing the button tells torn-tracker.com, and your faction sees it at once on the site,
 in the bot and on their own war page. It does nothing in the game. Dibs refresh every 15
@@ -67,7 +71,8 @@ ago it was seen, for example **3h**, when it has no flags. The flags are:
 Hover a label, or tap it, for every flag with its reason, when it was seen and how many
 players saw it. A loadout older than 14 days is
 dimmed; **hidden** means the player asked for theirs to be hidden. A Core faction sees a
-one-line note instead. Switch it off in the settings, under **Features**.
+one-line note instead, on the first war page it opens only; the **×** at its end puts it away
+sooner. Switch it off in the settings, under **Features**.
 
 > **What it reads and sends.** It reads the opponents already on the page. It asks
 > torn-tracker.com for your faction's dibs, the war room's timers and, once per page view,

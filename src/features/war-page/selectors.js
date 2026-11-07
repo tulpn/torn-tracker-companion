@@ -26,3 +26,9 @@ export const STATUS = '.status';
  * War Stuff Enhanced marks it so and hides Torn's text). Our timer stays out of it (hq #535).
  */
 export const STATUS_TAKEN = '[data-twse-overridden="true"]';
+
+/**
+ * Torn War Stuff Enhanced is on the page: its own mark on the status cells. It sorts the
+ * same rows, so our Sort select stands aside (hq #557 B14). Read from the DOM only.
+ */
+export const TWSE = '[data-twse-overridden]';

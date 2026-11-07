@@ -19,11 +19,16 @@ keywords: torn bust, jail bust difficulty, bust score torn
 
 Torn's jail page doesn't say how hard a bust is. Beside each prisoner, the companion shows
 the community's rule of thumb: **level × (hours left + 3)**, the score TornTools uses. Lower
-is easier. It's green up to 100, red from 250, and amber in between; you can change both
-numbers in the settings, under **Features**. Hover the score to see how it was worked out.
+is easier. The badge names the band, then the score: **Easy 18** in green up to 100,
+**Hard 600** in red from 250, and **Medium** in amber in between; you can change both numbers
+in the settings, under **Features**. Hover the score to see how it was worked out. It's never
+shown as a percentage, because it isn't a chance of success.
 
 It's a rule of thumb, **not Torn's odds**: your own chance also depends on your skill and
 perks, which the page doesn't show.
+
+If **Bustr+** has already put its own score in a prisoner's row, the companion leaves that
+row alone, so you never see two scores.
 
 ## What it never does
 

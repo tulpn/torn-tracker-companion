@@ -28,12 +28,12 @@ much, the profit each, the margin, and the total for everything in that listing.
 
 The colour says how good the deal is:
 
-| Colour | Profit per item at least | or margin at least |
-|---|---|---|
-| Green | $50,000 | 100% |
-| Yellow | $10,000 | 50% |
-| Red | $1,000 | 20% |
-| Blue | $1 | 1% |
+| Tier | Colour | Profit per item at least | or margin at least |
+|---|---|---|---|
+| Best | green | $50,000 | 100% |
+| Good | yellow | $10,000 | 50% |
+| Fair | blue | $1,000 | 20% |
+| Small | grey | $1 | 1% |
 
 A listing at or above the shop's price gets nothing. The [sidebar block](sidebar.md) counts
 the listings on screen that are below a shop's price, in its **Below shop price** line.
@@ -44,7 +44,12 @@ to the shop is still your own trip to it.
 ## Get warned before you undersell
 
 On the Item Market's add-listing form and on your bazaar's add and manage pages, a price
-below what a shop pays shows a warning on its own line under the field as you type:
+below what a shop pays shows a short warning on its own line under the field as you type:
+
+> Shop pays $1,250 (+$310)
+
+Hover over it, or tap it on a phone, for the whole sentence: which shop, the difference for
+each, and the total for the quantity you're listing:
 
 > Below the shop price. Big Al's Gun Shop pays $1,250 each, $310 more than this (×12: $3,720).
 
@@ -62,7 +67,7 @@ In the [settings](settings-panel.md), under **Features**, **Shop price highlight
 - **Colour listings by**: profit per item in dollars, or the margin in percent;
 - the minimum for each colour, in either mode;
 - **Show the profit beside the price**;
-- **Add the listing's total**, the profit times how many are listed;
+- **Add the listing's total**, the profit times how many are listed (on a screen under 400 px wide it is left off the label and stays in the price's tooltip);
 - **Hide listings that are not below a shop price**, which leaves only the deals on screen.
 
 **Undersell warning** has its own switch. Both start on.

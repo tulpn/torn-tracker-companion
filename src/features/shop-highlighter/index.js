@@ -2,7 +2,7 @@
 //
 // On the Item Market, a listing priced below what a shop in Torn pays for the item gets a
 // coloured outline, a dot and its profit ("+12.5k") beside the price, and a tooltip with
-// the prices, the margin and the listing's total. The tier (green, yellow, red, blue) is
+// the prices, the margin and the listing's total. The tier (green, yellow, red, blue: the saved keys; drawn green, yellow, blue, grey) is
 // the profit per item, or the margin, against the minimums on the settings page. The
 // sidebar block counts the listings on screen that qualify. Highlight only: nothing is
 // bought, filled or pressed.
@@ -23,6 +23,8 @@ const ROW = 'data-ttc-shop';
 const HIDE = 'data-ttc-shop-hide';
 const DOT = 'data-ttc-shop-dot';
 const LABEL = 'data-ttc-shop-label';
+/** The listing's total, apart from the label so a narrow screen can leave it out (hq #557 B15). */
+const TOTAL = 'data-ttc-shop-total';
 /** What the companion's own nodes match: their changes never cause a rescan. */
 const OWN = "[class^='ttc-'], [class*=' ttc-'], [id^='ttc-']";
 
@@ -32,7 +34,8 @@ const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 
 const ABS = { green: 50_000, yellow: 10_000, red: 1_000, blue: 1 };
 const PCT = { green: 100, yellow: 50, red: 20, blue: 1 };
-const NAMES = { green: 'Green', yellow: 'Yellow', red: 'Red', blue: 'Blue' };
+// The names the player sees, best first; drawn green, yellow, blue and grey (hq #557 E35).
+const NAMES = { green: 'Best (green)', yellow: 'Good (yellow)', red: 'Fair (blue)', blue: 'Small (grey)' };
 
 const tierDefaults = Object.fromEntries(TIERS.flatMap((t) => [[tierKey('abs', t), ABS[t]], [tierKey('pct', t), PCT[t]]]));
 const tierOptions = Object.fromEntries(TIERS.flatMap((t) => [
@@ -53,6 +56,7 @@ function clearRow(row) {
     if (!node.hasAttribute(DOT)) continue;
     node.removeAttribute(DOT);
     node.removeAttribute(LABEL);
+    node.removeAttribute(TOTAL);
     node.removeAttribute('title');
   }
 }
@@ -68,10 +72,19 @@ export function tooltipFor({ name, price, entry, profit, margin, qty }) {
   return lines.join('\n');
 }
 
-/** The inline label: "+12.5k" or "+25%", with the listing's total when it is wanted. */
-export function labelFor({ profit, margin, qty }, settings) {
-  const each = settings.mode === 'pct' ? `+${Math.round(margin)}%` : `+${short(profit)}`;
-  return settings.showTotal && qty > 1 ? `${each} (${short(profit * qty)})` : each;
+/** The inline label: "+12.5k" or "+25%". */
+export function eachFor({ profit, margin }, settings) {
+  return settings.mode === 'pct' ? `+${Math.round(margin)}%` : `+${short(profit)}`;
+}
+
+/** The listing's total after the label, " (50k)", when it is wanted; else ''. */
+export function totalFor({ profit, qty }, settings) {
+  return settings.showTotal && qty > 1 ? ` (${short(profit * qty)})` : '';
+}
+
+/** The whole inline label as a wide screen shows it: "+12.5k (50k)". */
+export function labelFor(entry, settings) {
+  return `${eachFor(entry, settings)}${totalFor(entry, settings)}`;
 }
 
 /** Judges one listing row and marks it; returns whether it is below the shop's price. */
@@ -86,7 +99,11 @@ function decorate(row, img, id, { price, el: priceEl }, qty, entry, settings) {
   priceEl.setAttribute(DOT, tier);
   const name = img.getAttribute('alt') || `Item ${id}`;
   priceEl.setAttribute('title', tooltipFor({ name, price, entry, profit, margin, qty: settings.showTotal ? qty : 1 }));
-  if (settings.inlineLabel) priceEl.setAttribute(LABEL, labelFor({ profit, margin, qty }, settings));
+  if (settings.inlineLabel) {
+    priceEl.setAttribute(LABEL, eachFor({ profit, margin }, settings));
+    const total = totalFor({ profit, qty }, settings);
+    if (total) priceEl.setAttribute(TOTAL, total);
+  }
   return true;
 }
 

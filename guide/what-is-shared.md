@@ -1,7 +1,7 @@
 ---
 title: Choose what to share
 seo_title: Choose what the Torn Tracker Companion shares
-summary: Every kind of sharing starts off; switch on the ones you want, then press Save.
+summary: Every kind of sharing starts off; switch on the ones you want, and each switch saves at once.
 section: Guides
 group: settings
 order: 120
@@ -18,15 +18,18 @@ keywords: companion sharing, what does the torn userscript send, crowd data torn
 **Core:** free for everyone. Seeing the data never needs you to share any.
 
 > **What it sends.** Only what Torn showed you on a page you opened yourself, with the
-> time you saw it, to torn-tracker.com with your script key. Nothing is ever sent from
-> Torn's company or faction application pages.
+> time you saw it, to torn-tracker.com with your script key. Nothing from Torn's company
+> or faction application pages is ever shared. There, Applicant badges sends torn-tracker.com
+> only the applicants' player ids and which list it is, to show their job-board cards.
 
 ## Switch on what you want
 
 1. Open the settings (the **Torn Tracker** link in the sidebar) and go to **Sharing**.
-2. Read the notice at the top, and the line beside each kind saying what it sends.
+2. Each kind has one plain line on what it sends. Open **Exactly what is sent** under it for
+   the full wording, and **How sharing works** at the top for the notice.
 3. Switch on the kinds you're happy to share.
-4. Press **Save**. Until you do, nothing is sent; the line under the switches says so.
+4. Each switch saves as you tick it, and a ticked kind is shared from then on: ticking it is
+   your agreement to its full wording. The line under the switches says whether sharing is on.
 
 Every kind is explained in [Sharing kinds, one by one](sharing-kinds.md).
 
@@ -52,7 +55,7 @@ reported their own loadout.**
 
 ## Changing your mind
 
-Switch a kind off at any time and press **Save**: it stops being shared from then on. If
+Switch a kind off at any time: it stops being shared from then on. If
 the explanation of what a kind sends changes in an update, sharing pauses until you've
 read the new one and pressed **Share the kinds I picked**, the button that then appears
 under the switches.
