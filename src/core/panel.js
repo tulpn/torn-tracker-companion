@@ -416,6 +416,8 @@ export function mountPanel({
   let active = false;
   let query = '';
   let armedForget = false;
+  /** Reset asks for a second tap, as Forget me does (hq #557 41). */
+  let armedReset = false;
   /** The settings as the page shows them; each change is saved from here at once. */
   let draft = null;
   /** Saves run one after another, in the order the changes were made. */
@@ -509,7 +511,7 @@ export function mountPanel({
       if (items.length === 0) continue;
       rows.push(h('h4', null, title), ...items.map(featureCard));
     }
-    if (!query) rows.push(h('div', { class: `${P}-row` }, h('button', { type: 'button', 'data-act': 'reset' }, 'Reset settings to defaults')));
+    if (!query) rows.push(h('div', { class: `${P}-row` }, h('button', { type: 'button', class: `${P}-danger`, 'data-act': 'reset' }, armedReset ? 'Really reset every setting?' : 'Reset settings to defaults')));
     return rows;
   }
 
@@ -1061,6 +1063,7 @@ export function mountPanel({
     if (active) tours?.stop();
     active = false;
     armedForget = false;
+    armedReset = false;
     draft = null;
     transferText = '';
   }
@@ -1095,6 +1098,7 @@ export function mountPanel({
       return;
     }
     if (act !== 'forget') armedForget = false;
+    if (act !== 'reset') armedReset = false;
 
     if (act === 'consent') {
       await save({ ...draft.settings, sharingConsent: disclosure.version });
@@ -1112,6 +1116,12 @@ export function mountPanel({
       const names = registry.filter((d) => d.id in picked).map((d) => d.title).join(', ');
       await save({ ...draft.settings, featureData: { ...draft.settings.featureData, ...picked } }, `Imported: ${names}.`);
     } else if (act === 'reset') {
+      if (!armedReset) {
+        armedReset = true;
+        render('This puts every setting back to its default. Your keys, notes and templates stay.');
+        return;
+      }
+      armedReset = false;
       await onReset();
       freshDraft();
       render('Back to defaults.', 'good');
@@ -1142,6 +1152,7 @@ export function mountPanel({
     if (!active) {
       freshDraft();
       armedForget = false;
+      armedReset = false;
       active = true;
     }
     query = '';
