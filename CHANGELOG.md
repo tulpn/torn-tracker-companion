@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The achievement toast and the chain watch notice no longer cover Torn's chat bar: both sit
+  in one stack above it, and never on top of each other (hq #557 A8).
 - A badge's detail, opened with a tap, now stays on a phone's screen: near the right edge
   it opens to the left (hq #557 A9).
 - Text the companion adds to Torn and its own pages is now 12 px at least, and its buttons

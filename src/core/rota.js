@@ -16,6 +16,7 @@
 // Times are TCT (UTC), with the member's local time beside them (CHW-001).
 
 import { el } from './dom.js';
+import { showToast } from './toasts.js';
 import { WATCH_ROLES } from './site.js';
 import { SITE } from '../hosts.js';
 
@@ -330,7 +331,7 @@ export function mountSlotNotice({ doc, watch, timers = doc.defaultView || global
     node = h('div', { id: NOTICE_ID, 'data-ttc-own': '', role: 'status' },
       h('span', null, `Your chain watch (${ROLE_NAMES[role]}) starts now`), on, close);
     addStyle(doc);
-    (doc.body || doc.documentElement).append(node);
+    showToast(doc, node);
   }
 
   // A timer that only shows a notice: it asks nothing.
@@ -384,8 +385,7 @@ export function mountSlotNotice({ doc, watch, timers = doc.defaultView || global
 
 const NOTICE_STYLE = `
   #${NOTICE_ID} {
-    position: fixed; z-index: 2147481000; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: calc(100vw - 32px);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 12px;
+    box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 12px;
     background: #111827; color: #ffffff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 600;
     box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
   }

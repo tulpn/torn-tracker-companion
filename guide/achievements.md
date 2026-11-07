@@ -17,8 +17,8 @@ keywords: torn tracker achievements, torn achievement toast, torn tracker unlock
 
 ## What you see
 
-When torn-tracker.com says you've earned an achievement, a small toast shows in the corner
-of the Torn page you're on (at the bottom on a phone): **Achievement unlocked**, its name,
+When torn-tracker.com says you've earned an achievement, a small toast shows in the bottom
+corner of the Torn page you're on, just above Torn's chat bar (across the bottom on a phone): **Achievement unlocked**, its name,
 its tier if it has one, and one sentence on what you did. A hidden achievement says
 **Hidden achievement found**. If you earned several at once, it names the first and says
 how many more.

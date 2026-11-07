@@ -90,9 +90,9 @@ Your faction's leaders manage the rota on torn-tracker.com.
 
 ## When your slot starts
 
-When one of your slots starts and watch mode is off, a small notice at the bottom of the
-page says "Your chain watch (Lead) starts now", with a **Turn on watch mode** button and a
-✕. It never turns watch mode on by itself, and each slot is announced once. With pause
+When one of your slots starts and watch mode is off, a small notice in the bottom corner
+of the page, above Torn's chat bar and stacked with any achievement toast, says "Your
+chain watch (Lead) starts now", with a **Turn on watch mode** button and a ✕. It never turns watch mode on by itself, and each slot is announced once. With pause
 all on, or companion toasts off, in your notification settings on torn-tracker.com, it
 stays quiet.
 
