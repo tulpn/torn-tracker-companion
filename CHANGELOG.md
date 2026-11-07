@@ -9,8 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.16 — 2026-11-07
+
 ### Changed
 
+- Settings → Keys says the Torn API key field, when a feature needs it, comes with Torn's terms
+  table as one row, the same as on torn-tracker.com (hq #645, D-224).
 - The torn-tracker raven replaces the letters "TT" everywhere: on the sidebar entry, the
   settings page and the dashboard, the same mark as the sidebar block's (hq #675).
 - The companion's colours follow torn-tracker.com's current theme: violet buttons, switches and
@@ -19,21 +23,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
-- The fair-fight step of the tour named the old colours. It now says green is the best respect,
-  grey an easy hit, and amber and red harder ones (hq #675).
-
-## 0.9.16 — 2026-11-07
-
-### Fixed
-
 - The pre-war brief and your mugs strip no longer push the page down when they arrive. Where
   one showed on your last visit to that faction or player, its place shows "Loading…" at once
   and is filled in place; elsewhere nothing is added until the answer comes (hq #557 A6).
-
-### Changed
-
-- Settings → Keys says the Torn API key field, when a feature needs it, comes with Torn's terms
-  table as one row, the same as on torn-tracker.com (hq #645, D-224).
+- The fair-fight step of the tour named the old colours. It now says green is the best respect,
+  grey an easy hit, and amber and red harder ones (hq #675).
 
 ## 0.9.15 — 2026-11-06
 
