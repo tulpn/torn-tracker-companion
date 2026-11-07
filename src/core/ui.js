@@ -68,10 +68,12 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   ${COMPACT}[data-detail] { cursor: help; }
   ${COMPACT}[data-open="true"]::after {
     content: attr(data-detail); position: absolute; top: calc(100% + 4px); left: 0; z-index: 10;
-    width: max-content; max-width: 220px; padding: 6px 8px; white-space: normal; text-align: left;
+    width: max-content; max-width: min(220px, 90vw); padding: 6px 8px; white-space: normal; text-align: left;
     font: 400 12px/1.4 var(--tt-font-sans); border: 1px solid var(--border); border-radius: var(--radius);
     background: var(--popover); color: var(--popover-foreground); box-shadow: var(--tt-shadow-md);
   }
+  /* Near the right edge the detail opens leftwards, so it stays on a 360 px screen (hq issue 557, A9). */
+  ${COMPACT}[data-open="true"][data-flip="end"]::after { left: auto; right: 0; }
   /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
   .${P}-ui-badge[data-pin="under"] {
@@ -347,9 +349,28 @@ export function tapDetail(node, detail) {
   node.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    node.dataset.open = String(node.dataset.open !== 'true');
+    const open = node.dataset.open !== 'true';
+    if (open) flipNearEdge(node);
+    node.dataset.open = String(open);
   });
   return node;
+}
+
+/** The widest a detail opens, as in the CSS above. */
+const DETAIL_WIDTH = 220;
+
+/**
+ * Opens a badge's detail leftwards when it would run past the right edge of the window
+ * (hq #557 A9). Read once, on the tap.
+ * @param {Element} node
+ */
+export function flipNearEdge(node) {
+  const view = node.ownerDocument?.defaultView;
+  const width = view?.innerWidth || node.ownerDocument?.documentElement?.clientWidth || 0;
+  const { left } = node.getBoundingClientRect();
+  const room = width - left;
+  if (width > 0 && room < Math.min(DETAIL_WIDTH, width * 0.9)) node.dataset.flip = 'end';
+  else delete node.dataset.flip;
 }
 
 /** Changes a badge's tone; `scale` sets a data colour (with dark or light ink) instead. */
