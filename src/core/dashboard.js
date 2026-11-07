@@ -22,7 +22,7 @@ export const DASH_ID = `${P}-dash`;
 const MONEY_DAYS = 7;
 
 const CARD_TITLE = Object.freeze({
-  alerts: 'Alerts', war: 'Ranked war', chain_watch: 'Chain watch', chain: 'Chain', oc: 'Organized crime',
+  alerts: 'Alerts', war: 'Ranked war', chain_watch: 'Watch rota', chain: 'Chain', oc: 'Organized crime',
   awards: 'Nearest awards', education: 'Education', gym: 'Next gym', goals: 'Savings goals',
   achievements: 'Next achievements', guide: 'Getting started', money: 'Money, last 7 days',
 });

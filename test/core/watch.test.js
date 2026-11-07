@@ -425,6 +425,13 @@ describe('CHW-025, CHW-027 size, place and colours, kept on this device', () => 
     assert.equal(t.watch.settings().colours.ok, '#123456');
   });
 
+  test('hq #557 F24 the box is named the Watch timer, not "Chain watch"', async () => {
+    const t = await mount({ html: BAR('1:30') });
+    assert.equal(t.box().getAttribute('aria-label'), 'Watch timer');
+    assert.match(t.box().querySelector('.ttc-watch-handle').textContent, /Watch timer/);
+    assert.doesNotMatch(t.box().textContent, /Chain watch/);
+  });
+
   test('arrow keys on the handle move the box, and it stays on screen', async () => {
     const t = await mount({ html: BAR('1:30') });
     const handle = t.box().querySelector('.ttc-watch-handle');

@@ -82,7 +82,7 @@ of sections and a search bar at the top. Nothing is added to Torn's header.
   open and the tab is visible, it asks torn-tracker.com once a minute for those lines,
   with your script key; nothing else is sent. Its "Below shop price" line is counted on
   the Item Market page itself and asks nothing.
-- **Chain watch**: watch mode, a large chain timer over the Torn page you're on, green,
+- **Chain watch**: watch mode, the Watch timer, a large chain timer over the Torn page you're on, green,
   orange or red by how soon the chain needs a hit, with its size, colours, a preview and
   an optional beep. It reads Torn's chain bar when the page shows it. When it doesn't,
   and only while watch mode is on and the tab is visible, it asks torn-tracker.com for
