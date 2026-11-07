@@ -136,10 +136,14 @@ const STYLE = `
   #${P}-panel .${P}-guide { border-left: 4px solid var(--primary); }
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head { min-width: 0; }
-  #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
-    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
-    background: var(--ttc-accent-soft); color: var(--ttc-muted);
+  /* One "needs a key" badge, a link to Keys (hq issue 557 E37). */
+  #${P}-panel a.${P}-needs {
+    display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; text-decoration: none;
+    background: var(--ttc-accent-soft); color: var(--ttc-text); border: 1px solid transparent;
   }
+  #${P}-panel a.${P}-needs:hover { border-color: var(--ttc-accent); }
+  #${P}-panel a.${P}-needs:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   #${P}-panel nav { grid-area: nav; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
   #${P}-panel nav a {
     display: flex; align-items: center; min-height: 44px; margin: 2px 0; padding: 0 12px; border-radius: 8px;
@@ -460,6 +464,12 @@ export function mountPanel({
     return h('label', { class: `${P}-field ${P}-option` }, h('span', null, option.label), input);
   }
 
+  /** The one "needs a key" badge (hq #557 E37): it says which key, and leads to Keys. */
+  function needsKey(kind) {
+    const text = kind === 'api' ? 'Needs Torn API key' : 'Needs script key';
+    return h('a', { href: sectionHref('keys'), class: `${P}-needs`, 'data-needs': kind, title: `${text}: add it under Keys` }, text);
+  }
+
   function featureCard(d) {
     const keys = draft.keys;
     const card = h('div', { class: `${P}-card`, 'data-card': d.id },
@@ -470,9 +480,12 @@ export function mountPanel({
         }),
         d.title),
       h('div', { class: `${P}-muted ${P}-option` }, d.summary, ' ', link(`${GUIDE}${d.guide}/`, 'Learn more')));
-    if (d.needs.scriptKey && !keys.script) card.dataset.needsKey = 'true';
-    if (d.needs.apiKey && !keys.api && !keys.usePdaKey) {
-      card.append(h('div', { class: `${P}-warn ${P}-option` }, 'Needs a Torn API key (Keys).'));
+    const missing = [];
+    if (d.needs.scriptKey && !keys.script) missing.push(needsKey('script'));
+    if (d.needs.apiKey && !keys.api && !keys.usePdaKey) missing.push(needsKey('api'));
+    if (missing.length) {
+      card.dataset.needsKey = 'true';
+      card.append(h('div', { class: `${P}-row ${P}-option` }, ...missing));
     }
     for (const [key, option] of Object.entries(d.options || {})) card.append(optionInput(d, key, option));
     return card;

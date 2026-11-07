@@ -179,6 +179,21 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.equal(t.$('.ttc-keyhint a').getAttribute('href'), '#/torn-tracker/keys');
   });
 
+  test('hq #557 E37: one badge per missing key, saying which, and leading to Keys', () => {
+    const both = descriptor({ needs: { apiKey: true, scriptKey: true } });
+    const t = mount({ registry: createRegistry([both]) });
+    t.open();
+    const badges = [...t.panel.panel.querySelectorAll('[data-card="war-enhancer"] a.ttc-needs')];
+    assert.deepEqual(badges.map((a) => a.textContent), ['Needs script key', 'Needs Torn API key']);
+    for (const a of badges) assert.equal(a.getAttribute('href'), '#/torn-tracker/keys');
+    assert.doesNotMatch(t.text(), /Needs a Torn API key \(Keys\)/);
+    assert.equal(t.$('[data-card="war-enhancer"] .ttc-warn'), null);
+    const keyed = mount({ registry: createRegistry([both]), keys: { ...emptyKeys(), script: KEY, api: 'A'.repeat(16) } });
+    keyed.open();
+    assert.equal(keyed.$('a.ttc-needs'), null);
+    assert.equal(keyed.$('[data-card="war-enhancer"]').dataset.needsKey, undefined);
+  });
+
   test('with a script key: no banner', () => {
     const t = mount({ keys: { ...emptyKeys(), script: KEY } });
     t.open();
