@@ -24,6 +24,10 @@ over the badge, or tap it on a phone, to read what the figure means; tap again t
 The weights come from **tornprobability.com**, through torn-tracker.com, and the page says
 so under the crimes. The companion never contacts tornprobability.com itself.
 
+If **TornTools** or **OC2.0 Helper** already shows the weights on a crime, the companion
+leaves its own off that crime; the same goes for OC2.0 Helper's success figure. It only
+looks at what they put on the page, never at their settings.
+
 ## Success estimates
 
 Each crime your faction is recruiting or planning shows torn-tracker.com's success

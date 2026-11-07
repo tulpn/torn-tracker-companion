@@ -21,7 +21,8 @@ In Torn's welcome box at the top of the gym, under Torn's own lines, the compani
 one line about the gym you're working towards, for example **Next gym (Legs, Bums and
 Tums): 84 %, about 2,896 E to go (estimate)**. It's an estimate because the game counts
 gym experience, not energy. Nothing is added on or under the gym tiles. If the welcome box
-isn't on the page, the line sits just above the gyms.
+isn't on the page, the line sits just above the gyms. If **TornTools** already shows the
+energy to the next gym in that box, the companion leaves its line out.
 
 ## What makes it work
 

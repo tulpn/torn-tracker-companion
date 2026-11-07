@@ -19,7 +19,8 @@ outcomes need your script key.
 ## Morale
 
 Torn doesn't show your crime morale. The companion reads it from what the crimes page
-loaded and shows it in the header: **Morale 87%**.
+loaded and shows it in the header: **Morale 87%**. If the **Crime Morale** script already
+shows your morale there, the companion leaves it out.
 
 ## Value per nerve
 

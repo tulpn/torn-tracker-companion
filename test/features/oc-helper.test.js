@@ -178,3 +178,38 @@ describe('hq #522 the figures are compact badges beside the slot', () => {
     assert.equal(n.dataset.open, 'true');
   });
 });
+
+describe('hq #557 F40 another script that shows the weights', () => {
+  test("TornTools' weights on a crime: ours come off it, with the credit; the estimate stays", async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    assert.equal(labels(r, 'weight').length, 3);
+    for (const card of r.doc.querySelectorAll('[data-oc-id]')) {
+      // What TornTools' oc-weights does: marks the card, then adds a line under each slot.
+      card.dataset.ttWeights = 'true';
+      card.append(r.doc.createElement('div'));
+    }
+    await wait();
+    assert.deepEqual(labels(r, 'weight'), []);
+    assert.equal(r.doc.querySelector('.ttc-oc-credit'), null);
+    assert.deepEqual(labels(r, 'success'), ['~72.5%']);
+  });
+});
+
+describe('hq #557 F40 OC2.0 Helper on the page', () => {
+  test('its weight and success boxes on a crime: ours come off that crime only', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    const card = r.doc.querySelector('[data-oc-id="501"]');
+    // What OC2.0 Helper (GPLv3) appends: a weight box in a slot, a success box in the card.
+    for (const cls of ['oc-weight-box', 'oc-success-box']) {
+      const box = r.doc.createElement('div');
+      box.className = cls;
+      card.append(box);
+    }
+    await wait();
+    assert.equal(card.querySelector('.ttc-oc[data-kind="weight"], .ttc-oc[data-kind="success"]'), null);
+    assert.deepEqual(labels(r, 'weight'), ['34%'], 'the other crime keeps its weight');
+    assert.ok(r.doc.querySelector('.ttc-oc-credit'), 'and the credit with it');
+  });
+});

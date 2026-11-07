@@ -11,6 +11,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- No figure twice: where another script already shows the same thing, the companion leaves
+  its own out. That covers OC role weights (TornTools, OC2.0 Helper), the OC success figure
+  (OC2.0 Helper), crime morale (Crime Morale), the jail score (Bustr+) and the energy to the
+  next gym (TornTools). They are found only by what they put on the page (hq #557 F40).
 - The OC role badges open from the keyboard too: Tab to one, then Enter or Space opens its
   detail and Escape closes it. The key never reaches Torn's slot button (hq #557 F39).
 - On a phone, the settings page's "Dashboard · turn on" link no longer squeezes the title under

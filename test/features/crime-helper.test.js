@@ -147,3 +147,22 @@ describe('hq #557 A7 compact badges in the fixed crime rows', () => {
     assert.deepEqual(r.violations, []);
   });
 });
+
+describe('hq #557 F40 another script that shows the morale', () => {
+  test('with Crime Morale on the page, our morale badge stays off; the targets keep theirs', async () => {
+    const r = run();
+    r.respond(RESPONSE, json('crimes-burglary.json'));
+    await wait();
+    assert.equal(badges(r, 'morale').length, 1);
+    // What Crime Morale (MIT) appends to the crimes header.
+    const theirs = r.doc.createElement('span');
+    const value = r.doc.createElement('span');
+    value.id = 'crime-morale-value';
+    value.textContent = '87';
+    theirs.append('Morale: ', value, '%');
+    r.doc.querySelector('.crimes-app-header').append(theirs);
+    await wait();
+    assert.equal(badges(r, 'morale').length, 0);
+    assert.equal(badges(r, 'left').length, 2);
+  });
+});

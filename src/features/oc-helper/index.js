@@ -21,6 +21,7 @@
 import { el, settler } from '../../core/dom.js';
 import { CARD, CARD_ID, NAME, SLOT, SLOT_HEADER, SLOT_TITLE } from './selectors.js';
 import { badge, note, tapDetail } from '../../core/ui.js';
+import { shownByOther } from '../../core/neighbours.js';
 
 const MARK = 'ttc-oc';
 const SETTLE_MS = 250;
@@ -105,8 +106,15 @@ export default {
       const id = Number(card.dataset[CARD_ID]);
       const success = answer.crimes.get(id);
       const name = card.querySelector(NAME);
-      if (name?.parentElement && typeof success === 'number') {
+      // OC2.0 Helper already shows its own success figure on this crime (hq #557 F40).
+      if (shownByOther(card, 'ocSuccess')) card.querySelector(`.${MARK}[data-kind="success"]`)?.remove();
+      else if (name?.parentElement && typeof success === 'number') {
         label(name.parentElement, `~${pct(success)}`, "torn-tracker.com's success estimate for this crime", 'success', successTone(success));
+      }
+      // TornTools or OC2.0 Helper already shows the weights on this crime: ours stay off it (hq #557 F40).
+      if (shownByOther(card, 'ocWeights')) {
+        for (const node of card.querySelectorAll(`.${MARK}[data-kind="weight"]`)) node.remove();
+        return;
       }
       const weights = new Map((answer.roles || []).map((r) => [roleKey(r.label), r.weight]));
       for (const slot of card.querySelectorAll(SLOT)) {
@@ -129,6 +137,8 @@ export default {
         if (!alive()) return;
         if (card.isConnected) paint(card, answer);
       }
+      // The credit goes with the last weight of ours.
+      if (!doc.querySelector(`.${MARK}[data-kind="weight"]`)) doc.querySelector(`.${CREDIT}`)?.remove();
     }
 
     function later() {

@@ -15,6 +15,7 @@
 import { createGate, isVisible } from '../../core/capture.js';
 import { el, settler } from '../../core/dom.js';
 import { badge, setTone } from '../../core/ui.js';
+import { shownByOther } from '../../core/neighbours.js';
 
 const MARK = 'ttc-bust';
 export const ROW = '.users-list > li, ul.user-info-list-wrap > li';
@@ -70,7 +71,7 @@ export default {
   },
   shares: ['jail_difficulty'],
   needs: { apiKey: false, scriptKey: false },
-  credits: ['TornTools (GPLv3)'],
+  credits: ['TornTools (GPLv3)', 'Bustr+ (MIT)'],
 
   start(ctx) {
     const { doc } = ctx;
@@ -92,17 +93,22 @@ export default {
         }
         const value = score(level, hours);
         const band = value <= easy ? 'easy' : value >= hard ? 'hard' : 'medium';
-        if (!node) {
-          node = badge(doc, { cls: MARK });
-          const spot = row.querySelector(NAME) || row.querySelector('.info-wrap');
-          if (spot?.matches?.(NAME)) spot.after(node);
-          else (spot || row).append(node);
+        // Bustr+ already scores this row: ours stays off it, the sharing doesn't change (hq #557 F40).
+        if (shownByOther(row, 'bustScore')) {
+          node?.remove();
+        } else {
+          if (!node) {
+            node = badge(doc, { cls: MARK });
+            const spot = row.querySelector(NAME) || row.querySelector('.info-wrap');
+            if (spot?.matches?.(NAME)) spot.after(node);
+            else (spot || row).append(node);
+          }
+          const text = `${value}`;
+          if (node.textContent !== text) node.textContent = text;
+          node.dataset.band = band;
+          setTone(node, { easy: 'good', medium: 'warn', hard: 'bad' }[band]);
+          node.title = `Rule of thumb, not Torn's odds: level ${level} × (${hours.toFixed(1)} hours left + 3) = ${value}. Lower is easier.`;
         }
-        const text = `${value}`;
-        if (node.textContent !== text) node.textContent = text;
-        node.dataset.band = band;
-        setTone(node, { easy: 'good', medium: 'warn', hard: 'bad' }[band]);
-        node.title = `Rule of thumb, not Torn's odds: level ${level} × (${hours.toFixed(1)} hours left + 3) = ${value}. Lower is easier.`;
 
         // Shared only with its switch on; never who: the row's key stays here.
         if (!isVisible(doc)) continue;
