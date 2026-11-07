@@ -23,6 +23,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Changed
 
+- The Sharing section is shorter: each kind shows one plain line on what it sends, and its
+  full wording sits under **Exactly what is sent**; the notice at the top folds under **How
+  sharing works**. The full wording is unchanged, and it is still what ticking a kind agrees
+  to (hq #557 F13).
 - The two chain watch pieces now have their own names: the dashboard card is the **Watch
   rota**, and the box you drag around a page is the **Watch timer**. The settings section
   keeps the name Chain watch, since it covers both (hq #557 F24).

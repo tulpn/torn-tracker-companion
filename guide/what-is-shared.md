@@ -25,10 +25,11 @@ keywords: companion sharing, what does the torn userscript send, crowd data torn
 ## Switch on what you want
 
 1. Open the settings (the **Torn Tracker** link in the sidebar) and go to **Sharing**.
-2. Read the notice at the top, and the line beside each kind saying what it sends.
+2. Each kind has one plain line on what it sends. Open **Exactly what is sent** under it for
+   the full wording, and **How sharing works** at the top for the notice.
 3. Switch on the kinds you're happy to share.
 4. Each switch saves as you tick it, and a ticked kind is shared from then on: ticking it is
-   your agreement to its line. The line under the switches says whether sharing is on.
+   your agreement to its full wording. The line under the switches says whether sharing is on.
 
 Every kind is explained in [Sharing kinds, one by one](sharing-kinds.md).
 

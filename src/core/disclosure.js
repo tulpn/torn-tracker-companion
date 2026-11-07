@@ -91,6 +91,25 @@ export const DISCLOSURE = Object.freeze({
     ].join(' '),
   }),
   /**
+   * The one plain line shown first, above the notice and on each card (hq #557 F13). The full
+   * wording above stays one tap away under "How sharing works" and "Exactly what is sent", and
+   * is what a player agrees to. A short line only points at it: it adds no fact the full line
+   * lacks, so `version` stays when only a short line changes.
+   */
+  firstRunShort: 'Every kind is off until you tick it. Each sends torn-tracker.com only what its full wording says, '
+    + 'and the site publishes the combined result openly.',
+  short: Object.freeze({
+    jail_difficulty: "Prisoners' level and time left, as bands, never who. Not kept or published yet.",
+    item_market_snapshot: 'Prices and quantities of listings the site asks for, never who sells. Kept 7 days.',
+    gym_progress: 'Your gym and how far in you are. Only for you, never published; kept 30 days.',
+    gym_train: 'Each train: the gym, the stat and the gain. Only for you, never published; kept 30 days.',
+    crime_outcome: 'Your crime results and what you got. Kept 30 days; only totals are published, never by whom.',
+    auction_listing: "Auction listings you see, with the seller's id. Kept 90 days; price history is published.",
+    bazaar_listing: "Another player's bazaar items and prices. Kept 7 days; their latest listings are published.",
+    foreign_stock: 'Abroad: a shop\'s stock and prices. Kept 30 days with who sent it; published without names.',
+    loadout: "The other player's weapons and armour in an attack. Published openly; they can see you reported it.",
+  }),
+  /**
    * Torn's five-column terms table, shown above the Torn API key field:
    * { dataStorage, dataSharing, purposeOfUse, keyStorageSharing, keyAccessLevel }
    * No feature takes a Torn API key yet. The table comes with the first one, stating the
