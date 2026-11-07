@@ -37,6 +37,7 @@ function mount({
   windows.push(window);
   if (pda) window.PDA_httpGet = () => {};
   const saves = [];
+  let resets = 0;
   let current = settings;
   let currentKeys = keys;
   // The page lives in a Shadow DOM host, as core/page.js mounts it.
@@ -57,7 +58,7 @@ function mount({
       currentKeys = k;
       return true;
     },
-    onReset: async () => {},
+    onReset: async () => { resets += 1; },
     onForget: async () => true,
     disclosure,
     credits,
@@ -73,7 +74,7 @@ function mount({
   };
   // What the router does: arriving on #/torn-tracker, or on #/torn-tracker/<tab>.
   const open = (tab) => panel.open(tab ?? '');
-  return { panel, root, window, saves, $, click, change, open, text: () => panel.panel.textContent };
+  return { panel, root, window, saves, $, click, change, open, resets: () => resets, text: () => panel.panel.textContent };
 }
 
 describe('CMP-107 the settings page has a section for each job', () => {
@@ -622,6 +623,39 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.match(t.text(), /stored only on this device/);
     t.click(t.$('button[data-act="forget"]'));
     assert.equal(t.$('button[data-act="forget"]').textContent, 'Really forget everything?');
+  });
+
+  test('hq #557 41 Reset settings asks for a second tap, as Forget me does', async () => {
+    const t = mount();
+    t.open('features');
+    const reset = () => t.$('button[data-act="reset"]');
+    assert.equal(reset().textContent, 'Reset settings to defaults');
+    assert.ok(reset().classList.contains('ttc-danger'));
+    t.click(reset());
+    await settle();
+    assert.equal(t.resets(), 0, 'one tap resets nothing');
+    assert.equal(reset().textContent, 'Really reset every setting?');
+    assert.match(t.text(), /Your keys, notes and templates stay/);
+    t.click(reset());
+    await settle();
+    assert.equal(t.resets(), 1);
+    assert.equal(reset().textContent, 'Reset settings to defaults');
+    assert.match(t.text(), /Back to defaults/);
+  });
+
+  test('hq #557 41 another button in between disarms the reset', async () => {
+    const t = mount();
+    t.open('features');
+    t.click(t.$('button[data-act="reset"]'));
+    await settle();
+    t.open('data');
+    t.click(t.$('button[data-act="forget"]'));
+    await settle();
+    t.open('features');
+    assert.equal(t.$('button[data-act="reset"]').textContent, 'Reset settings to defaults');
+    t.click(t.$('button[data-act="reset"]'));
+    await settle();
+    assert.equal(t.resets(), 0, 'the first tap after the disarm only arms it again');
   });
 
   test('notes and templates export as text and import back, each kind checked by its feature', async () => {
