@@ -25,6 +25,9 @@ numbers in the settings, under **Features**. Hover the score to see how it was w
 It's a rule of thumb, **not Torn's odds**: your own chance also depends on your skill and
 perks, which the page doesn't show.
 
+If **Bustr+** has already put its own score in a prisoner's row, the companion leaves that
+row alone, so you never see two scores.
+
 ## What it never does
 
 It never presses **Bust** or **Bail**, and never changes a bust link to skip Torn's

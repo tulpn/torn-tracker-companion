@@ -115,3 +115,19 @@ describe('CMP-303 on the jail page', () => {
     assert.equal(badge(r, 900003).dataset.band, 'hard');
   });
 });
+
+describe('hq #557 F40 another script that scores the rows', () => {
+  test('a row Bustr+ has scored loses our score; the others keep it, and sharing goes on', async () => {
+    const r = run();
+    await wait();
+    assert.ok(badge(r, 900002));
+    // What Bustr+ (MIT) adds to a row's info-wrap.
+    const theirs = r.doc.createElement('span');
+    theirs.className = 'hardness reason bustr-plus-hardness-wrap';
+    r.doc.querySelector('a[href$="XID=900002"]').closest('li').querySelector('.info-wrap').append(theirs);
+    await wait();
+    assert.equal(badge(r, 900002), null);
+    assert.ok(badge(r, 900001));
+    assert.ok(badge(r, 900003));
+  });
+});

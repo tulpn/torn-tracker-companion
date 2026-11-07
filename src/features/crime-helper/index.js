@@ -17,6 +17,7 @@ import {
   BURGLARY_ROW, BURGLARY_TITLE, HEADER, OPTION_ROW, OPTION_TITLE, isCrimesResponse,
 } from './selectors.js';
 import { badge as uiBadge, setTone, tapDetail } from '../../core/ui.js';
+import { shownByOther } from '../../core/neighbours.js';
 
 const MARK = 'ttc-crime';
 const HOUR = 3_600_000;
@@ -136,7 +137,9 @@ export default {
     function paint() {
       paintValues();
       const header = doc.querySelector(HEADER);
-      if (header && s.morale !== null) {
+      // Crime Morale already shows it: ours stays off (hq #557 F40).
+      if (shownByOther(doc, 'crimeMorale')) header?.querySelector(`:scope > .${MARK}[data-kind="morale"]`)?.remove();
+      else if (header && s.morale !== null) {
         badge(header, 'morale', `Morale ${s.morale}%`, 'Your crime morale, from the page (100 minus demoralisation)',
           { 'data-tour': 'crime-morale' }, s.morale >= 80 ? 'good' : s.morale >= 50 ? 'warn' : 'bad');
       }
