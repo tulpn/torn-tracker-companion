@@ -812,7 +812,8 @@ export function mountPanel({
           h('li', null, 'which tours you\u2019ve seen'),
           h('li', null, 'your featured achievements, and when it last asked for new ones'),
           h('li', null, 'whether watch mode is on, and its size, place, colours and beep'),
-          h('li', null, 'answers from torn-tracker.com, kept a short while so pages ask less'))),
+          h('li', null, 'answers from torn-tracker.com, kept a short while so pages ask less'),
+          h('li', null, 'which faction page last showed the war brief, and the last 50 players whose page showed your mugs, so those strips keep their place while they load'))),
       ...(kept.length ? [
         h('h4', null, 'Export and import'),
         h('div', { class: `${P}-muted` },
