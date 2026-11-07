@@ -51,7 +51,7 @@ export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'guide', title: 'Guide', summary: 'Your progress in the Torn Tracker guide, and bonuses to claim.', on: true },
   { id: 'routine', title: 'Routine', summary: 'How many of today’s routine lines are still undone; tap for the list, each linking to its Torn page.', on: true },
   { id: 'travel', title: 'Best travel run', summary: 'Your planner’s best run right now, with its profit per hour.', on: false },
-  { id: 'loot', title: 'NPC loot', summary: 'The next loot level per NPC and when it comes, with the source credited.', on: false },
+  { id: 'loot', title: 'NPC loot', summary: 'The NPC whose next loot level comes soonest, and when, with the source credited.', on: false },
   { id: 'gym', title: 'Gym', summary: 'How far you are towards your next gym.', on: false },
   { id: 'stocks', title: 'Stock watches', summary: 'How many of your watched stocks crossed their line.', on: false },
   { id: 'shops', title: 'Below shop price', summary: 'On the Item Market: how many listings on screen sell below what a shop pays.', on: true, local: true },
@@ -177,6 +177,16 @@ export const POSITION_LABELS = Object.freeze({
 });
 
 /** The items that need a faction the site manages: the empty-state line's case (hq #507). */
+/**
+ * The NPC whose next loot level comes soonest; with no time to come, the first in the list.
+ * @param {{ name: string, level: number, nextAt: number|null }[]} npcs at least one
+ * @param {number} at now, in ms
+ */
+export function nextLoot(npcs, at) {
+  const coming = npcs.filter((n) => n.nextAt !== null && n.nextAt > at);
+  return coming.length ? coming.reduce((a, b) => (b.nextAt < a.nextAt ? b : a)) : npcs[0];
+}
+
 const FACTION_ITEMS = Object.freeze(['chain', 'war', 'dibs', 'loot']);
 
 /** One of Torn's sidebar entries (Friends, Enemies, Targets under Lists). */
@@ -405,8 +415,12 @@ export function mountSidebarBlock({
     // Only the country is the link, so the rest of the line reads as plain words (C22).
     travel: (r) => row(h('b', null, 'Travel'), ' ',
       link(PLANNER_URL, r.country.replace(/-/g, ' '), true), ` · ${r.item_name} · +${short(r.profit_per_hour)}/h`),
-    loot: (l) => row(h('b', null, 'Loot'), ...l.npcs.map((n) => ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''};`),
-      h('span', { class: `${P}-sb-muted` }, ` (${l.source})`)),
+    // Only the next NPC to reach a new level; the full list is on the site (hq #557 17).
+    loot: (l) => {
+      const n = nextLoot(l.npcs, now());
+      return row(h('b', null, 'Loot'), ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''}`,
+        h('span', { class: `${P}-sb-muted` }, ` (${l.source})`));
+    },
     gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
     routine: (r) => routineLine(r),
     stocks: (s) => row(link(STOCKS_URL, `${s.crossed} of ${s.watched} watched stocks crossed`, true)),

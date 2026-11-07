@@ -36,7 +36,7 @@ Each line is one thing you'd otherwise open the website or Discord for:
 | **Below shop price** | on the Item Market, how many listings on screen sell below what a shop pays (see [Shop price guard](shop-price-guard.md)) | on |
 | **Quick links** | your dashboard and the guide on torn-tracker.com | on |
 | **Best travel run** | your planner's best run, like "Mexico ↗ · Jaguar Plushie · +$13.5k/h"; the country links to the planner | off |
-| **NPC loot** | the next loot level per NPC and when it comes, with its source named | off |
+| **NPC loot** | the NPC whose next loot level comes soonest, and when, with its source named | off |
 | **Gym** | how far you are towards your next gym | off |
 | **Stock watches** | how many of your watched stocks crossed their line | off |
 
