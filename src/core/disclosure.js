@@ -112,8 +112,10 @@ export const DISCLOSURE = Object.freeze({
   /**
    * Torn's five-column terms table, shown above the Torn API key field:
    * { dataStorage, dataSharing, purposeOfUse, keyStorageSharing, keyAccessLevel }
-   * No feature takes a Torn API key yet. The table comes with the first one, stating the
-   * selections it really calls.
+   * One row for the whole of torn-tracker, the same as the site and the bot (hq D-224,
+   * KEY-031), never a table per feature or per selection. What each feature reads stays on
+   * torn-tracker.com/keys/ (KEY-033). No feature takes a Torn API key yet; the row comes with
+   * the first one.
    */
   tosTable: null,
 });

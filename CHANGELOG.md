@@ -99,6 +99,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Changed
 
+- Settings → Keys says the Torn API key field, when a feature needs it, comes with Torn's terms
+  table as one row, the same as on torn-tracker.com (hq #645, D-224).
 - The Sharing section is shorter: each kind shows one plain line on what it sends, and its
   full wording sits under **Exactly what is sent**; the notice at the top folds under **How
   sharing works**. The full wording is unchanged, and it is still what ticking a kind agrees

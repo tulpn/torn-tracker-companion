@@ -751,7 +751,7 @@ export function mountPanel({
       }
     } else {
       rows.push(h('div', { class: `${P}-muted` },
-        'No feature in this version needs a Torn API key. The field appears together with its terms table.'));
+        'No feature in this version needs a Torn API key. The field appears together with Torn’s terms table: one row, the same as on torn-tracker.com.'));
     }
     return rows;
   }
