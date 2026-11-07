@@ -43,8 +43,8 @@ destination in a status cell, the companion adds nothing there, so each row has 
 Between the match and the war's start, the faction page of the faction you're about to
 fight shows a short strip: a one-line comparison of both sides (members, respect, average
 level, rank and recent form) and a link to the full pre-war brief on torn-tracker.com. Pro
-factions also see the brief's headline; for a Core faction, the full brief is a Pro
-feature. The strip never names any member.
+factions also see the brief's headline. A Core faction is told once that the full brief is a
+Pro feature; the link reads the same for both. The strip never names any member.
 
 ## Call dibs
 
@@ -71,7 +71,8 @@ ago it was seen, for example **3h**, when it has no flags. The flags are:
 Hover a label, or tap it, for every flag with its reason, when it was seen and how many
 players saw it. A loadout older than 14 days is
 dimmed; **hidden** means the player asked for theirs to be hidden. A Core faction sees a
-one-line note instead. Switch it off in the settings, under **Features**.
+one-line note instead, on the first war page it opens only; the **×** at its end puts it away
+sooner. Switch it off in the settings, under **Features**.
 
 > **What it reads and sends.** It reads the opponents already on the page. It asks
 > torn-tracker.com for your faction's dibs, the war room's timers and, once per page view,

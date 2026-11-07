@@ -92,6 +92,14 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   a.${P}-ui-badge:hover, a.${P}-ui-badge:focus-visible { background: ${tint('var(--ttc-ink)', 28)}; color: var(--ttc-ink); text-decoration: underline; }
   a.${P}-ui-badge:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .${P}-ui-block { display: flex; width: fit-content; margin: 3px 0 0; }
+  /* A note the player can put away (hq issue 557, 30): a small cross at its end. */
+  .${P}-ui-dismiss {
+    all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; margin-left: 2px; border-radius: 999px; cursor: pointer;
+    font: 700 13px/1 var(--tt-font-sans); color: inherit;
+  }
+  .${P}-ui-dismiss:hover { background: ${tint('var(--ttc-ink)', 28)}; }
+  .${P}-ui-dismiss:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
   /* Compact (hq issue 522): one short line in a row whose height Torn fixes. The class twice
      outweighs Torn's own span and button rules in that row. A badge with a data-detail shows
      it below itself while data-open is true (a tap, set by the feature). */
@@ -363,6 +371,28 @@ export function badge(doc, { cls, tone = 'neutral', block = false, compact = fal
     class: classes(`${P}-ui-badge${extra}`, cls), 'data-tone': tone, ownerDocument: doc,
     ...(pin === 'under' ? { 'data-pin': 'under' } : {}), ...attrs,
   }, ...children);
+  return node;
+}
+
+/**
+ * A small cross at the end of a note that puts it away (hq #557 30). The tap goes no further
+ * than the cross, so it never reaches Torn's own handlers around the note.
+ * @param {Element} node the note
+ * @param {() => void} [onDismiss] what else the feature does: remember it, take other copies off
+ */
+export function dismissible(node, onDismiss) {
+  const doc = node.ownerDocument;
+  ensureStyle(doc);
+  const cross = el('button', {
+    type: 'button', class: `${P}-ui-dismiss`, 'aria-label': 'Dismiss', title: 'Dismiss', ownerDocument: doc,
+  }, '×');
+  cross.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    node.remove();
+    onDismiss?.();
+  });
+  node.append(cross);
   return node;
 }
 

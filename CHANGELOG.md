@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The "Pro feature" notes on the war page and in the pre-war brief show once, not on every
+  visit, and the war page's note has a × that puts it away. The brief's link reads "Open the
+  brief on torn-tracker.com" for Pro and Core alike (hq #557 30).
 - A badge that is a link, such as the listed-mugger badge or an applicant's fit, now looks like
   one: a trailing ›, and on hover or keyboard focus a deeper tint, an underline and a focus
   ring, in light and dark (hq #557 23).
