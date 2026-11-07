@@ -14,6 +14,41 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The pre-war brief and your mugs strip no longer push the page down when they arrive. Where
   one showed on your last visit to that faction or player, its place shows "Loading…" at once
   and is filled in place; elsewhere nothing is added until the answer comes (hq #557 A6).
+
+### Changed
+
+- Settings → Keys says the Torn API key field, when a feature needs it, comes with Torn's terms
+  table as one row, the same as on torn-tracker.com (hq #645, D-224).
+
+## 0.9.15 — 2026-11-06
+
+### Changed
+
+- The script wears the torn-tracker raven: it is the icon in your script manager, and it heads the sidebar block in place of the old “TT” badge. The icon is carried inside the script, so nothing is fetched for it (hq #639).
+- On the war page, a traveller's destination is a two-letter code (`→ UK`, `in KY`) that fits the status cell on one line; the full name is in its hover text (hq #557).
+- The Sharing section is shorter: each kind shows one plain line on what it sends, and its
+  full wording sits under **Exactly what is sent**; the notice at the top folds under **How
+  sharing works**. The full wording is unchanged, and it is still what ticking a kind agrees
+  to (hq #557 F13).
+- The two chain watch pieces now have their own names: the dashboard card is the **Watch
+  rota**, and the box you drag around a page is the **Watch timer**. The settings section
+  keeps the name Chain watch, since it covers both (hq #557 F24).
+- The settings page and the dashboard now follow Torn's light or dark theme unless you pick
+  one under General → Look; they used to start dark. If you have saved settings before,
+  your look stays as it was: pick **Same as Torn** under General → Look to follow Torn
+  (hq #557 F32).
+- The sharing lines now say exactly what the code sends: a gym train includes the energy and
+  the number of trains when Torn's answer gives them; jail bands aren't kept or published,
+  because the site doesn't accept them yet; and an auction listing goes again as soon as its
+  bid changes, otherwise at most every ten minutes. The wording changed, so if you share,
+  read the new lines and agree again (hq #649).
+- The README and the guide now say that Applicant badges sends the applicants' ids to
+  torn-tracker.com, that features showing the site's data look up the ids they need, and
+  that settings save as you change them, with no Save button. The guide has a section for
+  jail difficulty bands (hq #649).
+
+### Fixed
+
 - Screen readers: the settings sections are plain links, the open one marked as the current
   page, instead of tabs with no tab list. A mistyped key is named under its own field, as well
   as in the toast, and the field is marked as invalid (hq #557 42).
@@ -96,38 +131,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The shop price guard's warning under a sell price is now one short line, such as "Shop
   pays $1,000 (+$100)", so it no longer squeezes the row; tap or hover it for the shop and
   the total (hq #557 F25).
-
-### Changed
-
-- Settings → Keys says the Torn API key field, when a feature needs it, comes with Torn's terms
-  table as one row, the same as on torn-tracker.com (hq #645, D-224).
-- The Sharing section is shorter: each kind shows one plain line on what it sends, and its
-  full wording sits under **Exactly what is sent**; the notice at the top folds under **How
-  sharing works**. The full wording is unchanged, and it is still what ticking a kind agrees
-  to (hq #557 F13).
-- The two chain watch pieces now have their own names: the dashboard card is the **Watch
-  rota**, and the box you drag around a page is the **Watch timer**. The settings section
-  keeps the name Chain watch, since it covers both (hq #557 F24).
-- The settings page and the dashboard now follow Torn's light or dark theme unless you pick
-  one under General → Look; they used to start dark. If you have saved settings before,
-  your look stays as it was: pick **Same as Torn** under General → Look to follow Torn
-  (hq #557 F32).
-- The sharing lines now say exactly what the code sends: a gym train includes the energy and
-  the number of trains when Torn's answer gives them; jail bands aren't kept or published,
-  because the site doesn't accept them yet; and an auction listing goes again as soon as its
-  bid changes, otherwise at most every ten minutes. The wording changed, so if you share,
-  read the new lines and agree again (hq #649).
-- The README and the guide now say that Applicant badges sends the applicants' ids to
-  torn-tracker.com, that features showing the site's data look up the ids they need, and
-  that settings save as you change them, with no Save button. The guide has a section for
-  jail difficulty bands (hq #649).
-
-## 0.9.15 — 2026-11-06
-
-### Changed
-
-- The script wears the torn-tracker raven: it is the icon in your script manager, and it heads the sidebar block in place of the old “TT” badge. The icon is carried inside the script, so nothing is fetched for it (hq #639).
-- On the war page, a traveller's destination is a two-letter code (`→ UK`, `in KY`) that fits the status cell on one line; the full name is in its hover text (hq #557).
 
 ## 0.9.14 — 2026-11-05
 
