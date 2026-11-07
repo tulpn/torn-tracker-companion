@@ -85,6 +85,12 @@ export function undersellText(price, entry, qty = null) {
   return `Below the shop price. ${shopName(entry)} pays ${money(entry.price)} each, ${money(more)} more than this${total}.`;
 }
 
+/** The warning's own words, short enough for the row: "Shop pays $1,250 (+$310)" (hq #557 F25). */
+export function undersellShort(price, entry) {
+  if (!entry || !positiveInt(price) || price >= entry.price) return null;
+  return `Shop pays ${money(entry.price)} (+${money(entry.price - price)})`;
+}
+
 // ---------------------------------------------------------------- profitable count
 // The highlighter counts the Item Market listings on screen that sell below a shop's
 // price; the sidebar block shows the number (CMP-108). Nothing leaves this page.

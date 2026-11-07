@@ -354,6 +354,33 @@ describe('hq #465 the page', () => {
     assert.match((await say({ status: 'failed' })).text, /Couldn't reach/);
   });
 
+  test('hq #557 F18 failed and wait offer a Retry button, which reads again once per press', async () => {
+    for (const first of [{ status: 'failed' }, { status: 'wait', retryMs: 60_000 }]) {
+      let reads = 0;
+      const site = { dashboard: async () => { reads += 1; return reads === 1 ? first : { status: 'no_key' }; } };
+      const { root, dash } = pageRig(site);
+      dash.open();
+      await settle();
+      const retry = root.querySelector('[role="status"] button');
+      assert.equal(retry?.textContent, 'Retry', first.status);
+      assert.equal(retry.type, 'button');
+      retry.click();
+      await settle();
+      assert.equal(reads, 2);
+      assert.match(root.querySelector('[role="status"]').textContent, /script key/);
+      assert.equal(root.querySelector('[role="status"] button'), null, 'no Retry once the answer changes');
+    }
+  });
+
+  test('no key and refused send the player to Keys, with no Retry', async () => {
+    for (const status of ['no_key', 'refused']) {
+      const { root, dash } = pageRig({ dashboard: async () => ({ status }) });
+      dash.open();
+      await settle();
+      assert.equal(root.querySelector('[role="status"] button'), null, status);
+    }
+  });
+
   test('the light theme follows the setting', () => {
     const { root, dash } = pageRig({ dashboard: async () => ({ status: 'failed' }) }, { look: 'light' });
     dash.open();

@@ -56,6 +56,7 @@ const STYLE = `
   #${DASH_ID} .${P}-body { padding: 14px 16px 18px; }
   #${DASH_ID} .${P}-state { margin: 0 0 12px; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-state:empty { display: none; }
+  #${DASH_ID} .${P}-retry { min-height: 32px; margin-left: 4px; font: inherit; font-weight: 600; cursor: pointer; }
   #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
   #${DASH_ID} .${P}-dcard {
     display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 14px;
@@ -243,6 +244,14 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     state.replaceChildren(words, ...(link ? [' ', h('a', { href: link.href }, link.text)] : []));
   }
 
+  /** The words, and a Retry button that reads the dashboard again: one read per press (hq #557 F18). */
+  function sayRetry(words) {
+    const retry = h('button', { type: 'button', class: `${P}-btn ${P}-retry` }, 'Retry');
+    retry.addEventListener('click', () => { if (open) load(); });
+    say(words);
+    state.append(' ', retry);
+  }
+
   async function load() {
     const mine = ++generation;
     say('Loading your dashboard…');
@@ -256,8 +265,8 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     if (result?.status === 'ok') show(result);
     else if (result?.status === 'no_key') say('The dashboard needs your torn-tracker.com script key.', { href: '#/torn-tracker/keys', text: 'Add it in Keys' });
     else if (result?.status === 'refused') say('torn-tracker.com refused the script key. Check it in Keys.', { href: '#/torn-tracker/keys', text: 'Open Keys' });
-    else if (result?.status === 'wait') say(`torn-tracker.com asked to wait. Try again in ${roughly(result.retryMs ?? 60_000)}.`);
-    else say("Couldn't reach torn-tracker.com. Try again in a minute.");
+    else if (result?.status === 'wait') sayRetry(`torn-tracker.com asked to wait. Try again in ${roughly(result.retryMs ?? 60_000)}.`);
+    else sayRetry("Couldn't reach torn-tracker.com. Try again in a minute.");
   }
 
   return {

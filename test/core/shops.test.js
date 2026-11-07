@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 
 import { createCache } from '../../src/core/cache.js';
 import {
-  BUILT_IN, BUILT_IN_DATE, MAX_SHOP_ROWS, readShopReply, shopName, undersellText, validShopRow, validShopRows,
+  BUILT_IN, BUILT_IN_DATE, MAX_SHOP_ROWS, readShopReply, shopName, undersellShort, undersellText, validShopRow, validShopRows,
 } from '../../src/core/shops.js';
 import { SHOP_PRICES_URL, SPACES, createSite } from '../../src/core/site.js';
 import { shopsFrom, shopsModuleFrom } from '../../tools/build-items.mjs';
@@ -144,6 +144,10 @@ describe('the warning\'s words', () => {
   });
 
   test('nothing at or above the shop price, without a price, or for an item no shop buys', () => {
+    assert.equal(undersellShort(940, BIG_AL), 'Shop pays $1,250 (+$310)');
+    assert.equal(undersellShort(1250, BIG_AL), null);
+    assert.equal(undersellShort(null, BIG_AL), null);
+    assert.equal(undersellShort(5, undefined), null);
     assert.equal(undersellText(1250, BIG_AL, 2), null);
     assert.equal(undersellText(null, BIG_AL, 2), null);
     assert.equal(undersellText(5, undefined, 2), null);
