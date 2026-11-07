@@ -13,6 +13,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - During a tour, Enter, the arrow keys, Esc and Tab typed into a field elsewhere on the page,
   such as Torn's chat, now reach the field instead of moving the tour (hq #557 F38).
+- When the dashboard can't reach torn-tracker.com, or the site asks it to wait, it now has a
+  **Retry** button; each press reads the dashboard once (hq #557 F18).
 
 ### Changed
 
