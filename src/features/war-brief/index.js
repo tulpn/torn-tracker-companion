@@ -21,6 +21,11 @@ export function factionOf(search) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+/** The strip's own saved data: whether the Pro note was shown once already (hq #557 30). */
+export function validateBriefData(value) {
+  return { proNoteSeen: value?.proNoteSeen === true };
+}
+
 export default {
   id: 'war-brief',
   wave: 2,
@@ -33,6 +38,7 @@ export default {
   shares: [],
   needs: { apiKey: false, scriptKey: true },
   credits: [],
+  data: { empty: { proNoteSeen: false }, validate: validateBriefData },
 
   start(ctx) {
     const { doc } = ctx;
@@ -50,11 +56,16 @@ export default {
         const strip = uiStrip(doc, { cls: MARK, tone: 'info' }); // information, not a warning (hq #557 E35)
         strip.append(el('strong', { ownerDocument: doc }, 'Your next ranked war: '), brief.compare);
         if (brief.headline) strip.append(el('div', { ownerDocument: doc }, brief.headline));
-        else if (!brief.pro) strip.append(el('div', { ownerDocument: doc }, 'The full brief is a Pro feature.'));
+        else if (!brief.pro && !validateBriefData(ctx.data?.()).proNoteSeen) {
+          // Once only: the next war's strip leaves the note off (hq #557 30).
+          strip.append(el('div', { ownerDocument: doc }, 'The full brief is a Pro feature.'));
+          Promise.resolve(ctx.saveData?.({ proNoteSeen: true })).catch((err) => ctx.log('war brief note', err));
+        }
         if (brief.briefUrl) {
+          // The same words for every tier (hq #557 30); the site says what the tier shows.
           strip.append(' ', el('a', {
             href: brief.briefUrl, target: '_blank', rel: 'noopener noreferrer', ownerDocument: doc,
-          }, brief.pro ? 'Open the brief on torn-tracker.com' : 'See the brief on torn-tracker.com'));
+          }, 'Open the brief on torn-tracker.com'));
         }
         const anchor = doc.querySelector('.content-title') || doc.querySelector('#factions') || doc.body.firstElementChild;
         if (anchor && !doc.querySelector(`.${MARK}`)) anchor.after(strip);

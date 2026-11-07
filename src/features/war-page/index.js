@@ -23,7 +23,7 @@
 // and that sorting moves Torn's rows rather than copying them. No code was taken.
 
 import { el, settler } from '../../core/dom.js';
-import { badge, bar as uiBar, button as uiButton, setTone, tapDetail } from '../../core/ui.js';
+import { badge, bar as uiBar, button as uiButton, dismissible, setTone, tapDetail } from '../../core/ui.js';
 import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN, TWSE } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
@@ -137,6 +137,11 @@ function ownNode(node) {
   return Boolean(element?.closest?.(`[data-${MARK}]`));
 }
 
+/** The page's own saved data: whether the Pro note was shown once already (hq #557 30). */
+export function validateWarData(value) {
+  return { proNoteSeen: value?.proNoteSeen === true };
+}
+
 export default {
   id: 'war-page',
   wave: 1,
@@ -157,6 +162,7 @@ export default {
   shares: [],
   needs: { apiKey: false, scriptKey: true },
   credits: ['Torn War Stuff Enhanced (MIT)'],
+  data: { empty: { proNoteSeen: false }, validate: validateWarData },
 
   start(ctx) {
     const { doc } = ctx;
@@ -179,6 +185,8 @@ export default {
       dibsTimer: null,
       tick: null,
       stopWatching: null,
+      /** The Pro note shows on one visit only, and goes on a tap of its cross (hq #557 30). */
+      proNote: validateWarData(ctx.data?.()).proNoteSeen ? 'off' : 'on',
     };
     state = s;
     const alive = () => state === s;
@@ -292,10 +300,20 @@ export default {
     function loadoutLabels() {
       if (!showLoadouts || !s.loadouts) return;
       if (!s.loadouts.pro) {
+        if (s.proNote === 'off') return;
+        const off = () => {
+          s.proNote = 'off';
+          for (const node of doc.querySelectorAll(`.${MARK}-note`)) node.remove();
+        };
         for (const bar of doc.querySelectorAll(`.${MARK}-bar`)) {
           if (!bar.querySelector(`.${MARK}-note`)) {
-            bar.append(badge(doc, { cls: `${MARK}-note`, tone: 'info' }, "Opponents' loadouts are a Pro feature"));
+            bar.append(dismissible(badge(doc, { cls: `${MARK}-note`, tone: 'info' }, "Opponents' loadouts are a Pro feature"), off));
           }
+        }
+        // Shown once: the next visit leaves it off.
+        if (s.proNote === 'on') {
+          s.proNote = 'shown';
+          Promise.resolve(ctx.saveData?.({ proNoteSeen: true })).catch((err) => ctx.log('war page note', err));
         }
         return;
       }

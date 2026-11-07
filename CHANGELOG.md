@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The "Pro feature" notes on the war page and in the pre-war brief show once, not on every
+  visit, and the war page's note has a × that puts it away. The brief's link reads "Open the
+  brief on torn-tracker.com" for Pro and Core alike (hq #557 30).
 - The sidebar's loot line names only the NPC whose next loot level comes soonest, instead of
   every NPC with a trailing ";" (hq #557 17).
 - On a phone the dashboard's cards fit the screen, with the same narrow padding as the settings

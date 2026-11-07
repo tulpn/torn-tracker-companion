@@ -322,6 +322,28 @@ describe('LDT-032 loadout flags of opponents on the war page (Pro)', () => {
     assert.match(r.doc.querySelector('.ttc-war-note').textContent, /Pro feature/);
   });
 
+  test('hq #557 30 the Pro note shows on one visit only, and its cross puts it away', async () => {
+    const core = { pro: false, war: false, opponents: new Map() };
+    const first = run({ site: fakeSite({ loadouts: core }) });
+    await wait();
+    const note = first.doc.querySelector('.ttc-war-note');
+    assert.deepEqual(first.stored(), { proNoteSeen: true }, 'remembered as soon as it shows');
+    const cross = note.querySelector('button.ttc-ui-dismiss');
+    assert.equal(cross.getAttribute('aria-label'), 'Dismiss');
+    let reached = false;
+    note.parentElement.addEventListener('click', () => { reached = true; });
+    cross.dispatchEvent(new first.doc.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    assert.equal(first.doc.querySelector('.ttc-war-note'), null);
+    assert.equal(reached, false, 'the tap never reaches Torn');
+    await wait();
+    assert.equal(first.doc.querySelector('.ttc-war-note'), null, 'a rescan does not bring it back');
+    first.stop();
+    const next = run({ site: fakeSite({ loadouts: core }), data: { proNoteSeen: true } });
+    await wait();
+    assert.equal(next.doc.querySelector('.ttc-war-note'), null);
+    assert.deepEqual(next.violations, []);
+  });
+
   test('switched off: not asked', async () => {
     const site = fakeSite({ loadouts: pro });
     run({ site, settings: { enabled: true, sortBy: 'torn', dibs: false, timers: false, loadouts: false } });
