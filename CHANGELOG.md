@@ -16,6 +16,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Changed
 
+- The settings page and the dashboard now follow Torn's light or dark theme unless you pick
+  one under General → Look; they used to start dark. If you have saved settings before,
+  your look stays as it was: pick **Same as Torn** under General → Look to follow Torn
+  (hq #557 F32).
 - The sharing lines now say exactly what the code sends: a gym train includes the energy and
   the number of trains when Torn's answer gives them; jail bands aren't kept or published,
   because the site doesn't accept them yet; and an auction listing goes again as soon as its
