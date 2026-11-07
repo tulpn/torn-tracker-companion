@@ -49,7 +49,9 @@ hitter, armoured, temp ready) show under their name. These are the same flags as
 On a profile or the attack page, a line tells you how often you've mugged this player,
 when last and for how much, and what you got on average, for example **You mugged them 3
 times: last 2d ago for $1,200,000, $900,000 on average.** It comes from your own records on
-torn-tracker.com, so it shows only your mugs. See [Mugger tools](website:mugger-tools.md).
+torn-tracker.com, so it shows only your mugs. On a player whose page showed the line last
+time, its place shows "Loading…" while the answer comes, so the page doesn't jump. See
+[Mugger tools](website:mugger-tools.md).
 
 ## Fair-fight badge
 

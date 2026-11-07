@@ -10,6 +10,8 @@ import { ATTACK_ROUTES, pageSubject } from '../../core/players.js';
 import { strip } from '../../core/ui.js';
 
 const MARK = 'ttc-mugs';
+/** How many players' pages the strip remembers having shown on, newest last. */
+const REMEMBERED = 50;
 const HEADING = '.content-title h4, h4';
 const SETTLE_MS = 300;
 
@@ -30,6 +32,22 @@ export function mugLine(mugs, now) {
   return `You mugged them ${times}${details ? `: ${details}` : ''}.`;
 }
 
+/**
+ * The strip's own saved data: the players whose page showed it last, so its place is held
+ * there from the start (hq #557 A6). Newest last, at most fifty.
+ */
+export function validateMugData(value) {
+  const ids = Array.isArray(value?.shownFor) ? value.shownFor : [];
+  const ok = ids.filter((id) => Number.isInteger(id) && id > 0);
+  return { shownFor: [...new Set(ok)].slice(-REMEMBERED) };
+}
+
+/** The list with `id` moved to the end (shown) or taken out (not shown). */
+export function withShown(list, id, shown) {
+  const rest = validateMugData({ shownFor: list }).shownFor.filter((n) => n !== id);
+  return validateMugData({ shownFor: shown ? [...rest, id] : rest }).shownFor;
+}
+
 export default {
   id: 'mug-strip',
   wave: 2,
@@ -42,6 +60,7 @@ export default {
   shares: [],
   needs: { apiKey: false, scriptKey: true },
   credits: [],
+  data: { empty: { shownFor: [] }, validate: validateMugData },
 
   start(ctx) {
     const { doc } = ctx;
@@ -52,16 +71,44 @@ export default {
     const id = pageSubject(win.location);
     if (!id || !ctx.site?.myMugs) return;
 
+    const known = () => validateMugData(ctx.data?.()).shownFor.includes(id);
+    const remember = (shown) => {
+      if (known() === shown) return;
+      Promise.resolve(ctx.saveData?.((fresh) => ({ shownFor: withShown(validateMugData(fresh).shownFor, id, shown) })))
+        .catch((err) => ctx.log('mug strip place', err));
+    };
+    const placeOf = () => {
+      const heading = doc.querySelector(HEADING);
+      return heading ? heading.closest('.content-title') || heading : null;
+    };
+    // Whether the strip shows is known only from the site's answer. On a player whose page
+    // showed it last time, its place is held from the start and filled in place, so the page
+    // doesn't jump (hq #557 A6); elsewhere nothing is added until the answer comes.
+    const first = placeOf();
+    if (known() && first && !doc.querySelector(`.${MARK}`)) {
+      first.after(strip(doc, { cls: MARK, tone: 'info', attrs: { 'data-loading': 'true' } }, 'Your mugs of this player: Loading…'));
+    }
+
     s.timer = win.setTimeout(async () => {
       try {
         const line = mugLine(await ctx.site.myMugs(id), now());
-        const heading = doc.querySelector(HEADING);
-        if (state !== s || !line || !heading || doc.querySelector(`.${MARK}`)) return;
+        if (state !== s) return;
+        const held = doc.querySelector(`.${MARK}`);
+        if (!line) {
+          held?.remove();
+          remember(false);
+          return;
+        }
         // A sentence: a strip, not a pill (hq #557 E36).
         const node = strip(doc, { cls: MARK, tone: 'info' }, line);
         node.title = 'From your own mugs on torn-tracker.com';
-        (heading.closest('.content-title') || heading).after(node);
+        const place = placeOf();
+        if (held) held.replaceWith(node);
+        else if (place) place.after(node);
+        else return;
+        remember(true);
       } catch (err) {
+        doc.querySelector(`.${MARK}`)?.remove();
         ctx.log('mug strip', err);
       }
     }, SETTLE_MS);

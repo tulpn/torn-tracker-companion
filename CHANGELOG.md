@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The pre-war brief and your mugs strip no longer push the page down when they arrive. Where
+  one showed on your last visit to that faction or player, its place shows "Loading…" at once
+  and is filled in place; elsewhere nothing is added until the answer comes (hq #557 A6).
 - Screen readers: the settings sections are plain links, the open one marked as the current
   page, instead of tabs with no tab list. A mistyped key is named under its own field, as well
   as in the toast, and the field is marked as invalid (hq #557 42).
