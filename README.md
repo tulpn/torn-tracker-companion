@@ -132,8 +132,9 @@ player ids and which list it is (company or faction), to show their job-board ca
 | Bazaar listings | On another player's bazaar: their id, and each item they list with its quantity and price (and the item's own id where the page shows one), as far as you scroll. At most once per bazaar every five minutes, only while the tab is on screen. Never your own bazaar. | Reports for 7 days. Each player's latest listings are published openly, and prices per item. |
 | Loadouts | On an attack: the other player's id, and the weapons and armour the attack page shows them wearing, with their damage, accuracy and bonuses. Once per attack. | Reports for 90 days. Each player's latest loadout is published openly, replaced on every new report, and removed once nobody has seen it for 180 days. **The player it describes can see that you reported it.** |
 
-The panel shows the same lines beside each switch. If they change in an update, sharing
-stops until you have read the new ones and agreed again.
+The panel shows one plain line beside each switch, and these lines in full under **Exactly
+what is sent**. If they change in an update, sharing stops until you have read the new ones
+and agreed again.
 
 **Chain watch sign-ups** are not a sharing kind: each is sent only when you press Sign up,
 Take or Drop under Settings → Chain watch. A sign-up sends torn-tracker.com the slot's start,

@@ -109,13 +109,13 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-routine:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   #${BLOCK_ID} .${P}-sb-badge {
     min-width: 18px; padding: 0 5px; border-radius: 999px; text-align: center;
-    background: var(--primary); color: var(--primary-foreground); font: 700 11px/18px var(--tt-font-sans);
+    background: var(--primary); color: var(--primary-foreground); font: 700 12px/18px var(--tt-font-sans);
   }
   #${BLOCK_ID} .${P}-sb-list { margin: 2px 0 0; padding: 0 0 0 14px; }
   #${BLOCK_ID} .${P}-sb-list li { padding: 1px 0; }
   #${BLOCK_ID} .${P}-sb-switch {
     margin-left: 6px; padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
-    background: transparent; color: inherit; font: 600 11px/1.6 var(--tt-font-sans);
+    background: transparent; color: inherit; font: 600 13px/1.5 var(--tt-font-sans);
   }
   #${BLOCK_ID} .${P}-sb-switch[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
   @media (pointer: coarse) {

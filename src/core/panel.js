@@ -119,7 +119,7 @@ const STYLE = `
     background: var(--ttc-accent); color: var(--ttc-accent-text); font: 800 13px/1 var(--tt-font-sans); letter-spacing: -.02em;
   }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
+  #${P}-panel .${P}-head h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--ttc-muted); }
   #${P}-panel .${P}-keystate { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 999px;
     font-size: 12px; font-weight: 600; background: var(--ttc-accent-soft); color: var(--ttc-text); }
   #${P}-panel .${P}-keystate[data-key="none"] { background: color-mix(in srgb, var(--ttc-warn) 18%, transparent); }
@@ -136,7 +136,7 @@ const STYLE = `
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head { min-width: 0; }
   #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
-    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
     background: var(--ttc-accent-soft); color: var(--ttc-muted);
   }
   #${P}-panel nav { grid-area: nav; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
@@ -179,6 +179,9 @@ const STYLE = `
   }
   #${P}-panel input:focus-visible, #${P}-panel select:focus-visible { outline: 2px solid var(--ttc-accent); outline-offset: 1px; }
   #${P}-panel .${P}-option { margin-left: 52px; }
+  #${P}-panel .${P}-exact { margin-top: 4px; }
+  #${P}-panel .${P}-exact > summary { min-height: 24px; cursor: pointer; color: var(--ttc-link); font-weight: 600; }
+  #${P}-panel .${P}-exact[open] > summary { margin-bottom: 4px; }
   #${P}-panel button, #${P}-panel a.${P}-btn {
     display: inline-flex; align-items: center; justify-content: center;
     min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font: inherit; font-weight: 600;
@@ -234,7 +237,7 @@ const STYLE = `
     #${P}-panel .${P}-head { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
     /* hq issue 489: the title gives way, so the key state and ✕ stay on its row at 360 px. */
     #${P}-panel .${P}-brand { flex: 1 1 0; min-width: 0; }
-    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 11px; }
+    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 12px; }
     #${P}-panel .${P}-head .${P}-tools { gap: 4px; }
     #${P}-panel .${P}-head .${P}-x { padding: 6px 10px; }
     #${P}-panel .${P}-find { padding: 10px 12px; }
@@ -554,7 +557,7 @@ export function mountPanel({
     if (consent === 0) {
       // Never agreed: ticking a kind is the choice and the agreement. The wording is on this screen.
       return [h('div', { class: `${P}-notice`, id: `${P}-consent-state` },
-        'Nothing is shared yet. Ticking a kind shares it from then on: that is your agreement to the lines above.')];
+        'Nothing is shared yet. Ticking a kind shares it from then on: that is your agreement to its full wording, under Exactly what is sent.')];
     }
     // Agreed to an older wording: a separate press, so the new wording is read first.
     return [
@@ -565,6 +568,36 @@ export function mountPanel({
     ];
   }
 
+  const plain = (value) => typeof value === 'string' && value.trim() !== '';
+
+  /**
+   * The first-run notice: one plain line, the full wording under "How sharing works" (hq #557
+   * F13). Without a short line, the full wording shows as it always did.
+   */
+  function firstRunNotice() {
+    if (!plain(disclosure.firstRunShort)) {
+      return h('div', { class: `${P}-notice`, id: `${P}-first-run` }, disclosure.firstRun);
+    }
+    return h('div', { class: `${P}-notice` },
+      h('div', null, disclosure.firstRunShort),
+      h('details', { class: `${P}-exact` },
+        h('summary', null, 'How sharing works'),
+        h('div', { id: `${P}-first-run` }, disclosure.firstRun)));
+  }
+
+  /** A kind's plain line, and its full wording under "Exactly what is sent" (hq #557 F13). */
+  function kindLines(kind) {
+    const full = disclosure.kinds[kind];
+    const short = disclosure.short?.[kind];
+    if (!plain(short)) return [h('div', { class: `${P}-muted ${P}-option` }, full)];
+    return [
+      h('div', { class: `${P}-muted ${P}-option` }, short),
+      h('details', { class: `${P}-exact ${P}-option`, 'data-exact': kind },
+        h('summary', null, 'Exactly what is sent'),
+        h('div', { class: `${P}-muted` }, full)),
+    ];
+  }
+
   function sharingBody() {
     const kinds = shareKinds(registry);
     const rows = [];
@@ -572,11 +605,11 @@ export function mountPanel({
       rows.push(h('div', { class: `${P}-muted` },
         'Nothing is shared by this version. The sharing switches appear once the notice saying exactly what each one shares is ready.'));
     } else {
-      if (!query) rows.push(h('div', { class: `${P}-notice`, id: `${P}-first-run` }, disclosure.firstRun));
+      if (!query) rows.push(firstRunNotice());
       if (kinds.length === 0) rows.push(h('div', { class: `${P}-muted` }, 'No feature in this build shares anything.'));
       for (const kind of kinds) {
         const offered = kindOffered(kind, disclosure);
-        if (!matches(kindTitle(kind), offered ? disclosure.kinds[kind] : '')) continue;
+        if (!matches(kindTitle(kind), offered ? disclosure.kinds[kind] : '', offered ? disclosure.short?.[kind] ?? '' : '')) continue;
         const card = h('div', { class: `${P}-card` },
           h('label', { class: `${P}-check`, 'data-off': !offered },
             h('input', {
@@ -584,7 +617,7 @@ export function mountPanel({
               checked: offered && draft.settings.shares[kind] === true, disabled: !offered,
             }),
             kindTitle(kind)));
-        if (offered) card.append(h('div', { class: `${P}-muted ${P}-option` }, disclosure.kinds[kind]));
+        if (offered) card.append(...kindLines(kind));
         rows.push(card);
       }
       if (!query) rows.push(...consentLines(kinds));
