@@ -71,6 +71,13 @@ const wait = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const enemies = (r) => [...r.doc.querySelectorAll('li.enemy a')].map((a) => a.textContent);
 const dibsButton = (r, id) => r.doc.querySelector(`.ttc-war-dibs[data-player="${id}"]`);
 
+/** The player's own pick in our Sort select (hq #557 B14). */
+function pick(r, order) {
+  const select = r.doc.querySelector('.ttc-war-order');
+  select.value = order;
+  select.dispatchEvent(new r.doc.defaultView.Event('change', { bubbles: true }));
+}
+
 /** The player's own press of one of our buttons. */
 function press(r, node) {
   node.dispatchEvent(new r.window.MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -110,24 +117,25 @@ describe('CMP-102 the sort bar', () => {
     const bars = r.doc.querySelectorAll('.ttc-war-bar');
     assert.equal(bars.length, 1);
     assert.ok(bars[0].nextElementSibling.querySelector('li.enemy'));
-    assert.deepEqual([...bars[0].querySelectorAll('button')].map((b) => b.dataset.order), ['torn', 'status', 'leave', 'level', 'ff']);
+    assert.deepEqual([...bars[0].querySelectorAll('select option')].map((o) => o.value), ['torn', 'status', 'leave', 'level', 'ff']);
+    assert.equal(bars[0].querySelectorAll('button').length, 0, 'one select, not a row of buttons');
   });
 
   test('pressing Level, then Status, then Torn\'s order moves Torn\'s rows and puts them back', async () => {
     const r = run({ site: fakeSite() });
     await wait();
     const rows = [...r.doc.querySelectorAll('li.enemy')];
-    press(r, r.doc.querySelector('[data-order="level"]'));
+    pick(r, 'level');
     await wait(50);
     assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy Three', 'Enemy One']);
-    press(r, r.doc.querySelector('[data-order="status"]'));
+    pick(r, 'status');
     await wait(50);
     assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy One', 'Enemy Three']);
-    press(r, r.doc.querySelector('[data-order="torn"]'));
+    pick(r, 'torn');
     await wait(50);
     assert.deepEqual(enemies(r), ['Enemy One', 'Enemy Two', 'Enemy Three']);
     assert.ok([...r.doc.querySelectorAll('li.enemy')].every((row, i) => row === rows[i]), 'the same nodes, never copies');
-    assert.equal(r.doc.querySelector('[data-order="torn"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(r.doc.querySelector('.ttc-war-order').value, 'torn');
     assert.deepEqual(r.violations, []);
   });
 
@@ -135,6 +143,15 @@ describe('CMP-102 the sort bar', () => {
     const r = run({ site: fakeSite(), settings: { enabled: true, sortBy: 'level', dibs: false } });
     await wait();
     assert.deepEqual(enemies(r), ['Enemy Two', 'Enemy Three', 'Enemy One']);
+    assert.equal(r.doc.querySelector('.ttc-war-order').value, 'level');
+  });
+
+  test('hq #557 B14: with Torn War Stuff Enhanced on the page, no Sort select and no sorting', async () => {
+    const r = run({ site: fakeSite(), settings: { enabled: true, sortBy: 'level', dibs: false } });
+    r.doc.querySelector('li.enemy .status')?.setAttribute('data-twse-overridden', 'true');
+    await wait();
+    assert.equal(r.doc.querySelector('.ttc-war-bar'), null);
+    assert.deepEqual(enemies(r), ['Enemy One', 'Enemy Two', 'Enemy Three'], "Torn's order, left to the other script");
   });
 
   test('FF order asks the site once, for opponents only', async () => {
