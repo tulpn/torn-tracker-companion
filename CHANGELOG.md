@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The travel agency's best runs panel holds its place with "Loading…" from the start, and
+  the OC weights credit line sits under the crimes, so neither pushes the page down when it
+  arrives (hq #557 A6).
 - The crime helper's badges (value per nerve, morale and time left) are now compact and
   never wrap inside Torn's crime rows; tap one for its words (hq #557 A7).
 - The achievement toast and the chain watch notice no longer cover Torn's chat bar: both sit

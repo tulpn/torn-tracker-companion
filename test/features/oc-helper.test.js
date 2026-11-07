@@ -70,13 +70,14 @@ describe('CMP-204 weights and success from torn-tracker.com', () => {
     assert.equal(r.doc.querySelectorAll('.ttc-oc').length, 5, 'four labels and one credit line');
   });
 
-  test('the weights are credited where they show (D-074): one line above the crimes, and each tooltip', async () => {
+  test('the weights are credited where they show (D-074): one line under the crimes (hq #557 A6), and each tooltip', async () => {
     const r = run({ site: fakeSite() });
     await wait();
     const credits = r.doc.querySelectorAll('.ttc-oc-credit');
     assert.equal(credits.length, 1);
     assert.equal(credits[0].textContent, 'Role weights: tornprobability.com, via torn-tracker.com');
-    assert.equal(credits[0].nextElementSibling, r.doc.querySelector('[data-oc-id="501"]'));
+    const cards = r.doc.querySelectorAll('[data-oc-id]');
+    assert.equal(credits[0].previousElementSibling, cards[cards.length - 1]);
     assert.ok([...r.doc.querySelectorAll('.ttc-oc[data-kind="weight"]')].every((n) => n.title.includes('tornprobability.com')));
   });
 
