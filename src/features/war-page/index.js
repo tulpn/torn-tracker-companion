@@ -228,7 +228,9 @@ export default {
         title = 'Your dibs. Press to release them.';
         look = 'mine';
       } else if (live) {
-        text = `${live.holder.name} ${clock(live.expiresAt - now())}`;
+        // "Taken 4:05": a long holder name overflowed the button, so it moved to the title
+        // and the spoken label (hq #557 D29).
+        text = `Taken ${clock(live.expiresAt - now())}`;
         title = `${live.holder.name} has dibs on this target`;
         look = 'taken';
       }

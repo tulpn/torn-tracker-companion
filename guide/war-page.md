@@ -52,7 +52,7 @@ Each opponent has a dibs button:
 
 - **Dibs**: nobody has called them. Press it to claim them for a few minutes.
 - **Mine 4:12**: your dibs, with the time left. Press to release them.
-- **Ares 2:40**: someone else in your faction has them.
+- **Taken 2:40**: someone else in your faction has them; hover the button to see who.
 
 Pressing the button tells torn-tracker.com, and your faction sees it at once on the site,
 in the bot and on their own war page. It does nothing in the game. Dibs refresh every 15

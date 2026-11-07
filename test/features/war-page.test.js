@@ -168,7 +168,9 @@ describe('CMP-102 dibs: shown from the site, called with one press, one site act
     const site = fakeSite({ dibs: [{ target: 101, holder: { id: 5, name: 'Ares' }, expiresAt: NOW + 245_000, mine: false }] });
     const r = run({ site });
     await wait();
-    assert.equal(dibsButton(r, 101).textContent, 'Ares 4:05');
+    assert.equal(dibsButton(r, 101).textContent, 'Taken 4:05');
+    assert.match(dibsButton(r, 101).title, /^Ares has dibs/);
+    assert.match(dibsButton(r, 101).getAttribute('aria-label'), /Ares has dibs/);
     assert.equal(dibsButton(r, 101).disabled, true);
     assert.equal(dibsButton(r, 102).textContent, 'Dibs');
     assert.equal(dibsButton(r, 102).disabled, false);
@@ -196,7 +198,7 @@ describe('CMP-102 dibs: shown from the site, called with one press, one site act
     await wait();
     press(r, dibsButton(r, 102));
     await wait(50);
-    assert.equal(dibsButton(r, 102).textContent, 'Ares 1:00');
+    assert.equal(dibsButton(r, 102).textContent, 'Taken 1:00');
     assert.match(dibsButton(r, 102).title, /Someone else called dibs first/);
   });
 
