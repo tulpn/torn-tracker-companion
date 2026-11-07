@@ -55,7 +55,7 @@ chain, war and dibs**, linking to the faction page on torn-tracker.com.
 
 ## Choose where it sits
 
-1. Open the [settings](settings-panel.md) and go to **General → Sidebar block**.
+1. Open the [settings](settings-panel.md) and go to **Sidebar**, then **Where the block sits**.
 2. Pick a place: **At the top, above Areas** (the default), **After Areas**, **After
    Lists** or **At the bottom**.
 3. It saves at once. The choice is kept on this device, and holds on a phone too.
@@ -64,7 +64,7 @@ A page whose sidebar has no such place (some pages have no Lists) shows the bloc
 next place down.
 
 Before 0.9.8 the block always sat under **Lists**. Version 0.9.8 moves it to the top once;
-the settings page says so under **General** until you save, and **After Lists** puts it
+the settings page says so under **Sidebar** until you change a sidebar setting, and **After Lists** puts it
 back where it was.
 
 ## Choose what it shows

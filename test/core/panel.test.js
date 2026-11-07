@@ -816,23 +816,25 @@ describe('hq #489 the search bar, the header, and no stray null', () => {
   });
 });
 
-describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => {
+describe('hq #507, #557 C19 Settings → Sidebar: where the sidebar block sits', () => {
   test('a select with the four places, Top chosen on a fresh install, and no note', () => {
     const t = mount();
-    t.open('general');
+    t.open('sidebar');
     const select = t.$('#ttc-sidebar-position');
     assert.ok(select);
     assert.deepEqual([...select.options].map((o) => o.value), ['top', 'areas', 'lists', 'bottom']);
     assert.equal(select.value, 'top');
     assert.equal(t.$('[data-sidebar-moved]'), null);
     assert.match(t.text(), /On this device/);
+    t.open('general');
+    assert.equal(t.$('#ttc-sidebar-position'), null, 'no longer under General');
   });
 
   test('an install that was moved says so until a sidebar setting changes', async () => {
     const settings = defaults(createRegistry([]));
     settings.sidebar.moved = true;
     const t = mount({ registry: createRegistry([]), settings });
-    t.open('general');
+    t.open('sidebar');
     assert.match(t.$('[data-sidebar-moved]').textContent, /moved to the top of Torn.s sidebar in 0\.9\.8/);
     t.change(t.$('#ttc-sidebar-position'), 'lists');
     await settle();
@@ -844,7 +846,7 @@ describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => 
 
   test('a value that is not a place is not taken', async () => {
     const t = mount();
-    t.open('general');
+    t.open('sidebar');
     const select = t.$('#ttc-sidebar-position');
     const bad = t.window.document.createElement('option');
     bad.value = 'middle';
@@ -853,7 +855,7 @@ describe('hq #507 Settings \u2192 General: where the sidebar block sits', () => 
     await settle();
     assert.equal(t.saves.length, 0);
     t.panel.close();
-    t.open('general');
+    t.open('sidebar');
     assert.equal(t.$('#ttc-sidebar-position').value, 'top');
   });
 });

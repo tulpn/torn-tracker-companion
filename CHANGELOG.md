@@ -11,6 +11,10 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Where the sidebar block sits is now chosen under **Settings → Sidebar**, with the block
+  itself, not under General (hq #557 C19).
+- The settings and sidebar guides no longer mention saving: every change saves at once
+  (hq #557 C20).
 - The war page's Sort bar is one select instead of five buttons that wrapped to three
   lines, and it stands aside when Torn War Stuff Enhanced is on the page (hq #557 B14).
 - The listing's total on the shop price highlighter is left off the label on screens under

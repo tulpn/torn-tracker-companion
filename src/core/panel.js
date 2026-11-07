@@ -66,7 +66,7 @@ export const SECTIONS = Object.freeze([
 const INTROS = Object.freeze({
   general: 'Your version, updates, and help when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Each change is saved at once.',
-  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits under General. Choose what it shows. All of it is Core (free).',
+  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits and what it shows. All of it is Core (free).',
   watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
@@ -479,7 +479,16 @@ export function mountPanel({
           'Show the Torn Tracker block in the sidebar'),
         h('div', { class: `${P}-muted ${P}-option` },
           'It asks torn-tracker.com at most once a minute, only while it’s open and you’re looking at the tab. ',
-          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more'))));
+          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more')),
+        // Where it sits, here with the block it places, not under General (hq #557 C19).
+        h('label', { class: `${P}-field` }, h('span', null, 'Where the block sits'),
+          h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
+            value: at, selected: at === sb.position,
+          }, POSITION_LABELS[at])))),
+        sb.moved
+          ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
+            'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
+          : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.')));
     }
     const items = SIDEBAR_ITEMS.filter((item) => matches(item.title, item.summary));
     if (items.length && !query) rows.push(h('h4', null, 'What it shows'));
@@ -677,15 +686,6 @@ export function mountPanel({
           value: look, selected: look === draft.settings.look,
         }, LOOK_LABELS[look])))),
       h('div', { class: `${P}-muted` }, 'What the companion adds to Torn’s own pages always follows Torn’s theme.'),
-      h('h4', null, 'Sidebar block'),
-      h('label', { class: `${P}-field` }, h('span', null, 'Where the Torn Tracker block sits'),
-        h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
-          value: at, selected: at === draft.settings.sidebar.position,
-        }, POSITION_LABELS[at])))),
-      draft.settings.sidebar.moved
-        ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
-          'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
-        : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.'),
       h('h4', null, 'Achievements'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-achievements': 'toast', checked: draft.settings.achievements?.toast !== false }),
