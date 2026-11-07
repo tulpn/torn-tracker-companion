@@ -13,6 +13,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - "Reset settings to defaults" asks for a second tap, as "Forget me" does, and says that your
   keys, notes and templates stay (hq #557 41).
+- Bust safety no longer shows a bare number: the badge names its band before the score, such as
+  "Easy 18" or "Hard 600". It stays a score, not a percentage, since it isn't Torn's odds
+  (hq #557 31).
 - The "Pro feature" notes on the war page and in the pre-war brief show once, not on every
   visit, and the war page's note has a × that puts it away. The brief's link reads "Open the
   brief on torn-tracker.com" for Pro and Core alike (hq #557 30).
