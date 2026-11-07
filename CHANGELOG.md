@@ -21,6 +21,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Changed
 
+- The two chain watch pieces now have their own names: the dashboard card is the **Watch
+  rota**, and the box you drag around a page is the **Watch timer**. The settings section
+  keeps the name Chain watch, since it covers both (hq #557 F24).
 - The settings page and the dashboard now follow Torn's light or dark theme unless you pick
   one under General → Look; they used to start dark. If you have saved settings before,
   your look stays as it was: pick **Same as Torn** under General → Look to follow Torn
