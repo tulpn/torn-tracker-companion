@@ -64,7 +64,7 @@ export const SECTIONS = Object.freeze([
 
 /** One line under each section's heading: what it's for, in plain words. */
 const INTROS = Object.freeze({
-  general: 'Your version, updates, and help when something misbehaves.',
+  general: 'Your version and updates, the page’s look, the achievement toast, the guide line, the dashboard preview, and logging for when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Each change is saved at once.',
   sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits and what it shows. All of it is Core (free).',
   watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Core (free).',
@@ -316,6 +316,15 @@ export function importText(registry, text) {
   return Object.keys(picked).length ? picked : null;
 }
 
+/** What each upload outcome (core/upload.js) means, for the queue line. */
+const ANSWER_WORDS = Object.freeze({
+  'key refused': 'torn-tracker.com didn’t accept your script key',
+  'update needed': 'torn-tracker.com needs a newer companion',
+  'slowed down': 'torn-tracker.com asked to wait a while',
+  refused: 'torn-tracker.com turned it down',
+  unreachable: 'torn-tracker.com couldn’t be reached',
+});
+
 export function mountPanel({
   doc = globalThis.document,
   root = doc.body,
@@ -563,20 +572,22 @@ export function mountPanel({
       lines.push(h('div', { class: `${P}-warn` }, 'Add your script key under Keys to start sharing.'));
     }
     if (queue.retryAt) {
-      lines.push(h('div', { class: `${P}-warn` }, `torn-tracker.com asked the script to wait. Sharing carries on at ${clock(queue.retryAt)}.`));
+      lines.push(h('div', { class: `${P}-warn` }, `torn-tracker.com asked the companion to wait. Sharing carries on at ${clock(queue.retryAt)}.`));
     }
     for (const [kind, min] of Object.entries(queue.blocked)) {
       lines.push(h('div', { class: `${P}-warn` },
-        `Update the script to keep sharing ${kindTitle(kind).toLowerCase()}${min === '?' ? '' : ` (${min} or newer)`}.`));
+        `Update the companion to keep sharing ${kindTitle(kind).toLowerCase()}${min === '?' ? '' : ` (${min} or newer)`}.`));
     }
     // The live state of the queue, in one line, so uploads can be seen without the console (hq #454).
+    // hq #557 D27: the answer in words; the HTTP status stays in the title for troubleshooting.
     const last = queue.last;
-    const upload = last
-      ? `${ago(Date.now() - last.at)}${last.outcome === 'sent' ? ` (${last.accepted} accepted)` : ''}`
-      : 'none yet';
-    const answer = last ? `${last.status || last.outcome}` : '—';
-    lines.push(h('div', { class: `${P}-muted`, id: `${P}-queue-line` },
-      `Queue: ${queue.queued} waiting · last upload ${upload} · last answer ${answer}`));
+    const said = last ? (ANSWER_WORDS[last.outcome] ?? last.outcome) : '';
+    const words = !last ? 'nothing sent yet'
+      : last.outcome === 'sent' ? `last sent ${ago(Date.now() - last.at)}, ${last.accepted} accepted`
+        : `last try ${ago(Date.now() - last.at)}: ${said}`;
+    lines.push(h('div', {
+      class: `${P}-muted`, id: `${P}-queue-line`, ...(last?.status ? { title: `HTTP ${last.status}` } : {}),
+    }, `${queue.queued} waiting to send · ${words}`));
     return lines;
   }
 
@@ -674,8 +685,8 @@ export function mountPanel({
           placeholder: 'tt_feed_…', autocomplete: 'off', spellcheck: 'false',
         })),
       h('p', { class: `${P}-muted` },
-        'Add to list, on profiles, also needs the key’s lists scope: it lets the companion add players to your target lists, '
-        + 'and take them off, when you press its button. Tick it when you make the key on torn-tracker.com.'),
+        'Add to list, on profiles, also needs a key that may change your lists: tick Lists when you make the key on '
+        + 'torn-tracker.com. It lets the companion add players to your target lists, and take them off, when you press its button.'),
       h('h4', null, 'Torn API key (optional)'),
     ];
     if (hasTosTable(disclosure)) {
@@ -725,19 +736,19 @@ export function mountPanel({
       h('h4', null, 'Guide'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-setting': 'guideStrip', checked: draft.settings.guideStrip !== false }),
-        'Show my next step in the torn-tracker guide at the top of this page'),
+        'Show my next step in the Torn Tracker guide at the top of this page'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion asks torn-tracker.com for it when you open a Torn page, at most every 15 minutes.'),
       h('h4', null, 'Dashboard (preview)'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-setting': 'dashboard', checked: draft.settings.dashboard === true }),
-        'Show my torn-tracker dashboard inside Torn'),
+        'Show my Torn Tracker dashboard inside Torn'),
       h('div', { class: `${P}-muted` },
         'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page, which reads “Dashboard · turn on” while this is off.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
-        'Log what the script does to the browser console'),
+        'Log what the companion does to the browser console'),
       h('div', { class: `${P}-muted` },
         'Every request to torn-tracker.com, and for each report why it was or wasn’t shared, under [torn-tracker-companion]. Your keys are never written there.'),
     ];
@@ -747,7 +758,7 @@ export function mountPanel({
     const kept = registry.filter((d) => d.data);
     return [
       h('div', { class: `${P}-card` },
-        h('div', null, `Everything the script keeps is stored only on this device (${backendName()}):`),
+        h('div', null, `Everything the companion keeps is stored only on this device (${backendName()}):`),
         h('ul', null,
           h('li', null, 'your settings, sharing choices, saved templates and player notes'),
           h('li', null, 'your script key, and your Torn API key if you add one'),
@@ -864,7 +875,7 @@ export function mountPanel({
     if (!strip) return null;
     if (strip.kind === 'offer') {
       return h('div', { class: `${P}-card ${P}-guide`, id: `${P}-guide` },
-        h('div', null, h('b', null, 'Get the most out of torn-tracker. '),
+        h('div', null, h('b', null, 'Get the most out of Torn Tracker. '),
           'A short guide, one step at a time: the bot, alerts, target lists and this companion.'),
         h('div', { class: `${P}-row` }, link(strip.url, 'Start the guide')));
     }

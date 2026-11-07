@@ -47,8 +47,8 @@ export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'terms', title: 'War terms', summary: 'The terms your faction agreed for this war, or “NOT TERMED”. Only during a war.', on: true },
   { id: 'partner', title: 'Med-out partner', summary: 'Your partner, linking to their profile. Hidden when you have none.', on: true },
   { id: 'dibs', title: 'My dibs', summary: 'The targets you hold, with time left, linking to each attack page.', on: true },
-  { id: 'oc', title: 'Organised Crime', summary: 'Your OC and its state, and when it needs you.', on: true },
-  { id: 'guide', title: 'Guide', summary: 'Your progress in the torn-tracker guide, and bonuses to claim.', on: true },
+  { id: 'oc', title: 'Organized crime', summary: 'Your OC and its state, and when it needs you.', on: true },
+  { id: 'guide', title: 'Guide', summary: 'Your progress in the Torn Tracker guide, and bonuses to claim.', on: true },
   { id: 'routine', title: 'Routine', summary: 'How many of today’s routine lines are still undone; tap for the list, each linking to its Torn page.', on: true },
   { id: 'travel', title: 'Best travel run', summary: 'Your planner’s best run right now, with its profit per hour.', on: false },
   { id: 'loot', title: 'NPC loot', summary: 'The next loot level per NPC and when it comes, with the source credited.', on: false },
@@ -365,7 +365,7 @@ export function mountSidebarBlock({
       : row(h('b', null, 'Chain'), ` ${thousands(c.current)} / ${thousands(c.max)}`, ...(c.timeoutAt ? [' · ', until(c.timeoutAt, 'timed out')] : []))),
     war(w) {
       const diff = w.ours - w.theirs;
-      return row(h('b', null, link(WAR_PAGE, 'War')), ` vs ${w.opponent}: `,
+      return row(h('b', null, link(WAR_PAGE, 'Ranked war')), ` vs ${w.opponent}: `,
         h('span', { class: diff < 0 ? `${P}-sb-alert` : '' }, `${diff >= 0 ? '+' : '−'}${thousands(Math.abs(diff))}`),
         ` · ${thousands(w.ours)} / ${thousands(w.target)}`,
         // Matched: count down to the start (CAPI-039); running: to the finish estimate.
@@ -462,7 +462,7 @@ export function mountSidebarBlock({
     } else if (answer.status !== 'ok') {
       for (const id of want) {
         const item = SIDEBAR_ITEMS.find((i) => i.id === id);
-        rows.push(row(h('b', null, item.title), h('span', { class: `${P}-sb-muted` }, ' no data')));
+        rows.push(row(h('b', null, item.title), h('span', { class: `${P}-sb-muted` }, ' didn’t load; retrying each minute')));
       }
     } else {
       // hq #507: the site says the account has no faction it manages, and every faction
@@ -484,7 +484,7 @@ export function mountSidebarBlock({
     }
     const below = profitableCount();
     if (settings.sidebar.items.shops === true && below > 0) {
-      rows.push(row(h('b', null, 'Shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'} below what a shop pays`));
+      rows.push(row(h('b', null, 'Below shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'}`));
     }
     if (showLinks) {
       const links = answer?.status === 'ok' && answer.links.length ? answer.links : LINKS;

@@ -11,6 +11,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Plainer, consistent words (hq #557 D26-D29): **Torn Tracker** for the product,
+  **torn-tracker.com** for the site and **the companion** for the script; "Organized crime",
+  "Ranked war" and "Below shop price" everywhere. A refused key now reads "didn't accept your
+  script key", the Sharing queue line says what happened in words (the HTTP status is in its
+  tooltip), and a sidebar row that didn't load says it is retried each minute. A taken Dibs
+  button reads "Taken 4:05", with the holder in its tooltip. The General intro and the tour
+  match what the settings hold, and the gym line says "estimate" once.
 - Sidebar links to torn-tracker.com carry ↗ and say they open a new tab, and the travel
   line links only the country, not the whole line (hq #557 C22).
 - The settings page shows **Dashboard · turn on** at the top while the dashboard is off,

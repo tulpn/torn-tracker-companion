@@ -277,7 +277,7 @@ describe('hq #452 the rows survive Torn redrawing its sidebar', () => {
       assert.equal(t.asked.length, 2, next.status);
       // Every row is still there; only the countdowns moved on by the minute.
       assert.equal(t.node().textContent, before.replaceAll('2:31', '1:31'), `${next.status} keeps the rows`);
-      assert.doesNotMatch(t.node().textContent, /no data/);
+      assert.doesNotMatch(t.node().textContent, /didn’t load/);
     }
   });
 });
@@ -346,10 +346,10 @@ describe('CMP-108 AC5 nothing to say, nothing shown', () => {
     }
   });
 
-  test('until the site serves the read, each item says "no data"', async () => {
+  test('until the site serves the read, each item says it didn’t load and is retried (hq #557 D27)', async () => {
     const t = mount({ answer: { status: 'failed' } });
     await settle();
-    assert.match(t.node().textContent, /Chain no data/);
+    assert.match(t.node().textContent, /Chain didn’t load; retrying each minute/);
   });
 });
 
@@ -361,11 +361,11 @@ describe('CMP-109 the shop price count', () => {
     });
     await settle();
     assert.equal(t.asked.flat().includes('shops'), false);
-    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    assert.doesNotMatch(t.node().textContent, /shop price/i);
     setProfitable(3);
-    assert.match(t.node().textContent, /Shop price 3 listings below what a shop pays/);
+    assert.match(t.node().textContent, /Below shop price 3 listings/);
     setProfitable(0);
-    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    assert.doesNotMatch(t.node().textContent, /shop price/i);
     t.block.destroy();
   });
 
@@ -373,7 +373,7 @@ describe('CMP-109 the shop price count', () => {
     const t = mount({ change: (s) => { s.sidebar.items.shops = false; } });
     await settle();
     setProfitable(1);
-    assert.doesNotMatch(t.node().textContent, /Shop price/);
+    assert.doesNotMatch(t.node().textContent, /shop price/i);
     setProfitable(0);
     t.block.destroy();
   });
@@ -447,7 +447,7 @@ describe('CHW-011, CHW-021 the watch line', () => {
     for (const watchItem of [{ now: null, next: null, gaps_24h: 48, open: false }, { now: null, next: null, gaps_24h: 48 }]) {
       const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: watchItem, war: FULL.war }, ['watch', 'war'], 0) } });
       await settle();
-      assert.match(t.node().textContent, /War vs/);
+      assert.match(t.node().textContent, /Ranked war vs/);
       assert.doesNotMatch(t.node().textContent, /Watch|Sign up/);
     }
   });
@@ -495,7 +495,7 @@ describe('hq #488 on Torn’s Home page', () => {
     assert.equal(t.node().dataset.open, 'true');
     assert.equal(t.node().hidden, false);
     assert.match(t.node().textContent, /Chain 412 \/ 500/);
-    assert.match(t.node().textContent, /War vs Ares/);
+    assert.match(t.node().textContent, /Ranked war vs Ares/);
   });
 
   test('a sidebar Torn draws late is found within the settler’s second, and read once', async () => {
@@ -683,7 +683,7 @@ describe('hq #541 links and live countdowns', () => {
   test('on the real Home sidebar the War and OC lines link to Torn’s own pages, same tab', async () => {
     const t = live();
     await settle();
-    const war = line(t, 'War').querySelector('b a');
+    const war = line(t, 'Ranked war').querySelector('b a');
     const oc = line(t, 'OC').querySelector('b a');
     assert.equal(war.getAttribute('href'), WAR_PAGE);
     assert.equal(oc.getAttribute('href'), CRIMES_PAGE);
@@ -699,13 +699,13 @@ describe('hq #541 links and live countdowns', () => {
     const t = live();
     await settle();
     assert.match(line(t, 'Chain').textContent, /· 2:30$/);
-    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
+    assert.match(line(t, 'Ranked war').textContent, /ends in ~1:02:09$/);
     assert.match(line(t, 'OC').textContent, /ready in 1:05$/);
     assert.equal(t.timers.intervals.size, 1, 'one shared ticker');
     t.advance(1_000);
     t.timers.beat();
     assert.match(line(t, 'Chain').textContent, /· 2:29$/);
-    assert.match(line(t, 'War').textContent, /ends in ~1:02:08$/);
+    assert.match(line(t, 'Ranked war').textContent, /ends in ~1:02:08$/);
     assert.match(line(t, 'OC').textContent, /ready in 1:04$/);
     assert.equal(t.asked.length, 1);
   });
@@ -721,7 +721,7 @@ describe('hq #541 links and live countdowns', () => {
     assert.match(line(t, 'Chain').textContent, /· timed out$/);
     t.advance(3_729_000);
     t.timers.beat();
-    assert.match(line(t, 'War').textContent, /· ending$/);
+    assert.match(line(t, 'Ranked war').textContent, /· ending$/);
   });
 
   test('the ticker rests while the tab is hidden and catches up when it is seen again', async () => {
@@ -785,18 +785,18 @@ describe('CAPI-039 war start and OC expiry', () => {
   test('a matched war counts down to its start, then says starting', async () => {
     const t = show(MATCHED);
     await settle();
-    assert.match(line(t, 'War').textContent, /vs Crimson Tide: \+0 · 0 \/ 4,000 · starts in 1:23:45$/);
-    assert.equal(line(t, 'War').querySelector('b a').getAttribute('href'), WAR_PAGE, 'a live war has no page by id');
+    assert.match(line(t, 'Ranked war').textContent, /vs Crimson Tide: \+0 · 0 \/ 4,000 · starts in 1:23:45$/);
+    assert.equal(line(t, 'Ranked war').querySelector('b a').getAttribute('href'), WAR_PAGE, 'a live war has no page by id');
     t.advance(5_025_000);
     t.timers.beat();
-    assert.match(line(t, 'War').textContent, /· starting$/);
+    assert.match(line(t, 'Ranked war').textContent, /· starting$/);
   });
 
   test('a running war counts to its finish, not to a start already past', async () => {
     const t = show({ ...MATCHED, war: { ...MATCHED.war, state: 'running', starts_at: at(-60_000), finish_eta: at(3_729_000) } });
     await settle();
-    assert.match(line(t, 'War').textContent, /ends in ~1:02:09$/);
-    assert.doesNotMatch(line(t, 'War').textContent, /start/);
+    assert.match(line(t, 'Ranked war').textContent, /ends in ~1:02:09$/);
+    assert.doesNotMatch(line(t, 'Ranked war').textContent, /start/);
   });
 
   test('a ready crime ignores its expiry', async () => {
@@ -930,7 +930,7 @@ describe('hq #606 a new page shows the last answer, not “no data”', () => {
     const text = t.node().textContent;
     assert.match(text, /Chain 412 \/ 500/);
     assert.match(text, /My dibs/);
-    assert.doesNotMatch(text, /no data/i);
+    assert.doesNotMatch(text, /didn’t load/i);
     assert.match(t.node().querySelector('[data-ttc-aged]').textContent, /^As of .+ ago$/);
     assert.equal(t.asked.length, 1, 'no extra read');
   });

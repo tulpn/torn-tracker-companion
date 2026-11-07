@@ -46,4 +46,4 @@ notes that device has.
 
 > **What it reads and sends.** Your notes are kept only on this device, in the
 > companion's settings. Nothing is sent anywhere, and no player is looked up for them.
-> **Forget me** deletes them, along with everything else the script keeps.
+> **Forget me** deletes them, along with everything else the companion keeps.

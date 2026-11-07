@@ -363,7 +363,7 @@ describe('acceptance test 11: a stale box never looks safe', () => {
   test('a refused key: No data, saying why', async () => {
     const t = await mount({ answer: () => ({ status: 'refused' }) });
     assert.equal(t.state(), 'nodata');
-    assert.match(t.text('source'), /refused/);
+    assert.match(t.text('source'), /didn’t accept your script key/);
   });
 });
 

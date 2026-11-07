@@ -53,7 +53,7 @@ describe('JOB-072 which list this is', () => {
 
   test('the badge words', () => {
     assert.equal(badgeText({ merits: 10, job_points: 1234, fit: 'good' }), '10 merits · 1,234 job points · good fit');
-    assert.equal(badgeText({ merits: null, job_points: null, fit: null }), 'shared card');
+    assert.equal(badgeText({ merits: null, job_points: null, fit: null }), 'shared with torn-tracker.com');
   });
 });
 

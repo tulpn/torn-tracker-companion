@@ -69,7 +69,7 @@ the Torn forum.
 
 ## Your next guide step
 
-If you started the torn-tracker guide on the website, every section of the settings page
+If you started the Torn Tracker guide on the website, every section of the settings page
 starts with your next step: what it gets you, and a button straight to where it's done,
 plus a link to the whole guide. If you haven't started it, one line offers it; once you
 dismiss the guide on the website, that line is gone. Steps still tick only on the website,

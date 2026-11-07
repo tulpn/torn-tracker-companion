@@ -152,7 +152,7 @@ const ROTA_ID = `${P}-rota`;
 /** Words for an answer that isn't the rota. */
 const TROUBLE = Object.freeze({
   no_key: 'Add your script key under Keys to see and join your faction’s rota.',
-  refused: 'torn-tracker.com refused your script key. Check it under Keys.',
+  refused: 'torn-tracker.com didn’t accept your script key. Check it under Keys.',
   no_faction: 'You’re not in a faction on torn-tracker.com, so there’s no rota to show.',
   wait: 'torn-tracker.com asked to wait a little. Try again in a minute.',
   failed: 'torn-tracker.com didn’t answer. Try again in a moment.',

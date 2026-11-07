@@ -470,7 +470,7 @@ describe('hq #454 #520 the built script: ticking a kind is the agreement', () =>
     const t = await boot(PAGE);
     await openOn(t, 'sharing');
     assert.match(t.panel().textContent, /Nothing is shared yet/);
-    assert.match(t.panel().textContent, /Queue: 0 waiting · last upload none yet/);
+    assert.match(t.panel().textContent, /0 waiting to send · nothing sent yet/);
     userCheck(t, t.panel().querySelector(`#${PREFIX}-share-foreign_stock`));
     await t.tick();
     const saved = JSON.parse(t.window.localStorage.getItem(`${PREFIX}_settings`));

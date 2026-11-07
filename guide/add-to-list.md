@@ -14,7 +14,7 @@ keywords: torn target list, torn chain targets, add target torn, torn faction ta
 
 > **Test release.** The companion is in public testing. Things may change before version 1.
 
-**Core:** free for everyone. Needs your script key, with the lists scope.
+**Core:** free for everyone. Needs your script key, made with **Lists** ticked.
 
 ## What you see
 
@@ -37,16 +37,16 @@ the list's owner, can take them off again.
 
 If torn-tracker.com can't be reached when the profile opens, the button stays away for
 that visit; open the profile again later. If the site is only busy, the button says
-**Lists: try again**.
+**Lists didn't load. Retry**.
 
 One click is one change on torn-tracker.com. It never attacks, and it does nothing in Torn
 itself.
 
 ## Setting it up
 
-The button needs your script key, and the key needs the **lists** scope. Without it, the
+The button needs your script key, and the key must be made with **Lists** ticked. Without it, the
 button says **Add your script key** and opens the [settings](settings-panel.md) at Keys.
-Make a key with the lists scope ticked on torn-tracker.com and save it there.
+Make a key with **Lists** ticked on torn-tracker.com and save it there.
 
 Switch it off in the settings: **Add to list**, under **War and attacks**. Switched off,
 it asks nothing.

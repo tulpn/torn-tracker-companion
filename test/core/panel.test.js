@@ -332,9 +332,9 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     });
     t.open('sharing');
     assert.match(t.text(), /did not accept your script key/);
-    assert.match(t.text(), /asked the script to wait/);
-    assert.match(t.text(), /Update the script to keep sharing loadouts \(1\.4\.0 or newer\)/);
-    assert.match(t.text(), /Queue: 3 waiting · last upload none yet · last answer —/);
+    assert.match(t.text(), /asked the companion to wait/);
+    assert.match(t.text(), /Update the companion to keep sharing loadouts \(1\.4\.0 or newer\)/);
+    assert.match(t.text(), /3 waiting to send · nothing sent yet/);
   });
 
   test('hq #454: the queue line shows waiting, the last upload and the last answer, live', () => {
@@ -344,17 +344,18 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     };
     const t = mount({ queue });
     t.open('sharing');
-    assert.equal(t.$('#ttc-queue-line').textContent, 'Queue: 2 waiting · last upload 2m ago (5 accepted) · last answer 200');
+    assert.equal(t.$('#ttc-queue-line').textContent, '2 waiting to send · last sent 2m ago, 5 accepted');
     // A flush answered 429: updateQueue redraws the line without touching the draft.
     t.change(t.$('#ttc-share-loadout'), true);
     Object.assign(queue, { queued: 0, retryAt: Date.now() + 60_000, last: { outcome: 'slowed down', at: Date.now() - 1000, accepted: 0, status: 429 } });
     t.panel.updateQueue();
-    assert.equal(t.$('#ttc-queue-line').textContent, 'Queue: 0 waiting · last upload just now · last answer 429');
+    assert.equal(t.$('#ttc-queue-line').textContent, '0 waiting to send · last try just now: torn-tracker.com asked to wait a while');
+    assert.equal(t.$('#ttc-queue-line').getAttribute('title'), 'HTTP 429', 'the status stays in the title (hq #557 D27)');
     assert.equal(t.$('#ttc-share-loadout').checked, true);
     // No answer at all: the outcome stands in for the status.
     Object.assign(queue, { last: { outcome: 'unreachable', at: Date.now() - 3_600_000, accepted: 0, status: 0 } });
     t.panel.updateQueue();
-    assert.match(t.$('#ttc-queue-line').textContent, /last upload 1h ago · last answer unreachable$/);
+    assert.match(t.$('#ttc-queue-line').textContent, /last try 1h ago: torn-tracker.com couldn’t be reached$/);
   });
 
   test('ADM-068 Q-ADM-5 a banned account sees the neutral notice, with no reason', () => {
@@ -390,7 +391,7 @@ describe('CMP-011 CMP-012 the keys', () => {
     t.open('keys');
     assert.equal(t.$('#ttc-key-script').type, 'password');
     assert.match(t.text(), /It is not a Torn API key/);
-    assert.match(t.text(), /also needs the key’s lists scope/);
+    assert.match(t.text(), /also needs a key that may change your lists: tick Lists/);
   });
 
   test('a mistyped key is not saved; the panel says what is wrong', async () => {

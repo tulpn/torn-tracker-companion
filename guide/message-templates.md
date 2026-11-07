@@ -76,4 +76,4 @@ other device, paste it into the same box and press **Import**.
 > and message. Between the two pages, the filled-in message waits in this browser tab
 > for ten minutes at most, and is removed once used. Your templates and your own values are kept only on this device, in
 > the companion's settings. Nothing is sent anywhere. **Forget me** deletes them, along
-> with everything else the script keeps.
+> with everything else the companion keeps.
