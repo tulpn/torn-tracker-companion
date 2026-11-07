@@ -3,7 +3,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { factionOf } from '../../src/features/war-brief/index.js';
+import feature, { factionOf, validateBriefData } from '../../src/features/war-brief/index.js';
 import { runFeature } from '../feature-harness.js';
 
 const OPPONENT = 'https://www.torn.com/factions.php?step=profile&ID=678';
@@ -62,7 +62,7 @@ describe('PRE-042 the strip', () => {
     await wait();
     assert.match(strip(r).textContent, /Pro feature/);
     assert.equal(strip(r).querySelector('a').textContent, 'Open the brief on torn-tracker.com');
-    assert.deepEqual(r.stored(), { proNoteSeen: true });
+    assert.deepEqual(r.stored(), { proNoteSeen: true, shownFor: 678 });
     r.stop();
     const again = run({ site: fakeSite(core), data: { proNoteSeen: true } });
     await wait();
@@ -80,6 +80,54 @@ describe('PRE-042 the strip', () => {
   test('no pre-war window: nothing', async () => {
     const r = run({ site: fakeSite(null) });
     await wait();
+    assert.equal(strip(r), null);
+  });
+});
+
+describe('hq #557 A6 the strip keeps its place where it showed last time', () => {
+  const pro = { opponent: 678, compare: COMPARE, headline: 'Larger.', briefUrl: null, pro: true };
+
+  test('the saved data is checked field by field', () => {
+    assert.deepEqual(validateBriefData(null), { proNoteSeen: false, shownFor: null });
+    assert.deepEqual(validateBriefData({ proNoteSeen: 'yes', shownFor: -3 }), { proNoteSeen: false, shownFor: null });
+    assert.deepEqual(validateBriefData({ proNoteSeen: true, shownFor: 678 }), { proNoteSeen: true, shownFor: 678 });
+  });
+
+  test('a first visit adds nothing until the answer, then remembers the page', async () => {
+    const r = run({ site: fakeSite(pro) });
+    assert.equal(strip(r), null);
+    await wait();
+    assert.match(strip(r).textContent, /^Your next ranked war: /);
+    assert.equal(r.stored().shownFor, 678);
+  });
+
+  test('the next visit holds the place at once and fills it in place', async () => {
+    const r = run({ site: fakeSite(pro), data: { proNoteSeen: false, shownFor: 678 } });
+    assert.equal(strip(r).dataset.loading, 'true');
+    assert.equal(strip(r).textContent, 'Your next ranked war: Loading…');
+    assert.equal(strip(r).previousElementSibling.className, 'content-title');
+    await wait();
+    assert.equal(r.doc.querySelectorAll('.ttc-brief').length, 1);
+    assert.equal(strip(r).dataset.loading, undefined);
+    assert.match(strip(r).textContent, /Larger\./);
+  });
+
+  test('when the war is over the held place goes, and the page is forgotten', async () => {
+    const r = run({ site: fakeSite(null), data: { proNoteSeen: true, shownFor: 678 } });
+    assert.ok(strip(r));
+    await wait();
+    assert.equal(strip(r), null);
+    assert.deepEqual(r.stored(), { proNoteSeen: true, shownFor: null });
+  });
+
+  test('the Core note and the place are saved together', async () => {
+    const r = run({ site: fakeSite({ ...pro, headline: null, pro: false }) });
+    await wait();
+    assert.deepEqual(r.stored(), { proNoteSeen: true, shownFor: 678 });
+  });
+
+  test('another faction page holds nothing', () => {
+    const r = run({ url: 'https://www.torn.com/factions.php?step=profile&ID=999', site: fakeSite(pro), data: { proNoteSeen: false, shownFor: 678 } });
     assert.equal(strip(r), null);
   });
 });
