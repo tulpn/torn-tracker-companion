@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Buttons look the same everywhere: the settings panel, the dashboard and the buttons on
+  Torn's pages share one shape and colour, and the main action is the filled one ("Add to
+  <list>" on profiles, "Open on torn-tracker.com" on the dashboard) (hq #557 E33).
 - The bazaar and item market cash reminder is now an amber notice strip, and your mug history
   on profiles a plain information strip, instead of small pills (hq #557 E36).
 - Red now only means bad (hq #557 E35). The shop price highlighter's tiers are named Best,
