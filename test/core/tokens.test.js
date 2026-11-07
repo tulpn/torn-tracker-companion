@@ -8,7 +8,7 @@ import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
 import { TOKENS } from '../../src/data/tokens.js';
-import { declarations, followTorn, lookTheme, px, tornTheme } from '../../src/core/tokens.js';
+import { DEFAULT_LOOK, declarations, followTorn, lookTheme, px, tornTheme } from '../../src/core/tokens.js';
 import { ensureStyle } from '../../src/core/ui.js';
 import { moduleFrom, tokensFrom } from '../../tools/build-tokens.mjs';
 import { ROOT } from '../helpers.js';
@@ -114,11 +114,13 @@ describe('which theme', () => {
     assert.equal(tornTheme(page('dark-mode')), 'dark');
   });
 
-  test('the settings page\'s look: dark by default, light, or Torn\'s', () => {
+  test('the settings page\'s look: Torn\'s by default, dark or light (hq #557 F32)', () => {
     assert.equal(lookTheme('dark', page()), 'dark');
     assert.equal(lookTheme('light', page('dark-mode')), 'light');
     assert.equal(lookTheme('torn', page()), 'light');
     assert.equal(lookTheme('torn', page('dark-mode')), 'dark');
-    assert.equal(lookTheme(undefined, page()), 'dark');
+    assert.equal(lookTheme(undefined, page()), 'light');
+    assert.equal(lookTheme(undefined, page('dark-mode')), 'dark');
+    assert.equal(DEFAULT_LOOK, 'torn');
   });
 });
