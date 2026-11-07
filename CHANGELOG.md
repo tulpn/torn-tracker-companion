@@ -13,6 +13,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - On a phone, the settings page's "Dashboard · turn on" link no longer squeezes the title under
   the key state: it takes its own row under them (hq #557 C21).
+- In settings, a feature that needs a key shows one badge for each missing key, "Needs script
+  key" or "Needs Torn API key", and the badge opens Keys (hq #557 E37).
 - Buttons look the same everywhere: the settings panel, the dashboard and the buttons on
   Torn's pages share one shape and colour, and the main action is the filled one ("Add to
   <list>" on profiles, "Open on torn-tracker.com" on the dashboard) (hq #557 E33).
