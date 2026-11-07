@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The chain watch slot notice and the rota table's gap marks use the suite's colours, and
+  the notice is light or dark as Torn's page is, instead of always dark (hq #557 E34).
 - Plainer, consistent words (hq #557 D26-D29): **Torn Tracker** for the product,
   **torn-tracker.com** for the site and **the companion** for the script; "Organized crime",
   "Ranked war" and "Below shop price" everywhere. A refused key now reads "didn't accept your

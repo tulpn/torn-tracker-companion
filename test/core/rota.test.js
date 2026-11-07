@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 import { createCache } from '../../src/core/cache.js';
 import { CHAIN_WATCH_URL, SPACES, createSite, readSidebar } from '../../src/core/site.js';
 import {
-  BOARD_URL, NOTICE_ID, createRota, mountSlotNotice, replyText, rotaSection, syncRota, watchLine,
+  BOARD_URL, NOTICE_ID, ROTA_STYLE, createRota, mountSlotNotice, replyText, rotaSection, syncRota, watchLine,
 } from '../../src/core/rota.js';
 import { el } from '../../src/core/dom.js';
 
@@ -305,6 +305,19 @@ function noticeRig({ on = false, quiet } = {}) {
 }
 
 describe('CHW-026 the slot-start notice', () => {
+  test('hq #557 E34: the notice and the rota table use the tokens, light or dark as Torn is', () => {
+    const t = noticeRig();
+    t.notice.plan({ role: 'lead', startsAt: T0 });
+    t.fire(10_000);
+    const css = t.window.document.getElementById('ttc-watch-notice-style').textContent;
+    assert.ok(css.includes(`body.dark-mode #${NOTICE_ID}`), 'dark on Torn’s dark theme');
+    // Past the token declarations, no colour is written by hand.
+    const start = css.indexOf('box-sizing: border-box; display: flex');
+    assert.ok(start > 0);
+    assert.doesNotMatch(css.slice(start), /#[0-9a-f]{3,6}|rgba?\(/i);
+    assert.doesNotMatch(ROTA_STYLE, /#[0-9a-f]{3,6}|rgba?\(/i);
+  });
+
   test('when a slot starts with watch mode off: a notice, never watch mode by itself', () => {
     const t = noticeRig();
     t.notice.fromSidebar({ now: null, next: { role: 'lead', slotStart: T0, startsAt: T0 }, gaps: 0 });
