@@ -47,7 +47,7 @@ const STYLE = `
     --ttc-ink: ${INK.neutral};
     display: inline-flex; align-items: center; gap: 4px; max-width: 100%; box-sizing: border-box;
     margin: 1px 0 1px 6px; padding: 1px 8px; border-radius: 999px;
-    font: 600 11px/16px var(--tt-font-sans); letter-spacing: .01em;
+    font: 600 12px/16px var(--tt-font-sans); letter-spacing: .01em;
     vertical-align: middle; white-space: normal; overflow-wrap: anywhere; text-decoration: none;
     background: ${tint('var(--ttc-ink)')}; color: var(--ttc-ink);
   }
@@ -76,7 +76,7 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
   .${P}-ui-badge[data-pin="under"] {
     position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); z-index: 1; margin: 0;
-    padding: 0 7px; white-space: nowrap; font-size: 10px; line-height: 15px; pointer-events: none;
+    padding: 0 7px; white-space: nowrap; font-size: 12px; line-height: 16px; pointer-events: none;
     --ttc-pin-under: var(--default-bg-panel-color, var(--card));
     background: linear-gradient(${tint('var(--ttc-ink)')}, ${tint('var(--ttc-ink)')}), var(--ttc-pin-under);
     box-shadow: 0 0 0 2px var(--ttc-pin-under);
@@ -97,14 +97,14 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   .${P}-ui-strip ol, .${P}-ui-strip ul { margin: 4px 0 6px 18px; padding: 0; }
   .${P}-ui-strip li { margin: 2px 0; }
   .${P}-ui-strip a { color: var(--ring); font-weight: 600; }
-  .${P}-ui-note { display: block; margin-top: 2px; font: 11px/1.4 var(--tt-font-sans); color: var(--muted-foreground); overflow-wrap: anywhere; }
+  .${P}-ui-note { display: block; margin-top: 2px; font: 12px/1.4 var(--tt-font-sans); color: var(--muted-foreground); overflow-wrap: anywhere; }
   .${P}-ui-bar {
     display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0;
     font: 12px var(--tt-font-sans);
   }
   .${P}-ui-button {
     min-height: 26px; padding: 2px 12px; border: 1px solid var(--input); border-radius: 999px; cursor: pointer;
-    font: 600 11px/18px var(--tt-font-sans);
+    font: 600 13px/18px var(--tt-font-sans);
     background: var(--card); color: var(--card-foreground);
     transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
   }
@@ -120,14 +120,14 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   ${SMALL} {
     display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
     width: auto; min-width: 0; height: 20px; min-height: 0; margin: 0 0 0 4px; padding: 0 8px;
-    font: 600 11px/18px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; text-transform: none;
+    font: 600 13px/18px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; text-transform: none;
   }
   /* Inline beside one of Torn's form fields (hq issue 521): the field's height, one line, our
      accent. The class twice outweighs Torn's own form button rules, which made it black. */
   ${INLINE} {
     display: inline-flex; flex: none; align-items: center; vertical-align: middle; box-sizing: border-box;
     min-height: 0; min-width: 0; height: 24px; margin: 0 0 0 4px; padding: 0 8px; white-space: nowrap;
-    font: 600 11px/1 var(--tt-font-sans); text-transform: none; box-shadow: none; text-shadow: none;
+    font: 600 13px/1 var(--tt-font-sans); text-transform: none; box-shadow: none; text-shadow: none;
     border: 1px solid var(--primary); border-radius: var(--radius);
     background: ${tint('var(--primary)')}; color: var(--foreground);
   }
@@ -185,7 +185,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     margin: 0 4px 0 6px; vertical-align: middle; background: var(--${P}-shop-ink);
   }
   [data-${P}-shop-label]::after {
-    content: attr(data-${P}-shop-label); margin-left: 4px; font-weight: 700; font-size: .9em;
+    content: attr(data-${P}-shop-label); margin-left: 4px; font-weight: 700; font-size: max(12px, .9em);
     white-space: nowrap; color: var(--${P}-shop-ink);
   }
   /* Text the player is about to send, shown as it will read; a part it lacks is flagged. */
@@ -249,7 +249,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     background: var(--card); color: var(--card-foreground); font: 14px/1.4 var(--tt-font-sans); text-align: left;
   }
   ${MENU} .${P}-lists-head {
-    padding: 6px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 6px 10px 4px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
     color: var(--muted-foreground);
   }
   ${MENU} .${P}-lists-item {
@@ -271,7 +271,7 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
   }
   ${MENU} .${P}-lists-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   ${MENU} .${P}-lists-tag {
-    flex: none; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px;
+    flex: none; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 18px;
     background: ${tint('var(--primary)')}; color: var(--muted-foreground);
   }
   /* Each list's row: the tick button, then Open to that list's page on the site (hq issue 486). */

@@ -119,7 +119,7 @@ const STYLE = `
     background: var(--ttc-accent); color: var(--ttc-accent-text); font: 800 13px/1 var(--tt-font-sans); letter-spacing: -.02em;
   }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  #${P}-panel .${P}-head h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--ttc-muted); }
+  #${P}-panel .${P}-head h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--ttc-muted); }
   #${P}-panel .${P}-keystate { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 999px;
     font-size: 12px; font-weight: 600; background: var(--ttc-accent-soft); color: var(--ttc-text); }
   #${P}-panel .${P}-keystate[data-key="none"] { background: color-mix(in srgb, var(--ttc-warn) 18%, transparent); }
@@ -136,7 +136,7 @@ const STYLE = `
   #${P}-panel .${P}-head .${P}-x { border-radius: 999px; border-color: transparent; font-size: 16px; padding: 8px 12px; }
   #${P}-panel nav, #${P}-panel main, #${P}-panel .${P}-head { min-width: 0; }
   #${P}-panel .${P}-card[data-needs-key="true"] > label.${P}-check:first-child::after {
-    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+    content: "needs key"; margin-left: auto; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
     background: var(--ttc-accent-soft); color: var(--ttc-muted);
   }
   #${P}-panel nav { grid-area: nav; padding: 12px 10px; background: var(--ttc-surface); border-right: 1px solid var(--ttc-line); }
@@ -234,7 +234,7 @@ const STYLE = `
     #${P}-panel .${P}-head { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
     /* hq issue 489: the title gives way, so the key state and ✕ stay on its row at 360 px. */
     #${P}-panel .${P}-brand { flex: 1 1 0; min-width: 0; }
-    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 11px; }
+    #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 12px; }
     #${P}-panel .${P}-head .${P}-tools { gap: 4px; }
     #${P}-panel .${P}-head .${P}-x { padding: 6px 10px; }
     #${P}-panel .${P}-find { padding: 10px 12px; }
