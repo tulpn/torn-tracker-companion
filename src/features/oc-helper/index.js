@@ -86,15 +86,17 @@ export default {
       if (node.dataset.detail !== detail) node.dataset.detail = detail;
     }
 
-    /** One visible credit line above the first crime card, once any weight shows. */
+    /**
+     * One visible credit line under the last crime card, once any weight shows. Below the
+     * cards, not above, so its late arrival never pushes the crimes down (hq #557 A6).
+     */
     function credit(card, source) {
       const text = `Role weights: ${source}, via torn-tracker.com`;
       let node = doc.querySelector(`.${CREDIT}`);
-      if (!node) {
-        node = note(doc, { cls: `${MARK} ${CREDIT}`, attrs: { 'data-kind': 'credit' } });
-        const first = doc.querySelector(CARD);
-        (first || card).before(node);
-      }
+      if (!node) node = note(doc, { cls: `${MARK} ${CREDIT}`, attrs: { 'data-kind': 'credit' } });
+      const cards = doc.querySelectorAll(CARD);
+      const last = cards[cards.length - 1] || card;
+      if (last.nextElementSibling !== node) last.after(node);
       if (node.textContent !== text) node.textContent = text;
     }
 
