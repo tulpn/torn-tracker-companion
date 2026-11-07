@@ -72,7 +72,7 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
     font: 400 12px/1.4 var(--tt-font-sans); border: 1px solid var(--border); border-radius: var(--radius);
     background: var(--popover); color: var(--popover-foreground); box-shadow: var(--tt-shadow-md);
   }
-  /* Near the right edge the detail opens leftwards, so it stays on a 360 px screen (hq #557 A9). */
+  /* Near the right edge the detail opens leftwards, so it stays on a 360 px screen (hq issue 557, A9). */
   ${COMPACT}[data-open="true"][data-flip="end"]::after { left: auto; right: 0; }
   /* Pinned over the bottom edge of a positioned box (a round icon), so it takes no line of
      its own in a row whose height Torn fixes. Opaque, so the icon doesn't show through. */
