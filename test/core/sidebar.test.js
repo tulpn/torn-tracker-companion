@@ -425,6 +425,18 @@ describe('CHW-011, CHW-021 the watch line', () => {
     assert.equal(t.node().querySelector('.ttc-sb-switch').getAttribute('aria-pressed'), 'true');
   });
 
+  test('hq #557 B16: the switch says Watch with its state as on or off', async () => {
+    const watch = fakeWatch();
+    const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: NEXT }, ['watch'], 0) }, watch });
+    await settle();
+    const sw = () => t.node().querySelector('.ttc-sb-switch');
+    assert.equal(sw().textContent, 'Watch off');
+    assert.equal(sw().getAttribute('aria-label'), 'Watch mode');
+    sw().dispatchEvent(new t.window.MouseEvent('click', { bubbles: true }));
+    assert.equal(sw().textContent, 'Watch on');
+    assert.match(sw().title, /^Watch mode is on/);
+  });
+
   test('hq #523: no slot, and a watch open: a way to sign up', async () => {
     const t = mount({ answer: { status: 'ok', ...readSidebar({ watch: { now: null, next: null, gaps_24h: 0, open: true } }, ['watch', 'war'], 0) } });
     await settle();

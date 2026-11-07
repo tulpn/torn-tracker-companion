@@ -19,10 +19,13 @@ your script key.
 
 ## Sort your opponents
 
-Above the opponents' list, choose an order: **Torn's order**, **Status** (hittable first),
+Above the opponents' list, pick an order in the **Sort** list: **Torn's order**, **Status** (hittable first),
 **Out soonest** (who leaves hospital next), **Level** or **Fair fight**. Torn's own rows
 are moved, never copied, and **Torn's order** puts them back. Pick the default in the
 settings, under **Features**.
+
+If Torn War Stuff Enhanced is running and has marked the list, the companion leaves the
+sorting to it: there's no **Sort** list, and the rows stay as that script and Torn put them.
 
 ## Timers and destinations
 

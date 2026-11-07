@@ -11,6 +11,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The war page's Sort bar is one select instead of five buttons that wrapped to three
+  lines, and it stands aside when Torn War Stuff Enhanced is on the page (hq #557 B14).
+- The listing's total on the shop price highlighter is left off the label on screens under
+  400 px, so narrow listings no longer overflow; it stays in the tooltip (hq #557 B15).
+- The sidebar Watch line's switch now reads **Watch on** or **Watch off**, so the line fits
+  the sidebar (hq #557 B16).
 - The trade value line now sits under the whole trade at full width, not inside the narrow
   column of one side, where it wrapped a word at a time (hq #557 A10).
 - The travel agency's best runs panel holds its place with "Loading…" from the start, and

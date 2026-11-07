@@ -67,7 +67,7 @@ In the [settings](settings-panel.md), under **Features**, **Shop price highlight
 - **Colour listings by**: profit per item in dollars, or the margin in percent;
 - the minimum for each colour, in either mode;
 - **Show the profit beside the price**;
-- **Add the listing's total**, the profit times how many are listed;
+- **Add the listing's total**, the profit times how many are listed (on a screen under 400 px wide it is left off the label and stays in the price's tooltip);
 - **Hide listings that are not below a shop price**, which leaves only the deals on screen.
 
 **Undersell warning** has its own switch. Both start on.

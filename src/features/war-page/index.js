@@ -1,6 +1,6 @@
 // The ranked-war page (CMP-102).
 //
-// Above the opponents' list, a row of buttons sorts it by what the page already shows:
+// Above the opponents' list, one Sort select orders it by what the page already shows:
 // status, level, or the fair-fight estimate from torn-tracker.com. Beside each opponent,
 // a dibs button shows who in our faction has called them, and pressing it claims or
 // releases the target on torn-tracker.com. That is one site action per press; nothing is
@@ -24,7 +24,7 @@
 
 import { el, settler } from '../../core/dom.js';
 import { badge, bar as uiBar, button as uiButton, setTone, tapDetail } from '../../core/ui.js';
-import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN } from './selectors.js';
+import { ENEMY_ROW, LISTS, MEMBER, STATUS, STATUS_TAKEN, TWSE } from './selectors.js';
 import { ORDERS, comparator, playerOf } from './order.js';
 
 const MARK = 'ttc-war';
@@ -188,20 +188,21 @@ export default {
     const now = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now());
 
 
+    // One select, not a row of five buttons that wrapped to three lines (hq #557 B14).
     function bar(list) {
       const prev = list.previousElementSibling;
       if (prev?.classList.contains(`${MARK}-bar`)) return prev;
-      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-sort' } }, el('strong', { ownerDocument: doc }, 'Sort'));
-      for (const order of ORDERS) {
-        const button = uiButton(doc, { attrs: { 'data-order': order } }, LABELS[order]);
-        button.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          s.order = order;
-          scan().catch((err) => ctx.log('war page', err));
-        });
-        node.append(button);
-      }
+      const select = el('select', { class: `${MARK}-order`, 'aria-label': 'Sort opponents by', ownerDocument: doc },
+        ...ORDERS.map((order) => el('option', { value: order, ownerDocument: doc }, LABELS[order])));
+      select.value = s.order;
+      select.addEventListener('change', (event) => {
+        event.stopPropagation();
+        if (!ORDERS.includes(select.value)) return;
+        s.order = select.value;
+        scan().catch((err) => ctx.log('war page', err));
+      });
+      const node = uiBar(doc, { cls: `${MARK}-bar`, attrs: { [`data-${MARK}`]: '', 'data-tour': 'war-sort' } },
+        el('label', { ownerDocument: doc }, el('strong', { ownerDocument: doc }, 'Sort '), select));
       list.before(node);
       return node;
     }
@@ -378,15 +379,19 @@ export default {
       times();
       loadoutLabels();
       for (const button of doc.querySelectorAll(`.${MARK}-dibs`)) render(button, Number(button.dataset.player));
-      for (const button of doc.querySelectorAll(`.${MARK}-bar button`)) {
-        button.setAttribute('aria-pressed', String(button.dataset.order === s.order));
+      for (const select of doc.querySelectorAll(`.${MARK}-order`)) {
+        if (select.value !== s.order) select.value = s.order;
       }
     }
 
     async function scan() {
       const lists = enemyLists(doc);
       if (lists.length === 0) return;
-      for (const list of lists) bar(list);
+      // Torn War Stuff Enhanced sorts the same rows: with it on the page (seen by its own
+      // mark in the DOM, never its storage), ours stands aside (hq #557 B14).
+      const other = Boolean(doc.querySelector(TWSE));
+      if (other) for (const node of doc.querySelectorAll(`.${MARK}-bar`)) node.remove();
+      else for (const list of lists) bar(list);
       for (const list of lists) {
         for (const row of list.querySelectorAll(ENEMY_ROW)) if (!s.seen.has(row)) s.seen.set(row, s.seenCount++);
       }
@@ -394,7 +399,7 @@ export default {
       if (!alive()) return;
       const compare = comparator(s.order, s.ff, s.roster, now())
         || ((a, b) => (s.seen.get(a) ?? Infinity) - (s.seen.get(b) ?? Infinity));
-      for (const list of lists) sortList(list, compare);
+      if (!other) for (const list of lists) sortList(list, compare);
       placeDibs(lists);
       paint();
     }
