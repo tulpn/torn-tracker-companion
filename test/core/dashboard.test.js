@@ -17,6 +17,7 @@ import { routeOf } from '../../src/core/page.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, normalize } from '../../src/core/settings.js';
 import { MARK } from '../../src/data/brand.js';
+import { TOKENS } from '../../src/data/tokens.js';
 import { ROOT } from '../helpers.js';
 
 const KEY = `tt_feed_${'D'.repeat(43)}`;
@@ -437,6 +438,21 @@ describe('hq #465 the charts', () => {
     for (const theme of ['light', 'dark']) {
       const css = chartDeclarations(theme);
       for (const colour of CHART_COLOURS[theme]) assert.ok(css.includes(colour), `${theme} ${colour}`);
+    }
+  });
+
+  test('hq #679: the series are the site’s chart tokens, each 3:1 against the card', () => {
+    const lum = (hex) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+        .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+    for (const theme of ['light', 'dark']) {
+      assert.deepEqual([...CHART_COLOURS[theme]], [1, 2, 3, 4].map((n) => TOKENS[theme][`chart-${n}`]));
+      for (const colour of CHART_COLOURS[theme]) {
+        assert.ok(ratio(colour, TOKENS[theme].card) >= 3, `${theme} ${colour} on the card`);
+      }
     }
   });
 

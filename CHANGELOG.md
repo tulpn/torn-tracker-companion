@@ -20,6 +20,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The companion's colours follow torn-tracker.com's current theme: violet buttons, switches and
   links in place of the old blue, in Torn's dark and light modes. The status colours keep their
   meaning: the shop's "Fair" tier, the Ally tag and information strips stay blue (hq #675).
+- The dashboard's charts take torn-tracker.com's own chart colours, violet first, in both
+  themes (hq #679).
 
 ### Fixed
 
