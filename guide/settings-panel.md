@@ -48,7 +48,8 @@ once, a typed field when you leave it. The page opens on the section you used la
 - **Features:** every feature, grouped by area (war, travel, market, crimes, gym, jobs),
   each with its switch, one line on what it does, its options, and a **Learn more** link to
   its page here. A feature that's off doesn't run at all. **Reset settings to defaults** is
-  at the bottom.
+  at the bottom; it asks for a second tap before it resets anything, and keeps your keys,
+  notes and templates.
 - **Sidebar:** the [Torn Tracker sidebar block](sidebar.md): switch it off, choose where
   it sits, or choose which lines it shows.
 - **Sharing:** a switch for each kind of data the companion can share, every one off to
