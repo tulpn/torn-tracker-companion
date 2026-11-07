@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
-import { badge, bar, button, ensureStyle, note, setTone, strip, tapDetail } from '../../src/core/ui.js';
+import { badge, bar, button, buttonCss, ensureStyle, note, setTone, strip, tapDetail } from '../../src/core/ui.js';
 import { ROOT } from '../helpers.js';
 import { TOKENS } from '../../src/data/tokens.js';
 
@@ -76,6 +76,31 @@ describe('the shared look', () => {
     const b = button(doc, { tone: 'good' }, 'Go');
     assert.equal(b.type, 'button');
     assert.equal(b.dataset.tone, 'good');
+  });
+});
+
+describe('hq #557 E33 one button look', () => {
+  test('a primary button is the filled one; a plain one has no variant', () => {
+    const doc = page();
+    assert.equal(button(doc, { primary: true }, 'Save').dataset.variant, 'primary');
+    assert.equal(button(doc, {}, 'Cancel').dataset.variant, undefined);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    assert.ok(css.includes('.ttc-ui-button[data-variant="primary"]'));
+  });
+
+  test('every hover, focus and disabled rule covers each selector it is given', () => {
+    const css = buttonCss('#a button, #a a.b', '#a .p');
+    assert.ok(css.includes('#a button:hover:not(:disabled), #a a.b:hover:not(:disabled) {'));
+    assert.ok(css.includes('#a button:focus-visible, #a a.b:focus-visible {'));
+    assert.ok(css.includes('#a .p { background: var(--primary);'));
+  });
+
+  test('the panel, the dashboard and the page buttons all draw from it, with no colour of their own', () => {
+    for (const file of ['panel.js', 'dashboard.js']) {
+      const source = fs.readFileSync(path.join(ROOT, 'src', 'core', file), 'utf8');
+      assert.match(source, /\$\{buttonCss\(/, file);
+      assert.doesNotMatch(source, /-btn \{[^}]*(background|border-radius)/, file);
+    }
   });
 });
 

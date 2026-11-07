@@ -58,11 +58,13 @@ describe('CMP-110 the split button', () => {
     assert.deepEqual(site.reads, [55]);
     assert.equal(main(r).closest('.ttc-profile-actions')?.dataset.ttcOwn, '', 'in our row of profile buttons (hq #467)');
     assert.equal(main(r).textContent, 'Add to Chain targets');
+    assert.equal(main(r).dataset.variant, 'primary', 'hq #557 E33: the one-press add is the primary button');
     press(main(r));
     await wait(50);
     assert.deepEqual(site.calls, [[A, 55, 'add']]);
     assert.deepEqual(site.reads, [55], 'AC1: no read after the press');
     assert.equal(main(r).textContent, 'On 1 list');
+    assert.equal(main(r).dataset.variant, undefined, 'opening the menu is a plain button');
     assert.match(r.doc.querySelector('.ttc-lists-note').textContent, /Added to Chain targets\. On 1 list\./);
     assert.deepEqual(r.violations, []);
   });

@@ -124,7 +124,7 @@ export default {
         return;
       }
       const action = mainAction(s.menu);
-      const main = button(doc, { cls: `${MARK}-main`, attrs: { disabled: s.busy } }, action.text);
+      const main = button(doc, { cls: `${MARK}-main`, primary: action.act === 'add', attrs: { disabled: s.busy } }, action.text);
       main.addEventListener('click', (event) => {
         stop(event);
         if (s.busy) return;

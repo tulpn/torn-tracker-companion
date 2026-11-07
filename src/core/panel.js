@@ -38,6 +38,7 @@ import { DISCLOSURE, TOS_COLUMNS, hasTosTable, kindOffered, sharingOffered } fro
 import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
+import { buttonCss } from './ui.js';
 import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
 import { POSITIONS, POSITION_LABELS, SIDEBAR_ITEMS } from './sidebar.js';
@@ -182,14 +183,8 @@ const STYLE = `
   #${P}-panel .${P}-exact { margin-top: 4px; }
   #${P}-panel .${P}-exact > summary { min-height: 24px; cursor: pointer; color: var(--ttc-link); font-weight: 600; }
   #${P}-panel .${P}-exact[open] > summary { margin-bottom: 4px; }
-  #${P}-panel button, #${P}-panel a.${P}-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font: inherit; font-weight: 600;
-    background: var(--ttc-surface); color: var(--ttc-text); border: 1px solid var(--ttc-line); text-decoration: none;
-  }
-  #${P}-panel button:hover, #${P}-panel a.${P}-btn:hover { border-color: var(--ttc-accent); text-decoration: none; }
-  #${P}-panel .${P}-primary, #${P}-panel a.${P}-btn.${P}-primary { background: var(--ttc-accent); color: var(--ttc-accent-text); border-color: var(--ttc-accent); }
-  #${P}-panel .${P}-primary:hover { filter: brightness(1.05); }
+  ${buttonCss(`#${P}-panel button, #${P}-panel a.${P}-btn`, `#${P}-panel .${P}-primary, #${P}-panel a.${P}-btn.${P}-primary`)}
+  #${P}-panel button, #${P}-panel a.${P}-btn { min-height: 44px; min-width: 44px; padding: 8px 16px; }
   #${P}-panel button.${P}-danger { border-color: var(--ttc-danger); color: var(--ttc-danger); }
   #${P}-panel .${P}-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
   #${P}-panel .${P}-muted { color: var(--ttc-muted); font-size: 13px; margin-top: 2px; }

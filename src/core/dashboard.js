@@ -16,6 +16,7 @@ import { ROLE_NAMES } from './rota.js';
 import { DASHBOARD_CARDS } from './site.js';
 import { left, roughly } from './sidebar.js';
 import { declarations, lookTheme } from './tokens.js';
+import { buttonCss } from './ui.js';
 
 const P = 'ttc';
 export const DASH_ID = `${P}-dash`;
@@ -49,14 +50,12 @@ const STYLE = `
   #${DASH_ID} h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
   #${DASH_ID} a { color: var(--ring); }
-  #${DASH_ID} .${P}-btn {
-    display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--background); color: var(--foreground); font-weight: 600; text-decoration: none;
-  }
+  ${buttonCss(`#${DASH_ID} .${P}-btn`, `#${DASH_ID} .${P}-btn.${P}-primary`)}
+  #${DASH_ID} .${P}-btn { min-height: 44px; padding: 0 14px; }
   #${DASH_ID} .${P}-body { padding: 14px 16px 18px; }
   #${DASH_ID} .${P}-state { margin: 0 0 12px; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-state:empty { display: none; }
-  #${DASH_ID} .${P}-retry { min-height: 32px; margin-left: 4px; font: inherit; font-weight: 600; cursor: pointer; }
+  #${DASH_ID} .${P}-retry { min-height: 32px; margin-left: 4px; }
   #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
   #${DASH_ID} .${P}-dcard {
     display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 14px;
@@ -99,7 +98,7 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
   }
   const state = h('p', { class: `${P}-state`, role: 'status' });
   const grid = h('div', { class: `${P}-grid` });
-  const siteLink = h('a', { class: `${P}-btn`, href: 'https://www.torn-tracker.com/dashboard/', target: '_blank', rel: 'noopener noreferrer' }, 'Open on torn-tracker.com');
+  const siteLink = h('a', { class: `${P}-btn ${P}-primary`, href: 'https://www.torn-tracker.com/dashboard/', target: '_blank', rel: 'noopener noreferrer' }, 'Open on torn-tracker.com');
   const element = h('div', { id: DASH_ID, role: 'region', 'aria-label': 'Torn Tracker dashboard', hidden: true },
     h('div', { class: `${P}-sheet` },
       h('div', { class: `${P}-head` },

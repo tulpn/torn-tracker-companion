@@ -45,6 +45,32 @@ const SMALL = `.${P}-ui-small.${P}-ui-small`;
 const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'ring'], ['blue', 'muted-foreground']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
 
+const each = (selectors, suffix) => selectors.split(',').map((one) => `${one.trim()}${suffix}`).join(', ');
+
+/**
+ * The one button look (hq #557 E33): the settings panel, the dashboard and the buttons on
+ * Torn's pages all draw theirs from here, so a button is the same shape, weight and colour
+ * wherever it shows. Each place sets only its size. `primary` is the selector of the one
+ * main action in a group, filled with the accent.
+ * @param {string} sel the plain button selector(s), comma separated
+ * @param {string} primary the primary variant's selector(s)
+ */
+export function buttonCss(sel, primary) {
+  return `
+  ${sel} {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box;
+    border: 1px solid var(--input); border-radius: var(--radius); cursor: pointer; text-decoration: none;
+    font: 600 13px/18px var(--tt-font-sans);
+    background: var(--card); color: var(--card-foreground);
+    transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
+  }
+  ${each(sel, ':hover:not(:disabled)')} { border-color: var(--primary); text-decoration: none; }
+  ${each(sel, ':focus-visible')} { outline: 2px solid var(--ring); outline-offset: 2px; }
+  ${each(sel, ':disabled')} { cursor: default; opacity: .6; }
+  ${primary} { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+  ${each(primary, ':hover:not(:disabled)')} { filter: brightness(1.05); color: var(--primary-foreground); }`;
+}
+
 const STYLE = `
   ${followTorn(OWN)}
   .${P}-ui-badge {
@@ -109,19 +135,9 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
     display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0;
     font: 12px var(--tt-font-sans);
   }
-  .${P}-ui-button {
-    min-height: 26px; padding: 2px 12px; border: 1px solid var(--input); border-radius: 999px; cursor: pointer;
-    font: 600 13px/18px var(--tt-font-sans);
-    background: var(--card); color: var(--card-foreground);
-    transition: background-color var(--tt-duration-fast) var(--tt-ease), border-color var(--tt-duration-fast) var(--tt-ease);
-  }
-  .${P}-ui-button:hover:not(:disabled) { border-color: var(--primary); }
-  .${P}-ui-button[aria-pressed="true"], .${P}-ui-button[data-tone="good"] {
-    background: var(--primary); border-color: var(--primary); color: var(--primary-foreground);
-  }
+  ${buttonCss(`.${P}-ui-button`, `.${P}-ui-button[data-variant="primary"], .${P}-ui-button[aria-pressed="true"], .${P}-ui-button[data-tone="good"]`)}
+  .${P}-ui-button { min-height: 26px; padding: 2px 12px; }
   .${P}-ui-button[data-tone="bad"] { background: ${tint(INK.bad)}; border-color: transparent; color: ${INK.bad}; cursor: default; }
-  .${P}-ui-button:disabled { cursor: default; }
-  .${P}-ui-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   /* Small (hq issue 535): one line inside a row Torn keeps narrow, like the war list's
      member cell. It never wraps into a tall pill and never takes Torn's own button rules. */
   ${SMALL} {
@@ -460,8 +476,10 @@ export function profileAction(doc, heading, slot, node) {
  * One of our own small buttons; 44 px on touch screens. `inline` sizes it to sit beside
  * one of Torn's form fields, on the same line (hq #521).
  */
-export function button(doc, { cls, tone, inline = false, small = false, attrs = {} } = {}, ...children) {
+export function button(doc, { cls, tone, primary = false, inline = false, small = false, attrs = {} } = {}, ...children) {
   ensureStyle(doc);
   const base = `${P}-ui-button${inline ? ` ${P}-ui-inline` : ''}${small ? ` ${P}-ui-small` : ''}`;
-  return el('button', { type: 'button', class: classes(base, cls), 'data-tone': tone, ownerDocument: doc, ...attrs }, ...children);
+  return el('button', {
+    type: 'button', class: classes(base, cls), 'data-tone': tone, 'data-variant': primary ? 'primary' : undefined, ownerDocument: doc, ...attrs,
+  }, ...children);
 }

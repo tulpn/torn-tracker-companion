@@ -44,7 +44,7 @@ describe('hq #557 F12 sizes', () => {
 
   test('the shared buttons and the sidebar switch are 13 px', async () => {
     const ui = readFileSync(join(SRC, 'core/ui.js'), 'utf8');
-    for (const rule of [/\.\$\{P\}-ui-button \{[^}]*\}/, /\$\{SMALL\} \{[^}]*\}/, /\$\{INLINE\} \{[^}]*\}/]) {
+    for (const rule of [/export function buttonCss[^`]*`\s*\$\{sel\} \{[^}]*\}/, /\$\{SMALL\} \{[^}]*\}/, /\$\{INLINE\} \{[^}]*\}/]) {
       const body = ui.match(rule)?.[0];
       assert.ok(body, String(rule));
       assert.match(body, /font: 600 13px\//);
