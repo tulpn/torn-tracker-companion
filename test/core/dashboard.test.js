@@ -446,3 +446,13 @@ describe('hq #465 the charts', () => {
     }
   });
 });
+
+describe('hq #557 11 the dashboard on a 360 px screen', () => {
+  test('a card is never wider than the screen, and the sheet takes the narrow padding', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'src', 'core', 'dashboard.js'), 'utf8');
+    assert.match(source, /minmax\(min\(280px, 100%\), 1fr\)/);
+    const narrow = source.slice(source.indexOf('@container (max-width: 480px)'));
+    assert.match(narrow, /-body \{ padding: 12px 12px 14px; \}/);
+    assert.ok(source.indexOf('@container (max-width: 480px)') > source.indexOf('-dcard {'), 'after the base rules, so it wins');
+  });
+});

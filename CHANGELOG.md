@@ -13,6 +13,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 - The sidebar's loot line names only the NPC whose next loot level comes soonest, instead of
   every NPC with a trailing ";" (hq #557 17).
+- On a phone the dashboard's cards fit the screen, with the same narrow padding as the settings
+  page (hq #557 11).
 - No figure twice: where another script already shows the same thing, the companion leaves
   its own out. That covers OC role weights (TornTools, OC2.0 Helper), the OC success figure
   (OC2.0 Helper), crime morale (Crime Morale), the jail score (Bustr+) and the energy to the

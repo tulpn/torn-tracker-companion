@@ -56,7 +56,7 @@ const STYLE = `
   #${DASH_ID} .${P}-state { margin: 0 0 12px; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-state:empty { display: none; }
   #${DASH_ID} .${P}-retry { min-height: 32px; margin-left: 4px; }
-  #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
   #${DASH_ID} .${P}-dcard {
     display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 14px;
     background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--tt-shadow-sm);
@@ -76,6 +76,13 @@ const STYLE = `
   #${DASH_ID} .${P}-tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
     background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   ${CHART_STYLE}
+  /* On a phone the sheet keeps the panel's narrow padding, and a card never overflows (hq issue 557, 11). */
+  @container (max-width: 480px) {
+    #${DASH_ID} .${P}-head { padding: 10px 12px; }
+    #${DASH_ID} .${P}-body { padding: 12px 12px 14px; }
+    #${DASH_ID} .${P}-grid { gap: 10px; }
+    #${DASH_ID} .${P}-dcard { padding: 10px 12px; }
+  }
 `;
 
 const thousands = (n) => n.toLocaleString('en-US');
