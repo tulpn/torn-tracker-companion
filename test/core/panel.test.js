@@ -213,6 +213,51 @@ describe('CMP-014 sharing opens only with the owner\'s wording, and starts off',
     assert.match(t.text(), /TEST loadout line\./);
   });
 
+  test('hq #557 F13: one plain line per card, the full wording under "Exactly what is sent"', () => {
+    const SHORT = { ...WORDED, firstRunShort: 'TEST short notice.', short: { loadout: 'TEST short loadout.' } };
+    const t = mount({ disclosure: SHORT });
+    t.open('sharing');
+    const notice = t.$('#ttc-first-run').closest('details');
+    assert.equal(notice.querySelector('summary').textContent, 'How sharing works');
+    assert.equal(notice.open, false, 'the notice starts folded');
+    assert.equal(t.$('#ttc-first-run').textContent, WORDED.firstRun, 'the full notice, unchanged');
+    assert.match(notice.parentElement.textContent, /^TEST short notice\./);
+
+    const card = t.$('#ttc-share-loadout').closest('.ttc-card');
+    const exact = card.querySelector('details[data-exact="loadout"]');
+    assert.equal(exact.querySelector('summary').textContent, 'Exactly what is sent');
+    assert.equal(exact.open, false);
+    assert.match(exact.textContent, /TEST loadout line\./, 'the full line, unchanged');
+    assert.equal(card.querySelector('.ttc-option').textContent, 'TEST short loadout.');
+  });
+
+  test('hq #557 F13: a search finds a kind by its plain line or its full wording', () => {
+    const SHORT = { ...WORDED, firstRunShort: 'TEST short notice.', short: { loadout: 'TEST short loadout.' } };
+    const t = mount({ disclosure: SHORT });
+    t.open('sharing');
+    const search = (text) => {
+      const field = t.$('#ttc-search');
+      field.value = text;
+      field.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+    };
+    search('short loadout');
+    assert.ok(t.$('#ttc-share-loadout'));
+    search('loadout line');
+    assert.ok(t.$('#ttc-share-loadout'));
+    search('zzz nothing');
+    assert.equal(t.$('#ttc-share-loadout'), null);
+  });
+
+  test('hq #557 F13: the shipped wording has a plain line for every kind', () => {
+    assert.ok(DISCLOSURE.firstRunShort.length <= 160);
+    for (const kind of Object.keys(DISCLOSURE.kinds)) {
+      const short = DISCLOSURE.short[kind];
+      assert.equal(typeof short, 'string', kind);
+      assert.ok(short.length <= 110, `${kind}: ${short.length} characters`);
+    }
+    assert.deepEqual(Object.keys(DISCLOSURE.short).sort(), Object.keys(DISCLOSURE.kinds).sort());
+  });
+
   test('"Share the kinds I picked" records agreement to a changed wording with the picks', async () => {
     const t = mount({ settings: { ...defaults(createRegistry([descriptor()])), sharingConsent: WORDED.version - 1 } });
     t.open('sharing');
