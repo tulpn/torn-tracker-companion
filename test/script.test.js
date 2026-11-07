@@ -380,9 +380,9 @@ describe('CMP-107 the one way in, and the settings route (2026-10-23)', () => {
 
   test('AC5: #/torn-tracker/sharing opens straight on Sharing; an unknown section opens General', async () => {
     const t = await boot(PAGE, { url: 'https://www.torn.com/index.php#/torn-tracker/sharing' });
-    assert.equal(t.panel().querySelector('[aria-selected=true]').textContent, 'Sharing');
+    assert.equal(t.panel().querySelector('[aria-current=page]').textContent, 'Sharing');
     await t.go('#/torn-tracker/nonsense');
-    assert.equal(t.panel().querySelector('[aria-selected=true]').textContent, 'General');
+    assert.equal(t.panel().querySelector('[aria-current=page]').textContent, 'General');
   });
 
   test('the route lives only on Torn\u2019s home page', async () => {

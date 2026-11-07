@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Screen readers: the settings sections are plain links, the open one marked as the current
+  page, instead of tabs with no tab list. A mistyped key is named under its own field, as well
+  as in the toast, and the field is marked as invalid (hq #557 42).
 - "Reset settings to defaults" asks for a second tap, as "Forget me" does, and says that your
   keys, notes and templates stay (hq #557 41).
 - Bust safety no longer shows a bare number: the badge names its band before the score, such as
