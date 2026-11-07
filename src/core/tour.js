@@ -50,7 +50,7 @@ const STYLE = `
   }
   #${LAYER_ID} .${P}-tour-example::before {
     content: "Example"; position: absolute; top: 0; left: 0; padding: 1px 8px; border-radius: var(--radius) 0 var(--radius) 0;
-    background: var(--secondary); color: var(--secondary-foreground); font-size: 11px; font-weight: 700;
+    background: var(--secondary); color: var(--secondary-foreground); font-size: 12px; font-weight: 700;
   }
   #${LAYER_ID} .${P}-tour-example div + div { margin-top: 2px; }
   #${LAYER_ID} .${P}-tour-cta { display: inline-block; margin-top: 8px; color: var(--ring); font-weight: 600; }

@@ -44,9 +44,9 @@ const STYLE = `
     font: 13px/1.45 var(--tt-font-sans); overflow-wrap: anywhere;
     animation: ${P}-unlock-in var(--tt-duration-fast, .2s) var(--tt-ease, ease-out);
   }
-  #${TOAST_ID} .${P}-unlock-eyebrow { display: block; font: 700 11px/1.4 var(--tt-font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
+  #${TOAST_ID} .${P}-unlock-eyebrow { display: block; font: 700 12px/1.4 var(--tt-font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
   #${TOAST_ID} .${P}-unlock-name { display: block; margin: 2px 0; font-weight: 700; font-size: 14px; }
-  #${TOAST_ID} .${P}-unlock-tier { margin-left: 6px; padding: 0 7px; border-radius: 999px; font: 600 11px/16px var(--tt-font-sans); background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
+  #${TOAST_ID} .${P}-unlock-tier { margin-left: 6px; padding: 0 7px; border-radius: 999px; font: 600 12px/16px var(--tt-font-sans); background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   #${TOAST_ID} .${P}-unlock-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
   #${TOAST_ID} a { color: var(--ring); font-weight: 600; }
   #${TOAST_ID} .${P}-unlock-x {

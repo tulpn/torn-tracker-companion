@@ -144,7 +144,7 @@ export const CHART_STYLE = `
   .ttc-figure { margin: 0; }
   .ttc-chart { display: block; width: 100%; height: 140px; overflow: visible; }
   .ttc-axis { stroke: var(--border); stroke-width: 1; }
-  .ttc-tick { fill: var(--muted-foreground); font-size: 10px; }
+  .ttc-tick { fill: var(--muted-foreground); font-size: 12px; }
   .ttc-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
   .ttc-line.ttc-c1 { stroke: var(--ttc-chart-1); } .ttc-line.ttc-c2 { stroke: var(--ttc-chart-2); }
   .ttc-line.ttc-c3 { stroke: var(--ttc-chart-3); } .ttc-line.ttc-c4 { stroke: var(--ttc-chart-4); }

@@ -46,7 +46,7 @@ const STYLE = `
     background: var(--primary); color: var(--primary-foreground); font: 800 13px/1 var(--tt-font-sans);
   }
   #${DASH_ID} h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  #${DASH_ID} h2 small { display: block; font-size: 11px; font-weight: 500; color: var(--muted-foreground); }
+  #${DASH_ID} h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
   #${DASH_ID} a { color: var(--ring); }
   #${DASH_ID} .${P}-btn {
@@ -74,7 +74,7 @@ const STYLE = `
   #${DASH_ID} .${P}-meter[data-over] > span { background: var(--tt-warning); }
   #${DASH_ID} .${P}-more { margin-top: auto; display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
   #${DASH_ID} .${P}-sub { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--muted-foreground); }
-  #${DASH_ID} .${P}-tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  #${DASH_ID} .${P}-tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
     background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   ${CHART_STYLE}
 `;
