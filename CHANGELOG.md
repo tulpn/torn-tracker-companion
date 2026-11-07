@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Text the companion adds to Torn and its own pages is now 12 px at least, and its buttons
+  13 px, so badges, notes, pills and buttons stay readable on a phone (hq #557 F12).
 - During a tour, Enter, the arrow keys, Esc and Tab typed into a field elsewhere on the page,
   such as Torn's chat, now reach the field instead of moving the tour (hq #557 F38).
 - When the dashboard can't reach torn-tracker.com, or the site asks it to wait, it now has a
@@ -25,6 +27,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   full wording sits under **Exactly what is sent**; the notice at the top folds under **How
   sharing works**. The full wording is unchanged, and it is still what ticking a kind agrees
   to (hq #557 F13).
+- The two chain watch pieces now have their own names: the dashboard card is the **Watch
+  rota**, and the box you drag around a page is the **Watch timer**. The settings section
+  keeps the name Chain watch, since it covers both (hq #557 F24).
 - The settings page and the dashboard now follow Torn's light or dark theme unless you pick
   one under General → Look; they used to start dark. If you have saved settings before,
   your look stays as it was: pick **Same as Torn** under General → Look to follow Torn
