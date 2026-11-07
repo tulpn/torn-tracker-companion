@@ -187,8 +187,12 @@ ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-sh
     margin: 0 4px 0 6px; vertical-align: middle; background: var(--${P}-shop-ink);
   }
   [data-${P}-shop-label]::after {
-    content: attr(data-${P}-shop-label); margin-left: 4px; font-weight: 700; font-size: max(12px, .9em);
+    content: attr(data-${P}-shop-label) attr(data-${P}-shop-total); margin-left: 4px; font-weight: 700; font-size: max(12px, .9em);
     white-space: nowrap; color: var(--${P}-shop-ink);
+  }
+  /* Narrow listings: the profit each only; the total stays in the title (hq issue 557, B15). */
+  @media (max-width: 400px) {
+    [data-${P}-shop-label]::after { content: attr(data-${P}-shop-label); }
   }
   /* Text the player is about to send, shown as it will read; a part it lacks is flagged. */
   .${P}-ui-preview {
