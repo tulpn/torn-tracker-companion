@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
-import { badge, bar, button, ensureStyle, note, setTone, strip } from '../../src/core/ui.js';
+import { badge, bar, button, ensureStyle, note, setTone, strip, tapDetail } from '../../src/core/ui.js';
 import { ROOT } from '../helpers.js';
 
 const page = () => new JSDOM('<!doctype html><html><head></head><body></body></html>').window.document;
@@ -81,5 +81,47 @@ describe('no feature styles itself', () => {
       if (/el\('style'|STYLE = `|\.style\.(cssText|background|color|font|margin|padding)\b/.test(source)) offenders.push(path.relative(ROOT, file));
     }
     assert.deepEqual(offenders, []);
+  });
+});
+
+describe('hq #557 A9 a tap detail stays on a 360 px screen', () => {
+  const at = (left) => {
+    const { window } = new JSDOM('<!doctype html><html><body></body></html>');
+    Object.defineProperty(window, 'innerWidth', { value: 360 });
+    const doc = window.document;
+    const node = badge(doc, { compact: true }, 'x');
+    doc.body.append(node);
+    node.getBoundingClientRect = () => ({ left, right: left + 30, top: 0, bottom: 16, width: 30, height: 16 });
+    tapDetail(node, 'The full detail');
+    return { window, node };
+  };
+  const tap = ({ window, node }) => node.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+  test('near the right edge it opens leftwards; with room it opens rightwards', () => {
+    const edge = at(300);
+    tap(edge);
+    assert.equal(edge.node.dataset.open, 'true');
+    assert.equal(edge.node.dataset.flip, 'end');
+    const roomy = at(20);
+    tap(roomy);
+    assert.equal(roomy.node.dataset.flip, undefined);
+  });
+
+  test('closing and opening again reads the place again', () => {
+    const r = at(300);
+    tap(r);
+    tap(r);
+    assert.equal(r.node.dataset.open, 'false');
+    r.node.getBoundingClientRect = () => ({ left: 10, right: 40, top: 0, bottom: 16, width: 30, height: 16 });
+    tap(r);
+    assert.equal(r.node.dataset.flip, undefined);
+  });
+
+  test('the detail is never wider than the screen, and the flip anchors it on the right', () => {
+    const doc = page();
+    ensureStyle(doc);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    assert.match(css, /max-width: min\(220px, 90vw\)/);
+    assert.match(css, /\[data-flip="end"\]::after \{ left: auto; right: 0; \}/);
   });
 });
