@@ -11,6 +11,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- A badge that is a link, such as the listed-mugger badge or an applicant's fit, now looks like
+  one: a trailing ›, and on hover or keyboard focus a deeper tint, an underline and a focus
+  ring, in light and dark (hq #557 23).
 - On a phone the dashboard's cards fit the screen, with the same narrow padding as the settings
   page (hq #557 11).
 - No figure twice: where another script already shows the same thing, the companion leaves
