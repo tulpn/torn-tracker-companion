@@ -40,7 +40,7 @@ export const TOURS = Object.freeze([
       {
         target: 'companion-sections',
         title: 'Find a setting',
-        body: 'Features, Sidebar, Sharing and Keys each have a section. Search finds a setting in any of them.',
+        body: 'Each section holds one kind of setting, from General to Help. Search finds a setting in any of them.',
       },
       {
         target: 'companion-keys-tab',

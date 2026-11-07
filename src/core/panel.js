@@ -64,7 +64,7 @@ export const SECTIONS = Object.freeze([
 
 /** One line under each section's heading: what it's for, in plain words. */
 const INTROS = Object.freeze({
-  general: 'Your version, updates, and help when something misbehaves.',
+  general: 'Your version and updates, the page’s look, the achievement toast, the guide line, the dashboard preview, and logging for when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Each change is saved at once.',
   sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits under General. Choose what it shows. All of it is Core (free).',
   watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Core (free).',

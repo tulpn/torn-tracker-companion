@@ -155,7 +155,7 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
       : [
         h('p', null, h('strong', null, v.nextGym), h('span', { class: `${P}-tag` }, ' estimate')),
         meter(v.percent, 100, `${v.nextGym}: about ${v.percent}%`),
-        h('p', { class: `${P}-muted` }, `About ${v.percent}% there${v.energy != null ? `, roughly ${thousands(v.energy)} energy to go` : ''}. An estimate, not Torn's figure.`),
+        h('p', { class: `${P}-muted` }, `About ${v.percent}% there${v.energy != null ? `, roughly ${thousands(v.energy)} energy to go` : ''}. Worked out by torn-tracker.com, not Torn's own figure.`),
       ]),
     goals: (v) => [
       v.saved != null ? h('p', null, h('span', { class: `${P}-big` }, dollars(v.saved)), h('span', { class: `${P}-muted` }, ' saved')) : null,
