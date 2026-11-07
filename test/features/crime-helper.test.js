@@ -124,3 +124,26 @@ describe('CMP-205 value per nerve beside each crime option', () => {
     assert.equal(badges(r, 'value').length, 0);
   });
 });
+
+describe('hq #557 A7 compact badges in the fixed crime rows', () => {
+  test('every badge is compact; its words open on a tap that never reaches the row', async () => {
+    const r = run();
+    r.respond(RESPONSE, json('crimes-burglary.json'));
+    await wait();
+    const all = [...badges(r, 'morale'), ...badges(r, 'left')];
+    assert.ok(all.length >= 3);
+    for (const node of all) {
+      assert.ok(node.classList.contains('ttc-ui-compact'), node.textContent);
+      assert.ok(node.dataset.detail, node.textContent);
+      assert.equal(node.title, node.dataset.detail);
+    }
+    const left = badges(r, 'left')[0];
+    assert.equal(left.dataset.detail, 'Time before this target disappears');
+    let reached = false;
+    left.parentElement.addEventListener('click', () => { reached = true; });
+    left.dispatchEvent(new r.doc.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    assert.equal(left.dataset.open, 'true');
+    assert.equal(reached, false);
+    assert.deepEqual(r.violations, []);
+  });
+});

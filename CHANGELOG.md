@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The crime helper's badges (value per nerve, morale and time left) are now compact and
+  never wrap inside Torn's crime rows; tap one for its words (hq #557 A7).
 - The achievement toast and the chain watch notice no longer cover Torn's chat bar: both sit
   in one stack above it, and never on top of each other (hq #557 A8).
 - A badge's detail, opened with a tap, now stays on a phone's screen: near the right edge

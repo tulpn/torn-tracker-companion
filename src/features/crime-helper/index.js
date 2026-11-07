@@ -16,7 +16,7 @@ import { el, settler } from '../../core/dom.js';
 import {
   BURGLARY_ROW, BURGLARY_TITLE, HEADER, OPTION_ROW, OPTION_TITLE, isCrimesResponse,
 } from './selectors.js';
-import { badge as uiBadge, setTone } from '../../core/ui.js';
+import { badge as uiBadge, setTone, tapDetail } from '../../core/ui.js';
 
 const MARK = 'ttc-crime';
 const HOUR = 3_600_000;
@@ -83,16 +83,18 @@ export default {
     state = s;
 
 
-    function badge(parent, kind, text, attrs = {}, tone = 'neutral') {
+    // Compact, with the long words in a tap detail: Torn's crime rows are fixed-height and
+    // recycled as the list scrolls, so a badge must never wrap (hq #557 A7).
+    function badge(parent, kind, text, detail, attrs = {}, tone = 'neutral') {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
-        node = uiBadge(doc, { cls: MARK, attrs: { 'data-kind': kind } });
+        node = uiBadge(doc, { cls: MARK, compact: true, attrs: { 'data-kind': kind } });
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
       for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
       setTone(node, tone);
-      return node;
+      return tapDetail(node, detail);
     }
 
     /** The text a cell shows, without our own badges. */
@@ -116,7 +118,9 @@ export default {
         }
         const n = Math.round(value.value_per_nerve);
         const rate = value.success_rate === null ? '' : `; ${Math.round(value.success_rate)}% succeed`;
-        badge(cell, 'value', `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US')}/nerve`, { 'data-tour': 'crime-value' }, n > 0 ? 'good' : 'neutral').title = `Average money and item value per nerve, from ${value.reporters} players' shared outcomes (torn-tracker.com)${rate}`;
+        badge(cell, 'value', `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US')}/nerve`,
+          `Average money and item value per nerve, from ${value.reporters} players' shared outcomes (torn-tracker.com)${rate}`,
+          { 'data-tour': 'crime-value' }, n > 0 ? 'good' : 'neutral');
       }
     }
 
@@ -133,7 +137,8 @@ export default {
       paintValues();
       const header = doc.querySelector(HEADER);
       if (header && s.morale !== null) {
-        badge(header, 'morale', `Morale ${s.morale}%`, { 'data-tour': 'crime-morale' }, s.morale >= 80 ? 'good' : s.morale >= 50 ? 'warn' : 'bad').title = 'Your crime morale, from the page (100 minus demoralisation)';
+        badge(header, 'morale', `Morale ${s.morale}%`, 'Your crime morale, from the page (100 minus demoralisation)',
+          { 'data-tour': 'crime-morale' }, s.morale >= 80 ? 'good' : s.morale >= 50 ? 'warn' : 'bad');
       }
       for (const row of doc.querySelectorAll(BURGLARY_ROW)) {
         const cell = row.querySelector(BURGLARY_TITLE);
@@ -146,7 +151,7 @@ export default {
           continue;
         }
         const { text, left } = lifetime(expires - now());
-        badge(cell, 'left', text, { 'data-left': left }, { long: 'good', day: 'warn', short: 'bad' }[left]).title = 'Time before this target disappears';
+        badge(cell, 'left', text, 'Time before this target disappears', { 'data-left': left }, { long: 'good', day: 'warn', short: 'bad' }[left]);
       }
     }
 
