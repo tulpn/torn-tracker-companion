@@ -7,7 +7,7 @@
 
 import { ago } from '../war-page/index.js';
 import { ATTACK_ROUTES, pageSubject } from '../../core/players.js';
-import { badge } from '../../core/ui.js';
+import { strip } from '../../core/ui.js';
 
 const MARK = 'ttc-mugs';
 const HEADING = '.content-title h4, h4';
@@ -57,7 +57,8 @@ export default {
         const line = mugLine(await ctx.site.myMugs(id), now());
         const heading = doc.querySelector(HEADING);
         if (state !== s || !line || !heading || doc.querySelector(`.${MARK}`)) return;
-        const node = badge(doc, { cls: MARK, tone: 'info', block: true }, line);
+        // A sentence: a strip, not a pill (hq #557 E36).
+        const node = strip(doc, { cls: MARK, tone: 'info' }, line);
         node.title = 'From your own mugs on torn-tracker.com';
         (heading.closest('.content-title') || heading).after(node);
       } catch (err) {

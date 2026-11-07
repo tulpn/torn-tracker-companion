@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The bazaar and item market cash reminder is now an amber notice strip, and your mug history
+  on profiles a plain information strip, instead of small pills (hq #557 E36).
 - Red now only means bad (hq #557 E35). The shop price highlighter's tiers are named Best,
   Good, Fair and Small, drawn green, yellow, blue and grey (your saved thresholds are kept);
   the OC success estimate is green from 70 %, amber from 40 % and red below; the war brief has

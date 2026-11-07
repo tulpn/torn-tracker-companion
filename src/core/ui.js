@@ -97,6 +97,7 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
     background: var(--card); color: var(--card-foreground);
     overflow-wrap: anywhere;
   }
+  .${P}-ui-strip[data-tone="warn"] { --ttc-ink: ${INK.warn}; }
   .${P}-ui-strip[data-tone="bad"] { --ttc-ink: var(--destructive); }
   .${P}-ui-strip[data-tone="info"] { --ttc-ink: var(--primary); }
   .${P}-ui-strip strong:first-child { display: block; margin-bottom: 4px; font-size: 13px; }

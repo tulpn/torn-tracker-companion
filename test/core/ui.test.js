@@ -29,6 +29,7 @@ describe('the shared look', () => {
     assert.equal(ink('red'), TOKENS.light.ring);
     assert.equal(ink('blue'), TOKENS.light['muted-foreground']);
     assert.match(css, /\.ttc-ui-badge\[data-tone="warn"\] \{ --ttc-ink: var\(--tt-nerve\); \}/, 'caution is amber in both themes');
+    assert.match(css, /\.ttc-ui-strip\[data-tone="warn"\] \{ --ttc-ink: var\(--tt-nerve\); \}/, 'hq #557 E36: a warn strip');
     for (const tier of ['green', 'yellow', 'red', 'blue']) {
       assert.notEqual(ink(tier), TOKENS.light['tt-ff-hard']);
       assert.notEqual(ink(tier), TOKENS.light.destructive);
