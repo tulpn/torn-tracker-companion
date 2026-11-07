@@ -35,7 +35,7 @@ Each line is one thing you'd otherwise open the website or Discord for:
 | **Routine** | how many of today's routine lines on torn-tracker.com are still undone, like "Routine 3 left today", and when the day resets. Tap it for the list: each line opens its Torn page in the same tab, and a reading older than 90 minutes says how old it is. With **Casino off** on the site, no casino line ever shows | on |
 | **Below shop price** | on the Item Market, how many listings on screen sell below what a shop pays (see [Shop price guard](shop-price-guard.md)) | on |
 | **Quick links** | your dashboard and the guide on torn-tracker.com | on |
-| **Best travel run** | your planner's best run, like "Mexico · Jaguar Plushie · +$13.5k/h" | off |
+| **Best travel run** | your planner's best run, like "Mexico ↗ · Jaguar Plushie · +$13.5k/h"; the country links to the planner | off |
 | **NPC loot** | the next loot level per NPC and when it comes, with its source named | off |
 | **Gym** | how far you are towards your next gym | off |
 | **Stock watches** | how many of your watched stocks crossed their line | off |
@@ -44,6 +44,7 @@ The countdowns tick every second from your own clock, between the block's reads 
 minute, and rest while the tab is in the background. When one reaches zero the line says
 what happened (**ready**, **timed out**, **ending**) until the next read confirms it. The
 **War** and **OC** links open Torn's pages in the same tab, like any link in Torn's sidebar.
+A link to torn-tracker.com carries **↗** and opens in a new tab, so Torn stays where it was.
 
 The war lines show only during a war. A line with nothing to say (no chain, no partner, no
 OC) is left out rather than showing "none", and when every line is empty the block hides
@@ -55,7 +56,7 @@ chain, war and dibs**, linking to the faction page on torn-tracker.com.
 
 ## Choose where it sits
 
-1. Open the [settings](settings-panel.md) and go to **General → Sidebar block**.
+1. Open the [settings](settings-panel.md) and go to **Sidebar**, then **Where the block sits**.
 2. Pick a place: **At the top, above Areas** (the default), **After Areas**, **After
    Lists** or **At the bottom**.
 3. It saves at once. The choice is kept on this device, and holds on a phone too.
@@ -64,7 +65,7 @@ A page whose sidebar has no such place (some pages have no Lists) shows the bloc
 next place down.
 
 Before 0.9.8 the block always sat under **Lists**. Version 0.9.8 moves it to the top once;
-the settings page says so under **General** until you save, and **After Lists** puts it
+the settings page says so under **Sidebar** until you change a sidebar setting, and **After Lists** puts it
 back where it was.
 
 ## Choose what it shows

@@ -99,6 +99,7 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-row b { font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-row a { color: var(--ring); text-decoration: none; }
   #${BLOCK_ID} .${P}-sb-row a:hover { text-decoration: underline; }
+  #${BLOCK_ID} .${P}-sb-ext { font-size: 0.85em; }
   #${BLOCK_ID} .${P}-sb-muted { color: var(--muted-foreground); }
   #${BLOCK_ID} .${P}-sb-alert { color: color-mix(in srgb, var(--destructive) 65%, var(--foreground)); font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-links a { margin-right: 10px; }
@@ -342,9 +343,12 @@ export function mountSidebarBlock({
     return h('div', { class: `${P}-sb-row` }, ...children);
   }
 
-  const link = (href, text, external = false) => h('a', external
-    ? { href, target: '_blank', rel: 'noopener noreferrer' }
-    : { href }, text);
+  // A link to torn-tracker.com opens a new tab, and says so with ↗ and its title; Torn's own
+  // pages open in the same tab, as before (hq #557 C22).
+  const link = (href, text, external = false) => (external
+    ? h('a', { href, target: '_blank', rel: 'noopener noreferrer', title: 'Opens torn-tracker.com in a new tab' },
+      text, h('span', { class: `${P}-sb-ext`, 'aria-hidden': 'true' }, ' ↗'))
+    : h('a', { href }, text));
   /**
    * A countdown to a time the site sent (hq #541): "prefix 1:02:09" until it passes, then
    * the word for done ("ready", "expired") until the next read says what happened.
@@ -398,8 +402,9 @@ export function mountSidebarBlock({
     guide: (g) => (g.done >= g.total && g.bonuses === 0 ? null
       : row(link(GUIDE_URL, `Guide ${g.done} / ${g.total}`, true),
         g.bonuses ? ` · ${g.bonuses} bonus${g.bonuses === 1 ? '' : 'es'} to claim` : '')),
+    // Only the country is the link, so the rest of the line reads as plain words (C22).
     travel: (r) => row(h('b', null, 'Travel'), ' ',
-      link(PLANNER_URL, `${r.country.replace(/-/g, ' ')} · ${r.item_name} · +${short(r.profit_per_hour)}/h`, true)),
+      link(PLANNER_URL, r.country.replace(/-/g, ' '), true), ` · ${r.item_name} · +${short(r.profit_per_hour)}/h`),
     loot: (l) => row(h('b', null, 'Loot'), ...l.npcs.map((n) => ` ${n.name} L${n.level}${n.nextAt ? ` → L${n.level + 1} in ${roughly(n.nextAt - now())}` : ''};`),
       h('span', { class: `${P}-sb-muted` }, ` (${l.source})`)),
     gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
