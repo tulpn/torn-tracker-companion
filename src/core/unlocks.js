@@ -22,6 +22,7 @@
 // with "Forget me" (CMP-008).
 
 import { el } from './dom.js';
+import { showToast } from './toasts.js';
 import { followTorn } from './tokens.js';
 import { matchRoute } from './routes.js';
 import { TIERS } from './site.js';
@@ -37,7 +38,7 @@ const ID = /^[a-z0-9][a-z0-9_-]{0,59}$/;
 const STYLE = `
   ${followTorn(`#${TOAST_ID}`)}
   #${TOAST_ID} {
-    position: fixed; right: 16px; bottom: 16px; z-index: 100000; box-sizing: border-box;
+    position: relative; box-sizing: border-box;
     width: min(340px, calc(100vw - 32px)); padding: 12px 44px 12px 14px;
     border: 1px solid var(--border); border-left: 4px solid var(--tt-warning); border-radius: var(--radius);
     box-shadow: var(--tt-shadow-sm); background: var(--card); color: var(--card-foreground);
@@ -57,7 +58,7 @@ const STYLE = `
   @keyframes ${P}-unlock-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   @keyframes ${P}-unlock-fade { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { #${TOAST_ID} { animation-name: ${P}-unlock-fade; } }
-  @media (max-width: 640px) { #${TOAST_ID} { left: 16px; right: 16px; width: auto; bottom: 72px; } }
+  @media (max-width: 640px) { #${TOAST_ID} { width: auto; } }
 `;
 
 function addStyle(doc) {
@@ -138,7 +139,7 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     toast.addEventListener('mouseleave', wait);
     toast.addEventListener('focusin', () => timers.clearTimeout(hideTimer));
     toast.addEventListener('focusout', wait);
-    (doc.body || doc.documentElement).append(toast);
+    showToast(doc, toast);
     wait();
   }
 
