@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Sidebar links to torn-tracker.com carry ↗ and say they open a new tab, and the travel
+  line links only the country, not the whole line (hq #557 C22).
 - The settings page shows **Dashboard · turn on** at the top while the dashboard is off,
   so it can be found without knowing the switch is under General (hq #557 C21).
 - Where the sidebar block sits is now chosen under **Settings → Sidebar**, with the block
