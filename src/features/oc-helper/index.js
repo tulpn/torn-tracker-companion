@@ -34,6 +34,11 @@ export function roleKey(label) {
 
 const CREDIT = 'ttc-oc-credit';
 
+/**
+ * The success estimate's tone, from its value (hq #557 E35): green only when the crime is
+ * likely to succeed, red when it is likely to fail.
+ */
+export const successTone = (n) => (n >= 70 ? 'good' : n >= 40 ? 'warn' : 'bad');
 const pct = (n) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`;
 
 export default {
@@ -65,13 +70,13 @@ export default {
      * so it never reaches Torn's own handlers on the slot. A span, not a button: Torn's slot
      * header is itself a button (seen on a capture of 2026-11-02), and buttons don't nest.
      */
-    function label(parent, text, detail, kind) {
+    function label(parent, text, detail, kind, tone = 'info') {
       let node = parent.querySelector(`:scope > .${MARK}[data-kind="${kind}"]`);
       if (!node) {
         // The tour's anchors (hq #238), one per kind of label.
         const anchor = kind === 'success' ? { 'data-tour': 'oc-success' } : { 'data-tour': 'oc-weight' };
         node = badge(doc, {
-          cls: MARK, tone: kind === 'success' ? 'good' : 'info', compact: true,
+          cls: MARK, tone, compact: true,
           attrs: { 'data-kind': kind, 'data-open': 'false', ...anchor },
         });
         node.addEventListener('click', (e) => {
@@ -82,6 +87,7 @@ export default {
         parent.append(node);
       }
       if (node.textContent !== text) node.textContent = text;
+      if (node.dataset.tone !== tone) node.dataset.tone = tone;
       if (node.title !== detail) node.title = detail;
       if (node.dataset.detail !== detail) node.dataset.detail = detail;
     }
@@ -105,7 +111,7 @@ export default {
       const success = answer.crimes.get(id);
       const name = card.querySelector(NAME);
       if (name?.parentElement && typeof success === 'number') {
-        label(name.parentElement, `~${pct(success)}`, "torn-tracker.com's success estimate for this crime", 'success');
+        label(name.parentElement, `~${pct(success)}`, "torn-tracker.com's success estimate for this crime", 'success', successTone(success));
       }
       const weights = new Map((answer.roles || []).map((r) => [roleKey(r.label), r.weight]));
       for (const slot of card.querySelectorAll(SLOT)) {

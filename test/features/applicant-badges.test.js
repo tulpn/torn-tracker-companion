@@ -66,6 +66,9 @@ describe('JOB-072 on the list', () => {
     assert.equal(badge(r, 101).textContent, '10 merits · 1,234 job points · good fit');
     assert.equal(badge(r, 101).getAttribute('href'), 'https://torn-tracker.com/jobs/c/1/');
     assert.equal(badge(r, 102).textContent, 'poor fit');
+    // hq #557 E35: green for a good fit, amber for a poor one, never red or blue.
+    assert.equal(badge(r, 101).dataset.tone, 'good');
+    assert.equal(badge(r, 102).dataset.tone, 'warn');
     assert.equal(badge(r, 103), null);
     assert.deepEqual(r.shared, [], 'nothing from application pages is ever shared');
     assert.deepEqual(r.violations, []);

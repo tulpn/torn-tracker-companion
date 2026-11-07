@@ -47,7 +47,7 @@ export default {
         const brief = await ctx.site.warBrief();
         // Only on the page of the faction the war is against.
         if (state !== s || !brief || brief.opponent !== faction || !brief.compare) return;
-        const strip = uiStrip(doc, { cls: MARK, tone: 'bad' });
+        const strip = uiStrip(doc, { cls: MARK, tone: 'info' }); // information, not a warning (hq #557 E35)
         strip.append(el('strong', { ownerDocument: doc }, 'Your next ranked war: '), brief.compare);
         if (brief.headline) strip.append(el('div', { ownerDocument: doc }, brief.headline));
         else if (!brief.pro) strip.append(el('div', { ownerDocument: doc }, 'The full brief is a Pro feature.'));

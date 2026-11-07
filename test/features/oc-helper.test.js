@@ -3,7 +3,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { roleKey } from '../../src/features/oc-helper/index.js';
+import feature, { roleKey, successTone } from '../../src/features/oc-helper/index.js';
 import { page, runFeature } from '../feature-harness.js';
 
 const CRIMES = 'https://www.torn.com/factions.php?step=your#/tab=crimes';
@@ -43,6 +43,13 @@ const wait = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const labels = (r, kind) => [...r.doc.querySelectorAll(`.ttc-oc[data-kind="${kind}"]`)].map((n) => n.textContent);
 
 describe('CMP-204 weights and success from torn-tracker.com', () => {
+  test('hq #557 E35: success is green only when likely, red when unlikely', () => {
+    assert.equal(successTone(70), 'good');
+    assert.equal(successTone(69.9), 'warn');
+    assert.equal(successTone(40), 'warn');
+    assert.equal(successTone(20), 'bad');
+  });
+
   test('roles match by the title the page shows', () => {
     assert.equal(roleKey('Looter #1'), roleKey('Looter 1'));
     assert.equal(roleKey('Looter1'), roleKey('looter #1'));
@@ -57,6 +64,9 @@ describe('CMP-204 weights and success from torn-tracker.com', () => {
     assert.deepEqual(labels(r, 'weight'), ['30.9%', '32.6%', '34%']);
     assert.deepEqual(labels(r, 'success'), ['~72.5%']);
     assert.ok(r.doc.querySelector('[data-oc-id="501"] .ttc-oc[data-kind="success"]'));
+    // hq #557 E35: the tone comes from the value; 72.5 % is green.
+    assert.equal(r.doc.querySelector('.ttc-oc[data-kind="success"]').dataset.tone, 'good');
+    assert.equal(r.doc.querySelector('.ttc-oc[data-kind="weight"]').dataset.tone, 'info');
     assert.deepEqual(r.violations, []);
   });
 
