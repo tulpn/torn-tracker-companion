@@ -15,9 +15,15 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   such as Torn's chat, now reach the field instead of moving the tour (hq #557 F38).
 - When the dashboard can't reach torn-tracker.com, or the site asks it to wait, it now has a
   **Retry** button; each press reads the dashboard once (hq #557 F18).
+- The shop price guard's warning under a sell price is now one short line, such as "Shop
+  pays $1,000 (+$100)", so it no longer squeezes the row; tap or hover it for the shop and
+  the total (hq #557 F25).
 
 ### Changed
 
+- The two chain watch pieces now have their own names: the dashboard card is the **Watch
+  rota**, and the box you drag around a page is the **Watch timer**. The settings section
+  keeps the name Chain watch, since it covers both (hq #557 F24).
 - The settings page and the dashboard now follow Torn's light or dark theme unless you pick
   one under General → Look; they used to start dark. If you have saved settings before,
   your look stays as it was: pick **Same as Torn** under General → Look to follow Torn

@@ -19,7 +19,7 @@ keywords: torn chain watch, torn chain timer, torn chain watcher, torn chain bar
 ## What you see
 
 Torn's chain bar is small and easy to miss from another window. Watch mode puts a large
-box over the Torn page you're on with the time the chain has left, the chain count, and
+box, the **Watch timer**, over the Torn page you're on with the time the chain has left, the chain count, and
 where the timer came from:
 
 | Time left | The box | It says |
@@ -72,7 +72,7 @@ Under **Chain watch** in the settings:
 
 ## Your faction's rota
 
-Below watch mode's settings is your faction's chain watch rota: 30-minute slots, each with
+Below watch mode's settings is your faction's **Watch rota**: 30-minute slots, each with
 a Lead and two backups. It asks nothing until you press **Show the next 24 hours**; then it
 reads the rota from torn-tracker.com with your script key, and again after each change or
 when you press **Refresh**.

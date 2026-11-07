@@ -249,6 +249,7 @@ describe('hq #465 the page', () => {
       assert.equal(a.rel, 'noopener noreferrer');
     }
     assert.match(root.querySelector('[data-card="gym"]').textContent, /estimate/);
+    assert.equal(root.querySelector('[data-card="chain_watch"] h3').textContent, 'Watch rota', 'hq #557 F24');
     assert.equal(root.getElementById(DASH_ID).dataset.theme, 'dark');
   });
 
