@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.16 — 2026-11-07
+
 ### Fixed
 
 - The pre-war brief and your mugs strip no longer push the page down when they arrive. Where
