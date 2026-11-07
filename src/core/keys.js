@@ -40,12 +40,12 @@ export function checkTyped({ script = '', api = '', usePdaKey = false }) {
   const s = String(script).trim();
   const a = String(api).trim();
   if (s && !SCRIPT_KEY.test(s)) {
-    return { error: API_KEY.test(s)
+    return { field: 'script', error: API_KEY.test(s)
       ? 'That looks like a Torn API key. The script key comes from torn-tracker.com and starts with tt_feed_.'
       : 'The script key starts with tt_feed_ and comes from your torn-tracker.com settings.' };
   }
   if (a && !API_KEY.test(a)) {
-    return { error: a.startsWith('tt_feed_')
+    return { field: 'api', error: a.startsWith('tt_feed_')
       ? 'That is a script key, not a Torn API key.'
       : 'A Torn API key is 16 letters and digits.' };
   }

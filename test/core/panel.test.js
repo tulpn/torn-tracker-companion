@@ -80,15 +80,15 @@ describe('CMP-107 the settings page has a section for each job', () => {
   test('General, Features, Sidebar, Chain watch, Sharing, Keys, Data, Credits and Help, starting on Features', () => {
     const t = mount();
     t.open();
-    const tabs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((b) => b.textContent);
+    const tabs = [...t.panel.panel.querySelectorAll('nav a[data-tab]')].map((b) => b.textContent);
     assert.deepEqual(tabs, ['General', 'Features', 'Sidebar', 'Chain watch', 'Sharing', 'Keys', 'Data', 'Credits', 'Help']);
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Features');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Features');
   });
 
   test('each section is a plain link to its own route, so Back and Forward work', () => {
     const t = mount();
     t.open();
-    const hrefs = [...t.panel.panel.querySelectorAll('[role=tab]')].map((a) => [a.tagName, a.getAttribute('href')]);
+    const hrefs = [...t.panel.panel.querySelectorAll('nav a[data-tab]')].map((a) => [a.tagName, a.getAttribute('href')]);
     assert.ok(hrefs.every(([tag]) => tag === 'A'));
     assert.deepEqual(hrefs.map(([, href]) => href).slice(0, 2), ['#/torn-tracker/general', '#/torn-tracker/features']);
   });
@@ -96,13 +96,13 @@ describe('CMP-107 the settings page has a section for each job', () => {
   test('AC5: a named section opens on it, an unknown one opens General, none keeps the last', () => {
     const t = mount();
     t.open('sharing');
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Sharing');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Sharing');
     t.open('nonsense');
-    assert.equal(t.$('[aria-selected=true]').textContent, 'General');
+    assert.equal(t.$('[aria-current=page]').textContent, 'General');
     t.open('keys');
     t.panel.close();
     t.open();
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Keys');
   });
 
   test('an edit survives moving between tabs and is saved with the rest', async () => {
@@ -154,7 +154,7 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.equal(menu.value, 'general');
     assert.deepEqual([...menu.options].map((o) => o.value), [...t.panel.panel.querySelectorAll('nav a')].map((a) => a.getAttribute('href').split('/').pop()));
     t.change(menu, 'keys');
-    assert.equal(t.$('[aria-selected=true]').textContent, 'Keys');
+    assert.equal(t.$('[aria-current=page]').textContent, 'Keys');
     assert.equal(t.$('select[data-sections]').value, 'keys');
     assert.equal(t.saves.length, 0, 'moving section saves nothing');
   });
@@ -425,6 +425,32 @@ describe('CMP-011 CMP-012 the keys', () => {
     await settle();
     assert.equal(t.saves.length, 0);
     assert.match(t.$('[role=status]').textContent, /looks like a Torn API key/);
+  });
+
+  test('hq #557 42: the mistake shows under its own field, and goes once the key is right', async () => {
+    const t = mount();
+    t.open('keys');
+    const input = t.$('#ttc-key-script');
+    const line = t.$('#ttc-key-script-error');
+    assert.equal(input.getAttribute('aria-describedby'), 'ttc-key-script-error');
+    assert.ok(line.hidden);
+    t.change(input, 'abcdEFGH12345678');
+    await settle();
+    assert.equal(input.getAttribute('aria-invalid'), 'true');
+    assert.ok(!line.hidden);
+    assert.match(line.textContent, /looks like a Torn API key/);
+    t.change(input, KEY);
+    await settle();
+    assert.equal(input.getAttribute('aria-invalid'), null);
+    assert.ok(line.hidden);
+  });
+
+  test('hq #557 42: the section links are plain links, the open one marked aria-current', () => {
+    const t = mount();
+    t.open('keys');
+    assert.equal(t.$('[role=tab]'), null);
+    assert.equal(t.$('[aria-selected]'), null);
+    assert.deepEqual([...t.root.querySelectorAll('nav a[aria-current]')].map((a) => a.textContent), ['Keys']);
   });
 
   test('without the terms table there is no Torn API key field', () => {
@@ -772,6 +798,7 @@ describe('hq #489 the search bar, the header, and no stray null', () => {
       if (/\b(null|undefined)\b/.test(n.textContent)) bad.push(`text: ${n.textContent.trim().slice(0, 60)}`);
     }
     for (const p of main.querySelectorAll('p, .ttc-muted')) {
+      if (p.hidden) continue;
       if (!p.textContent.trim() && !p.children.length) bad.push(`empty ${p.tagName.toLowerCase()}.${p.className}`);
     }
     return bad;

@@ -151,7 +151,7 @@ const STYLE = `
     color: var(--ttc-text); font-weight: 500; text-decoration: none;
   }
   #${P}-panel nav a:hover { background: var(--ttc-bg); text-decoration: none; }
-  #${P}-panel nav a[aria-selected=true] { background: var(--ttc-accent-soft); color: var(--ttc-link); font-weight: 700; }
+  #${P}-panel nav a[aria-current=page] { background: var(--ttc-accent-soft); color: var(--ttc-link); font-weight: 700; }
   #${P}-panel nav select.${P}-sections { display: none; }
   #${P}-panel main { grid-area: main; padding: 18px 26px 26px; }
   #${P}-panel main > * { max-width: 760px; }
@@ -193,6 +193,9 @@ const STYLE = `
   #${P}-panel button.${P}-danger { border-color: var(--ttc-danger); color: var(--ttc-danger); }
   #${P}-panel .${P}-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
   #${P}-panel .${P}-muted { color: var(--ttc-muted); font-size: 13px; margin-top: 2px; }
+  #${P}-panel .${P}-field-error { color: var(--ttc-danger); font-size: 13px; font-weight: 600; margin: 4px 0 0; }
+  #${P}-panel .${P}-field-error[hidden] { display: none; }
+  #${P}-panel input[aria-invalid=true] { border-color: var(--ttc-danger); }
   #${P}-panel a { color: var(--ttc-link); font-weight: 600; text-decoration: none; }
   #${P}-panel a:hover { text-decoration: underline; }
   #${P}-panel .${P}-notice {
@@ -416,6 +419,8 @@ export function mountPanel({
   let active = false;
   let query = '';
   let armedForget = false;
+  /** A mistyped key, shown under its own field as well as in the toast (hq #557 42). */
+  let keyError = null;
   /** The settings as the page shows them; each change is saved from here at once. */
   let draft = null;
   /** Saves run one after another, in the order the changes were made. */
@@ -685,6 +690,30 @@ export function mountPanel({
 
   // ------------------------------------------------------------ Keys
 
+  /** The line under a key field that says what is wrong with it; empty and hidden when nothing is. */
+  function fieldError(field) {
+    const text = keyError?.field === field ? keyError.error : '';
+    return h('p', { id: `${P}-key-${field}-error`, class: `${P}-field-error`, hidden: !text }, text);
+  }
+
+  /** Puts a key check's result under the fields as they stand, without a redraw under the finger. */
+  function showKeyError(typed) {
+    keyError = typed.error ? { field: typed.field, error: typed.error } : null;
+    for (const field of ['script', 'api']) {
+      const input = panel.querySelector(`#${P}-key-${field}`);
+      const line = panel.querySelector(`#${P}-key-${field}-error`);
+      const wrong = keyError?.field === field;
+      if (input) {
+        if (wrong) input.setAttribute('aria-invalid', 'true');
+        else input.removeAttribute('aria-invalid');
+      }
+      if (line) {
+        line.textContent = wrong ? keyError.error : '';
+        line.hidden = !wrong;
+      }
+    }
+  }
+
   function keysBody() {
     const keys = draft.keys;
     const rows = [
@@ -694,7 +723,9 @@ export function mountPanel({
         h('input', {
           type: 'password', id: `${P}-key-script`, 'data-key': 'script', value: keys.script,
           placeholder: 'tt_feed_…', autocomplete: 'off', spellcheck: 'false',
-        })),
+          'aria-describedby': `${P}-key-script-error`, 'aria-invalid': keyError?.field === 'script' ? 'true' : null,
+        }),
+        fieldError('script')),
       h('p', { class: `${P}-muted` },
         'Add to list, on profiles, also needs a key that may change your lists: tick Lists when you make the key on '
         + 'torn-tracker.com. It lets the companion add players to your target lists, and take them off, when you press its button.'),
@@ -708,7 +739,9 @@ export function mountPanel({
         h('input', {
           type: 'password', id: `${P}-key-api`, 'data-key': 'api', value: keys.api,
           autocomplete: 'off', spellcheck: 'false', disabled: keys.usePdaKey,
-        })));
+          'aria-describedby': `${P}-key-api-error`, 'aria-invalid': keyError?.field === 'api' ? 'true' : null,
+        }),
+        fieldError('api')));
       if (pda) {
         rows.push(h('label', { class: `${P}-check` },
           h('input', { type: 'checkbox', id: `${P}-key-pda`, 'data-key': 'usePdaKey', checked: keys.usePdaKey }),
@@ -901,8 +934,10 @@ export function mountPanel({
     drawKeyState();
     clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
+    // Plain links to each section's route, so no tab roles without a tablist (hq #557 42);
+    // the one on screen says so with aria-current.
     nav.replaceChildren(sectionMenu, ...SECTIONS.map(([id, title]) => h('a', {
-      href: sectionHref(id), role: 'tab', 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-selected': String(!query && id === section),
+      href: sectionHref(id), 'data-tab': id, 'data-tour': `companion-${id}-tab`, 'aria-current': !query && id === section ? 'page' : null,
     }, title)));
     sectionMenu.value = section;
     const title = SECTIONS.find(([id]) => id === section)[1];
@@ -1017,6 +1052,7 @@ export function mountPanel({
    */
   function persist(what) {
     const typed = checkTyped(draft.keys);
+    if (what === 'key') showKeyError(typed);
     if (typed.error && what === 'key') {
       flash(typed.error);
       return saving;
@@ -1061,6 +1097,7 @@ export function mountPanel({
     if (active) tours?.stop();
     active = false;
     armedForget = false;
+    keyError = null;
     draft = null;
     transferText = '';
   }
