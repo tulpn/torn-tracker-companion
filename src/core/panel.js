@@ -38,6 +38,7 @@ import { DISCLOSURE, TOS_COLUMNS, hasTosTable, kindOffered, sharingOffered } fro
 import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
+import { brandMark } from './brand.js';
 import { buttonCss } from './ui.js';
 import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
@@ -115,10 +116,7 @@ const STYLE = `
     background: var(--ttc-surface); border-bottom: 1px solid var(--ttc-line);
   }
   #${P}-panel .${P}-brand { display: flex; align-items: center; gap: 10px; flex: none; }
-  #${P}-panel .${P}-logo {
-    display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px;
-    background: var(--ttc-accent); color: var(--ttc-accent-text); font: 800 13px/1 var(--tt-font-sans); letter-spacing: -.02em;
-  }
+  #${P}-panel .${P}-logo { display: block; flex: none; width: 32px; height: 32px; }
   #${P}-panel .${P}-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
   #${P}-panel .${P}-head h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--ttc-muted); }
   #${P}-panel .${P}-keystate { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 999px;
@@ -172,7 +170,7 @@ const STYLE = `
   /* Toggle switches: drawn with backgrounds only, so they look the same in every browser. */
   #${P}-panel input[type=checkbox] {
     appearance: none; -webkit-appearance: none; flex: none; width: 40px; height: 24px; margin: 0; border-radius: 999px;
-    cursor: pointer; transition: background-color var(--tt-duration-fast) var(--tt-ease), background-position var(--tt-duration-fast) var(--tt-ease);
+    cursor: pointer; transition: background-color var(--motion-fast) var(--ease-out), background-position var(--motion-fast) var(--ease-out);
     background: radial-gradient(circle, var(--ttc-accent-text) 0 8px, transparent 9px) 2px 50% / 20px 20px no-repeat, var(--ttc-off);
   }
   #${P}-panel input[type=checkbox]:checked { background-color: var(--ttc-accent); background-position: 18px 50%; }
@@ -397,7 +395,7 @@ export function mountPanel({
   panel.append(h('div', { class: `${P}-toastbox` }, status), h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
-        h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
+        brandMark(doc, `${P}-logo`),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       keyState,
       // Its own place, so on a phone it takes the row under the title (hq #557 C21).

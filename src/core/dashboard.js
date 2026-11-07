@@ -11,6 +11,7 @@
 // and awards cards, the war's start and dibs, and the running course in education.
 
 import { barChart, CHART_STYLE, chartDeclarations } from './chart.js';
+import { brandMark } from './brand.js';
 import { el } from './dom.js';
 import { ROLE_NAMES } from './rota.js';
 import { DASHBOARD_CARDS } from './site.js';
@@ -42,10 +43,7 @@ const STYLE = `
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 16px;
     background: var(--card); border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0;
   }
-  #${DASH_ID} .${P}-logo {
-    display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px;
-    background: var(--primary); color: var(--primary-foreground); font: 800 13px/1 var(--tt-font-sans);
-  }
+  #${DASH_ID} .${P}-logo { display: block; flex: none; width: 32px; height: 32px; }
   #${DASH_ID} h2 { margin: 0; font-size: 17px; font-weight: 700; }
   #${DASH_ID} h2 small { display: block; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
@@ -109,7 +107,7 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
   const element = h('div', { id: DASH_ID, role: 'region', 'aria-label': 'Torn Tracker dashboard', hidden: true },
     h('div', { class: `${P}-sheet` },
       h('div', { class: `${P}-head` },
-        h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
+        brandMark(doc, `${P}-logo`),
         h('h2', null, 'Dashboard', h('small', null, 'From torn-tracker.com')),
         h('div', { class: `${P}-actions` }, siteLink, h('a', { class: `${P}-btn`, href: '#/torn-tracker' }, 'Settings'))),
       h('div', { class: `${P}-body` }, state, grid)));

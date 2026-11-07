@@ -16,6 +16,7 @@ import { CHART_COLOURS, SERIES_ORDER, barChart, chartDeclarations, compact, dayL
 import { routeOf } from '../../src/core/page.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, normalize } from '../../src/core/settings.js';
+import { MARK } from '../../src/data/brand.js';
 import { ROOT } from '../helpers.js';
 
 const KEY = `tt_feed_${'D'.repeat(43)}`;
@@ -454,5 +455,17 @@ describe('hq #557 11 the dashboard on a 360 px screen', () => {
     const narrow = source.slice(source.indexOf('@container (max-width: 480px)'));
     assert.match(narrow, /-body \{ padding: 12px 12px 14px; \}/);
     assert.ok(source.indexOf('@container (max-width: 480px)') > source.indexOf('-dcard {'), 'after the base rules, so it wins');
+  });
+});
+
+describe('hq #675 the raven mark in the dashboard header', () => {
+  test('the header draws the favicon mark, not the letters TT', async () => {
+    const { root } = await opened(siteRig().site);
+    const head = root.querySelector(`#${DASH_ID} .ttc-head`);
+    const logo = head.querySelector('svg.ttc-logo');
+    assert.ok(logo, 'the mark is drawn');
+    assert.equal(logo.getAttribute('aria-hidden'), 'true');
+    assert.equal(logo.querySelector('path').getAttribute('d'), MARK.raven.d);
+    assert.doesNotMatch(head.textContent, /\bTT\b/);
   });
 });

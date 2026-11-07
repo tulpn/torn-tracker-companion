@@ -126,7 +126,8 @@ describe('hq #453 the entry is copied from Torn, never from another script', () 
     }
     const own = t.doc.getElementById(LINK_ID);
     assert.equal(own.querySelectorAll('.ttc-mark').length, 1, 'ours keeps its mark');
-    assert.equal(window.getComputedStyle(own.querySelector('.ttc-mark')).display, 'inline-flex', 'and shows it');
+    assert.equal(own.querySelector('.ttc-mark').localName, 'svg', 'the raven mark, not the letters TT (hq #675)');
+    assert.equal(window.getComputedStyle(own.querySelector('.ttc-mark')).display, 'block', 'and shows it');
     assert.equal(window.getComputedStyle(own.querySelector('svg')).display, 'none', 'Torn’s icon is hidden under our id');
     for (const copy of t.doc.querySelectorAll('[data-tc-entry]')) {
       const svg = copy.querySelector('svg');
