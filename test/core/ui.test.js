@@ -156,6 +156,8 @@ describe('hq #557 A9 a tap detail stays on a 360 px screen', () => {
     const status = tapDetail(badge(doc, { attrs: { role: 'status' } }, 'x'), 'd');
     assert.equal(status.getAttribute('role'), 'status');
     assert.equal(status.getAttribute('aria-expanded'), null);
+    ensureStyle(doc);
+    assert.ok(doc.getElementById('ttc-ui-style').textContent.includes('.ttc-ui-compact.ttc-ui-compact[role="button"]:focus-visible { outline: 2px solid var(--ring)'), 'a focus ring');
   });
 
   test('closing and opening again reads the place again', () => {

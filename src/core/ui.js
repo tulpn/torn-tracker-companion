@@ -96,6 +96,7 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
     font: 600 12px/16px var(--tt-font-sans); white-space: nowrap; overflow-wrap: normal; vertical-align: middle;
   }
   ${COMPACT}[data-detail] { cursor: help; }
+  ${COMPACT}[role="button"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   ${COMPACT}[data-open="true"]::after {
     content: attr(data-detail); position: absolute; top: calc(100% + 4px); left: 0; z-index: 10;
     width: max-content; max-width: min(220px, 90vw); padding: 6px 8px; white-space: normal; text-align: left;
