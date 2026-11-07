@@ -133,6 +133,27 @@ describe('the engine', () => {
     assert.deepEqual(ends[0].seen, ['a', 'b']);
   });
 
+  test('hq #557 F38 keys typed into a field outside the card are left alone, Torn’s chat included', () => {
+    const win = page(`${ANCHORS}<input id="chat"><textarea id="msg"></textarea><div id="ce" contenteditable="true"></div>`);
+    const doc = win.document;
+    const ends = [];
+    runTour(doc, tour([step('a'), step('b'), step('c')]), { onEnd: (r) => ends.push(r) });
+    const card = doc.querySelector('[role=dialog]');
+    for (const id of ['chat', 'msg', 'ce']) {
+      const field = doc.getElementById(id);
+      if (id === 'ce') Object.defineProperty(field, 'isContentEditable', { value: true });
+      for (const name of ['Enter', 'ArrowRight', 'ArrowLeft', 'Escape', 'Tab']) {
+        const event = new win.KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true });
+        field.dispatchEvent(event);
+        assert.equal(event.defaultPrevented, false, `${name} in #${id}`);
+      }
+    }
+    assert.match(card.textContent, /1 of 3/);
+    assert.deepEqual(ends, []);
+    key(doc, 'ArrowRight', { target: doc.body });
+    assert.match(card.textContent, /2 of 3/, 'outside a field the keys still work');
+  });
+
   test('UXT-006 a swipe to the left goes on', () => {
     const win = page(ANCHORS);
     const doc = win.document;

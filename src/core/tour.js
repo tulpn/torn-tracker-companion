@@ -140,7 +140,12 @@ export function activeElement(doc) {
 /** Whether the player is typing into a field, which a tour must never cover (UXT-003). */
 export function typing(doc) {
   const node = activeElement(doc);
-  if (!node || node === doc.body) return false;
+  return !!node && node !== doc.body && isField(node);
+}
+
+/** A text field, a menu or an editable area: somewhere the player's keys are their own. */
+export function isField(node) {
+  if (!node || node.nodeType !== 1) return false;
   if (node.isContentEditable) return true;
   if (node.tagName === 'TEXTAREA' || node.tagName === 'SELECT') return true;
   return node.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color'].includes(node.type);
@@ -276,6 +281,9 @@ export function runTour(doc, tour, { roots = [doc], theme = 'dark', isMet = () =
   function onKey(event) {
     if (ended) return;
     const inCard = card.contains(event.target);
+    // Keys typed into a field elsewhere on the page (Torn's chat, a search box) are the
+    // player's, never the tour's (hq #557 F38).
+    if (!inCard && isField(event.target)) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       end('skipped');
