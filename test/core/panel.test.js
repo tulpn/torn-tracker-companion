@@ -179,6 +179,15 @@ describe('CMP-107 the settings page has a section for each job', () => {
     assert.equal(t.$('.ttc-keyhint a').getAttribute('href'), '#/torn-tracker/keys');
   });
 
+  test('hq #557 C21 at 360 px: the dashboard link has its own row, so the title and key state keep theirs', () => {
+    const t = mount();
+    t.open();
+    assert.ok(t.$('.ttc-head > .ttc-dashnav [data-dashboard-off]'), 'beside the tools, not inside them');
+    assert.equal(t.$('.ttc-tools [data-dashboard-off]'), null);
+    const css = [...t.panel.panel.getRootNode().querySelectorAll('style')].map((n) => n.textContent).join('');
+    assert.match(css, /@container \(max-width: 640px\)[\s\S]*\.ttc-dashnav \{ order: 9; flex: 1 1 100%;/);
+  });
+
   test('with a script key: no banner', () => {
     const t = mount({ keys: { ...emptyKeys(), script: KEY } });
     t.open();
