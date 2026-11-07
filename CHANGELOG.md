@@ -15,6 +15,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   such as Torn's chat, now reach the field instead of moving the tour (hq #557 F38).
 - When the dashboard can't reach torn-tracker.com, or the site asks it to wait, it now has a
   **Retry** button; each press reads the dashboard once (hq #557 F18).
+- The shop price guard's warning under a sell price is now one short line, such as "Shop
+  pays $1,000 (+$100)", so it no longer squeezes the row; tap or hover it for the shop and
+  the total (hq #557 F25).
 
 ### Changed
 

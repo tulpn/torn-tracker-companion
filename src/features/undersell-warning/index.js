@@ -2,16 +2,17 @@
 //
 // On the Item Market's add-listing form and the bazaar's add and manage pages, a price
 // below what a shop in Torn pays for the item gets a warning under the field while the
-// player types: "Below the shop price. Big Al's Gun Shop pays $1,250 each, $310 more than
-// this (×12: $3,720)." It only says so: nothing is disabled, changed, pressed or
+// player types: "Shop pays $1,250 (+$310)", with the full sentence ("Below the shop price.
+// Big Al's Gun Shop pays $1,250 each, $310 more than this (×12: $3,720).") on hover or tap
+// (hq #557 F25). It only says so: nothing is disabled, changed, pressed or
 // submitted, and an item no shop buys gets no warning.
 //
 // The idea is the owner's, from Torn Item Market - Shop Sell Price Highlighter (GPLv3);
 // the forms are the price filler's (CMP-105).
 
 import { readInt, readMoney, settler } from '../../core/dom.js';
-import { undersellText } from '../../core/shops.js';
-import { badge } from '../../core/ui.js';
+import { undersellShort, undersellText } from '../../core/shops.js';
+import { badge, tapDetail } from '../../core/ui.js';
 import { itemIdOf, ownedOf } from '../price-filler/fill.js';
 import { FORMS, formFor } from '../price-filler/selectors.js';
 
@@ -63,17 +64,21 @@ export default {
       const field = row.querySelector(FORMS[form].price);
       if (!field) return;
       const id = itemIdOf(row, form);
-      const text = id ? undersellText(typedPrice(row, form), s.table.get(id), listedQty(row, form)) : null;
+      const price = typedPrice(row, form);
+      const entry = id ? s.table.get(id) : null;
+      const text = undersellShort(price, entry);
       const shown = row.querySelector(`.${MARK}`);
       if (!text) {
         shown?.remove();
         return;
       }
+      const detail = undersellText(price, entry, listedQty(row, form));
       if (shown) {
         if (shown.textContent !== text) shown.textContent = text;
+        tapDetail(shown, detail);
         return;
       }
-      const node = badge(doc, { cls: MARK, tone: 'warn', block: true, attrs: { role: 'status', 'data-tour': 'undersell' } }, text);
+      const node = tapDetail(badge(doc, { cls: MARK, tone: 'warn', block: true, attrs: { role: 'status', 'data-tour': 'undersell' } }, text), detail);
       const group = field.closest('.input-money-group') || field;
       const filler = group.nextElementSibling?.classList.contains('ttc-fill') ? group.nextElementSibling : null;
       (filler || group).after(node);

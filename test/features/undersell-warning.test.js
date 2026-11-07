@@ -46,9 +46,14 @@ describe('CMP-109 AC2 the warning while the player types', () => {
     const row = r.doc.querySelector('ul.items-cont > li');
     type(r, row.querySelector('div.price input'), '900');
     const warning = row.querySelector('.ttc-undersell');
-    assert.equal(warning.textContent,
+    assert.equal(warning.textContent, 'Shop pays $1,000 (+$100)', 'short enough for the row (hq #557 F25)');
+    assert.equal(warning.dataset.detail,
       "Below the shop price. Big Al's Gun Shop pays $1,000 each, $100 more than this (×12: $1,200).");
+    assert.equal(warning.title, warning.dataset.detail, 'the full sentence on hover, and on tap');
     assert.equal(warning.getAttribute('role'), 'status');
+    type(r, row.querySelector('div.price input'), '950');
+    assert.equal(warning.textContent, 'Shop pays $1,000 (+$50)', 'the same node, updated');
+    assert.match(warning.dataset.detail, /\$50 more than this \(×12: \$600\)\.$/);
   });
 
   test('$1,000 or more takes it away again; nothing is disabled, changed or submitted', async () => {
@@ -84,7 +89,8 @@ describe('CMP-109 AC2 the warning while the player types', () => {
     const row = r.doc.querySelector("[class*='itemRow___']");
     type(r, row.querySelector("[class^='amountInputWrapper___'] input"), '3');
     type(r, row.querySelector("[class^='priceInputWrapper___'] input"), '990');
-    assert.equal(row.querySelector('.ttc-undersell').textContent,
+    assert.equal(row.querySelector('.ttc-undersell').textContent, 'Shop pays $1,000 (+$10)');
+    assert.equal(row.querySelector('.ttc-undersell').dataset.detail,
       "Below the shop price. Big Al's Gun Shop pays $1,000 each, $10 more than this (×3: $30).");
   });
 
@@ -93,7 +99,8 @@ describe('CMP-109 AC2 the warning while the player types', () => {
       <div class="price___p"><div class="input-money-group"><input class="input-money" value="250"></div></div></div>`;
     const r = run({ html, url: BAZAAR_MANAGE, site: fakeSite() });
     await wait();
-    assert.match(r.doc.querySelector('.ttc-undersell').textContent, /^Below the shop price\. Big Al's Gun Shop pays \$1,000 each, \$750 more than this\.$/);
+    assert.equal(r.doc.querySelector('.ttc-undersell').textContent, 'Shop pays $1,000 (+$750)');
+    assert.match(r.doc.querySelector('.ttc-undersell').dataset.detail, /^Below the shop price\. Big Al's Gun Shop pays \$1,000 each, \$750 more than this\.$/);
   });
 
   test('the warning goes under the filler\'s button when there is one', async () => {
@@ -132,7 +139,7 @@ describe('CMP-109 AC4 the built-in table', () => {
     const r = run({ html, url: BAZAAR_ADD, site: fakeSite(BUILT_IN) });
     await wait();
     type(r, r.doc.querySelector('div.price input'), String(entry.price - 1));
-    assert.match(r.doc.querySelector('.ttc-undersell').textContent, /^Below the shop price\. .+ pays \$/);
+    assert.equal(r.doc.querySelector('.ttc-undersell').textContent, `Shop pays $${entry.price.toLocaleString('en-US')} (+$1)`);
   });
 });
 
