@@ -17,7 +17,7 @@ keywords: torn trade value, trade receipt torn, trade calculator, torn buy list,
 
 ## Total a trade
 
-Under the other trader's side of a trade, a line shows **Their offer at market value**:
+Under the trade, across its full width, a line shows **Their offer at market value**:
 their money plus each item at torn-tracker.com's market value. An item without a price is
 counted ("1 without a price") and never guessed.
 

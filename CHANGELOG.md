@@ -17,6 +17,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   400 px, so narrow listings no longer overflow; it stays in the tooltip (hq #557 B15).
 - The sidebar Watch line's switch now reads **Watch on** or **Watch off**, so the line fits
   the sidebar (hq #557 B16).
+- The trade value line now sits under the whole trade at full width, not inside the narrow
+  column of one side, where it wrapped a word at a time (hq #557 A10).
 - The travel agency's best runs panel holds its place with "Loading…" from the start, and
   the OC weights credit line sits under the crimes, so neither pushes the page down when it
   arrives (hq #557 A6).
