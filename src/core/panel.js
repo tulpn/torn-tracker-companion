@@ -124,7 +124,8 @@ const STYLE = `
   #${P}-panel .${P}-keystate { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: 999px;
     font-size: 12px; font-weight: 600; background: var(--ttc-accent-soft); color: var(--ttc-text); }
   #${P}-panel .${P}-keystate[data-key="none"] { background: color-mix(in srgb, var(--ttc-warn) 18%, transparent); }
-  #${P}-panel .${P}-head .${P}-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  #${P}-panel .${P}-head .${P}-dashnav { display: flex; margin-left: auto; }
+  #${P}-panel .${P}-head .${P}-tools { display: flex; align-items: center; gap: 8px; }
   #${P}-panel .${P}-find {
     grid-area: find; display: flex; align-items: center; gap: 8px; padding: 12px 18px;
     background: var(--ttc-surface); border-bottom: 1px solid var(--ttc-line);
@@ -237,7 +238,9 @@ const STYLE = `
     /* hq issue 489: the title gives way, so the key state and ✕ stay on its row at 360 px. */
     #${P}-panel .${P}-brand { flex: 1 1 0; min-width: 0; }
     #${P}-panel .${P}-keystate { min-height: 24px; padding: 2px 8px; font-size: 12px; }
-    #${P}-panel .${P}-head .${P}-tools { gap: 4px; }
+    #${P}-panel .${P}-head .${P}-tools { gap: 4px; margin-left: auto; }
+    /* The dashboard link would squeeze the title under the key state: it takes its own row. */
+    #${P}-panel .${P}-head .${P}-dashnav { order: 9; flex: 1 1 100%; margin-left: 0; }
     #${P}-panel .${P}-head .${P}-x { padding: 6px 10px; }
     #${P}-panel .${P}-find { padding: 10px 12px; }
     #${P}-panel .${P}-find input[type=search] { min-width: 0; max-width: none; }
@@ -394,9 +397,9 @@ export function mountPanel({
         h('span', { class: `${P}-logo`, 'aria-hidden': 'true' }, 'TT'),
         h('h2', null, 'Torn Tracker', h('small', null, `Companion settings \u00b7 version ${version}`))),
       keyState,
+      // Its own place, so on a phone it takes the row under the title (hq #557 C21).
+      h('div', { class: `${P}-dashnav` }, dashboardLink, dashboardOff),
       h('div', { class: `${P}-tools` },
-        dashboardLink,
-        dashboardOff,
         ...(tours ? [h('button', {
           type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
           'aria-label': 'Show me around this page', title: 'Show me around',
