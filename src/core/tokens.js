@@ -8,13 +8,13 @@
 // Two ways to pick a theme:
 //   - what the companion adds inline on Torn's page follows Torn's theme, because it sits
 //     on Torn's background (`body.dark-mode`);
-//   - the settings page is a surface of its own: its "Look" setting picks dark (the
-//     suite's default), light, or Torn's.
+//   - the settings page and the dashboard are surfaces of their own: their "Look" setting
+//     follows Torn's theme by default, or picks dark or light (hq #557 F32).
 
 import { TOKENS } from '../data/tokens.js';
 
-export const LOOKS = Object.freeze(['dark', 'light', 'torn']);
-export const DEFAULT_LOOK = 'dark';
+export const LOOKS = Object.freeze(['torn', 'dark', 'light']);
+export const DEFAULT_LOOK = 'torn';
 
 /**
  * A static value in pixels where the site writes rem: rem is the root's font size, which
@@ -49,6 +49,6 @@ export function tornTheme(doc) {
 
 /** The settings page's theme for a "Look" setting. */
 export function lookTheme(look, doc) {
-  if (look === 'torn') return tornTheme(doc);
-  return look === 'light' ? 'light' : 'dark';
+  if (look === 'dark' || look === 'light') return look;
+  return tornTheme(doc);
 }

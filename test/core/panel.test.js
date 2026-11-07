@@ -473,8 +473,18 @@ describe('CMP-107 the settings page, as reworked on the owner\u2019s review', ()
     assert.doesNotMatch(t.root.querySelector('#ttc-style').textContent, /position: fixed/);
   });
 
-  test('its look is dark by default, even on Torn\u2019s light theme (WP-UI-8)', () => {
+  test('by default its look follows Torn\u2019s theme (hq #557 F32)', () => {
     const t = mount();
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'light');
+    t.panel.close();
+    t.window.document.body.classList.add('dark-mode');
+    t.open();
+    assert.equal(t.panel.panel.dataset.theme, 'dark');
+  });
+
+  test('set to dark, it stays dark on Torn\u2019s light theme (WP-UI-8)', () => {
+    const t = mount({ settings: { ...defaults(createRegistry([descriptor()])), look: 'dark' } });
     t.open();
     assert.equal(t.panel.panel.dataset.theme, 'dark');
   });
@@ -631,7 +641,7 @@ describe('WP-UX-4 tours from the settings page (UXT-022)', () => {
     const [act, id, opts] = tours.calls[0];
     assert.deepEqual([act, id], ['auto', 'settings']);
     assert.equal(opts.roots[0], t.root);
-    assert.equal(opts.theme, 'dark');
+    assert.equal(opts.theme, 'light', 'Torn’s theme, which the page follows by default');
   });
 
   test('"?" in the header shows this page’s tour again', () => {

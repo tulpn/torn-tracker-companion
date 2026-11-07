@@ -98,8 +98,8 @@ Tours never start on their own while you're attacking or typing in a field. A st
 a feature you've switched off is left out. Which tours you've seen is kept on this
 device and goes with [Forget me](forget-me.md).
 
-The page is dark to start with, in torn-tracker.com's colours. Under **General → Look**
-you can make it light, or **Same as Torn** to follow Torn's own light or dark theme. What
+The page, like the dashboard, follows Torn's own light or dark theme to start with. Under
+**General → Look** you can make it always dark or always light instead. What
 the companion adds to Torn's pages (labels, panels, the sidebar block) always follows
 Torn's theme, so it matches the page around it. When it's narrower than 600 px (on a phone
 or in PDA), its menu moves to the top and scrolls sideways; every button is big enough
