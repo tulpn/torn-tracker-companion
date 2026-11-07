@@ -145,6 +145,29 @@ describe('hq #522 the figures are compact badges beside the slot', () => {
     assert.match(css, /\.ttc-ui-compact\.ttc-ui-compact\[data-open="true"\]::after \{\s*content: attr\(data-detail\)/);
   });
 
+  test('hq #557 F39: a button to the keyboard; Enter and Space open it, and the key stays ours', async () => {
+    const r = run({ site: fakeSite() });
+    await wait();
+    const n = r.doc.querySelector('.ttc-oc[data-kind="weight"]');
+    assert.equal(n.getAttribute('role'), 'button');
+    assert.equal(n.tabIndex, 0);
+    assert.equal(n.getAttribute('aria-expanded'), 'false');
+    let reached = 0;
+    n.parentElement.addEventListener('keydown', () => { reached += 1; });
+    const key = (k) => n.dispatchEvent(new r.doc.defaultView.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+    key('Enter');
+    assert.equal(n.dataset.open, 'true');
+    assert.equal(n.getAttribute('aria-expanded'), 'true');
+    key(' ');
+    assert.equal(n.dataset.open, 'false');
+    key('Enter');
+    key('Escape');
+    assert.equal(n.dataset.open, 'false');
+    assert.equal(reached, 0, "Torn's slot button never sees the key");
+    key('Tab');
+    assert.equal(reached, 1, 'other keys pass through');
+  });
+
   test('a repaint keeps one badge per slot and the tap state', async () => {
     const r = run({ site: fakeSite() });
     await wait();

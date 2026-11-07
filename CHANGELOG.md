@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The OC role badges open from the keyboard too: Tab to one, then Enter or Space opens its
+  detail and Escape closes it. The key never reaches Torn's slot button (hq #557 F39).
 - In settings, a feature that needs a key shows one badge for each missing key, "Needs script
   key" or "Needs Torn API key", and the badge opens Keys (hq #557 E37).
 - Buttons look the same everywhere: the settings panel, the dashboard and the buttons on

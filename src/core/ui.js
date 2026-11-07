@@ -363,6 +363,9 @@ export function badge(doc, { cls, tone = 'neutral', block = false, compact = fal
 /**
  * The detail of a compact badge (hq #522, #557): in its title for a hover, and under it on a
  * tap. The tap goes no further, so it never reaches Torn's own handlers in the row.
+ * From the keyboard (hq #557 F39) it is a button: Tab reaches it, Enter or Space opens and
+ * closes it, and `aria-expanded` says which. A badge that already has a role (a status line)
+ * keeps it and opens by tap only.
  * @param {Element} node a badge made with `compact: true`
  * @param {string} detail
  */
@@ -371,13 +374,27 @@ export function tapDetail(node, detail) {
   if (node.dataset.detail !== detail) node.dataset.detail = detail;
   if (node.dataset.open) return node;
   node.dataset.open = 'false';
-  node.addEventListener('click', (e) => {
+  const keyboard = !node.hasAttribute('role');
+  if (keyboard) {
+    node.setAttribute('role', 'button');
+    node.tabIndex = 0;
+    node.setAttribute('aria-expanded', 'false');
+  }
+  const toggle = (e) => {
     e.preventDefault();
     e.stopPropagation();
     const open = node.dataset.open !== 'true';
     if (open) flipNearEdge(node);
     node.dataset.open = String(open);
-  });
+    if (keyboard) node.setAttribute('aria-expanded', String(open));
+  };
+  node.addEventListener('click', toggle);
+  if (keyboard) {
+    node.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') toggle(e);
+      else if (e.key === 'Escape' && node.dataset.open === 'true') toggle(e);
+    });
+  }
   return node;
 }
 
