@@ -100,7 +100,7 @@ stays quiet.
 
 The Torn Tracker block in Torn's sidebar has a **Watch** line: "Watching now · Lead", your
 next slot like "Next watch 03:00 TCT · Backup 1", or "Sign up to watch". It adds how many
-slots in the next 24 hours have no Lead, and has a switch for watch mode. You can hide the
+slots in the next 24 hours have no Lead, and has a **Watch** switch that reads on or off. You can hide the
 line under Settings → Sidebar.
 
 > **What it reads and sends.** It reads Torn's chain bar on the page you're on. When

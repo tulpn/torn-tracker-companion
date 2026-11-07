@@ -118,6 +118,8 @@ const STYLE = `
     background: transparent; color: inherit; font: 600 13px/1.5 var(--tt-font-sans);
   }
   #${BLOCK_ID} .${P}-sb-switch[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  #${BLOCK_ID} .${P}-sb-switch, #${BLOCK_ID} .${P}-sb-state { white-space: nowrap; }
+  #${BLOCK_ID} .${P}-sb-state { font-weight: 400; }
   @media (pointer: coarse) {
     #${BLOCK_ID} .${P}-sb-head { min-height: 44px; }
     #${BLOCK_ID} .${P}-sb-links a { display: inline-flex; align-items: center; min-height: 44px; }
@@ -434,8 +436,11 @@ export function mountSidebarBlock({
   function watchSwitch() {
     if (!watch) return null;
     const on = watch.isOn();
-    const button = h('button', { type: 'button', class: `${P}-sb-switch`, 'aria-pressed': String(on), title: 'Watch mode: a big chain timer over the page' },
-      on ? 'Watch mode on' : 'Watch mode off');
+    // "Watch" and its state in a short word, so the row fits 172 px (hq #557 B16).
+    const button = h('button', {
+      type: 'button', class: `${P}-sb-switch`, 'aria-pressed': String(on), 'aria-label': 'Watch mode',
+      title: `Watch mode is ${on ? 'on' : 'off'}: a big chain timer over the page`,
+    }, 'Watch ', h('span', { class: `${P}-sb-state` }, on ? 'on' : 'off'));
     button.addEventListener('click', () => watch.toggle());
     return button;
   }
