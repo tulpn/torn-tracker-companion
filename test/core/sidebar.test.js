@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
-  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, placementOf, readLine,
+  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, nextLoot, placementOf, readLine,
 } from '../../src/core/sidebar.js';
 import { readRoutine, readSidebar, tornPath } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
@@ -1034,5 +1034,33 @@ describe('hq #557 C22 links to torn-tracker.com say they open a new tab', () => 
       const external = a.getAttribute('target') === '_blank';
       assert.equal(Boolean(a.querySelector('.ttc-sb-ext')), external, a.getAttribute('href'));
     }
+  });
+});
+
+describe('hq #557 17 the loot line shows the next NPC only', () => {
+  const at = (min) => new Date(Date.UTC(2026, 9, 23, 12, min)).toISOString();
+  const LOOT = [
+    { npc_id: 4, name: 'Duke', level: 4, next_level_at: at(90) },
+    { npc_id: 15, name: 'Leslie', level: 2, next_level_at: at(25) },
+    { npc_id: 19, name: 'Jimmy', level: 5, next_level_at: null },
+  ];
+
+  test('the soonest to reach a new level, without a trailing separator', async () => {
+    const data = { ...FULL, loot: LOOT, source: 'loot.example' };
+    const t = mount({
+      change: (s) => { s.sidebar.items.loot = true; },
+      answer: { status: 'ok', ...readSidebar(data, Object.keys(data), 0) },
+    });
+    await settle();
+    const row = [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => /^Loot/.test(r.textContent));
+    assert.ok(row);
+    assert.match(row.textContent, /^Loot Leslie L2 → L3 in .+ \(loot\.example\)$/);
+    assert.doesNotMatch(row.textContent, /Duke|Jimmy|;/);
+  });
+
+  test('with no level to come, the first NPC; a time already past does not count', () => {
+    const now = Date.UTC(2026, 9, 23, 12);
+    assert.equal(nextLoot([{ name: 'A', level: 5, nextAt: null }, { name: 'B', level: 5, nextAt: null }], now).name, 'A');
+    assert.equal(nextLoot([{ name: 'A', level: 3, nextAt: now - 1 }, { name: 'B', level: 2, nextAt: now + 5 }], now).name, 'B');
   });
 });
