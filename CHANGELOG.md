@@ -9,6 +9,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- During a tour, Enter, the arrow keys, Esc and Tab typed into a field elsewhere on the page,
+  such as Torn's chat, now reach the field instead of moving the tour (hq #557 F38).
+
 ### Changed
 
 - The sharing lines now say exactly what the code sends: a gym train includes the energy and
