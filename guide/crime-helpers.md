@@ -26,7 +26,7 @@ loaded and shows it in the header: **Morale 87%**.
 Beside each crime option, a line like **$311/nerve** shows the average money and item
 value players got from it, for each nerve it costs. It comes from torn-tracker.com, worked
 out from players' shared outcomes, and shows only once at least 20 players have reported
-that crime. Hover it to see how many, and how often it succeeds.
+that crime. Hover or tap it to see how many, and how often it succeeds. The morale and time-left badges work the same way.
 
 ## Burglary targets
 
