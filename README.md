@@ -103,8 +103,8 @@ of sections and a search bar at the top. Nothing is added to Torn's header.
   on profiles, also needs the key's lists scope: with it, the companion reads your target
   lists with the profile's player id, to tick the ones they are on, and adds or removes
   them only when you press its button. Nothing else about the profile is read or sent. An optional
-  Torn API key field will appear here, below Torn's terms table, for features that need
-  your own data.
+  Torn API key field will appear here, below Torn's terms table (one row, the same as on
+  torn-tracker.com), for features that need your own data.
 - **Data**: what the script keeps on this device, export and import for your player notes,
   racing templates and message templates, and "Forget me", which clears it all.
 - **Credits**: every script this one took code or an idea from.
