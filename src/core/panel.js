@@ -353,8 +353,33 @@ export function mountPanel({
   const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
   const clear = h('button', { type: 'button', class: `${P}-clear`, 'data-act': 'clear-search', 'aria-label': 'Clear the search', title: 'Clear', hidden: true }, '\u2715');
   const keyState = h('span', { class: `${P}-keystate`, 'data-keystate': '' });
-  // The way into the dashboard page (hq #465), while its preview switch is on.
-  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '', hidden: getSettings().dashboard !== true }, 'Dashboard');
+  // The way into the dashboard page (hq #465), while its preview switch is on. While it is
+  // off, the same place shows "Dashboard · turn on", which opens General at that switch, so
+  // the page can be found without knowing where the switch is (hq #557 C21).
+  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '' }, 'Dashboard');
+  // A plain link to General, like the section tabs, so Back and the tabs keep working.
+  const dashboardOff = h('a', {
+    href: '#/torn-tracker/general', class: `${P}-btn ${P}-x`, 'data-dashboard-off': '',
+    title: 'The dashboard is off. Turn it on under General.',
+  }, 'Dashboard · turn on');
+  let focusDashboard = false;
+  function toDashboardSwitch() {
+    focusDashboard = false;
+    const toggle = panel.querySelector('[data-setting="dashboard"]');
+    toggle?.scrollIntoView?.({ block: 'center' });
+    toggle?.focus();
+  }
+  dashboardOff.addEventListener('click', () => {
+    // Already on General: the address doesn't change, so no route event comes.
+    if (active && section === 'general') toDashboardSwitch();
+    else focusDashboard = true;
+  });
+  function syncDashboard() {
+    const on = getSettings().dashboard === true;
+    dashboardLink.hidden = !on;
+    dashboardOff.hidden = on;
+  }
+  syncDashboard();
   panel.append(h('div', { class: `${P}-toastbox` }, status), h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
@@ -363,6 +388,7 @@ export function mountPanel({
       keyState,
       h('div', { class: `${P}-tools` },
         dashboardLink,
+        dashboardOff,
         ...(tours ? [h('button', {
           type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
           'aria-label': 'Show me around this page', title: 'Show me around',
@@ -707,7 +733,7 @@ export function mountPanel({
         h('input', { type: 'checkbox', 'data-setting': 'dashboard', checked: draft.settings.dashboard === true }),
         'Show my torn-tracker dashboard inside Torn'),
       h('div', { class: `${P}-muted` },
-        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page.'),
+        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page, which reads “Dashboard · turn on” while this is off.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
@@ -849,7 +875,7 @@ export function mountPanel({
   }
 
   function render(message = '', tone = '') {
-    dashboardLink.hidden = getSettings().dashboard !== true;
+    syncDashboard();
     drawKeyState();
     clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
@@ -998,7 +1024,7 @@ export function mountPanel({
       else if (redraw) render(done, 'good');
       else {
         drawKeyState();
-        dashboardLink.hidden = getSettings().dashboard !== true;
+        syncDashboard();
         flash(done, 'good');
       }
     }).catch(() => {
@@ -1100,6 +1126,7 @@ export function mountPanel({
     search.value = '';
     showBanned();
     render();
+    if (focusDashboard) toDashboardSwitch();
     // The first time the page opens (and for each new version), the settings tour.
     tours?.auto('settings', tourOptions());
   }

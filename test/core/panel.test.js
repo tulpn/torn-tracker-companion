@@ -859,3 +859,28 @@ describe('hq #507, #557 C19 Settings → Sidebar: where the sidebar block sits',
     assert.equal(t.$('#ttc-sidebar-position').value, 'top');
   });
 });
+
+describe('hq #557 C21 the dashboard link shows while the dashboard is off', () => {
+  test('off: the header reads "Dashboard · turn on", a link to General that lands on the switch', () => {
+    const t = mount();
+    t.open('features');
+    const off = t.$('[data-dashboard-off]');
+    assert.equal(off.hidden, false);
+    assert.equal(t.$('[data-dashboard-link]').hidden, true);
+    assert.match(off.textContent, /Dashboard · turn on/);
+    assert.equal(off.getAttribute('href'), '#/torn-tracker/general');
+    t.click(off);
+    t.open('general');
+    const toggle = t.$('[data-setting="dashboard"]');
+    assert.equal(t.root.activeElement, toggle);
+  });
+
+  test('on: the plain Dashboard link, and the off link hides', async () => {
+    const t = mount();
+    t.open('general');
+    t.change(t.$('[data-setting="dashboard"]'), true);
+    await settle();
+    assert.equal(t.$('[data-dashboard-link]').hidden, false);
+    assert.equal(t.$('[data-dashboard-off]').hidden, true);
+  });
+});

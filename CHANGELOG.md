@@ -11,6 +11,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- The settings page shows **Dashboard · turn on** at the top while the dashboard is off,
+  so it can be found without knowing the switch is under General (hq #557 C21).
 - Where the sidebar block sits is now chosen under **Settings → Sidebar**, with the block
   itself, not under General (hq #557 C19).
 - The settings and sidebar guides no longer mention saving: every change saves at once
