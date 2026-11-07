@@ -56,6 +56,21 @@ describe('PRE-042 the strip', () => {
     assert.match(strip(r).textContent, /The full brief is a Pro feature\./);
   });
 
+  test('hq #557 30 the Core note once, and the same link words for every tier', async () => {
+    const core = { opponent: 678, compare: COMPARE, headline: null, briefUrl: 'https://torn-tracker.com/war/prewar/', pro: false };
+    const r = run({ site: fakeSite(core) });
+    await wait();
+    assert.match(strip(r).textContent, /Pro feature/);
+    assert.equal(strip(r).querySelector('a').textContent, 'Open the brief on torn-tracker.com');
+    assert.deepEqual(r.stored(), { proNoteSeen: true });
+    r.stop();
+    const again = run({ site: fakeSite(core), data: { proNoteSeen: true } });
+    await wait();
+    assert.match(strip(again).textContent, /^Your next ranked war: /);
+    assert.doesNotMatch(strip(again).textContent, /Pro feature/);
+    assert.equal(strip(again).querySelector('a').textContent, 'Open the brief on torn-tracker.com');
+  });
+
   test('another faction’s page, or outside the window: nothing', async () => {
     const other = run({ url: 'https://www.torn.com/factions.php?step=profile&ID=999', site: fakeSite({ opponent: 678, compare: COMPARE, headline: null, briefUrl: null, pro: false }) });
     await wait();

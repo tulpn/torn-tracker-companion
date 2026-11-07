@@ -14,6 +14,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - Bust safety no longer shows a bare number: the badge names its band before the score, such as
   "Easy 18" or "Hard 600". It stays a score, not a percentage, since it isn't Torn's odds
   (hq #557 31).
+- The "Pro feature" notes on the war page and in the pre-war brief show once, not on every
+  visit, and the war page's note has a × that puts it away. The brief's link reads "Open the
+  brief on torn-tracker.com" for Pro and Core alike (hq #557 30).
 - A badge that is a link, such as the listed-mugger badge or an applicant's fit, now looks like
   one: a trailing ›, and on hover or keyboard focus a deeper tint, an underline and a focus
   ring, in light and dark (hq #557 23).
