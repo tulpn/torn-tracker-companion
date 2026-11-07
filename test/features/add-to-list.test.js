@@ -256,7 +256,7 @@ describe('CMP-110 the split button', () => {
     const site = fakeSite(() => ({ status, lists: status === 'ok' ? [chain()] : [], lastUsed: status === 'ok' ? A : null }));
     const r = run({ html: HEADING, url: PROFILE, site });
     await wait();
-    assert.equal(main(r).textContent, 'Lists: try again');
+    assert.equal(main(r).textContent, "Lists didn't load. Retry");
     status = 'ok';
     press(main(r));
     await wait(50);
@@ -272,6 +272,6 @@ describe('CMP-110 the split button', () => {
 describe('mainAction', () => {
   test('busy or failed reads offer a retry', () => {
     assert.equal(mainAction({ status: 'busy', lists: [], lastUsed: null }).act, 'retry');
-    assert.equal(mainAction(null).text, 'Lists: try again');
+    assert.equal(mainAction(null).text, "Lists didn't load. Retry");
   });
 });

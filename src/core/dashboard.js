@@ -264,7 +264,7 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     if (mine !== generation || !open) return;
     if (result?.status === 'ok') show(result);
     else if (result?.status === 'no_key') say('The dashboard needs your torn-tracker.com script key.', { href: '#/torn-tracker/keys', text: 'Add it in Keys' });
-    else if (result?.status === 'refused') say('torn-tracker.com refused the script key. Check it in Keys.', { href: '#/torn-tracker/keys', text: 'Open Keys' });
+    else if (result?.status === 'refused') say('torn-tracker.com didn’t accept your script key. Check it under Keys.', { href: '#/torn-tracker/keys', text: 'Open Keys' });
     else if (result?.status === 'wait') sayRetry(`torn-tracker.com asked to wait. Try again in ${roughly(result.retryMs ?? 60_000)}.`);
     else sayRetry("Couldn't reach torn-tracker.com. Try again in a minute.");
   }

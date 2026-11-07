@@ -40,7 +40,7 @@ export function badgeText(card) {
     card.merits !== null ? `${card.merits} merits` : null,
     card.job_points !== null ? `${card.job_points.toLocaleString('en-US')} job points` : null,
     card.fit ? FIT[card.fit] : null,
-  ].filter(Boolean).join(' · ') || 'shared card';
+  ].filter(Boolean).join(' · ') || 'shared with torn-tracker.com';
 }
 
 export default {

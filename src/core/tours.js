@@ -201,7 +201,7 @@ export const TOURS = Object.freeze([
     surface: 'companion',
     page: 'factions.php#/tab=crimes',
     href: 'https://www.torn.com/factions.php?step=your#/tab=crimes',
-    title: 'Organised crimes',
+    title: 'Organized crimes',
     steps: [
       {
         target: 'oc-success',

@@ -11,6 +11,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Plainer, consistent words (hq #557 D26-D29): **Torn Tracker** for the product,
+  **torn-tracker.com** for the site and **the companion** for the script; "Organized crime",
+  "Ranked war" and "Below shop price" everywhere. A refused key now reads "didn't accept your
+  script key", the Sharing queue line says what happened in words (the HTTP status is in its
+  tooltip), and a sidebar row that didn't load says it is retried each minute. A taken Dibs
+  button reads "Taken 4:05", with the holder in its tooltip. The General intro and the tour
+  match what the settings hold, and the gym line says "estimate" once.
 - The war page's Sort bar is one select instead of five buttons that wrapped to three
   lines, and it stands aside when Torn War Stuff Enhanced is on the page (hq #557 B14).
 - The listing's total on the shop price highlighter is left off the label on screens under

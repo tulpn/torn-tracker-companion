@@ -129,7 +129,7 @@ export default {
 
     const LIST_TROUBLE = {
       no_key: 'To price at a buy list, add your script key under Keys in the Torn Tracker settings.',
-      refused: 'torn-tracker.com refused your script key; check it under Keys.',
+      refused: 'torn-tracker.com didn’t accept your script key. Check it under Keys.',
       bad_name: "Set the trader's name or id in the Torn Tracker settings, under Trade value.",
       not_found: 'torn-tracker.com has no public buy list by that name.',
       wait: 'torn-tracker.com asked to wait; the buy list is read again in a minute.',

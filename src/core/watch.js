@@ -329,7 +329,7 @@ export function mountWatch({
       return { state: 'nodata', time: '–:––', count: '', source: 'No chain bar on this page. Add your script key to use torn-tracker’s timer.', preview: false };
     }
     if ((!reading || reading.source === 'site') && siteRefused) {
-      return { state: 'nodata', time: '–:––', count: '', source: 'No chain bar on this page, and torn-tracker refused the script key.', preview: false };
+      return { state: 'nodata', time: '–:––', count: '', source: 'No chain bar on this page, and torn-tracker.com didn’t accept your script key.', preview: false };
     }
     if (!reading) return { state: 'nodata', time: '–:––', count: '', source: 'Waiting for a timer…', preview: false };
     if (at - reading.seenAt > STALE_AFTER_MS) {
