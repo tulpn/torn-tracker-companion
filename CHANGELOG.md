@@ -18,6 +18,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   tooltip), and a sidebar row that didn't load says it is retried each minute. A taken Dibs
   button reads "Taken 4:05", with the holder in its tooltip. The General intro and the tour
   match what the settings hold, and the gym line says "estimate" once.
+- Sidebar links to torn-tracker.com carry ↗ and say they open a new tab, and the travel
+  line links only the country, not the whole line (hq #557 C22).
+- The settings page shows **Dashboard · turn on** at the top while the dashboard is off,
+  so it can be found without knowing the switch is under General (hq #557 C21).
+- Where the sidebar block sits is now chosen under **Settings → Sidebar**, with the block
+  itself, not under General (hq #557 C19).
+- The settings and sidebar guides no longer mention saving: every change saves at once
+  (hq #557 C20).
 - The war page's Sort bar is one select instead of five buttons that wrapped to three
   lines, and it stands aside when Torn War Stuff Enhanced is on the page (hq #557 B14).
 - The listing's total on the shop price highlighter is left off the label on screens under

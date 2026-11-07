@@ -66,7 +66,7 @@ export const SECTIONS = Object.freeze([
 const INTROS = Object.freeze({
   general: 'Your version and updates, the page’s look, the achievement toast, the guide line, the dashboard preview, and logging for when something misbehaves.',
   features: 'Switch each feature on or off and set its options. Each change is saved at once.',
-  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits under General. Choose what it shows. All of it is Core (free).',
+  sidebar: 'A Torn Tracker block in Torn’s sidebar, with a few live facts. Choose where it sits and what it shows. All of it is Core (free).',
   watch: 'A big chain timer over Torn’s page, so a watcher never misses it, and your faction’s rota of chain watchers. Core (free).',
   sharing: 'Choose what you share with torn-tracker.com. Everything starts off.',
   keys: 'The key that connects the companion to torn-tracker.com.',
@@ -362,8 +362,33 @@ export function mountPanel({
   const banned = h('div', { class: `${P}-banned`, role: 'alert', hidden: true });
   const clear = h('button', { type: 'button', class: `${P}-clear`, 'data-act': 'clear-search', 'aria-label': 'Clear the search', title: 'Clear', hidden: true }, '\u2715');
   const keyState = h('span', { class: `${P}-keystate`, 'data-keystate': '' });
-  // The way into the dashboard page (hq #465), while its preview switch is on.
-  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '', hidden: getSettings().dashboard !== true }, 'Dashboard');
+  // The way into the dashboard page (hq #465), while its preview switch is on. While it is
+  // off, the same place shows "Dashboard · turn on", which opens General at that switch, so
+  // the page can be found without knowing where the switch is (hq #557 C21).
+  const dashboardLink = h('a', { href: '#/torn-tracker/dashboard', class: `${P}-btn ${P}-x`, 'data-dashboard-link': '' }, 'Dashboard');
+  // A plain link to General, like the section tabs, so Back and the tabs keep working.
+  const dashboardOff = h('a', {
+    href: '#/torn-tracker/general', class: `${P}-btn ${P}-x`, 'data-dashboard-off': '',
+    title: 'The dashboard is off. Turn it on under General.',
+  }, 'Dashboard · turn on');
+  let focusDashboard = false;
+  function toDashboardSwitch() {
+    focusDashboard = false;
+    const toggle = panel.querySelector('[data-setting="dashboard"]');
+    toggle?.scrollIntoView?.({ block: 'center' });
+    toggle?.focus();
+  }
+  dashboardOff.addEventListener('click', () => {
+    // Already on General: the address doesn't change, so no route event comes.
+    if (active && section === 'general') toDashboardSwitch();
+    else focusDashboard = true;
+  });
+  function syncDashboard() {
+    const on = getSettings().dashboard === true;
+    dashboardLink.hidden = !on;
+    dashboardOff.hidden = on;
+  }
+  syncDashboard();
   panel.append(h('div', { class: `${P}-toastbox` }, status), h('div', { class: `${P}-sheet` },
     h('div', { class: `${P}-head` },
       h('div', { class: `${P}-brand` },
@@ -372,6 +397,7 @@ export function mountPanel({
       keyState,
       h('div', { class: `${P}-tools` },
         dashboardLink,
+        dashboardOff,
         ...(tours ? [h('button', {
           type: 'button', class: `${P}-x`, 'data-act': 'tour', 'data-tour-id': 'settings', 'data-tour': 'companion-tour-button',
           'aria-label': 'Show me around this page', title: 'Show me around',
@@ -488,7 +514,16 @@ export function mountPanel({
           'Show the Torn Tracker block in the sidebar'),
         h('div', { class: `${P}-muted ${P}-option` },
           'It asks torn-tracker.com at most once a minute, only while it’s open and you’re looking at the tab. ',
-          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more'))));
+          'Needs your script key. ', link(`${GUIDE}sidebar/`, 'Learn more')),
+        // Where it sits, here with the block it places, not under General (hq #557 C19).
+        h('label', { class: `${P}-field` }, h('span', null, 'Where the block sits'),
+          h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
+            value: at, selected: at === sb.position,
+          }, POSITION_LABELS[at])))),
+        sb.moved
+          ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
+            'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
+          : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.')));
     }
     const items = SIDEBAR_ITEMS.filter((item) => matches(item.title, item.summary));
     if (items.length && !query) rows.push(h('h4', null, 'What it shows'));
@@ -688,15 +723,6 @@ export function mountPanel({
           value: look, selected: look === draft.settings.look,
         }, LOOK_LABELS[look])))),
       h('div', { class: `${P}-muted` }, 'What the companion adds to Torn’s own pages always follows Torn’s theme.'),
-      h('h4', null, 'Sidebar block'),
-      h('label', { class: `${P}-field` }, h('span', null, 'Where the Torn Tracker block sits'),
-        h('select', { id: `${P}-sidebar-position`, 'data-sidebar-position': '' }, ...POSITIONS.map((at) => h('option', {
-          value: at, selected: at === draft.settings.sidebar.position,
-        }, POSITION_LABELS[at])))),
-      draft.settings.sidebar.moved
-        ? h('div', { class: `${P}-notice`, 'data-sidebar-moved': '' },
-          'The block moved to the top of Torn’s sidebar in 0.9.8. Choose another place here; this note goes once you change a sidebar setting.')
-        : h('div', { class: `${P}-muted` }, 'On this device. A page without that place shows it at the next one down.'),
       h('h4', null, 'Achievements'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', 'data-achievements': 'toast', checked: draft.settings.achievements?.toast !== false }),
@@ -718,7 +744,7 @@ export function mountPanel({
         h('input', { type: 'checkbox', 'data-setting': 'dashboard', checked: draft.settings.dashboard === true }),
         'Show my Torn Tracker dashboard inside Torn'),
       h('div', { class: `${P}-muted` },
-        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page.'),
+        'With your script key, the companion reads it from torn-tracker.com once each time you open it. Open it from the Dashboard link at the top of this page, which reads “Dashboard · turn on” while this is off.'),
       h('h4', null, 'Troubleshooting'),
       h('label', { class: `${P}-check` },
         h('input', { type: 'checkbox', id: `${P}-debug`, 'data-setting': 'debug', checked: draft.settings.debug === true }),
@@ -860,7 +886,7 @@ export function mountPanel({
   }
 
   function render(message = '', tone = '') {
-    dashboardLink.hidden = getSettings().dashboard !== true;
+    syncDashboard();
     drawKeyState();
     clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
@@ -1009,7 +1035,7 @@ export function mountPanel({
       else if (redraw) render(done, 'good');
       else {
         drawKeyState();
-        dashboardLink.hidden = getSettings().dashboard !== true;
+        syncDashboard();
         flash(done, 'good');
       }
     }).catch(() => {
@@ -1111,6 +1137,7 @@ export function mountPanel({
     search.value = '';
     showBanned();
     render();
+    if (focusDashboard) toDashboardSwitch();
     // The first time the page opens (and for each new version), the settings tour.
     tours?.auto('settings', tourOptions());
   }

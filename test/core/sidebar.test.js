@@ -639,7 +639,7 @@ describe('hq #507 a line when the account has no faction linked', () => {
     const t = mount({ answer: answerOf({ ...EMPTY, faction_linked: false }) });
     await settle();
     assert.ok(line(t));
-    assert.equal(line(t).textContent, 'Link your faction on torn-tracker.com to see chain, war and dibs');
+    assert.equal(line(t).textContent, 'Link your faction on torn-tracker.com ↗ to see chain, war and dibs');
     const a = line(t).querySelector('a');
     assert.equal(a.getAttribute('href'), 'https://torn-tracker.com/faction/');
     assert.equal(t.node().hidden, false);
@@ -862,7 +862,7 @@ describe('hq #599 RDB-081 the routine badge', () => {
     assert.deepEqual(links.map((a) => a.textContent), ['Nerve refill unused', 'No bank investment', 'Casino tokens unused']);
     assert.deepEqual(links.map((a) => a.getAttribute('href')), ['/points.php', '/bank.php', '/casino.php']);
     for (const a of links) assert.equal(a.hasAttribute('target'), false, 'same tab');
-    assert.match(items[3].textContent, /^2 done · the full list$/);
+    assert.match(items[3].textContent, /^2 done · the full list ↗$/);
     assert.equal(t.node().querySelector('.ttc-sb-routine').getAttribute('aria-expanded'), 'true');
     assert.equal(t.asked.length, 1, 'a tap asks for nothing');
     t.node().querySelector('.ttc-sb-routine').click();
@@ -1001,5 +1001,38 @@ describe('BRAND-050 the block header carries the torn-tracker mark', () => {
     assert.equal(svg.querySelector('rect').getAttribute('fill'), MARK.tile.fill);
     assert.equal(svg.querySelector('path').getAttribute('d'), MARK.raven.d);
     assert.equal(head.textContent, 'Torn Tracker', 'the name is the only text; no "TT"');
+  });
+});
+
+describe('hq #557 C22 links to torn-tracker.com say they open a new tab', () => {
+  const RUN = {
+    country: 'south-africa', item_id: 206, item_name: 'Xanax', quantity: 29, profit_per_hour: 812000,
+    lands_at: '2026-11-07T03:00:00Z', hours: 4.5,
+  };
+
+  test('the travel row links only the country, with ↗; the rest is plain words', async () => {
+    const data = { ...FULL, travel: RUN };
+    const t = mount({
+      change: (s) => { s.sidebar.items.travel = true; },
+      answer: { status: 'ok', ...readSidebar(data, Object.keys(data), 0) },
+    });
+    await settle();
+    const row = [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => /^Travel/.test(r.textContent));
+    assert.ok(row);
+    const a = row.querySelector('a');
+    assert.equal(a.getAttribute('target'), '_blank');
+    assert.equal(a.textContent, 'south africa ↗');
+    assert.equal(a.title, 'Opens torn-tracker.com in a new tab');
+    assert.match(row.textContent, /· Xanax · \+\$812k\/h$/);
+    assert.equal(row.querySelectorAll('a').length, 1);
+  });
+
+  test('Torn’s own pages keep a plain link in the same tab, with no arrow', async () => {
+    const t = mount();
+    await settle();
+    for (const a of t.node().querySelectorAll('a')) {
+      const external = a.getAttribute('target') === '_blank';
+      assert.equal(Boolean(a.querySelector('.ttc-sb-ext')), external, a.getAttribute('href'));
+    }
   });
 });
