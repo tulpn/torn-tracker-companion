@@ -51,6 +51,8 @@ describe('MUG-030 on the page', () => {
     assert.deepEqual(site.calls, [111]);
     assert.match(strip(r).textContent, /^You mugged them 2 times/);
     assert.equal(strip(r).previousElementSibling.className, 'content-title');
+    assert.ok(strip(r).classList.contains('ttc-ui-strip'), 'hq #557 E36: a strip, not a pill');
+    assert.equal(strip(r).dataset.tone, 'info');
     assert.deepEqual(r.violations, []);
   });
 
