@@ -56,6 +56,13 @@ export function score(level, hours) {
 
 export const bandOf = (value, bands) => bands.find(([top]) => value <= top)[1];
 
+/**
+ * The badge's words: the band, then the score (hq #557 31). Never a percentage: the score is
+ * a rule of thumb, and a "%" would read as Torn's odds of a bust.
+ */
+export const BAND_WORD = Object.freeze({ easy: 'Easy', medium: 'Medium', hard: 'Hard' });
+export const badgeText = (band, value) => `${BAND_WORD[band]} ${value}`;
+
 export default {
   id: 'bust-safety',
   wave: 3,
@@ -103,7 +110,7 @@ export default {
             if (spot?.matches?.(NAME)) spot.after(node);
             else (spot || row).append(node);
           }
-          const text = `${value}`;
+          const text = badgeText(band, value);
           if (node.textContent !== text) node.textContent = text;
           node.dataset.band = band;
           setTone(node, { easy: 'good', medium: 'warn', hard: 'bad' }[band]);

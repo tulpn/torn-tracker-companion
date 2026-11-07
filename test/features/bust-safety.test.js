@@ -53,11 +53,23 @@ describe('CMP-303 on the jail page', () => {
   test('a coloured score beside each prisoner, labelled as a rule of thumb, not Torn’s odds', async () => {
     const r = run();
     await wait();
-    assert.equal(badge(r, 900001).textContent, '18');
+    assert.equal(badge(r, 900001).textContent, 'Easy 18');
     assert.equal(badge(r, 900001).dataset.band, 'easy');
     assert.equal(badge(r, 900002).dataset.band, 'medium');
     assert.equal(badge(r, 900003).dataset.band, 'hard');
     assert.match(badge(r, 900002).title, /Rule of thumb, not Torn's odds/);
+  });
+
+  test('hq #557 31 the band in words before the score, never a percentage', async () => {
+    const r = run();
+    await wait();
+    for (const id of [900001, 900002, 900003]) {
+      const node = badge(r, id);
+      assert.match(node.textContent, /^(Easy|Medium|Hard) \d+$/);
+      assert.doesNotMatch(node.textContent, /%/);
+    }
+    assert.match(badge(r, 900002).textContent, /^Medium /);
+    assert.match(badge(r, 900003).textContent, /^Hard /);
   });
 
   test('AC1b and AC3: no bust or bail link is changed, and nothing is clicked', async () => {
@@ -102,7 +114,7 @@ describe('CMP-303 on the jail page', () => {
     try {
       await wait(1_300);
       assert.equal(r.shared.length, 3, 'shared by the deadline, not put off for ever');
-      assert.equal(badge(r, 900001).textContent, '18');
+      assert.equal(badge(r, 900001).textContent, 'Easy 18');
     } finally {
       clearInterval(ticking);
     }
