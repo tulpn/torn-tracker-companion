@@ -2,7 +2,7 @@
 //
 // On the Item Market, a listing priced below what a shop in Torn pays for the item gets a
 // coloured outline, a dot and its profit ("+12.5k") beside the price, and a tooltip with
-// the prices, the margin and the listing's total. The tier (green, yellow, red, blue) is
+// the prices, the margin and the listing's total. The tier (green, yellow, red, blue: the saved keys; drawn green, yellow, blue, grey) is
 // the profit per item, or the margin, against the minimums on the settings page. The
 // sidebar block counts the listings on screen that qualify. Highlight only: nothing is
 // bought, filled or pressed.
@@ -34,7 +34,8 @@ const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 
 const ABS = { green: 50_000, yellow: 10_000, red: 1_000, blue: 1 };
 const PCT = { green: 100, yellow: 50, red: 20, blue: 1 };
-const NAMES = { green: 'Green', yellow: 'Yellow', red: 'Red', blue: 'Blue' };
+// The names the player sees, best first; drawn green, yellow, blue and grey (hq #557 E35).
+const NAMES = { green: 'Best (green)', yellow: 'Good (yellow)', red: 'Fair (blue)', blue: 'Small (grey)' };
 
 const tierDefaults = Object.fromEntries(TIERS.flatMap((t) => [[tierKey('abs', t), ABS[t]], [tierKey('pct', t), PCT[t]]]));
 const tierOptions = Object.fromEntries(TIERS.flatMap((t) => [

@@ -28,12 +28,12 @@ much, the profit each, the margin, and the total for everything in that listing.
 
 The colour says how good the deal is:
 
-| Colour | Profit per item at least | or margin at least |
-|---|---|---|
-| Green | $50,000 | 100% |
-| Yellow | $10,000 | 50% |
-| Red | $1,000 | 20% |
-| Blue | $1 | 1% |
+| Tier | Colour | Profit per item at least | or margin at least |
+|---|---|---|---|
+| Best | green | $50,000 | 100% |
+| Good | yellow | $10,000 | 50% |
+| Fair | blue | $1,000 | 20% |
+| Small | grey | $1 | 1% |
 
 A listing at or above the shop's price gets nothing. The [sidebar block](sidebar.md) counts
 the listings on screen that are below a shop's price, in its **Below shop price** line.

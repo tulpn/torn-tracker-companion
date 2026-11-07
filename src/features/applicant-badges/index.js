@@ -20,7 +20,8 @@ const MARK = 'ttc-applicant';
 const CONTENT = '.content-wrapper';
 const PROFILE = "a[href*='profiles.php?XID=']";
 const SETTLE_MS = 400;
-const TONE = { good: 'good', fair: 'warn', poor: 'bad' };
+// hq #557 E35: green for a good fit, amber for a poor one, plain otherwise; never red or blue.
+const TONE = { good: 'good', fair: 'neutral', poor: 'warn' };
 const FIT = { good: 'good fit', fair: 'fair fit', poor: 'poor fit' };
 
 let state = null;
@@ -83,8 +84,8 @@ export default {
         placed.add(id);
         if (a.nextElementSibling?.classList.contains(MARK)) continue;
         const badge = card.card_url
-          ? uiBadge(doc, { cls: MARK, tag: 'a', tone: TONE[card.fit] || 'info', attrs: { href: card.card_url, target: '_blank', rel: 'noopener noreferrer' } }, badgeText(card))
-          : uiBadge(doc, { cls: MARK, tone: TONE[card.fit] || 'info' }, badgeText(card));
+          ? uiBadge(doc, { cls: MARK, tag: 'a', tone: TONE[card.fit] || 'neutral', attrs: { href: card.card_url, target: '_blank', rel: 'noopener noreferrer' } }, badgeText(card))
+          : uiBadge(doc, { cls: MARK, tone: TONE[card.fit] || 'neutral' }, badgeText(card));
         badge.title = 'Their shared job-board card on torn-tracker.com';
         a.after(badge);
       }

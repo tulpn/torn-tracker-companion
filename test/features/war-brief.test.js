@@ -44,6 +44,7 @@ describe('PRE-042 the strip', () => {
     await wait();
     assert.match(strip(r).textContent, /^Your next ranked war: They have 92 members/);
     assert.match(strip(r).textContent, /won 4 of their last 5/);
+    assert.equal(strip(r).dataset.tone, 'info', 'information, never the red edge (hq #557 E35)');
     assert.equal(strip(r).querySelector('a').getAttribute('href'), 'https://torn-tracker.com/war/prewar/');
     assert.equal(strip(r).previousElementSibling.className, 'content-title');
     assert.deepEqual(r.violations, []);

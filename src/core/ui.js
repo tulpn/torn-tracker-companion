@@ -28,7 +28,9 @@ const COMPACT = `.${P}-ui-compact.${P}-ui-compact`;
 const INK = Object.freeze({
   good: 'var(--tt-success)',
   neutral: 'var(--muted-foreground)',
-  warn: 'var(--tt-warning)',
+  // Amber, never red (hq #557 E35): the site's --tt-warning is red in its light theme, so
+  // caution and bad looked the same there. --tt-nerve is orange in both themes.
+  warn: 'var(--tt-nerve)',
   // The destructive red is a fill colour; as text on a dark card it needs lifting.
   bad: 'color-mix(in srgb, var(--destructive) 65%, var(--foreground))',
   info: 'var(--ring)',
@@ -38,7 +40,9 @@ const INLINE = `.${P}-ui-inline.${P}-ui-inline`;
 /** A small button inside one of Torn's table rows (hq #535); the class twice, see the style. */
 const SMALL = `.${P}-ui-small.${P}-ui-small`;
 /** The shop price highlighter's tiers and the token each is drawn in. */
-const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'tt-ff-hard'], ['blue', 'ring']]);
+// Every tier is a profit, so none is red (hq #557 E35): green, yellow, blue, then grey for the
+// smallest. The keys stay as saved in settings; the names the player sees are Best to Small.
+const SHOP_TIERS = Object.freeze([['green', 'tt-ff-easy'], ['yellow', 'tt-ff-fair'], ['red', 'ring'], ['blue', 'muted-foreground']]);
 const tint = (ink, amount = 16) => `color-mix(in srgb, ${ink} ${amount}%, transparent)`;
 
 const STYLE = `

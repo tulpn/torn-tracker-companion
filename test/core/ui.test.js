@@ -8,6 +8,7 @@ import { JSDOM } from 'jsdom';
 
 import { badge, bar, button, ensureStyle, note, setTone, strip, tapDetail } from '../../src/core/ui.js';
 import { ROOT } from '../helpers.js';
+import { TOKENS } from '../../src/data/tokens.js';
 
 const page = () => new JSDOM('<!doctype html><html><head></head><body></body></html>').window.document;
 
@@ -18,6 +19,20 @@ describe('the shared look', () => {
     badge(doc, {}, 'a');
     strip(doc, {}, 'b');
     assert.equal(doc.querySelectorAll('#ttc-ui-style').length, 1);
+  });
+
+  test('hq #557 E35: no shop price tier is drawn red, since every tier is a profit', () => {
+    const doc = page();
+    ensureStyle(doc);
+    const css = doc.getElementById('ttc-ui-style').textContent;
+    const ink = (tier) => css.match(new RegExp(`\\[data-ttc-shop="${tier}"\\][^{]*\\{ --ttc-shop-ink: ([^;]+);`))[1];
+    assert.equal(ink('red'), TOKENS.light.ring);
+    assert.equal(ink('blue'), TOKENS.light['muted-foreground']);
+    assert.match(css, /\.ttc-ui-badge\[data-tone="warn"\] \{ --ttc-ink: var\(--tt-nerve\); \}/, 'caution is amber in both themes');
+    for (const tier of ['green', 'yellow', 'red', 'blue']) {
+      assert.notEqual(ink(tier), TOKENS.light['tt-ff-hard']);
+      assert.notEqual(ink(tier), TOKENS.light.destructive);
+    }
   });
 
   test('it follows Torn’s dark theme and wraps on a phone', () => {

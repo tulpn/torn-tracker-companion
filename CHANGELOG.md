@@ -11,6 +11,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
+- Red now only means bad (hq #557 E35). The shop price highlighter's tiers are named Best,
+  Good, Fair and Small, drawn green, yellow, blue and grey (your saved thresholds are kept);
+  the OC success estimate is green from 70 %, amber from 40 % and red below; the war brief has
+  a blue edge, not red; an applicant's badge is green for a good fit, amber for a poor one.
+  Caution badges (bust safety, crime morale, time left, notes) are amber in Torn's light
+  theme too, where they were red.
 - The chain watch slot notice and the rota table's gap marks use the suite's colours, and
   the notice is light or dark as Torn's page is, instead of always dark (hq #557 E34).
 - Plainer, consistent words (hq #557 D26-D29): **Torn Tracker** for the product,
