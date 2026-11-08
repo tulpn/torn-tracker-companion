@@ -22,6 +22,7 @@
 // Facts, not code: TornTools (GPLv3) and The Contract look for the sidebar in the same
 // two places as core/entry.js.
 
+import { ageCss, ageNode, repaintAges } from './age.js';
 import { brandMark } from './brand.js';
 import { el, ownChange, settler } from './dom.js';
 import { log } from './log.js';
@@ -36,7 +37,7 @@ export const BLOCK_ID = `${P}-sidebar-block`;
 export const READ_EVERY_MS = 60_000;
 /** RDB-005: a routine reading older than this says its age. */
 const STALE_MS = 90 * 60_000;
-/** An answer older than this says how old it is (hq #606): two missed reads. */
+/** An answer this old says it may be out of date (hq #606, hq #687): two missed reads. */
 export const AGED_MS = 2 * 60_000;
 
 /** The items, in the order the block shows them, with the spec's defaults. All Core. */
@@ -101,6 +102,7 @@ const STYLE = `
   #${BLOCK_ID} .${P}-sb-row a:hover { text-decoration: underline; }
   #${BLOCK_ID} .${P}-sb-ext { font-size: 0.85em; }
   #${BLOCK_ID} .${P}-sb-muted { color: var(--muted-foreground); }
+  ${ageCss(`#${BLOCK_ID} .${P}-sb-age`)}
   #${BLOCK_ID} .${P}-sb-alert { color: color-mix(in srgb, var(--destructive) 65%, var(--foreground)); font-weight: 700; }
   #${BLOCK_ID} .${P}-sb-links a { margin-right: 10px; }
   #${BLOCK_ID} .${P}-sb-routine {
@@ -493,9 +495,12 @@ export function mountSidebarBlock({
         if (line) rows.push(line);
       }
     }
-    if (answer?.status === 'ok' && Number.isFinite(answer.at) && now() - answer.at >= AGED_MS) {
-      rows.push(h('div', { class: `${P}-sb-row ${P}-sb-muted`, 'data-ttc-aged': '' }, `As of ${roughly(now() - answer.at)} ago`));
-    }
+    // hq #687: the rows from the site say how old they are; past two missed reads, that
+    // they may be out of date. Only under rows: an empty block still hides itself.
+    const age = answer?.status === 'ok' && rows.length ? ageNode(doc, {
+      at: answer.at, now: now(), staleAfterMs: AGED_MS, cls: `${P}-sb-row ${P}-sb-age`, tag: 'div',
+    }) : null;
+    if (age) rows.push(age);
     const below = profitableCount();
     if (settings.sidebar.items.shops === true && below > 0) {
       rows.push(row(h('b', null, 'Below shop price'), ` ${thousands(below)} listing${below === 1 ? '' : 's'}`));
@@ -520,8 +525,9 @@ export function mountSidebarBlock({
       : `sidebar: block shown ${open ? 'open' : 'closed'}`);
   }
 
-  /** Ticks the countdowns between reads; nothing else, and nothing is asked. */
+  /** Ticks the countdowns and the age line between reads; nothing else, and nothing is asked. */
   function paint() {
+    repaintAges(block, now());
     for (const node of block?.querySelectorAll('[data-ttc-until]') || []) {
       const { ttcUntil, ttcDone, ttcPrefix } = node.dataset;
       const text = countdown(Number(ttcUntil), ttcDone ?? '0:00', ttcPrefix ?? '');

@@ -5,11 +5,14 @@ Formatting: only the tags Torn's own editor produces (font color/size, center, h
 Images: none yet. Where a screenshot belongs, an IMAGE comment says what it shows; add the
 resized copies under pics/forum/ (tools/resize-pics.ps1), never full-size screenshots.
 Install links point at GitHub releases until the Greasy Fork import; then swap them.
-Keep "What it reads and sends" and the terms table in step with the README.
+Keep "What it reads and sends" and the terms table in step with the README and src/core/disclosure.js:
+every claim here must match what the code reads and sends (hq #649, #687).
+Colours: the title is the site's violet (--primary, #7c3aed); the headings stay gold.
 -->
 
 <center>
-<font size="5" color="#2ecc71"><b>Torn Tracker Companion</b></font><br>
+<!-- IMAGE: the torn-tracker raven (the script's icon), small, above the title -->
+<font size="5" color="#7c3aed"><b>Torn Tracker Companion</b></font><br>
 <font size="3">torn-tracker.com and the community's best tools, on the Torn pages you already use.</font><br><br>
 <!-- IMAGE: a profile with its fair-fight badge and loadout card, in a desktop browser -->
 </center>
@@ -38,8 +41,11 @@ Every feature has its own switch.
 <li><b>Chain watch</b>: watch mode, a large chain timer over whatever Torn page you're on, green, orange or flashing red by how soon the chain needs a hit. It never hits for you. Your faction's watch rota is in the settings: sign up for 30-minute slots as Lead or Backup.</li>
 <li><b>Bounty board</b>: filter by reward, fair fight and level, and see which hospital timers are nearly up.</li>
 <li><b>Everyday</b>: gym progress, merit hints, stock signals, racing templates, private player notes and message templates.</li>
-<li><b>Your sidebar</b>: a Torn Tracker block under Lists with your chain, your chain watch slot, war, dibs, med-out partner and OC.</li>
+<li><b>Jobs</b>: applicant badges show an applicant's shared job-board card from torn-tracker.com on your company or faction applications.</li>
+<li><b>Your sidebar</b>: a Torn Tracker block under Lists, marked with the torn-tracker raven, with your chain, your chain watch slot, war, dibs, med-out partner and OC.</li>
+<li><b>Dashboard (preview)</b>: switch it on in the settings to see your torn-tracker.com dashboard as a page inside Torn.</li>
 </ul>
+It wears torn-tracker.com's look, violet in Torn's dark and light modes, and every block that shows Torn or torn-tracker.com data says how old it is ("Updated 3m ago"), and says so when it may be out of date.<br>
 The guide has a page for every feature: <a href="https://torn-tracker.com/guide/companion/">torn-tracker.com/guide/companion</a>.<br><br>
 
 <center>
@@ -54,8 +60,9 @@ The guide has a page for every feature: <a href="https://torn-tracker.com/guide/
 <ul>
 <li>It reads <b>only the Torn pages you open yourself</b>: the page, and the replies Torn sends that page (it watches them, never changes or repeats them). It never loads torn.com pages in the background.</li>
 <li><b>One click is at most one game action.</b> It fills in fields for you but never submits them, and it never buys, sells, attacks or claims anything.</li>
-<li>It talks only to <b>torn-tracker.com</b>, with your torn-tracker.com script key (which is not a Torn API key). Features that need the site, like fair-fight badges, need that key; the rest work without it.</li>
-<li><b>Sharing starts off.</b> Under Sharing you can choose to send what Torn showed you, kind by kind: foreign stock, auction listings, item market prices, bazaar listings, loadouts, jail difficulty bands, and your own crime outcomes and gym progress. Each switch says exactly what it sends and what torn-tracker.com keeps and publishes; nothing goes until you agree. Nothing is ever sent from company or faction application pages.</li>
+<li>It talks only to <b>torn-tracker.com</b>, with your torn-tracker.com script key (which is not a Torn API key). Features that need the site, like fair-fight badges, need that key; the rest work without it. They ask the site only for the ids on the page they need, for example the players listed for fair-fight badges. Once a day the shop price guard reads torn-tracker.com's public item catalogue, with no key at all. Your script manager checks the GitHub releases for updates.</li>
+<li><b>Sharing starts off.</b> Under Sharing you can choose to send what Torn showed you, kind by kind: foreign stock, auction listings, item market prices, bazaar listings, loadouts, jail difficulty bands (the site doesn't keep these yet), and your own crime outcomes, gym progress and gym trains. Each switch has one plain line, and its full wording under <b>Exactly what is sent</b> says what it sends and what torn-tracker.com keeps and publishes; nothing goes until you agree. The site never publishes who sent anything, except that a player can see who reported their own loadout.</li>
+<li><b>Company and faction application pages</b> share nothing, whatever is switched on. There, Applicant badges sends torn-tracker.com only the applicants' player ids and which list it is, to show their job-board cards.</li>
 <li><b>Some buttons send what you ask, and only when you press them.</b> Add to list adds or removes that player on your own lists. A chain watch sign-up sends your slot and role, which your faction can see; it is deleted 7 days after the slot ends.</li>
 <li>Every request to torn-tracker.com says the script's version and whether it runs in Torn PDA or a desktop browser. Nothing else about your device.</li>
 </ul>

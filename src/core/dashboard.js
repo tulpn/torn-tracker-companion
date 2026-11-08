@@ -3,14 +3,16 @@
 // /index.php#/torn-tracker/dashboard, while the "Dashboard (preview)" setting is on: the
 // player's torn-tracker.com dashboard as cards, in the settings page's Shadow DOM host.
 // One read of `GET /api/feeds/me/dashboard` each time the page opens, with the player's
-// own script key; the site keeps the answer a minute and so does the script. Nothing
-// ticks: timers show the time they were read, and a card the site has nothing for is left
-// out. hq #491 (D-170): what needs the player now comes first, the hero, bars and battle
-// stats are gone, and each card links to its own page on torn-tracker.com, never to the
-// dashboard page; the one dashboard link is at the top. Part 2 adds the alerts, chain watch
-// and awards cards, the war's start and dibs, and the running course in education.
+// own script key; the site keeps the answer a minute and so does the script. Only the age
+// line ticks (hq #687): timers show the time they were read, and a card the site has
+// nothing for is left out. hq #491 (D-170): what needs the player now comes first, the
+// hero, bars and battle stats are gone, and each card links to its own page on
+// torn-tracker.com, never to the dashboard page; the one dashboard link is at the top.
+// Part 2 adds the alerts, chain watch and awards cards, the war's start and dibs, and the
+// running course in education.
 
 import { barChart, CHART_STYLE, chartDeclarations } from './chart.js';
+import { ageCss, ageNode, tickAges } from './age.js';
 import { brandMark } from './brand.js';
 import { el } from './dom.js';
 import { ROLE_NAMES } from './rota.js';
@@ -53,6 +55,8 @@ const STYLE = `
   #${DASH_ID} .${P}-body { padding: 14px 16px 18px; }
   #${DASH_ID} .${P}-state { margin: 0 0 12px; color: var(--muted-foreground); }
   #${DASH_ID} .${P}-state:empty { display: none; }
+  #${DASH_ID} .${P}-age { display: block; margin-bottom: 12px; }
+  ${ageCss(`#${DASH_ID} .${P}-age`)}
   #${DASH_ID} .${P}-retry { min-height: 32px; margin-left: 4px; }
   #${DASH_ID} .${P}-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
   #${DASH_ID} .${P}-dcard {
@@ -83,6 +87,9 @@ const STYLE = `
   }
 `;
 
+/** A read this old may be out of date (hq #687). */
+export const DASHBOARD_STALE_MS = 5 * 60_000;
+
 const thousands = (n) => n.toLocaleString('en-US');
 const dollars = (n) => `${n < 0 ? '-' : ''}$${thousands(Math.abs(n))}`;
 
@@ -94,7 +101,9 @@ const dollars = (n) => `${n < 0 ? '-' : ''}$${thousands(Math.abs(n))}`;
  * @param {() => object} opts.getSettings
  * @param {() => number} [opts.now]  the local clock the read's times are on
  */
-export function mountDashboard({ doc = globalThis.document, root, site, getSettings, now = Date.now }) {
+export function mountDashboard({
+  doc = globalThis.document, root, site, getSettings, now = Date.now, timers = doc.defaultView ?? globalThis,
+}) {
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
   if (!root.querySelector?.(`style[data-ttc-dash]`)) {
     const style = h('style', { 'data-ttc-dash': '' });
@@ -102,6 +111,8 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     root.append(style);
   }
   const state = h('p', { class: `${P}-state`, role: 'status' });
+  // Not in the status line: a repaint isn't announced.
+  const age = h('div');
   const grid = h('div', { class: `${P}-grid` });
   const siteLink = h('a', { class: `${P}-btn ${P}-primary`, href: 'https://www.torn-tracker.com/dashboard/', target: '_blank', rel: 'noopener noreferrer' }, 'Open on torn-tracker.com');
   const element = h('div', { id: DASH_ID, role: 'region', 'aria-label': 'Torn Tracker dashboard', hidden: true },
@@ -110,11 +121,12 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
         brandMark(doc, `${P}-logo`),
         h('h2', null, 'Dashboard', h('small', null, 'From torn-tracker.com')),
         h('div', { class: `${P}-actions` }, siteLink, h('a', { class: `${P}-btn`, href: '#/torn-tracker' }, 'Settings'))),
-      h('div', { class: `${P}-body` }, state, grid)));
+      h('div', { class: `${P}-body` }, age, state, grid)));
   root.append(element);
 
   let open = false;
   let generation = 0;
+  let stopTick = null;
 
   // hq #491: the card's own page, or no link at all; never the dashboard page.
   const more = (url) => (url ? h('a', { class: `${P}-more`, href: url, target: '_blank', rel: 'noopener noreferrer' }, 'More on torn-tracker.com →') : null);
@@ -240,11 +252,13 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
     const cards = DASHBOARD_CARDS.filter((key) => read.cards.get(key) != null)
       .map((key) => card(key, read.cards.get(key), read.cardLinks?.get(key) ?? null));
     grid.replaceChildren(...cards);
+    age.replaceChildren(ageNode(doc, { at: read.at, now: now(), staleAfterMs: DASHBOARD_STALE_MS, cls: `${P}-age` }) ?? '');
     state.textContent = cards.length ? '' : 'Nothing to show yet: the cards fill in as torn-tracker.com learns about you.';
   }
 
   function say(words, link) {
     grid.replaceChildren();
+    age.replaceChildren();
     state.replaceChildren(words, ...(link ? [' ', h('a', { href: link.href }, link.text)] : []));
   }
 
@@ -282,11 +296,14 @@ export function mountDashboard({ doc = globalThis.document, root, site, getSetti
       element.hidden = false;
       if (open) return;
       open = true;
+      stopTick = tickAges(timers, age, now);
       load();
     },
     close() {
       open = false;
       generation += 1;
+      stopTick?.();
+      stopTick = null;
       element.hidden = true;
     },
     destroy() {

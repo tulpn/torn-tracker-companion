@@ -38,6 +38,7 @@ import { DISCLOSURE, TOS_COLUMNS, hasTosTable, kindOffered, sharingOffered } fro
 import { el } from './dom.js';
 import { checkTyped, onPda } from './keys.js';
 import { kindTitle } from './kinds.js';
+import { ago } from './age.js';
 import { brandMark } from './brand.js';
 import { buttonCss } from './ui.js';
 import { LOOKS, declarations, lookTheme } from './tokens.js';
@@ -265,15 +266,8 @@ function addStyle(doc, root) {
 
 
 const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-/** "just now", "40s ago", "3m ago", "2h ago": how long since. */
-export function ago(ms) {
-  const s = Math.max(0, Math.round(ms / 1000));
-  if (s < 5) return 'just now';
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86_400)}d ago`;
-}
+/** "just now", "40s ago", "3m ago", "2h ago": how long since (one wording, core/age.js). */
+export { ago };
 const sectionIds = SECTIONS.map(([id]) => id);
 
 /**
