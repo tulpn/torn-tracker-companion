@@ -11,7 +11,7 @@ import { JSDOM } from 'jsdom';
 
 import { DASHBOARD_CARDS, ME_DASHBOARD_URL, SPACES, createSite, readDashboard } from '../../src/core/site.js';
 import { createCache } from '../../src/core/cache.js';
-import { DASH_ID, mountDashboard } from '../../src/core/dashboard.js';
+import { DASHBOARD_STALE_MS, DASH_ID, mountDashboard } from '../../src/core/dashboard.js';
 import { CHART_COLOURS, SERIES_ORDER, barChart, chartDeclarations, compact, dayLabel, lineChart } from '../../src/core/chart.js';
 import { routeOf } from '../../src/core/page.js';
 import { createRegistry } from '../../src/core/registry.js';
@@ -483,5 +483,35 @@ describe('hq #675 the raven mark in the dashboard header', () => {
     assert.equal(logo.getAttribute('aria-hidden'), 'true');
     assert.equal(logo.querySelector('path').getAttribute('d'), MARK.raven.d);
     assert.doesNotMatch(head.textContent, /\bTT\b/);
+  });
+});
+
+describe('hq #687 the dashboard says how old its read is', () => {
+  test('a fresh read says so; a kept one its age; past five minutes, that it may be out of date', async () => {
+    const rig = siteRig();
+    const T = Date.UTC(2026, 10, 2, 12);
+    let clock = T;
+    const timers = { fn: null, setInterval(fn) { this.fn = fn; return 1; }, clearInterval() { this.fn = null; } };
+    const win = new JSDOM('<!doctype html><body></body>', { url: 'https://www.torn.com/index.php' }).window;
+    windows.push(win);
+    const root = win.document.body.appendChild(win.document.createElement('div')).attachShadow({ mode: 'open' });
+    const dash = mountDashboard({ doc: win.document, root, site: rig.site, getSettings: () => ({ look: 'dark' }), now: () => clock, timers });
+    dash.open();
+    await settle();
+    await settle();
+    const age = () => root.querySelector('.ttc-age');
+    assert.equal(age().textContent, 'Updated just now');
+    clock += DASHBOARD_STALE_MS;
+    timers.fn();
+    assert.equal(age().textContent, 'Updated 5m ago · may be out of date');
+    assert.equal(age().dataset.stale, 'true');
+    dash.close();
+    assert.equal(timers.fn, null, 'the ticker stops with the page');
+    assert.equal(rig.calls.length, 1, 'the ticker asks nothing');
+  });
+
+  test('no read, no age line', async () => {
+    const { root } = await opened(siteRig({ reply: () => ({ ok: false, status: 500 }) }).site);
+    assert.equal(root.querySelector('.ttc-age'), null);
   });
 });

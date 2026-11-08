@@ -2,11 +2,11 @@
 
 [![test](https://github.com/tulpn/torn-tracker-companion/actions/workflows/test.yml/badge.svg)](https://github.com/tulpn/torn-tracker-companion/actions/workflows/test.yml)
 
-**Status: in development. There is no release yet.**
+**Status: public test (0.x).** Things may change before version 1.0.
 
 One userscript for [Torn](https://www.torn.com) that brings [torn-tracker.com](https://torn-tracker.com) and the best of the community's tools onto the pages you already use: fair-fight estimates, the war page, travel and foreign stock, trading and pricing, crimes, organised crimes and more. Every feature can be switched on or off on its own.
 
-It is planned to run in the browser with Tampermonkey or Violentmonkey, and on the phone in [Torn PDA](https://github.com/Manuito83/torn-pda).
+It runs in the browser with Tampermonkey or Violentmonkey, and on the phone in [Torn PDA](https://github.com/Manuito83/torn-pda).
 
 ## How to use it
 

@@ -926,11 +926,13 @@ export function readDashboard(data, skew = 0) {
  * @param {object} opts
  * @param {() => string} opts.getKey
  * @param {typeof request} [opts.send]
- * @param {ReturnType<typeof createCache>} [opts.cache]
+ * @param {() => number} [opts.now]  the clock the blocks read ages on (hq #687): the
+ *   server-corrected one, so a wrong PC clock doesn't make a fresh read look old
+ * @param {ReturnType<typeof createCache>} [opts.cache]  kept on the same clock
  * @param {() => void} [opts.onBanned]  the site refused the account itself (a ban)
  */
 export function createSite({
-  getKey, send = request, cache = createCache(SPACES), now = Date.now, onBanned = () => {},
+  getKey, send = request, now = Date.now, cache = createCache(SPACES, { now }), onBanned = () => {},
 }) {
   /** Set when the site refuses the key; reads stop until the key changes. */
   let refusedKey = null;
@@ -1765,14 +1767,14 @@ export function createSite({
     /**
      * The dashboard page's one read (hq #465, companion-api §6.4b). Asked once per open
      * of the page; the answer is kept a minute, so going back and forth asks once.
-     * @returns {Promise<{status: 'ok', cards: Map<string, object|null>, cardLinks: Map<string, string|null>, links: object, skew: number}
+     * @returns {Promise<{status: 'ok', cards: Map<string, object|null>, cardLinks: Map<string, string|null>, links: object, skew: number, at: number}
      *   | {status: 'no_key'|'refused'|'failed'} | {status: 'wait', retryMs: number}>}
      */
     async dashboard() {
       if (!getKey()) return { status: 'no_key' };
       if (!usable()) return { status: 'refused' };
       const kept = dashboardMemo && now() - dashboardMemo.at < DASHBOARD_TTL ? dashboardMemo : null;
-      if (kept) return { status: 'ok', ...readDashboard(kept.data, kept.skew), skew: kept.skew, cached: true };
+      if (kept) return { status: 'ok', ...readDashboard(kept.data, kept.skew), skew: kept.skew, cached: true, at: kept.at };
       const result = await exchange(ME_DASHBOARD_URL, { method: 'GET' });
       if (keyRefused(result)) {
         dashboardMemo = null;
@@ -1786,7 +1788,7 @@ export function createSite({
       const skew = skewOf(result.data);
       const read = readDashboard(result.data, skew);
       dashboardMemo = { at: now(), data: result.data, skew };
-      return { status: 'ok', ...read, skew };
+      return { status: 'ok', ...read, skew, at: dashboardMemo.at };
     },
 
     /**

@@ -931,7 +931,8 @@ describe('hq #606 a new page shows the last answer, not “no data”', () => {
     assert.match(text, /Chain 412 \/ 500/);
     assert.match(text, /My dibs/);
     assert.doesNotMatch(text, /didn’t load/i);
-    assert.match(t.node().querySelector('[data-ttc-aged]').textContent, /^As of .+ ago$/);
+    assert.equal(t.node().querySelector('.ttc-sb-age').textContent, 'Updated 5m ago · may be out of date');
+    assert.equal(t.node().querySelector('.ttc-sb-age').dataset.stale, 'true');
     assert.equal(t.asked.length, 1, 'no extra read');
   });
 
@@ -939,38 +940,41 @@ describe('hq #606 a new page shows the last answer, not “no data”', () => {
     const t = mount({ answer: { status: 'wait', retryMs: 120_000 }, kept: keptAt(3 * 60_000) });
     await settle();
     assert.match(t.node().textContent, /Chain 412 \/ 500/);
-    assert.ok(t.node().querySelector('[data-ttc-aged]'));
+    assert.ok(t.node().querySelector('.ttc-sb-age[data-stale]'));
     t.advance(READ_EVERY_MS);
     t.timers.run();
     await settle();
     assert.equal(t.asked.length, 1, 'the 429 is waited out');
   });
 
-  test('a fresh read replaces the kept rows and the age line goes', async () => {
+  test('a fresh read replaces the kept rows, and the age line says so (hq #687)', async () => {
     let reply = { status: 'failed' };
     const t = mount({ answer: () => reply, kept: keptAt(5 * 60_000) });
     await settle();
-    assert.ok(t.node().querySelector('[data-ttc-aged]'));
+    assert.ok(t.node().querySelector('.ttc-sb-age[data-stale]'));
     reply = { status: 'ok', ...readSidebar({ ...FULL, chain: { ...FULL.chain, current: 420 } }, Object.keys(FULL), 0), at: T0 + READ_EVERY_MS };
     t.advance(READ_EVERY_MS);
     t.timers.run();
     await settle();
     assert.match(t.node().textContent, /Chain 420 \/ 500/);
-    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+    const age = t.node().querySelector('.ttc-sb-age');
+    assert.equal(age.textContent, 'Updated just now');
+    assert.equal(age.dataset.stale, undefined);
   });
 
-  test('a kept answer under two minutes old says no age', async () => {
+  test('a kept answer under two minutes old says its age, not that it may be out of date', async () => {
     const t = mount({ answer: { status: 'failed' }, kept: keptAt(60_000) });
     await settle();
     assert.match(t.node().textContent, /Chain 412 \/ 500/);
-    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+    assert.equal(t.node().querySelector('.ttc-sb-age').textContent, 'Updated 1m ago');
+    assert.equal(t.node().querySelector('.ttc-sb-age[data-stale]'), null);
   });
 
   test('nothing kept: a failed first read still says so', async () => {
     const t = mount({ answer: { status: 'failed' }, kept: null });
     await settle();
     assert.doesNotMatch(t.node().textContent, /Chain 412/);
-    assert.equal(t.node().querySelector('[data-ttc-aged]'), null);
+    assert.equal(t.node().querySelector('.ttc-sb-age'), null);
   });
 
   test('Torn redrawing the crimes page puts the rows back without a read', async () => {
