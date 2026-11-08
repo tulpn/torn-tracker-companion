@@ -41,8 +41,13 @@ tagged: "bump the version on development before promoting (RELEASING.md)" (hq #5
 
 ## Cutting one
 
-This is the first step of every promotion. Cut the release on a branch from
-`development`, and ship it like any other PR:
+**`development` is always ready to promote** (hq #708). Every PR that changes the
+userscript is followed straight away by its release commit: either the PR carries the bump,
+or a `chore/release-vX.Y.Z` PR into `development` comes right after it merges. Then
+`development` never sits on a version that is already tagged, and the owner can promote
+at any time. A docs-only change (README, this page, the listing texts) needs no release.
+
+Cut the release on a branch from `development`, and ship it like any other PR:
 
 ```bash
 git fetch origin && git checkout -b chore/release-vX.Y.Z origin/development

@@ -9,6 +9,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- The sidebar block and the dashboard say how old their data is ("Updated 3m ago"), always,
+  and add "may be out of date" once it is older than they expect: two minutes for the sidebar,
+  five for the dashboard. The sidebar's old "As of" line showed only after two minutes (hq #687).
+- The forum post and the new Greasy Fork listing text (`greasyfork-listing.md`) are up to date for
+  the launch, and say what Applicant badges and the site lookups send (hq #687).
+
 ## 0.9.16 — 2026-11-07
 
 ### Changed
@@ -22,11 +30,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   meaning: the shop's "Fair" tier, the Ally tag and information strips stay blue (hq #675).
 - The dashboard's charts take torn-tracker.com's own chart colours, violet first, in both
   themes (hq #679).
-- The sidebar block and the dashboard say how old their data is ("Updated 3m ago"), always,
-  and add "may be out of date" once it is older than they expect: two minutes for the sidebar,
-  five for the dashboard. The sidebar's old "As of" line showed only after two minutes (hq #687).
-- The forum post and the new Greasy Fork listing text (`greasyfork-listing.md`) are up to date for
-  the launch, and say what Applicant badges and the site lookups send (hq #687).
 
 ### Fixed
 
