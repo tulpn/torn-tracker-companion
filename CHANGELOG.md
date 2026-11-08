@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.17 — 2026-11-08
+
 ### Changed
 
 - The sidebar block and the dashboard say how old their data is ("Updated 3m ago"), always,
