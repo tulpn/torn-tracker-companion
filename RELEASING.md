@@ -73,7 +73,8 @@ dated section, rebuilds so the header's `@version` follows, and commits
   data:items`, then commit). The release tool refuses the placeholder. Re-run it when
   Torn adds items.
 - [ ] The CHANGELOG section reads like something a player would want to know.
-- [ ] The forum post waits for the public launch (hq #9, D-163). During the private test
+- [ ] No forum post of the companion's own: one forum post covers the whole suite and lives
+      in hq (D-235). It waits for the public launch (hq #9, D-163). During the private test
       the script is installed by URL from the release.
 
 ### The merge into main is the publish

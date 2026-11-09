@@ -52,3 +52,5 @@ apply here (decisions D-039 to D-041 in the hq repo). These do:
 - 2026-11-02: hq D-163. The release workflow runs on pushes to `main`: a version with no tag
   yet is tested, tagged and published; `npm run release` no longer tags. No forum post
   until the public launch.
+- 2026-11-09: hq D-235. One forum post covers the whole suite and lives in hq; the companion's
+  `forum-post.html` and `tools/resize-pics.ps1` were removed (hq #714). `greasyfork-listing.md` stays.
