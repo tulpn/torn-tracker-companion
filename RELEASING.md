@@ -47,6 +47,11 @@ or a `chore/release-vX.Y.Z` PR into `development` comes right after it merges. T
 `development` never sits on a version that is already tagged, and the owner can promote
 at any time. A docs-only change (README, this page, the listing texts) needs no release.
 
+`npm run check:version` (part of `npm test`, and the `version-guard` CI job on every PR into
+and push to `development`) enforces it: on a version that is already tagged, a change to
+`src/` or to the CHANGELOG's Unreleased section fails until the branch carries the release
+commit or a bump (hq #715).
+
 Cut the release on a branch from `development`, and ship it like any other PR:
 
 ```bash
