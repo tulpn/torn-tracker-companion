@@ -24,6 +24,15 @@ const MAX_ITEM_ID = 10_000_000;
 const MAX_PRICE = 1_000_000_000_000;
 const MAX_QUANTITY = 1_000_000;
 const MAX_STAT = 10_000;
+const MAX_DAMAGE = 1_000_000_000;
+
+/** Torn's own result words for an attack, lower case (hq #746, agreed on #741). */
+export const ATTACK_RESULTS = Object.freeze([
+  'attacked', 'mugged', 'hospitalized', 'lost', 'stalemate', 'escape', 'timeout', 'interrupted', 'special',
+]);
+
+/** Where the finishing hit came from; fists and kick carry no item. */
+export const FINISH_SLOTS = Object.freeze(['primary', 'secondary', 'melee', 'temporary', 'fists', 'kick']);
 
 // ---------------------------------------------------------------- field checks
 // Each returns the clean value, or throws a short reason that names the field.
@@ -146,6 +155,35 @@ function slot(entry, field) {
   });
 }
 
+/** A temporary one side used in a fight: the item and how many times. */
+function temporaryUse(entry, field) {
+  object(entry, field, ['item_id', 'uses']);
+  return {
+    item_id: itemId(entry.item_id, `${field}.item_id`),
+    uses: int(entry.uses, `${field}.uses`, 1, 25),
+  };
+}
+
+/** The hit that ended the fight; an item only for a weapon slot. */
+function finishingHit(entry, field) {
+  object(entry, field, ['slot', 'item_id', 'damage']);
+  const slot_ = oneOf(entry.slot, `${field}.slot`, FINISH_SLOTS);
+  const bare = slot_ === 'fists' || slot_ === 'kick';
+  if (bare && entry.item_id != null) throw new Invalid(`${field}.item_id must be empty for ${slot_}`);
+  return {
+    slot: slot_,
+    item_id: bare ? null : itemId(entry.item_id, `${field}.item_id`),
+    damage: int(entry.damage, `${field}.damage`, 0, MAX_DAMAGE),
+  };
+}
+
+function playerName(value, field) {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 32) {
+    throw new Invalid(`${field} must be text of 1 to 32 characters`);
+  }
+  return value.trim();
+}
+
 function isoTime(value, field) {
   if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) {
     throw new Invalid(`${field} must be a date and time`);
@@ -191,6 +229,34 @@ export const KINDS = Object.freeze({
         player_id: int(d.player_id, 'player_id', 1, Number.MAX_SAFE_INTEGER),
         slots,
         context: oneOf(d.context, 'context', ['attack', 'war']),
+      };
+    },
+  },
+  attack_result: {
+    title: 'Your attack results',
+    fields: ['code', 'defender_id', 'defender_name', 'result', 'damage_dealt', 'damage_taken', 'turns',
+      'finishing_hit', 'temporaries'],
+    // As agreed on hq #741 (WC-051, D-239) for hq #746: the member's own attack, keyed by
+    // its code. The attacker is the key's owner and is never sent; the site refuses a code
+    // that is not the sender's own attack, and never shows defender_name.
+    check: (d) => {
+      if (typeof d.code !== 'string' || !/^[0-9a-f]{20,40}$/.test(d.code)) {
+        throw new Invalid("code must be the attack's code: 20 to 40 hex characters");
+      }
+      object(d.temporaries, 'temporaries', ['attacker', 'defender']);
+      return {
+        code: d.code,
+        defender_id: int(d.defender_id, 'defender_id', 1, Number.MAX_SAFE_INTEGER),
+        defender_name: playerName(d.defender_name, 'defender_name'),
+        result: oneOf(d.result, 'result', ATTACK_RESULTS),
+        damage_dealt: int(d.damage_dealt, 'damage_dealt', 0, MAX_DAMAGE),
+        damage_taken: int(d.damage_taken, 'damage_taken', 0, MAX_DAMAGE),
+        turns: int(d.turns, 'turns', 1, 25),
+        finishing_hit: nullable(d.finishing_hit, (v) => finishingHit(v, 'finishing_hit')),
+        temporaries: {
+          attacker: list(d.temporaries.attacker, 'temporaries.attacker', 10, temporaryUse),
+          defender: list(d.temporaries.defender, 'temporaries.defender', 10, temporaryUse),
+        },
       };
     },
   },
