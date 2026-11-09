@@ -327,6 +327,8 @@ export function mountSidebarBlock({
   let answer = null;
   let lastAsked = 0;
   let notBefore = 0;
+  /** Until when torn-tracker.com asked every read to wait (a 429's Retry-After, hq #721). */
+  let pausedUntil = 0;
   let readTimer = null;
   let tick = null;
   let stopped = false;
@@ -471,6 +473,11 @@ export function mountSidebarBlock({
     const want = askedItems(settings);
     const showLinks = settings.sidebar.items.links === true;
     const rows = [];
+    // hq #721: the site asked every read to wait; the block says so rather than look stuck.
+    if (pausedUntil > now() && want.length) {
+      rows.push(h('div', { class: `${P}-sb-row ${P}-sb-muted`, 'data-ttc-paused': '' }, 'Paused, retrying in ',
+        h('span', { 'data-ttc-until': String(pausedUntil), 'data-ttc-done': '0:00' }, countdown(pausedUntil, '0:00', ''))));
+    }
     if (!answer) {
       if (want.length) rows.push(row(h('span', { class: `${P}-sb-muted` }, 'Loading…')));
     } else if (answer.status === 'no_key' || answer.status === 'refused') {
@@ -548,6 +555,7 @@ export function mountSidebarBlock({
     if (result.status === 'wait' || result.status === 'failed') {
       // A 429 or a failed read says nothing new: the rows already shown stay (hq #452).
       if (result.status === 'wait') notBefore = now() + result.retryMs;
+      if (result.status === 'wait' && result.paused) pausedUntil = notBefore;
       // With nothing shown yet, the last answer kept from an earlier page stands in, with its
       // age, rather than "no data" on every row (hq #606).
       if (answer?.status !== 'ok') answer = lastKept() ?? { status: 'failed' };

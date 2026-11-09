@@ -25,6 +25,8 @@ export const KEYS = Object.freeze({
   unlocks: 'ttc_unlocks',
   /** watch mode: on or off, the box's size, spot and colours, the beep (core/watch.js) */
   watch: 'ttc_watch',
+  /** reads every tab shares: a 429's pause, 403'd feeds for an hour, the minute's count (core/read-gate.js) */
+  reads: 'ttc_reads',
 });
 
 const ALL = Object.freeze(Object.values(KEYS));

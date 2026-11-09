@@ -802,7 +802,7 @@ describe('CMP-108 the sidebar read', () => {
     assert.equal((await rig({ key: '' }).site.sidebar(['chain'])).status, 'no_key');
     assert.equal((await rig({ reply: () => ({ ok: false, status: 401, data: null }) }).site.sidebar(['chain'])).status, 'refused');
     assert.deepEqual(await rig({ reply: () => ({ ok: false, status: 429, data: null, retryAfter: '120' }) }).site.sidebar(['chain']),
-      { status: 'wait', retryMs: 120_000 });
+      { status: 'wait', retryMs: 120_000, paused: true });
     assert.equal((await rig({ reply: () => ({ ok: false, status: 404, data: null }) }).site.sidebar(['chain'])).status, 'failed');
   });
 });

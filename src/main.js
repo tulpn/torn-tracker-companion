@@ -12,6 +12,7 @@ import { createSharer } from './core/share.js';
 import { createUploader } from './core/upload.js';
 import { createSite } from './core/site.js';
 import { emptyKeys, loadKeys, saveKeys } from './core/keys.js';
+import { createReadGate } from './core/read-gate.js';
 import { mountPanel } from './core/panel.js';
 import { mountEntry } from './core/entry.js';
 import { mountPage } from './core/page.js';
@@ -60,7 +61,9 @@ export async function boot(win = globalThis) {
     onChange: () => panel?.updateQueue(),
   });
   await uploader.load();
-  const site = createSite({ getKey: () => keys.script, now: uploader.serverNow, onBanned: () => uploader.banned() });
+  // The reads every open tab shares (hq #721): a 429's pause, 403'd feeds, the minute's count.
+  const gate = createReadGate({ now: uploader.serverNow });
+  const site = createSite({ getKey: () => keys.script, now: uploader.serverNow, onBanned: () => uploader.banned(), gate });
   await site.cache.load();
   // Achievements (WP-UX-8): a toast when one is earned, the featured ones in the settings header.
   const unlocks = createUnlocks({
@@ -170,7 +173,10 @@ export async function boot(win = globalThis) {
     const keyChanged = next.script !== keys.script;
     keys = { ...next };
     const ok = await saveKeys(keys);
-    if (keyChanged) uploader.keyChanged();
+    if (keyChanged) {
+      uploader.keyChanged();
+      await gate.reset();
+    }
     return ok;
   };
 
