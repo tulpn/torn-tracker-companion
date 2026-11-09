@@ -1,8 +1,8 @@
 <!--
 The "Additional info" text for the Greasy Fork listing (Markdown). Paste it by hand on
 Greasy Fork when the listing is imported; the code itself syncs from the release asset
-(RELEASING.md). Keep it in step with forum-post.html, the README and
-src/core/disclosure.js: every claim must match what the code reads and sends (hq #649, #687).
+(RELEASING.md). Keep it in step with the README and src/core/disclosure.js: every claim
+must match what the code reads and sends (hq #649, #687).
 -->
 
 # Torn Tracker Companion

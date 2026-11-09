@@ -9,11 +9,16 @@ import { FORMS } from './selectors.js';
 export function itemIdOf(row, form) {
   const spec = FORMS[form];
   const controls = spec.infoButton ? row.querySelector(spec.infoButton)?.getAttribute('aria-controls') : null;
-  const fromButton = /-(\d+)-/.exec(controls || '');
-  if (fromButton) return Number(fromButton[1]);
+  const fromButton = positive(/-(\d+)-/.exec(controls || '')?.[1]);
+  if (fromButton) return fromButton;
   const src = row.querySelector(spec.image)?.getAttribute('src') || '';
-  const fromImage = /\/items\/(\d+)\//.exec(src) || /\/(\d+)\//.exec(src);
-  return fromImage ? Number(fromImage[1]) : null;
+  return positive((/\/items\/(\d+)\//.exec(src) || /\/(\d+)\//.exec(src))?.[1]);
+}
+
+/** A digit string as an id: a positive whole number Torn could use, else null (hq #733). */
+function positive(digits) {
+  const n = Number(digits);
+  return digits && Number.isSafeInteger(n) && n > 0 ? n : null;
 }
 
 /** How many the player has, from "x12" in the row's text; null when it does not say. */

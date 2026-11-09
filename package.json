@@ -1,6 +1,6 @@
 {
   "name": "torn-tracker-companion",
-  "version": "0.9.17",
+  "version": "0.9.18",
   "private": true,
   "type": "module",
   "description": "The companion userscript of the torn-tracker.com suite",
@@ -14,8 +14,9 @@
     "check": "node --check dist/torn-tracker-companion.user.js",
     "contract": "node tools/build-contract.mjs",
     "lint:rules": "node tools/rules-lint.mjs",
+    "check:version": "node tools/version-guard.mjs",
     "release": "node tools/release.mjs",
-    "test": "npm run build && npm run check && node --test \"test/**/*.test.js\""
+    "test": "npm run build && npm run check && npm run check:version && node --test \"test/**/*.test.js\""
   },
   "devDependencies": {
     "acorn": "^8.19.0",

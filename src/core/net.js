@@ -124,10 +124,15 @@ function normalizePda(res) {
   const text = res?.responseText ?? res?.body ?? res?.text ?? '';
   const headers = res?.headers && typeof res.headers === 'object' ? res.headers : {};
   const retryAfter = headers['retry-after'] ?? headers['Retry-After'] ?? null;
+  const named = (name) => {
+    const found = Object.keys(headers).find((k) => k.toLowerCase() === name);
+    return found === undefined || headers[found] == null ? null : String(headers[found]);
+  };
   return {
     status,
     text: typeof text === 'string' ? text : JSON.stringify(text),
     retryAfter: retryAfter == null ? null : String(retryAfter),
+    cachedAge: cachedAgeOf(named),
   };
 }
 
@@ -138,7 +143,7 @@ function normalizePda(res) {
  *        for the page's fetch only: the manager's request outlives the page by itself,
  *        and PDA's helpers have no such thing
  * @returns {Promise<{ok: boolean, status: number, text: string, data: unknown,
- *          retryAfter: string|null, error: string|null}>}
+ *          retryAfter: string|null, cachedAge: number|null, error: string|null}>}
  *          Network trouble is a result, never a throw: a feature must keep working when
  *          the site is unreachable (CMP-023). A disallowed host is a bug and does throw.
  */
@@ -150,7 +155,7 @@ export async function request(url, {
 
   if (!take(host)) {
     warn('call budget spent for', host);
-    return { ok: false, status: 0, text: '', data: null, retryAfter: null, error: 'budget' };
+    return { ok: false, status: 0, text: '', data: null, retryAfter: null, cachedAge: null, error: 'budget' };
   }
 
   const verb = String(method).toUpperCase();
@@ -163,6 +168,7 @@ export async function request(url, {
     else if (gm) reply = await viaGm(gm, sent, { method: verb, headers, body, timeout });
     else reply = await viaFetch(sent, { method: verb, headers, body, timeout, keepalive });
     const { status, text, retryAfter } = reply;
+    const cachedAge = reply.cachedAge ?? null;
 
     let data = null;
     try {
@@ -170,17 +176,42 @@ export async function request(url, {
     } catch { /* not JSON; callers that wanted JSON see data === null */ }
 
     log(verb, url, status);
-    return { ok: status >= 200 && status < 300, status, text, data, retryAfter, error: null };
+    return { ok: status >= 200 && status < 300, status, text, data, retryAfter, cachedAge, error: null };
   } catch (err) {
     warn('request failed', url, err && err.name);
-    return { ok: false, status: 0, text: '', data: null, retryAfter: null, error: err?.name || 'error' };
+    return { ok: false, status: 0, text: '', data: null, retryAfter: null, cachedAge: null, error: err?.name || 'error' };
   }
 }
 
 /** Retry-After out of the raw header block the manager hands back. */
 export function retryAfterOf(rawHeaders) {
-  const match = /^retry-after:\s*(.+?)\s*$/im.exec(String(rawHeaders ?? ''));
-  return match ? match[1] : null;
+  return rawHeaderOf(rawHeaders, 'retry-after');
+}
+
+/** One header's value out of a raw header block, or null. */
+function rawHeaderOf(rawHeaders, name) {
+  for (const line of String(rawHeaders ?? '').split('\n')) {
+    const colon = line.indexOf(':');
+    if (colon > 0 && line.slice(0, colon).trim().toLowerCase() === name) return line.slice(colon + 1).trim();
+  }
+  return null;
+}
+
+/** The longest Age a cached answer is believed (hq #737). */
+const CACHED_AGE_MAX = 3600;
+
+/**
+ * How old the body is, in seconds, when the site answered from its own cache
+ * (`X-Served-From: cache` with an `Age`, tc-targets#802); null for a fresh body or a
+ * header that doesn't fit (hq #737).
+ * @param {(name: string) => string|null} header  a lower-case name to its value
+ */
+export function cachedAgeOf(header) {
+  if (String(header('x-served-from') ?? '').trim().toLowerCase() !== 'cache') return null;
+  const age = String(header('age') ?? '').trim();
+  if (!/^\d{1,5}$/.test(age)) return null;
+  const n = Number(age);
+  return n <= CACHED_AGE_MAX ? n : null;
 }
 
 // The manager's request outlives the page by itself, so the pagehide flush needs no
@@ -205,6 +236,7 @@ function viaGm(gm, url, { method, headers, body, timeout }) {
           status: Number(res?.status) || 0,
           text: typeof res?.responseText === 'string' ? res.responseText : '',
           retryAfter: retryAfterOf(res?.responseHeaders),
+          cachedAge: cachedAgeOf((name) => rawHeaderOf(res?.responseHeaders, name)),
         }),
         onerror: fail('failed'),
         ontimeout: fail('timed out'),
@@ -237,6 +269,8 @@ async function viaFetch(url, { method, headers, body, timeout, keepalive }) {
       status: response.status,
       text: await response.text(),
       retryAfter: response.headers?.get?.('Retry-After') ?? null,
+      // Readable only when the site exposes them (Access-Control-Expose-Headers).
+      cachedAge: cachedAgeOf((name) => response.headers?.get?.(name) ?? null),
     };
   } finally {
     clearTimeout(timer);

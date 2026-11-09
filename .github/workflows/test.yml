@@ -19,3 +19,20 @@ jobs:
       - run: npm test
       # Torn's scripting rules, scanned on the source (specs/companion.md section 6).
       - run: npm run lint:rules
+
+  # development is always ready to promote (hq #708, #715): a change to src/ or to the
+  # CHANGELOG's Unreleased section on top of a version that is already tagged fails here.
+  version-guard:
+    if: github.base_ref == 'development' || github.ref == 'refs/heads/development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The version is not published yet, or the change leaves the script alone
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: node tools/version-guard.mjs --base "$BASE"
