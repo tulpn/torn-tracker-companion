@@ -89,6 +89,24 @@ export function createCache(spaces, { now = Date.now } = {}) {
       return true;
     },
 
+    /**
+     * Takes the entries another tab kept since this page loaded, where they are newer than
+     * this tab's (hq #721: one tab reads the sidebar, the others draw its answer).
+     */
+    async refresh(name) {
+      const space = spaces[name];
+      if (!space) throw new Error(`cache: no space "${name}"`);
+      const raw = await read(KEYS.cache);
+      const theirs = raw && typeof raw === 'object' && raw[name] && typeof raw[name] === 'object' ? raw[name] : {};
+      data[name] = data[name] || {};
+      for (const [key, entry] of Object.entries(theirs)) {
+        if (!fresh(space, entry)) continue;
+        const mine = data[name][key];
+        if (!mine || !(mine.at >= entry.at)) data[name][key] = { v: entry.v, at: entry.at };
+      }
+      prune(name);
+    },
+
     /** Drops one entry, so the next read asks again. */
     drop(name, key) {
       if (!spaces[name]) throw new Error(`cache: no space "${name}"`);

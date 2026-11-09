@@ -15,6 +15,7 @@ import { SITE, SITE_ORIGINS } from '../hosts.js';
 import { createCache } from './cache.js';
 import { accountBanned, keyRefused, request } from './net.js';
 import { log } from './log.js';
+import { createReadGate, memoryStore } from './read-gate.js';
 import { BUILT_IN, readShopReply, tableOf, validShopRows } from './shops.js';
 
 export const FF_URL = `${SITE}/api/feeds/ff`;
@@ -95,6 +96,8 @@ const REST_MAX_MS = HOUR;
 const BAND = 40;
 
 const positiveInt = (v) => Number.isInteger(v) && v > 0;
+/** An address without its query, for the console. */
+const pathOnly = (url) => String(url).split('?')[0];
 
 /** Whose FF figure it is: the site's own index, or FFScouter's estimate (hq #492, D-171). */
 export const FF_SOURCES = Object.freeze(['index', 'ffscouter']);
@@ -930,9 +933,13 @@ export function readDashboard(data, skew = 0) {
  *   server-corrected one, so a wrong PC clock doesn't make a fresh read look old
  * @param {ReturnType<typeof createCache>} [opts.cache]  kept on the same clock
  * @param {() => void} [opts.onBanned]  the site refused the account itself (a ban)
+ * @param {ReturnType<typeof createReadGate>} [opts.gate]  the budget, pauses and refusals
+ *   every open tab shares (hq #721); main.js passes the one kept in storage, and without
+ *   it this site keeps its own in memory
  */
 export function createSite({
   getKey, send = request, now = Date.now, cache = createCache(SPACES, { now }), onBanned = () => {},
+  gate = createReadGate({ now, ...memoryStore() }),
 }) {
   /** Set when the site refuses the key; reads stop until the key changes. */
   let refusedKey = null;
@@ -961,8 +968,34 @@ export function createSite({
   const headers = () => ({ Authorization: `Bearer ${getKey()}`, Accept: 'application/json' });
   const usable = () => Boolean(getKey()) && getKey() !== refusedKey;
 
-  async function exchange(url, opts) {
+  /**
+   * Every read passes the gate the open tabs share (hq #721). A read it holds back gets the
+   * answer it would have had, without a request: a 429 while a Retry-After runs or the
+   * minute's reads are spent, and the kept 403 for a feed the account can't read.
+   */
+  async function gated(url, opts, { keep403 = true } = {}) {
+    const method = String(opts?.method || 'GET').toUpperCase();
+    const admitted = await gate.admit(url, method);
+    if (!admitted.go) {
+      if (admitted.why === 'refused') {
+        return { ok: false, status: 403, text: '', data: { error: admitted.error }, retryAfter: null, error: 'refused' };
+      }
+      const seconds = String(Math.max(1, Math.ceil(admitted.waitMs / 1000)));
+      return { ok: false, status: 429, text: '', data: null, retryAfter: seconds, error: admitted.why };
+    }
     const result = await send(url, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+    // A refused key or a ban is about the key, not the feed: those stop every read already.
+    if (result?.status === 429 || (keep403 && result?.status === 403 && !keyRefused(result) && !accountBanned(result))) {
+      await gate.heard(url, method, result);
+      log(result.status === 429
+        ? `site: 429 on ${pathOnly(url)}; every read waits ${result.retryAfter ?? 60} s`
+        : `site: 403 on ${pathOnly(url)}; not asked again for an hour`);
+    }
+    return result;
+  }
+
+  async function exchange(url, opts) {
+    const result = await gated(url, opts);
     if (keyRefused(result)) refusedKey = getKey();
     if (accountBanned(result)) onBanned();
     return result;
@@ -973,7 +1006,8 @@ export function createSite({
    * scope only answers this feature (the player may have left it off on purpose).
    */
   async function listsExchange(url, opts) {
-    const result = await send(url, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+    // A lists 403 answers one list (not yours, read-only), never the whole feed.
+    const result = await gated(url, opts, { keep403: false });
     if (result?.status === 401) refusedKey = getKey();
     if (accountBanned(result)) onBanned();
     return result || { ok: false, status: 0, data: null };
@@ -1628,9 +1662,19 @@ export function createSite({
       if (!getKey()) return { status: 'no_key' };
       if (!usable()) return { status: 'refused' };
       const id = ask.join(',');
-      const kept = cache.peek('sidebar', id);
-      if (kept && now() - kept.at < SIDEBAR_TTL) {
-        return { status: 'ok', ...readSidebar(kept.value.data, ask, kept.value.skew), cached: true, at: kept.at };
+      const fromCache = (kept) => ({ status: 'ok', ...readSidebar(kept.value.data, ask, kept.value.skew), cached: true, at: kept.at });
+      let kept = cache.peek('sidebar', id);
+      if (kept && now() - kept.at < SIDEBAR_TTL) return fromCache(kept);
+      // One tab a minute reads the sidebar; the others draw what it kept (hq #721).
+      const turn = await gate.sidebarTurn(id);
+      if (!turn.mine) {
+        await cache.refresh('sidebar');
+        kept = cache.peek('sidebar', id);
+        if (kept && now() - kept.at < SIDEBAR_TTL + 60_000) return fromCache(kept);
+        // The tab whose turn it is may have been told to slow down: this one says so too.
+        const pausedMs = await gate.pausedFor();
+        if (pausedMs > 0) return { status: 'wait', retryMs: Math.max(pausedMs, turn.waitMs), paused: true };
+        return { status: 'wait', retryMs: turn.waitMs };
       }
       const result = await exchange(`${SIDEBAR_URL}?items=${id}`, { method: 'GET' });
       if (keyRefused(result)) {
@@ -1639,7 +1683,9 @@ export function createSite({
       }
       if (result.status === 429) {
         const seconds = Number(result.retryAfter);
-        return { status: 'wait', retryMs: Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000 };
+        const retryMs = Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 3600) * 1000 : 60_000;
+        // A Retry-After from the site, or one another tab heard, pauses every read: say so.
+        return { status: 'wait', retryMs, paused: result.error !== 'budget' };
       }
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       const skew = skewOf(result.data);

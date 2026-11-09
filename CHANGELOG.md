@@ -9,6 +9,17 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.18 — 2026-11-09
+
+### Fixed
+
+- Open Torn tabs now share one count of their reads from torn-tracker.com, so together they
+  stay under the site's limit, and only one of them reads the sidebar block each minute; the
+  others show its answer. When the site asks the script to slow down, every tab waits as long
+  as it says, and the sidebar block shows "Paused, retrying in …". A list your account can't
+  read (the war brief without a faction, for example) is asked once an hour at most, not on
+  every page (hq #721).
+
 ### Removed
 
 - The companion's own forum post (`forum-post.html`) and its picture tool: one forum post now

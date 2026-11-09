@@ -213,6 +213,27 @@ describe('CMP-108 AC2 how often it asks', () => {
     await settle();
     assert.equal(t.asked.length, 2);
   });
+
+  test('a pause the site asked for shows as a row, and goes with the next answer (hq #721)', async () => {
+    let calls = 0;
+    const t = mount({ answer: () => (calls++ === 0 ? { status: 'wait', retryMs: 90_000, paused: true } : { status: 'ok', items: new Map(), links: [] }) });
+    await settle();
+    const row = t.node().querySelector('[data-ttc-paused]');
+    assert.ok(row, 'the paused row');
+    assert.match(row.textContent, /^Paused, retrying in /);
+    assert.equal(row.querySelector('[data-ttc-until]').dataset.ttcDone, '0:00');
+    t.advance(90_000);
+    t.timers.run();
+    await settle();
+    assert.equal(t.asked.length, 2);
+    assert.equal(t.node().querySelector('[data-ttc-paused]'), null);
+  });
+
+  test('our own budget wait is not shown as a pause', async () => {
+    const t = mount({ answer: { status: 'wait', retryMs: 30_000, paused: false } });
+    await settle();
+    assert.equal(t.node().querySelector('[data-ttc-paused]'), null);
+  });
 });
 
 describe('hq #452 the rows survive Torn redrawing its sidebar', () => {
