@@ -9,6 +9,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Removed
+
+- The companion's own forum post (`forum-post.html`) and its picture tool: one forum post now
+  covers the whole torn-tracker suite. The Greasy Fork listing text stays (hq #714).
+
 ## 0.9.17 — 2026-11-08
 
 ### Changed
