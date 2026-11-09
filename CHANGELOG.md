@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.18 — 2026-11-09
+
 ### Fixed
 
 - Open Torn tabs now share one count of their reads from torn-tracker.com, so together they
