@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import feature, { MAX_LISTINGS, itemOf, listingsOf } from '../../src/features/market-snapshot/index.js';
 import { checkObservation } from '../../src/core/kinds.js';
-import { runFeature } from '../feature-harness.js';
+import { page as capturedPage, runFeature } from '../feature-harness.js';
 
 const MARKET = 'https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=206&itemName=Xanax';
 
@@ -143,5 +143,30 @@ describe('hq #454 the feature says why nothing was shared', () => {
     }
     assert.equal(r.shared.length, 1);
     assert.ok(Date.now() - started < 1_500, `shared after ${Date.now() - started} ms`);
+  });
+});
+
+describe('hq #732 the captured item market (2026-11-03)', () => {
+  const CAPTURED = 'https://www.torn.com/page.php?sid=ItemMarket#/market/view=category&categoryName=Most%20Popular&itemID=1123';
+
+  test('the item from its tile when the hash has none, and every row read', () => {
+    const r = run({ html: capturedPage('item-market-listings.html'), settings: { enabled: false }, site: fakeSite([]) });
+    assert.equal(itemOf(r.doc, '#/market/view=category&categoryName=Most%20Popular'), 1123);
+    assert.deepEqual(listingsOf(r.doc), [
+      { price: 430, quantity: 9 }, { price: 540, quantity: 2 }, { price: 550, quantity: 2 }, { price: 599, quantity: 2 },
+      { price: 600, quantity: 51 }, { price: 650, quantity: 476 }, { price: 666, quantity: 2820 }, { price: 679, quantity: 9999 },
+    ]);
+  });
+
+  test('a wanted item is sent with prices and quantities only, no seller', async () => {
+    const r = run({ url: CAPTURED, html: capturedPage('item-market-listings.html'), site: fakeSite([1123]) });
+    await wait();
+    assert.equal(r.shared.length, 1);
+    const { kind, ...fields } = r.shared[0];
+    assert.equal(fields.item_id, 1123);
+    assert.equal(fields.listings.length, 8);
+    assert.doesNotMatch(JSON.stringify(fields), /Seller|XID|2000001/);
+    assert.equal(checkObservation({ kind, observed_at: '2026-11-03T02:26:00Z', script_version: '0.9.0', ...fields }).error, undefined);
+    assert.deepEqual(r.violations, []);
   });
 });

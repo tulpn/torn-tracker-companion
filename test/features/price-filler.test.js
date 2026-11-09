@@ -203,3 +203,26 @@ describe('hq #521 the fill button is small, inline and in our tokens', () => {
     assert.ok(buttons.every((b) => b.classList.contains('ttc-ui-inline')));
   });
 });
+
+describe('hq #732 the captured sell form (2026-11-03)', () => {
+  const prices = { 1321: 391, 37: 807, 527: 37_304, 528: 47_907, 747: 5, 653: 5 };
+
+  test('a button on every row that can be listed; untradable and equipped rows are left alone', async () => {
+    const site = fakeSite(prices);
+    const r = run({ html: page('market-add-captured.html'), url: MARKET_ADD, site });
+    await wait();
+    assert.deepEqual(site.lookups, [[1321, 37, 527, 528]]);
+    assert.equal(r.doc.querySelectorAll('.ttc-fill').length, 4);
+  });
+
+  test('one press fills both price inputs and the quantity the row says it has', async () => {
+    const r = run({ html: page('market-add-captured.html'), url: MARKET_ADD, site: fakeSite(prices) });
+    await wait();
+    const row = r.doc.querySelectorAll("[class*='itemRow___']")[1];
+    const seen = press(r, row.querySelector('.ttc-fill'));
+    const inputs = [...row.querySelectorAll("[class*='priceInputWrapper___'] input")];
+    assert.deepEqual(inputs.map((i) => i.value), ['806', '806']);
+    assert.equal(row.querySelector("[class*='amountInputWrapper___'] .input-money-group > .input-money").value, '3');
+    assert.ok(!seen.some((e) => e.startsWith('submit')), 'never submits');
+  });
+});
