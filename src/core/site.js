@@ -1689,8 +1689,10 @@ export function createSite({
       }
       if (!result.ok || !result.data || typeof result.data !== 'object') return { status: 'failed' };
       const skew = skewOf(result.data);
-      cache.set('sidebar', id, sidebarCopy(result.data, ask, skew));
-      return { status: 'ok', ...readSidebar(result.data, ask, skew), at: now() };
+      // A body the site answered from its minute's cache is as old as its Age (hq #737).
+      const at = now() - Math.min(result.cachedAge ?? 0, 60) * 1000;
+      cache.set('sidebar', id, sidebarCopy(result.data, ask, skew), at);
+      return { status: 'ok', ...readSidebar(result.data, ask, skew), at };
     },
 
     /**

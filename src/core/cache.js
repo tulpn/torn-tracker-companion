@@ -78,12 +78,13 @@ export function createCache(spaces, { now = Date.now } = {}) {
       return fresh(space, entry) ? { value: entry.v, at: entry.at } : undefined;
     },
 
-    set(name, key, value) {
+    set(name, key, value, at = now()) {
       const space = spaces[name];
       if (!space) throw new Error(`cache: no space "${name}"`);
       if (!space.valid(value)) return false;
       data[name] = data[name] || {};
-      data[name][String(key)] = { v: value, at: now() };
+      // A value may be dated back (a body the site kept a while, hq #737), never ahead.
+      data[name][String(key)] = { v: value, at: Number.isFinite(at) ? Math.min(at, now()) : now() };
       if (Object.keys(data[name]).length > space.max) prune(name);
       persist();
       return true;
