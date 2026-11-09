@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The price filler no longer takes item id 0 from a row's image, and the market snapshot no
+  longer keeps a quantity too large to count exactly. Property tests now cover the sell form
+  and item market extractors and the read gate's stored record (hq #733).
+
 ## 0.9.18 — 2026-11-09
 
 ### Fixed

@@ -21,7 +21,7 @@ const SETTLE_MS = 800;
 
 let state = null;
 
-const positive = (v) => (Number.isInteger(v) && v > 0 ? v : null);
+const positive = (v) => (Number.isSafeInteger(v) && v > 0 ? v : null);
 
 /** The item being viewed: the hash's itemID, else the item's image beside the list. */
 export function itemOf(doc, hash) {
