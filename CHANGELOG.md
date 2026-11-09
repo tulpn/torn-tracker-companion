@@ -14,6 +14,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The price filler no longer takes item id 0 from a row's image, and the market snapshot no
   longer keeps a quantity too large to count exactly. Property tests now cover the sell form
   and item market extractors and the read gate's stored record (hq #733).
+- A sidebar answer the site sends again from its minute's cache is dated by its age, so
+  "updated" reads true and the next read lands on a fresh answer (hq #737).
 
 ## 0.9.18 — 2026-11-09
 
