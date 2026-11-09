@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
+  companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
+  that comes with its own switch and wording in a later release.
+
 ## 0.9.18 — 2026-11-09
 
 ### Fixed
