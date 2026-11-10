@@ -26,7 +26,7 @@ import { createGuide } from './core/guide.js';
 import { tornTheme } from './core/tokens.js';
 import { startRouter } from './core/router.js';
 import { VERSION } from './core/version.js';
-import { defaults, isEnabled, load, normalize, save, shareRefusal } from './core/settings.js';
+import { defaults, isEnabled, load, normalize, save, shareRefusal, sharingPaused } from './core/settings.js';
 import { KEYS, forget, read, write } from './core/storage.js';
 import { error, log, setDebug, warn } from './core/log.js';
 import * as dom from './core/dom.js';
@@ -268,6 +268,7 @@ export async function boot(win = globalThis) {
     now: uploader.serverNow,
     watch,
     onWatch: (item) => notice.fromSidebar(item),
+    sharingPaused: (s) => sharingPaused(s),
   });
 
   const stopRouter = startRouter((loc) => {

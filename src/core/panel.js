@@ -45,6 +45,7 @@ import { LOOKS, declarations, lookTheme } from './tokens.js';
 import { shareKinds } from './registry.js';
 import { POSITIONS, POSITION_LABELS, SIDEBAR_ITEMS } from './sidebar.js';
 import { KEYS, backendName, read, write } from './storage.js';
+import { sharingPaused } from './settings.js';
 import { syncWatchSection, watchSection } from './watch-panel.js';
 import { ROTA_STYLE, rotaSection, syncRota } from './rota.js';
 
@@ -563,10 +564,29 @@ export function mountPanel({
     ];
   }
 
+  /**
+   * The strip under the header: the banned notice, or else (hq #758) that ticked kinds are
+   * held until the new wording is agreed to, with the way to the Sharing screen's button.
+   */
   function showBanned() {
     const on = getQueue()?.banned === true;
-    banned.hidden = !on;
-    banned.replaceChildren(...(on ? bannedLines() : []));
+    const paused = !on && sharingPaused(draft?.settings ?? getSettings(), disclosure);
+    banned.hidden = !on && !paused;
+    banned.dataset.paused = String(paused);
+    banned.replaceChildren(...(on ? bannedLines() : paused ? pausedLines() : []));
+  }
+
+  function pausedLines() {
+    const go = h('a', { href: sectionHref('sharing'), 'data-act': 'to-consent' }, 'Read and agree');
+    return [h('strong', null, 'Sharing is paused'),
+      'What is shared is worded differently since you agreed. Nothing you ticked is sent until you agree. ', go];
+  }
+
+  /** hq #758: on the Sharing screen with a changed wording, its button takes the focus. */
+  function toConsent() {
+    const button = section === 'sharing' ? panel.querySelector('[data-act="consent"]') : null;
+    button?.scrollIntoView?.({ block: 'center' });
+    button?.focus();
   }
 
   function queueLines(queue) {
@@ -928,6 +948,7 @@ export function mountPanel({
   function render(message = '', tone = '') {
     syncDashboard();
     drawKeyState();
+    if (draft) showBanned();
     clear.hidden = !search.value;
     panel.dataset.theme = lookTheme(draft?.settings.look ?? getSettings().look, doc);
     // Plain links to each section's route, so no tab roles without a tablist (hq #557 42);
@@ -1191,11 +1212,16 @@ export function mountPanel({
     showBanned();
     render();
     if (focusDashboard) toDashboardSwitch();
+    if (at === 'sharing') toConsent();
     // The first time the page opens (and for each new version), the settings tour.
     tours?.auto('settings', tourOptions());
   }
 
   panel.addEventListener('click', onClick);
+  // Already on Sharing: the address doesn't change, so no route event comes (hq #758).
+  banned.addEventListener('click', (event) => {
+    if (event.target.closest?.('[data-act="to-consent"]') && active && section === 'sharing') toConsent();
+  });
   // A tour of another page: noted here, and it starts when that page opens. The link
   // itself is plain navigation, the player's own.
   panel.addEventListener('click', (event) => {
