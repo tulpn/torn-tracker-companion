@@ -67,6 +67,7 @@ export default {
   area: 'crimes',
   guide: 'crime-helpers',
   summary: 'Your crime morale, value per nerve, and how long burglary targets have left.',
+  // loader.php is matched only, never built (D-245).
   routes: ['page.php?sid=crimes', 'loader.php?sid=crimes'],
   defaults: { enabled: true },
   shares: [],

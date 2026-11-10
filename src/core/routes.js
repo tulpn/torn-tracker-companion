@@ -6,7 +6,7 @@
 //   '*'                      every page
 //   'factions.php'           that page, whatever the query or hash
 //   'factions.php#/war/'     that page, hash starting with /war/
-//   'loader.php?sid=attack'  that page, with sid=attack among the query parameters
+//   'page.php?sid=attack'    that page, with sid=attack among the query parameters
 //   '#/war/'                 any page whose hash starts with /war/
 
 /** '/factions.php' -> 'factions.php', '/' -> '' */

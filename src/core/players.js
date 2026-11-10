@@ -1,6 +1,8 @@
 // Which player a page or a link is about (CMP-006: one place to fix when Torn changes).
 
 /** Torn's attack page, under both addresses it is reached by. */
+// loader.php is kept for matching only, never built: Torn retired it, but a member may
+// still arrive on an old link (D-245, hq #753).
 export const ATTACK_ROUTES = Object.freeze(['page.php?sid=attack', 'loader.php?sid=attack']);
 const SUBJECT_PAGES = Object.freeze(['profiles.php', 'page.php', 'loader.php']);
 

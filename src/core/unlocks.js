@@ -32,6 +32,8 @@ export const TOAST_ID = `${P}-unlock`;
 export const READ_EVERY_MS = 5 * 60_000;
 export const SHOW_MS = 12_000;
 /** Pages it never asks or shows on: an attack in progress. */
+// loader.php is kept for matching only, never built: Torn retired it, but a member may
+// still arrive on an old link (D-245, hq #753).
 const NEVER = ['loader.php?sid=attack', 'page.php?sid=attack'];
 const ID = /^[a-z0-9][a-z0-9_-]{0,59}$/;
 
