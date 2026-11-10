@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import feature from '../../src/features/gym-progress/index.js';
 import { answerShape, gainFromMessage, gymName, listShape, progressText, readActive, readInitial, readProgress, readStatuses, readTrain, statValue, whyNoProgress } from '../../src/features/gym-progress/read.js';
 import { gymStep } from '../../src/features/gym-progress/selectors.js';
+import { bestText, validateBest, withTrain } from '../../src/features/gym-progress/best.js';
 import { checkObservation } from '../../src/core/kinds.js';
 import { page, runFeature } from '../feature-harness.js';
 
@@ -318,5 +319,81 @@ describe('hq #610 the progress line in Torn’s welcome box', () => {
   test('the words', () => {
     assert.equal(progressText({ percent: 62, toGo: 190 }), 'Next gym: 62 %, about 190 E to go (estimate)');
     assert.equal(progressText({ name: 'Gym', percent: 1, toGo: 1200, total: 1000 }), 'Next gym (Gym): 1 %, about 1,200 E to go (estimate)', 'a total under what is left is dropped');
+  });
+});
+
+describe('hq #800 best gain yet, kept on this device', () => {
+  const NOV3 = Date.UTC(2026, 10, 3, 12);
+  const BOX = `<div class="welcome___w1">Welcome to the gym</div>${HTML}`;
+  const train = (r, value) => r.respond(TRAIN, { success: true, stat: { name: 'strength', newValue: value } });
+
+  test('the stored bests are checked field by field', () => {
+    assert.deepEqual(validateBest(null), { best: {} });
+    assert.deepEqual(validateBest({ best: {
+      strength: { gain: 12.5, since: NOV3 },
+      speed: { gain: -1, since: NOV3 },
+      defense: { gain: 5, since: 'x' },
+      luck: { gain: 5, since: NOV3 },
+      dexterity: { gain: Infinity, since: NOV3 },
+    } }), { best: { strength: { gain: 12.5, since: NOV3 } } });
+  });
+
+  test('the first train starts the record silently; a bigger one beats it and keeps its start', () => {
+    let step = withTrain({ best: {} }, 'strength', 100, NOV3);
+    assert.equal(step.beaten, null);
+    assert.deepEqual(step.data.best.strength, { gain: 100, since: NOV3 });
+    step = withTrain(step.data, 'strength', 100, NOV3 + 1000);
+    assert.equal(step.beaten, null, 'an equal gain is no new best');
+    step = withTrain(step.data, 'strength', 1204, NOV3 + 2000);
+    assert.deepEqual(step.beaten, { gain: 1204, since: NOV3 });
+    assert.deepEqual(step.data.best.strength, { gain: 1204, since: NOV3 });
+    assert.equal(withTrain(step.data, 'luck', 5, NOV3).beaten, null);
+  });
+
+  test('the words', () => {
+    assert.equal(bestText('strength', 1204, NOV3), '+1,204 Strength. Your best single train since 3 Nov.');
+    assert.equal(bestText('defense', 10.25, Date.UTC(2026, 0, 31, 23)), '+10.25 Defense. Your best single train since 31 Jan.');
+  });
+
+  test('a new best shows one line with a Copy button; a smaller train clears it; nothing is shared for it', async () => {
+    const r = run({ html: BOX, site: fakeSite(), now: () => NOV3,
+      data: { best: { strength: { gain: 5, since: NOV3 } } } });
+    r.respond(INITIAL, INITIAL_ANSWER);
+    await wait();
+    train(r, '1,010.50');
+    await wait(50);
+    const line = r.doc.querySelector('.ttc-gym-best');
+    assert.ok(line, 'a line for the new best');
+    assert.equal(line.querySelector('strong').textContent, '+10 Strength. Your best single train since 3 Nov.');
+    assert.equal(line.querySelector('button').textContent, 'Copy');
+    assert.deepEqual(r.stored().best.strength, { gain: 10, since: NOV3 });
+    train(r, '1,012.50');
+    await wait(50);
+    assert.equal(r.doc.querySelector('.ttc-gym-best'), null, 'silent when no best');
+    for (const o of r.shared) assert.equal(Object.hasOwn(o, 'best') || Object.hasOwn(o, 'since'), false, 'the best is never sent');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('switched off: nothing kept, nothing shown', async () => {
+    const r = run({ html: BOX, site: fakeSite(), settings: { enabled: true, bestGain: false },
+      data: { best: { strength: { gain: 5, since: NOV3 } } } });
+    r.respond(INITIAL, INITIAL_ANSWER);
+    await wait();
+    train(r, '1,010.50');
+    await wait(50);
+    assert.equal(r.doc.querySelector('.ttc-gym-best'), null);
+    assert.deepEqual(r.stored().best.strength, { gain: 5, since: NOV3 });
+  });
+
+  test('gone when the feature stops', async () => {
+    const r = runFeature(feature, { url: GYM, html: BOX, site: fakeSite(), data: { best: { strength: { gain: 5, since: NOV3 } } } });
+    r.respond(INITIAL, INITIAL_ANSWER);
+    await wait();
+    train(r, '1,010.50');
+    await wait(50);
+    assert.ok(r.doc.querySelector('.ttc-gym-best'));
+    feature.stop();
+    assert.equal(r.doc.querySelector('.ttc-gym-best'), null);
+    r.window.close();
   });
 });
