@@ -9,12 +9,22 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.20 — 2026-11-10
+
 ### Added
 
 - When what is shared has been reworded since you agreed, the sidebar and the settings
   page's header now say that sharing is paused, with a "Read and agree" link to the Sharing
   screen. Nothing is agreed for you: sharing resumes only once you press "Share the kinds I
   picked" there (hq #758).
+
+## 0.9.19 — 2026-11-09
+
+### Changed
+
+- Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
+  companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
+  that comes with its own switch and wording in a later release.
 
 ### Fixed
 
@@ -24,14 +34,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - On Torn PDA the sidebar's dots, link arrows and toggle no longer show as stray characters
   (`Â·`, `â` and boxes): the published script is now plain ASCII, so it reads the same
   whatever text encoding the app assumes (hq #756).
-
-## 0.9.19 — 2026-11-09
-
-### Changed
-
-- Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
-  companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
-  that comes with its own switch and wording in a later release.
 
 ## 0.9.18 — 2026-11-09
 
