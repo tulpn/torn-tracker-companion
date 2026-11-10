@@ -6,10 +6,10 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { labelFor, tooltipFor } from '../../src/features/shop-highlighter/index.js';
+import feature, { labelFor, scanLine, stoppedAt, tooltipFor } from '../../src/features/shop-highlighter/index.js';
 import { findRow, judge, parsePrice, parseQty, short } from '../../src/features/shop-highlighter/scan.js';
 import { BUILT_IN, onProfitable, profitableCount } from '../../src/core/shops.js';
-import { runFeature } from '../feature-harness.js';
+import { page as capturedPage, runFeature } from '../feature-harness.js';
 
 const MARKET = 'https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=206';
 const BIG_AL = { price: 1000, shop: "Big Al's Gun Shop", country: 'Torn' };
@@ -181,5 +181,73 @@ describe('hq #557 B15 the total stays off narrow listings', () => {
     const css = [...r.doc.querySelectorAll('style')].map((n) => n.textContent).join('\n');
     assert.match(css, /content: attr\(data-ttc-shop-label\) attr\(data-ttc-shop-total\);/);
     assert.match(css, /@media \(max-width: 400px\) \{\s*\[data-ttc-shop-label\]::after \{ content: attr\(data-ttc-shop-label\); \}/);
+  });
+});
+
+// hq #826: on a fresh install the owner saw no mark and no line saying why. The scan now
+// says, with debug on, where it stopped; the captured listings and the category tiles
+// (classes as captured on 2026-11-03, `item-market-listings.html`) are both marked.
+describe('hq #826 the scan says where it stopped', () => {
+  const CAPTURED = 'https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=1123';
+  const CATEGORY = 'https://www.torn.com/page.php?sid=ItemMarket#/market/view=category&categoryName=Most%20Popular';
+  const spyCamera = (price) => fakeSite({ 1123: { price, shop: 'A shop', country: 'Torn' } });
+  const lines = (r) => r.logs.filter((l) => l.startsWith('shop highlighter:'));
+
+  /** One category tile, shaped as the captured item tile: image, name, "$430", "(211,122)". */
+  const tile = (id, name, price) => `<li><div class="itemTile___gJeSo">
+    <div class="baseItemTileWrapper___tV9VZ large___dkKZ0"><div class="tileImage___mbztJ">
+      <img class="torn-item image___S3vQy" alt="${name}" src="/images/items/${id}/large.png"></div>
+      <div class="actionsWrapper___t9l4N"><button type="button" class="actionButton___okbi2" aria-label="Buy item ${name}, $${price}."><span class="title___Qu9TR">Buy Item</span></button></div></div>
+    <div class="title___nHwkf"><div class="name___HtUo7">${name}</div>
+      <div class="priceAndTotal___Enq_i"><span>$${price.toLocaleString('en-US')}</span><span class="titleTotal___Vcj9r"> (1,204)</span></div></div>
+  </div></li>`;
+
+  test('captured listings with default settings: the tile and every seller below the shop price are marked', async () => {
+    const r = run({ html: capturedPage('item-market-listings.html'), url: CAPTURED, site: spyCamera(600) });
+    await wait();
+    // $430, $540, $550 and $599 are below $600; the tile shows the lowest, $430.
+    assert.equal(r.doc.querySelectorAll('[data-ttc-shop]').length, 5);
+    assert.equal(profitableCount(), 5);
+    assert.deepEqual(lines(r), [
+      'shop highlighter: marked; 1 shop prices (site), 9 item images, 9 listings, 9 prices, 0 with no shop price, 5 below a shop price, 5 marked; by profit, lowest tier $1',
+    ]);
+  });
+
+  test('a category view marks the tiles below a shop price', async () => {
+    const shops = { 206: BIG_AL, 180: { price: 10, shop: 'A shop', country: 'Torn' } };
+    const html = `<ul class="itemList___aHzcT">${tile(206, 'Xanax', 800)}${tile(180, 'Bottle of Beer', 700)}${tile(1, 'Hammer', 5)}</ul>`;
+    const r = run({ html, url: CATEGORY, site: fakeSite(shops) });
+    await wait();
+    const tiles = [...r.doc.querySelectorAll("[class*='itemTile___']")];
+    assert.deepEqual(tiles.map((t) => t.getAttribute('data-ttc-shop')), ['blue', null, null]);
+    assert.equal(tiles[0].querySelector('[data-ttc-shop-dot]').textContent, '$800');
+    assert.match(lines(r)[0], /^shop highlighter: marked; .* 3 item images, 3 listings, 3 prices, 1 with no shop price, 1 below a shop price, 1 marked;/);
+  });
+
+  test('nothing below a shop price says so, once, until the numbers change', async () => {
+    const r = run({ html: capturedPage('item-market-listings.html'), url: CAPTURED, site: spyCamera(100) });
+    await wait();
+    r.doc.querySelector('ul').append(r.doc.createElement('li'));
+    await wait();
+    assert.equal(lines(r).length, 1);
+    assert.match(lines(r)[0], /^shop highlighter: no listing below a shop price; /);
+    assert.equal(r.doc.querySelector('[data-ttc-shop]'), null);
+  });
+
+  test('where a scan stops, step by step, and the margin mode', () => {
+    const n = { images: 0, rows: 0, prices: 0, unknown: 0, below: 0, marked: 0 };
+    assert.equal(stoppedAt(n), 'no item images outside the filters');
+    assert.equal(stoppedAt({ ...n, images: 2 }), 'no listing row around the images');
+    assert.equal(stoppedAt({ ...n, images: 2, rows: 2 }), 'no price in the listing rows');
+    assert.equal(stoppedAt({ ...n, images: 2, rows: 2, prices: 2 }), 'no listing below a shop price');
+    assert.equal(stoppedAt({ ...n, images: 2, rows: 2, prices: 2, below: 1 }), 'no listing reaches the lowest tier');
+    const line = scanLine({ ...n, images: 2, rows: 2, prices: 2, below: 1 }, BUILT_IN, { ...feature.defaults, mode: 'pct', pctBlue: 5 });
+    assert.match(line, /^shop highlighter: no listing reaches the lowest tier; \d+ shop prices \(built-in\), .* by margin, lowest tier 5%$/);
+  });
+
+  test('the add-listing form says why nothing is marked', async () => {
+    const r = run({ html: page(listing(206, 900)), url: 'https://www.torn.com/page.php?sid=ItemMarket#/addListing', site: fakeSite() });
+    await wait();
+    assert.deepEqual(lines(r), ['shop highlighter: the add-listing form, nothing is listed here']);
   });
 });
