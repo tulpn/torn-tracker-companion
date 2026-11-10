@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.23 — 2026-11-10
+
 ### Removed
 
 - Bazaar listings are no longer shared. After Torn's API change of 10 November 2026, the
