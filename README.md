@@ -129,8 +129,10 @@ player ids and which list it is (company or faction), to show their job-board ca
 | Your gym trains | When you train: the gym, the stat, how much it went up, and, when the page's answer gives them, the energy you spent and how many trains it was. | Only for your own gym view, on the site and in the bot. Never shown to anyone else, never published, not even in totals. Kept 30 days. |
 | Item market prices | On the item market: the prices and quantities of up to 50 listings of the item you opened, never who is selling. Only for items torn-tracker.com asks for at that moment (Torn's API already has most listings), at most once per item every five minutes, only while the tab is on screen. | Reports for 7 days. A price index per item is published. |
 | Jail difficulty bands | On the jail page: for each prisoner, only their level as a band (like 26-50) and their time left as a band (like 1-3 hours). At most once per prisoner every ten minutes, only while the tab is on screen. Never who they are. | Not accepted by the site yet, so nothing is kept or published. |
-| Bazaar listings | On another player's bazaar: their id, and each item they list with its quantity and price (and the item's own id where the page shows one), as far as you scroll. At most once per bazaar every five minutes, only while the tab is on screen. Never your own bazaar. | Reports for 7 days. Each player's latest listings are published openly, and prices per item. |
 | Loadouts | On an attack: the other player's id, and the weapons and armour the attack page shows them wearing, with their damage, accuracy and bonuses. Once per attack. | Reports for 90 days. Each player's latest loadout is published openly, replaced on every new report, and removed once nobody has seen it for 180 days. **The player it describes can see that you reported it.** |
+
+Bazaar listings are no longer shared. After Torn's API change of 10 November 2026, the
+script stopped reading other players' bazaars; its helpers on your own bazaar pages stay.
 
 The panel shows one plain line beside each switch, and these lines in full under **Exactly
 what is sent**. If they change in an update, sharing stops until you have read the new ones

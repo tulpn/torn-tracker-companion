@@ -9,6 +9,15 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Removed
+
+- Bazaar listings are no longer shared. After Torn's API change of 10 November 2026, the
+  script stopped reading other players' bazaars: the bazaar capture and its "Bazaar
+  listings" switch under Sharing are gone, and a switch you had turned on is dropped. What
+  else you share is unchanged, and you don't need to agree again. The price filler, the
+  undersell warning and the wallet reminder on your own bazaar's add and manage pages stay
+  (hq #829).
+
 ## 0.9.22 — 2026-11-10
 
 ### Fixed

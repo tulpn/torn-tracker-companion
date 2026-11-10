@@ -69,11 +69,12 @@ The guide has a page for every feature: <https://torn-tracker.com/guide/companio
   for example the players listed for fair-fight badges. Once a day the shop price guard reads
   torn-tracker.com's public item catalogue, with no key at all.
 - **Sharing starts off.** Under Sharing you can choose to send what Torn showed you, kind by
-  kind: foreign stock, auction listings, item market prices, bazaar listings, loadouts, jail
+  kind: foreign stock, auction listings, item market prices, loadouts, jail
   difficulty bands (the site doesn't keep these yet), and your own crime outcomes, gym
   progress and gym trains. Each switch says what it sends and what torn-tracker.com keeps
   and publishes; nothing goes until you agree. The site never publishes who sent anything,
-  except that a player can see who reported their own loadout.
+  except that a player can see who reported their own loadout. Other players' bazaars are no
+  longer read or shared, since Torn's API change of 10 November 2026.
 - **Company and faction application pages** share nothing, whatever is switched on. There,
   Applicant badges sends torn-tracker.com only the applicants' player ids and which list it is.
 - **Some buttons send what you ask, only when you press them.** Add to list adds or removes

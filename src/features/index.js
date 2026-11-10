@@ -15,7 +15,6 @@ import walletReminder from './wallet-reminder/index.js';
 import muggerBadge from './mugger-badge/index.js';
 import warPage from './war-page/index.js';
 import tradeValue from './trade-value/index.js';
-import bazaarCapture from './bazaar-capture/index.js';
 import ocHelper from './oc-helper/index.js';
 import auctionCapture from './auction-capture/index.js';
 import crimeHelper from './crime-helper/index.js';
@@ -50,7 +49,6 @@ export default [
   muggerBadge,
   shopHighlighter,
   tradeValue,
-  bazaarCapture,
   auctionCapture,
   ocHelper,
   crimeHelper,
