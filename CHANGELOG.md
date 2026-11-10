@@ -9,6 +9,15 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.25 — 2026-11-10
+
+### Added
+
+- The achievement toast offers your card: "Save the card" opens your card image on
+  torn-tracker.com, and "Copy link" puts its link on your clipboard for faction chat or
+  Discord. Nothing is sent or posted unless you paste it. The buttons appear once
+  torn-tracker.com sends the card with the achievements read (hq #786).
+
 ## 0.9.24 — 2026-11-10
 
 ### Added

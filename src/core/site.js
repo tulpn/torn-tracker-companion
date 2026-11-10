@@ -432,7 +432,11 @@ function readAchievement(a) {
  * their notification settings have `pause_all` on or `companion_toasts` off, false when
  * the reply says neither, and null when it carries neither field (an older site), so the
  * last answer stands. A featured entry the reply marks unearned is never shown (HOOK-032).
- * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null, silenced: boolean|null}}
+ *
+ * `card` is the player's card image on our site and the link to send with it (hq #786,
+ * ENG-064): `{ image, link }`, where `image` must be a `/u/<id>/card.png` on our host and
+ * `link` falls back to it. Null when the reply has none (an older site).
+ * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null, silenced: boolean|null, card: object|null}}
  */
 export function readAchievements(data) {
   const unlocked = (Array.isArray(data?.unlocked) ? data.unlocked : []).slice(0, UNLOCKED_MAX).map((a) => {
@@ -448,7 +452,22 @@ export function readAchievements(data) {
     ? data.server_time : null;
   const said = typeof data?.pause_all === 'boolean' || typeof data?.companion_toasts === 'boolean';
   const silenced = said ? data.pause_all === true || data.companion_toasts === false : null;
-  return { unlocked, featured, url, cursor, silenced };
+  return { unlocked, featured, url, cursor, silenced, card: readCard(data?.card) };
+}
+
+const CARD_PATH = /^\/u\/\d{1,10}\/card\.png$/;
+
+/** The unlock toast's card (hq #786): its image on our site, and the link to copy. */
+export function readCard(v) {
+  if (!v || typeof v !== 'object') return null;
+  const image = siteLink(v.image);
+  if (!image) return null;
+  try {
+    if (!CARD_PATH.test(new URL(image).pathname)) return null;
+  } catch {
+    return null;
+  }
+  return { image, link: siteLink(v.link) ?? image };
 }
 
 const trimmed = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
