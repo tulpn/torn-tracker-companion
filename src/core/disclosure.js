@@ -14,7 +14,8 @@
 // `version` goes up whenever the wording of what is shared changes. A player who agreed
 // to an older version shares nothing until they have read the new one and pressed "Share
 // the kinds I picked" again. (The first-run notice's sentence on how to agree followed the
-// panel in hq #454 without a bump: what is shared did not change, only which button.)
+// panel in hq #454 without a bump: what is shared did not change, only which button. The
+// bazaar kind's removal, hq #829, took nothing new and so kept the version too.)
 
 export const DISCLOSURE = Object.freeze({
   version: 10,
@@ -28,7 +29,8 @@ export const DISCLOSURE = Object.freeze({
     'can catch false ones; it never publishes who sent anything, except that a player can see who',
     'reported their own loadout. The site combines what players',
     'send and publishes the result openly, for every player and tool. Switch a kind off here at',
-    'any time to stop sharing it.',
+    "any time to stop sharing it. Since Torn's API change of 10 November 2026, other players'",
+    'bazaars are no longer read or shared.',
   ].join(' '),
   /** kind -> one line saying what that kind shares, shown beside its switch. */
   kinds: Object.freeze({
@@ -69,13 +71,6 @@ export const DISCLOSURE = Object.freeze({
       'changes, and only while the tab is on screen. The site',
       'keeps reports for 90 days and publishes price history per item and bonus.',
     ].join(' '),
-    bazaar_listing: [
-      "On another player's bazaar: their id, and each item they list with its quantity and price",
-      "(and the item's own id where the page shows one), as far as you scroll, at most once per",
-      'bazaar every five minutes and only while the tab is on screen. Never your own bazaar. The',
-      "site keeps reports for 7 days and publishes each player's latest listings openly, and prices",
-      'per item.',
-    ].join(' '),
     foreign_stock: [
       'On a foreign shop while you are abroad: the country, and each item with its stock and price,',
       'empty shelves included, at most once every 30 seconds per country and only while the tab is',
@@ -105,7 +100,6 @@ export const DISCLOSURE = Object.freeze({
     gym_train: 'Each train: the gym, the stat and the gain. Only for you, never published; kept 30 days.',
     crime_outcome: 'Your crime results and what you got. Kept 30 days; only totals are published, never by whom.',
     auction_listing: "Auction listings you see, with the seller's id. Kept 90 days; price history is published.",
-    bazaar_listing: "Another player's bazaar items and prices. Kept 7 days; their latest listings are published.",
     foreign_stock: 'Abroad: a shop\'s stock and prices. Kept 30 days with who sent it; published without names.',
     loadout: "The other player's weapons and armour in an attack. Published openly; they can see you reported it.",
   }),

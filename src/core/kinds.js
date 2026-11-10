@@ -5,7 +5,7 @@
 // did not ask for. So every observation is checked here, field by field, against the
 // same shapes and ranges, and one that does not fit is dropped with a warning rather
 // than queued to spoil a batch. A kind arrives here with the feature that produces it:
-// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings bazaars, auctions, your own crime outcomes and your own gym progress
+// wave 1 brings foreign stock, foreign shop shelves and loadouts; wave 2 brings auctions, your own crime outcomes and your own gym progress
 // (D-073: own view only, never published). NPC loot levels are
 // not captured by the script (D-062: the site takes them from a loot-timer service).
 //
@@ -116,18 +116,6 @@ function marketListing(entry, field) {
     price: int(entry.price, `${field}.price`, 0, MAX_PRICE),
     quantity: int(entry.quantity, `${field}.quantity`, 1, MAX_QUANTITY),
   };
-}
-
-/** One bazaar listing; item_uid only when the page gave the item's own id. */
-function listing(entry, field) {
-  object(entry, field, ['item_id', 'item_uid', 'quantity', 'price']);
-  return optional(entry, {
-    item_id: itemId(entry.item_id, `${field}.item_id`),
-    quantity: int(entry.quantity, `${field}.quantity`, 1, MAX_QUANTITY),
-    price: int(entry.price, `${field}.price`, 0, MAX_PRICE),
-  }, {
-    item_uid: (v) => int(v, `${field}.item_uid`, 1, Number.MAX_SAFE_INTEGER),
-  });
 }
 
 /** A bonus as the page names it; the site maps the name onto its bonus table (hq #91). */
@@ -332,16 +320,7 @@ export const KINDS = Object.freeze({
       hours_left_band: oneOf(d.hours_left_band, 'hours_left_band', ['<1', '1-3', '3-6', '6-12', '12-24', '24+']),
     }),
   },
-  bazaar_listing: {
-    title: 'Bazaar listings',
-    fields: ['owner_id', 'items', 'open', 'complete'],
-    check: (d) => ({
-      owner_id: int(d.owner_id, 'owner_id', 1, Number.MAX_SAFE_INTEGER),
-      items: list(d.items, 'items', 200, listing),
-      open: bool(d.open, 'open'),
-      complete: bool(d.complete, 'complete'),
-    }),
-  },
+
 });
 
 export function isKnownKind(kind) {
