@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.24 — 2026-11-10
+
 ### Added
 
 - Best gain yet, on the gym page: when a train beats your best gain for that stat, one line
