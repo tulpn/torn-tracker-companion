@@ -56,17 +56,34 @@ export function findRow(img) {
   return null;
 }
 
+/** An element's own text: its text children joined, without the text of child elements. */
+function ownText(el) {
+  let text = '';
+  for (const node of el.childNodes) if (node.nodeType === 3) text += node.nodeValue;
+  return text;
+}
+
 /**
- * The price and the deepest element whose own text holds it: the dot and label go there.
- * The price is read from that text alone, because a row's whole text runs "$900" into the
+ * The price and the deepest element that holds it: the dot and label go there. The price
+ * is read from that element alone, because a row's whole text runs "$900" into the
  * "1 available" beside it.
+ *
+ * Live, Torn renders "$" and the number as two text nodes of one element (hq #826: on
+ * the owner's page, 60 listings and no price read), so an element's own text nodes are
+ * joined first. A price split over child elements ("<span>$</span><span>900</span>") is
+ * then found as the first element whose whole text holds a price and none of whose
+ * children does.
  */
 export function findPrice(row) {
-  const doc = row.ownerDocument;
-  const walker = doc.createTreeWalker(row, doc.defaultView.NodeFilter.SHOW_TEXT);
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const price = parsePrice(node.nodeValue);
-    if (price !== null) return { price, el: node.parentElement };
+  const els = [row, ...row.querySelectorAll('*')];
+  for (const el of els) {
+    const price = parsePrice(ownText(el));
+    if (price !== null) return { price, el };
+  }
+  for (const el of els) {
+    if (!PRICE_RE.test(el.textContent)) continue;
+    if ([...el.children].some((child) => PRICE_RE.test(child.textContent))) continue;
+    return { price: parsePrice(el.textContent), el };
   }
   return null;
 }
