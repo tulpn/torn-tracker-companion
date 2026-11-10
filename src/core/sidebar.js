@@ -74,6 +74,7 @@ const STOCKS_URL = `${SITE}/stocks/`;
 // which is what Torn's own war list links to as well.
 export const WAR_PAGE = '/factions.php?step=your#/war/rank';
 export const CRIMES_PAGE = '/factions.php?step=your#/tab=crimes';
+export const SHARING_PAGE = '/index.php#/torn-tracker/sharing';
 
 const STYLE = `
   ${followTorn(`#${BLOCK_ID}`)}
@@ -315,7 +316,7 @@ export function readLine(want, result) {
  */
 export function mountSidebarBlock({
   doc = globalThis.document, site, getSettings, onMutation, store, timers = doc.defaultView || globalThis, now = Date.now,
-  watch = null, onWatch = null,
+  watch = null, onWatch = null, sharingPaused = () => false,
 }) {
   addStyle(doc);
   const h = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
@@ -473,6 +474,14 @@ export function mountSidebarBlock({
     const want = askedItems(settings);
     const showLinks = settings.sidebar.items.links === true;
     const rows = [];
+    // hq #758: ticked kinds are held until the player agrees to the new wording. The line
+    // only says so and opens the Sharing screen; agreeing is the player's press there.
+    if (sharingPaused(settings)) {
+      rows.push(h('div', { class: `${P}-sb-row`, 'data-ttc-sharing-paused': '' },
+        h('span', { class: `${P}-sb-alert` }, 'Sharing is paused:'),
+        ' what is shared is worded differently since you agreed. ',
+        link(SHARING_PAGE, 'Read and agree')));
+    }
     // hq #721: the site asked every read to wait; the block says so rather than look stuck.
     if (pausedUntil > now() && want.length) {
       rows.push(h('div', { class: `${P}-sb-row ${P}-sb-muted`, 'data-ttc-paused': '' }, 'Paused, retrying in ',

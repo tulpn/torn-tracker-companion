@@ -9,14 +9,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
-### Fixed
+## 0.9.20 — 2026-11-10
 
-- The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
-  retired the old `loader.php` one (hq #753). Pages reached through an old link are still
-  recognised.
-- On Torn PDA the sidebar's dots, link arrows and toggle no longer show as stray characters
-  (`Â·`, `â` and boxes): the published script is now plain ASCII, so it reads the same
-  whatever text encoding the app assumes (hq #756).
+### Added
+
+- When what is shared has been reworded since you agreed, the sidebar and the settings
+  page's header now say that sharing is paused, with a "Read and agree" link to the Sharing
+  screen. Nothing is agreed for you: sharing resumes only once you press "Share the kinds I
+  picked" there (hq #758).
 
 ## 0.9.19 — 2026-11-09
 
@@ -25,6 +25,15 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
   companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
   that comes with its own switch and wording in a later release.
+
+### Fixed
+
+- The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
+  retired the old `loader.php` one (hq #753). Pages reached through an old link are still
+  recognised.
+- On Torn PDA the sidebar's dots, link arrows and toggle no longer show as stray characters
+  (`Â·`, `â` and boxes): the published script is now plain ASCII, so it reads the same
+  whatever text encoding the app assumes (hq #756).
 
 ## 0.9.18 — 2026-11-09
 

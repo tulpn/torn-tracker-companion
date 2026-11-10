@@ -160,3 +160,11 @@ export function shareRefusal(settings, kind, disclosure = DISCLOSURE) {
 export function isShared(settings, kind, disclosure = DISCLOSURE) {
   return shareRefusal(settings, kind, disclosure) === null;
 }
+
+/**
+ * hq #758: a kind is ticked but held because the wording changed since the player agreed.
+ * The sidebar and the panel's header say so; only the player's own press agrees (D-072).
+ */
+export function sharingPaused(settings, disclosure = DISCLOSURE) {
+  return Object.keys(settings?.shares || {}).some((kind) => shareRefusal(settings, kind, disclosure) === 'wording changed');
+}

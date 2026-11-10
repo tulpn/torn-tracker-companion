@@ -984,3 +984,49 @@ describe('hq #675 the raven mark in the settings page header', () => {
     assert.doesNotMatch(t.$('.ttc-head').textContent, /\bTT\b/);
   });
 });
+
+describe('hq #758 the header says when sharing is paused, and the way to agree', () => {
+  const stale = () => {
+    const settings = { ...defaults(createRegistry([descriptor()])), sharingConsent: WORDED.version - 1 };
+    settings.shares.loadout = true;
+    return settings;
+  };
+
+  test('a ticked kind and a changed wording: the strip shows, linking to Sharing', () => {
+    const t = mount({ settings: stale() });
+    t.open('features');
+    const strip = t.$('.ttc-banned');
+    assert.equal(strip.hidden, false);
+    assert.equal(strip.dataset.paused, 'true');
+    assert.match(strip.textContent, /Sharing is paused.*worded differently since you agreed/);
+    assert.equal(strip.querySelector('a[data-act="to-consent"]').getAttribute('href'), '#/torn-tracker/sharing');
+  });
+
+  test('arriving on Sharing focuses the consent button; agreeing clears the strip', async () => {
+    const t = mount({ settings: stale() });
+    t.open('sharing');
+    assert.equal(t.root.activeElement, t.$('button[data-act="consent"]'));
+    t.click(t.$('button[data-act="consent"]'));
+    await settle();
+    assert.equal(t.saves.at(-1).settings.sharingConsent, WORDED.version);
+    assert.equal(t.$('.ttc-banned').hidden, true);
+  });
+
+  test('the link, pressed while already on Sharing, still takes the focus there', () => {
+    const t = mount({ settings: stale() });
+    t.open('sharing');
+    t.$('#ttc-search')?.focus();
+    t.click(t.$('.ttc-banned a[data-act="to-consent"]'));
+    assert.equal(t.root.activeElement, t.$('button[data-act="consent"]'));
+  });
+
+  test('never agreed, or no kind ticked: no strip, and nothing is agreed for the player', () => {
+    for (const settings of [defaults(createRegistry([descriptor()])),
+      { ...defaults(createRegistry([descriptor()])), sharingConsent: WORDED.version - 1 }]) {
+      const t = mount({ settings });
+      t.open('sharing');
+      assert.equal(t.$('.ttc-banned').hidden, true);
+      assert.equal(t.saves.length, 0);
+    }
+  });
+});

@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
-  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, nextLoot, placementOf, readLine,
+  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, SHARING_PAGE, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, nextLoot, placementOf, readLine,
 } from '../../src/core/sidebar.js';
 import { readRoutine, readSidebar, tornPath } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
@@ -80,7 +80,7 @@ function fakeTimers() {
 
 // The older tests below were written for the Lists place; the four places have their own
 // describe (hq #507).
-function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null, kept } = {}) {
+function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ...readSidebar(FULL, Object.keys(FULL), 0) }, change, open, watch = null, onWatch = null, kept, paused } = {}) {
   dom.resetObserver();
   const { window } = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, { url: 'https://www.torn.com/' });
   windows.push(window);
@@ -114,6 +114,7 @@ function mount({ position = 'lists', html = DESKTOP, answer = { status: 'ok', ..
     now: () => clock,
     watch,
     onWatch,
+    ...(paused === undefined ? {} : { sharingPaused: (s) => paused(s) }),
   });
   const node = () => window.document.getElementById(BLOCK_ID);
   return {
@@ -1087,5 +1088,36 @@ describe('hq #557 17 the loot line shows the next NPC only', () => {
     const now = Date.UTC(2026, 9, 23, 12);
     assert.equal(nextLoot([{ name: 'A', level: 5, nextAt: null }, { name: 'B', level: 5, nextAt: null }], now).name, 'A');
     assert.equal(nextLoot([{ name: 'A', level: 3, nextAt: now - 1 }, { name: 'B', level: 2, nextAt: now + 5 }], now).name, 'B');
+  });
+});
+
+describe('hq #758 the block says when sharing is paused by a changed wording', () => {
+  test('paused: one line with a link to the Sharing screen, above the rows', async () => {
+    const t = mount({ paused: () => true });
+    await settle();
+    const line = t.node().querySelector('[data-ttc-sharing-paused]');
+    assert.ok(line);
+    assert.match(line.textContent, /^Sharing is paused: what is shared is worded differently since you agreed. Read and agree$/);
+    assert.equal(line.querySelector('a').getAttribute('href'), SHARING_PAGE);
+    assert.equal(line.querySelector('a').target, '', 'Torn’s own page, same tab');
+    assert.equal(t.node().querySelector('.ttc-sb-body').firstElementChild, line);
+  });
+
+  test('it shows even with every item off, and goes once agreed', async () => {
+    let paused = true;
+    const t = mount({ paused: () => paused, change: (s) => { for (const id of Object.keys(s.sidebar.items)) s.sidebar.items[id] = false; } });
+    await settle();
+    assert.equal(t.node().hidden, false);
+    assert.ok(t.node().querySelector('[data-ttc-sharing-paused]'));
+    paused = false;
+    t.block.update();
+    assert.equal(t.node().querySelector('[data-ttc-sharing-paused]'), null);
+    assert.equal(t.node().hidden, true, 'nothing else to show');
+  });
+
+  test('not paused: no line', async () => {
+    const t = mount();
+    await settle();
+    assert.equal(t.node().querySelector('[data-ttc-sharing-paused]'), null);
   });
 });
