@@ -202,6 +202,38 @@ describe('hq #826 the scan says where it stopped', () => {
       <div class="priceAndTotal___Enq_i"><span>$${price.toLocaleString('en-US')}</span><span class="titleTotal___Vcj9r"> (1,204)</span></div></div>
   </div></li>`;
 
+  /**
+   * Splits every "$430" text node into "$" and "430", as Torn's React renders `${price}`
+   * live: the serialized capture shows them joined (the owner's line on hq #826: 60
+   * listings, 0 prices).
+   */
+  const splitPrices = (doc) => {
+    const walker = doc.createTreeWalker(doc.body, doc.defaultView.NodeFilter.SHOW_TEXT);
+    const texts = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) if (/^\s*\$\d/.test(node.nodeValue)) texts.push(node);
+    for (const node of texts) node.splitText(node.nodeValue.indexOf('$') + 1);
+    return texts.length;
+  };
+
+  test('live markup: "$" and the number are two text nodes; every listing is still read and marked', async () => {
+    const r = run({ html: capturedPage('item-market-listings.html'), url: CAPTURED, site: spyCamera(600) });
+    assert.ok(splitPrices(r.doc) >= 9);
+    await wait();
+    assert.equal(r.doc.querySelectorAll('[data-ttc-shop]').length, 5);
+    const dots = [...r.doc.querySelectorAll('[data-ttc-shop-dot]')];
+    assert.deepEqual(dots.map((d) => d.textContent), ['$430', '$430', '$540', '$550', '$599']);
+    assert.match(dots[1].className, /^price___/);
+    assert.match(lines(r)[0], /^shop highlighter: marked; .* 9 item images, 9 listings, 9 prices, 0 with no shop price, 5 below a shop price, 5 marked;/);
+  });
+
+  test('a price split over child elements is found on the element holding both', async () => {
+    const r = run({ html: page(listing(206, 900).replace('>$900<', '><span>$</span><span>900</span><')), url: MARKET, site: fakeSite() });
+    await wait();
+    const price = rows(r)[0].querySelector("[class*='price___']");
+    assert.equal(price.getAttribute('data-ttc-shop-dot'), 'blue');
+    assert.equal(price.getAttribute('data-ttc-shop-label'), '+100');
+  });
+
   test('captured listings with default settings: the tile and every seller below the shop price are marked', async () => {
     const r = run({ html: capturedPage('item-market-listings.html'), url: CAPTURED, site: spyCamera(600) });
     await wait();

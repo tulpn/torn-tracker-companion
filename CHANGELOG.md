@@ -9,6 +9,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The shop price highlighter marks Item Market listings again. Torn's page writes the
+  "$" and the number as two separate pieces of text, so the highlighter found every
+  listing but read no price, and marked nothing. It now reads the price either way
+  (hq #826).
+
 ## 0.9.21 — 2026-11-10
 
 ### Fixed
