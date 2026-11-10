@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.21 — 2026-11-10
+
 ### Fixed
 
 - The shop price highlighter now says, with the debug log on, where each scan stopped: how
