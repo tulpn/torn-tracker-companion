@@ -92,7 +92,8 @@ export default {
   area: 'other',
   guide: 'racing-templates',
   summary: 'Save custom race settings as templates and fill the race form from one.',
-  routes: ['loader.php?sid=racing', 'page.php?sid=racing'],
+  // loader.php is matched only, never built (D-245).
+  routes: ['page.php?sid=racing', 'loader.php?sid=racing'],
   defaults: { enabled: true },
   data: { empty: { templates: [] }, validate: validateTemplates },
   shares: [],

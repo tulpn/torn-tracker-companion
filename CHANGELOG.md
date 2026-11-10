@@ -11,11 +11,20 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ### Fixed
 
-- The price filler no longer takes item id 0 from a row's image, and the market snapshot no
-  longer keeps a quantity too large to count exactly. Property tests now cover the sell form
-  and item market extractors and the read gate's stored record (hq #733).
-- A sidebar answer the site sends again from its minute's cache is dated by its age, so
-  "updated" reads true and the next read lands on a fresh answer (hq #737).
+- The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
+  retired the old `loader.php` one (hq #753). Pages reached through an old link are still
+  recognised.
+- On Torn PDA the sidebar's dots, link arrows and toggle no longer show as stray characters
+  (`Â·`, `â` and boxes): the published script is now plain ASCII, so it reads the same
+  whatever text encoding the app assumes (hq #756).
+
+## 0.9.19 — 2026-11-09
+
+### Changed
+
+- Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
+  companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
+  that comes with its own switch and wording in a later release.
 
 ## 0.9.18 — 2026-11-09
 
@@ -27,6 +36,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   as it says, and the sidebar block shows "Paused, retrying in …". A list your account can't
   read (the war brief without a faction, for example) is asked once an hour at most, not on
   every page (hq #721).
+- The price filler no longer takes item id 0 from a row's image, and the market snapshot no
+  longer keeps a quantity too large to count exactly. Property tests now cover the sell form
+  and item market extractors and the read gate's stored record (hq #733).
+- A sidebar answer the site sends again from its minute's cache is dated by its age, so
+  "updated" reads true and the next read lands on a fresh answer (hq #737).
 
 ### Removed
 

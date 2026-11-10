@@ -17,6 +17,13 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = join(ROOT, 'dist');
 const NAME = 'torn-tracker-companion';
 
+// Writes every non-ASCII UTF-16 unit as \uXXXX. The escape means the same character in a
+// string, a template, a regex literal (with or without the u flag, as a surrogate pair)
+// and an identifier, and is plain text in a comment, so the result runs exactly as before.
+export function toAscii(code) {
+  return code.replace(/[^\x00-\x7f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+}
+
 export async function buildScript({ outdir = DIST } = {}) {
   const pkg = JSON.parse(await readFile(join(ROOT, 'package.json'), 'utf8'));
   const { default: meta } = await import(`file://${join(ROOT, 'src', 'meta.js')}`);
@@ -32,7 +39,10 @@ export async function buildScript({ outdir = DIST } = {}) {
     format: 'iife',
     target: 'es2022',
     platform: 'browser',
-    charset: 'utf8',
+    // ASCII-only output (hq #756): Torn PDA reads the script as single-byte text, so a raw
+    // UTF-8 character showed as mojibake. esbuild escapes strings and templates; toAscii()
+    // below catches what it leaves raw (comments, regex literals).
+    charset: 'ascii',
     minify: false,
     legalComments: 'inline',
     // The runtime reads its own version from here; uploads carry it as script_version
@@ -41,6 +51,8 @@ export async function buildScript({ outdir = DIST } = {}) {
     banner: { js: `${header.trimEnd()}\n${LICENCE_NOTICE}` },
     logLevel: 'warning',
   });
+
+  await writeFile(userScript, toAscii(await readFile(userScript, 'utf8')), 'utf8');
 
   const metaScript = join(outdir, `${NAME}.meta.js`);
   await writeFile(metaScript, header, 'utf8');
