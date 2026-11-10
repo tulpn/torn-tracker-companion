@@ -9,6 +9,16 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.21 — 2026-11-10
+
+### Fixed
+
+- The shop price highlighter now says, with the debug log on, where each scan stopped: how
+  many shop prices it has and where they came from, how many item images, listings and
+  prices it found, how many listings are below a shop price, how many it marked, and the
+  lowest tier's minimum. It writes one line each time these numbers change. Before this,
+  it wrote nothing, so "nothing marked" could not be explained (hq #826).
+
 ## 0.9.20 — 2026-11-10
 
 ### Added
