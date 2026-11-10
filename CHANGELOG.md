@@ -16,6 +16,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   screen. Nothing is agreed for you: sharing resumes only once you press "Share the kinds I
   picked" there (hq #758).
 
+## 0.9.19 — 2026-11-09
+
+### Changed
+
+- Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
+  companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
+  that comes with its own switch and wording in a later release.
+
 ### Fixed
 
 - The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
@@ -24,14 +32,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - On Torn PDA the sidebar's dots, link arrows and toggle no longer show as stray characters
   (`Â·`, `â` and boxes): the published script is now plain ASCII, so it reads the same
   whatever text encoding the app assumes (hq #756).
-
-## 0.9.19 — 2026-11-09
-
-### Changed
-
-- Groundwork for sharing the results of your own attacks with the war centre (hq #746): the
-  companion now knows exactly which fields the site will accept. Nothing is read or sent yet;
-  that comes with its own switch and wording in a later release.
 
 ## 0.9.18 — 2026-11-09
 
