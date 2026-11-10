@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
 import { READ_EVERY_MS, SHOW_MS, TOAST_ID, cleanState, createUnlocks } from '../../src/core/unlocks.js';
-import { ACHIEVEMENTS_URL, createSite, readAchievements } from '../../src/core/site.js';
+import { ACHIEVEMENTS_URL, createSite, readAchievements, readCard } from '../../src/core/site.js';
 import { createCache } from '../../src/core/cache.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, normalize } from '../../src/core/settings.js';
@@ -353,5 +353,61 @@ describe('HOOK-016 in Settings → General', () => {
     assert.match(panel.panel.querySelector('[data-achievements-quiet]').textContent, /pause all is on, or companion toasts are off/);
     panel.destroy?.();
     silenced = false;
+  });
+});
+
+describe('hq #786 keep this one: the card from the unlock toast', () => {
+  const CARD = { image: 'https://torn-tracker.com/u/12345/card.png?src=unlock', link: 'https://torn-tracker.com/u/12345/?ref=abc' };
+
+  test('the card is read field by field: an image on our host at /u/<id>/card.png, and a link that falls back to it', () => {
+    assert.deepEqual(readCard(CARD), CARD);
+    assert.deepEqual(readCard({ image: '/u/12345/card.png' }), { image: 'https://torn-tracker.com/u/12345/card.png', link: 'https://torn-tracker.com/u/12345/card.png' });
+    assert.deepEqual(readCard({ image: CARD.image, link: 'https://evil.example/' }).link, CARD.image);
+    for (const bad of [null, 'x', { image: 'https://evil.example/u/1/card.png' }, { image: 'https://torn-tracker.com/u/1/sig.png' },
+      { image: 'https://torn-tracker.com/u/x/card.png' }, { link: CARD.link }]) {
+      assert.equal(readCard(bad), null, JSON.stringify(bad));
+    }
+    assert.equal(readAchievements({}).card, null, 'an older site sends none');
+    assert.deepEqual(readAchievements({ card: CARD }).card, CARD);
+  });
+
+  test('with a card, the toast offers Save the card and Copy link; Copy puts the link on the clipboard and nothing is sent', async () => {
+    const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
+    const r = rig({ stored: { cursor: iso(T0 - 1000), readAt: T0 - READ_EVERY_MS }, replies: [ok({ unlocked, card: CARD })] });
+    const copied = [];
+    Object.defineProperty(r.window.navigator, 'clipboard', { value: { writeText: async (t) => { copied.push(t); } }, configurable: true });
+    await r.unlocks.load();
+    await r.visit();
+    const toast = r.toast();
+    const save = [...toast.querySelectorAll('a')].find((a) => a.textContent === 'Save the card');
+    assert.equal(save.getAttribute('href'), CARD.image);
+    assert.equal(save.getAttribute('target'), '_blank');
+    assert.ok(save.hasAttribute('download'));
+    const copy = [...toast.querySelectorAll('button')].find((b) => b.textContent === 'Copy link');
+    copy.dispatchEvent(new r.window.Event('click'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(copied, [CARD.link]);
+    assert.equal(copy.textContent, 'Copied');
+    assert.deepEqual(r.asked.length, 1, 'no read or send beyond the one achievements read');
+  });
+
+  test('no clipboard: the link is shown to copy by hand', async () => {
+    const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
+    const r = rig({ stored: { cursor: iso(T0 - 1000), readAt: T0 - READ_EVERY_MS }, replies: [ok({ unlocked, card: CARD })] });
+    Object.defineProperty(r.window.navigator, 'clipboard', { value: undefined, configurable: true });
+    await r.unlocks.load();
+    await r.visit();
+    [...r.toast().querySelectorAll('button')].find((b) => b.textContent === 'Copy link').dispatchEvent(new r.window.Event('click'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(r.toast().querySelector('textarea').value, CARD.link);
+  });
+
+  test('without a card, the toast is as before', async () => {
+    const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
+    const r = rig({ stored: { cursor: iso(T0 - 1000), readAt: T0 - READ_EVERY_MS }, replies: [ok({ unlocked })] });
+    await r.unlocks.load();
+    await r.visit();
+    assert.equal(r.toast().querySelector('.ttc-unlock-card'), null);
+    assert.equal(r.toast().querySelectorAll('a').length, 1);
   });
 });
