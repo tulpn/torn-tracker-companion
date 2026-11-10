@@ -22,6 +22,7 @@ export default {
   area: 'crimes',
   guide: 'crime-helpers',
   summary: 'Lets you share your own crime outcomes (switch it on under Sharing).',
+  // loader.php is matched only, never built (D-245).
   routes: ['page.php?sid=crimes', 'loader.php?sid=crimes'],
   defaults: { enabled: true },
   shares: ['crime_outcome'],

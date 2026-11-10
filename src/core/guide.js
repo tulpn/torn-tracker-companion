@@ -12,6 +12,8 @@
 import { matchRoute } from './routes.js';
 
 /** Pages it never asks on: an attack in progress. */
+// loader.php is kept for matching only, never built: Torn retired it, but a member may
+// still arrive on an old link (D-245, hq #753).
 const NEVER = ['loader.php?sid=attack', 'page.php?sid=attack'];
 
 /** What the strip shows for an answer: the next step, the offer, or nothing. */

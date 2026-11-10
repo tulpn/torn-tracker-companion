@@ -22,6 +22,8 @@ import { checkTour, runTour, stepId, typing } from './tour.js';
 export const PENDING_MS = 10 * 60_000;
 const WAIT_MS = 15_000;
 /** Pages a tour never starts on by itself: an attack in progress. */
+// loader.php is kept for matching only, never built: Torn retired it, but a member may
+// still arrive on an old link (D-245, hq #753).
 const NEVER = ['loader.php?sid=attack', 'page.php?sid=attack'];
 
 export const TOURS = Object.freeze([

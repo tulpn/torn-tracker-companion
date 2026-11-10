@@ -334,10 +334,10 @@ describe('CMP-108 AC3 links are plain navigation', () => {
     await settle();
     const hrefs = [...t.node().querySelectorAll('a')].map((a) => a.getAttribute('href'));
     assert.ok(hrefs.includes('/profiles.php?XID=7'));
-    assert.ok(hrefs.includes('/loader.php?sid=attack&user2ID=9'));
+    assert.ok(hrefs.includes('/page.php?sid=attack&user2ID=9'));
     assert.ok(hrefs.includes('https://torn-tracker.com/war/'));
     for (const href of hrefs) {
-      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/loader\.php\?sid=attack&user2ID=\d+|\/factions\.php\?step=your#\/(war\/rank|tab=crimes)$|https:\/\/torn-tracker\.com\/)/, href);
+      assert.match(href, /^(\/profiles\.php\?XID=\d+|\/page\.php\?sid=attack&user2ID=\d+|\/factions\.php\?step=your#\/(war\/rank|tab=crimes)$|https:\/\/torn-tracker\.com\/)/, href);
     }
   });
 });
@@ -918,7 +918,7 @@ describe('hq #599 RDB-081 the routine badge', () => {
   });
 
   test('the feed is read line by line: a line that does not fit is dropped, never another host', () => {
-    assert.equal(tornPath('https://www.torn.com/loader.php?sid=missions'), '/loader.php?sid=missions');
+    assert.equal(tornPath('https://www.torn.com/page.php?sid=missions'), '/page.php?sid=missions');
     assert.equal(tornPath('https://evil.example/bank.php'), null);
     assert.equal(tornPath('//evil.example/x'), null);
     assert.equal(tornPath('javascript:alert(1)'), null);
@@ -926,7 +926,7 @@ describe('hq #599 RDB-081 the routine badge', () => {
       lines: [
         line('bank', 'No bank investment', false, 'https://evil.example/bank.php'),
         line('Bad Key', 'x', false, '/bank.php'),
-        line('missions', '', false, '/loader.php?sid=missions'),
+        line('missions', '', false, '/page.php?sid=missions'),
         line('nerve', 'Nerve refill unused', 'no', '/points.php'),
         line('ok', 'Kept', false, '/points.php'),
       ],

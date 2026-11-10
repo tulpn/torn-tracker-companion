@@ -400,7 +400,7 @@ export function mountSidebarBlock({
     terms: (t) => row(h('b', null, 'Terms'), ` ${t.label}`),
     partner: (p) => row(h('b', null, 'Med-out partner'), ' ', link(`/profiles.php?XID=${p.id}`, p.name)),
     dibs: (rows) => row(h('b', null, 'My dibs'), ...rows.flatMap((d, i) => [
-      i ? ' · ' : ' ', link(`/loader.php?sid=attack&user2ID=${d.id}`, d.name), ' ', until(d.expiresAt, 'expired')])),
+      i ? ' · ' : ' ', link(`/page.php?sid=attack&user2ID=${d.id}`, d.name), ' ', until(d.expiresAt, 'expired')])),
     // hq #541: the line opens the crimes tab; a crime in planning counts down to ready_at.
     // An unstarted crime past its expiry reads expired (CAPI-039), and one with no ready time
     // counts down to it; the next read says what Torn did with it.

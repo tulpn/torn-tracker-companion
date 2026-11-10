@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Fixed
+
+- The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
+  retired the old `loader.php` one (hq #753). Pages reached through an old link are still
+  recognised.
+
 ## 0.9.19 — 2026-11-09
 
 ### Changed
