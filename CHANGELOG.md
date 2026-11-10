@@ -14,6 +14,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
   retired the old `loader.php` one (hq #753). Pages reached through an old link are still
   recognised.
+- On Torn PDA the sidebar's dots, link arrows and toggle no longer show as stray characters
+  (`Â·`, `â` and boxes): the published script is now plain ASCII, so it reads the same
+  whatever text encoding the app assumes (hq #756).
 
 ## 0.9.19 — 2026-11-09
 

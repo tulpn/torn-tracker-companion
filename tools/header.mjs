@@ -8,7 +8,7 @@ import { ICON_48 } from '../src/data/icon.js';
 // GPLv3 asks for the notice to travel with the file, not only with the repository.
 // The `!` keeps esbuild's legal-comment handling from dropping it.
 export const LICENCE_NOTICE = `/*!
- * Torn Tracker Companion — https://github.com/tulpn/torn-tracker-companion
+ * Torn Tracker Companion - https://github.com/tulpn/torn-tracker-companion
  * Copyright (C) 2026 tulpn
  *
  * @license GPL-3.0-or-later
