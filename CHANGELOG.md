@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.22 — 2026-11-10
+
 ### Fixed
 
 - The shop price highlighter marks Item Market listings again. Torn's page writes the
