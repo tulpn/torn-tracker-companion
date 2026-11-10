@@ -9,6 +9,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Added
+
+- Best gain yet, on the gym page: when a train beats your best gain for that stat, one line
+  says so ("+1,204 Strength. Your best single train since 3 Nov."), with a Copy button for
+  chat. Your bests stay on this device and are never shared. The first train of a stat only
+  starts its record. Switch it off in the gym helper's options (hq #800).
+
 ## 0.9.23 — 2026-11-10
 
 ### Removed
