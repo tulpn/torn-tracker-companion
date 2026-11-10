@@ -2,7 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createRegistry } from '../../src/core/registry.js';
-import { defaults, isEnabled, isShared, normalize } from '../../src/core/settings.js';
+import { defaults, isEnabled, isShared, normalize, sharingPaused } from '../../src/core/settings.js';
 import { UNWORDED, WORDED, descriptor } from '../fixtures.js';
 
 const registry = createRegistry([
@@ -177,5 +177,25 @@ describe('hq #507 where the sidebar block sits', () => {
       assert.equal(normalize({ sidebar: { position: bad, enabled: true } }, registry).sidebar.position, 'top', String(bad));
     }
     assert.equal(normalize({ sidebar: { position: 'lists', moved: 'yes' } }, registry).sidebar.moved, false);
+  });
+});
+
+describe('hq #758 sharing is paused only by a changed wording with a kind ticked', () => {
+  const registry = createRegistry([descriptor()]);
+  const with_ = (consent, ticked) => {
+    const s = { ...defaults(registry), sharingConsent: consent };
+    s.shares = { ...s.shares, loadout: ticked };
+    return s;
+  };
+  test('an older agreement and a ticked kind: paused', () => {
+    assert.equal(sharingPaused(with_(WORDED.version - 1, true), WORDED), true);
+  });
+  test('no kind ticked, never agreed, or agreed to this wording: not paused', () => {
+    assert.equal(sharingPaused(with_(WORDED.version - 1, false), WORDED), false);
+    assert.equal(sharingPaused(with_(0, true), WORDED), false);
+    assert.equal(sharingPaused(with_(WORDED.version, true), WORDED), false);
+  });
+  test('a kind with no wording yet does not count', () => {
+    assert.equal(sharingPaused(with_(UNWORDED.version - 1, true), UNWORDED), false);
   });
 });

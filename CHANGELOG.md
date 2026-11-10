@@ -9,6 +9,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Added
+
+- When what is shared has been reworded since you agreed, the sidebar and the settings
+  page's header now say that sharing is paused, with a "Read and agree" link to the Sharing
+  screen. Nothing is agreed for you: sharing resumes only once you press "Share the kinds I
+  picked" there (hq #758).
+
 ### Fixed
 
 - The sidebar's "My dibs" links open the attack page at its new address (`page.php`): Torn
