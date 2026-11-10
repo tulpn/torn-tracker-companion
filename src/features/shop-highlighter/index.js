@@ -13,7 +13,7 @@
 // companion's settings page and its count to the sidebar block; its decoration (Torn's
 // own nodes get attributes, never children) is kept as it was.
 
-import { setProfitable } from '../../core/shops.js';
+import { BUILT_IN, setProfitable } from '../../core/shops.js';
 import { ensureStyle } from '../../core/ui.js';
 import { TIERS, findPrice, findRow, isChrome, itemIdOfImage, judge, parseQty, short, tierKey } from './scan.js';
 import { settler } from '../../core/dom.js';
@@ -107,6 +107,33 @@ function decorate(row, img, id, { price, el: priceEl }, qty, entry, settings) {
   return true;
 }
 
+/** Where a scan stopped, for the debug line: the first step that found nothing. */
+export function stoppedAt(n) {
+  if (!n.images) return 'no item images outside the filters';
+  if (!n.rows) return 'no listing row around the images';
+  if (!n.prices) return 'no price in the listing rows';
+  if (!n.below) return 'no listing below a shop price';
+  if (!n.marked) return 'no listing reaches the lowest tier';
+  return 'marked';
+}
+
+/**
+ * The debug line for one scan (hq #826): the table, what the page read found, how many
+ * listings are below a shop price and how many got a mark, the mode and its lowest tier.
+ */
+export function scanLine(n, table, settings) {
+  const pct = settings.mode === 'pct';
+  const lowest = settings[tierKey(pct ? 'pct' : 'abs', TIERS[TIERS.length - 1])];
+  const min = pct ? `${lowest}%` : money(lowest);
+  return [
+    `shop highlighter: ${stoppedAt(n)};`,
+    `${table.size} shop prices (${table === BUILT_IN ? 'built-in' : 'site'}),`,
+    `${n.images} item images, ${n.rows} listings, ${n.prices} prices,`,
+    `${n.unknown} with no shop price, ${n.below} below a shop price, ${n.marked} marked;`,
+    `by ${pct ? 'margin' : 'profit'}, lowest tier ${min}`,
+  ].join(' ');
+}
+
 export default {
   id: 'shop-highlighter',
   wave: 1,
@@ -132,30 +159,48 @@ export default {
   start(ctx) {
     const { doc } = ctx;
     const timers = ctx.win || globalThis;
-    const s = { doc, timers, table: null, rev: 0, settle: null, stopWatching: null };
+    const s = { doc, timers, table: null, rev: 0, settle: null, stopWatching: null, told: '' };
     state = s;
     const alive = () => state === s;
     ensureStyle(doc);
 
+    /** With debug on, the scan's numbers, once each time they change (hq #826). */
+    function note(text) {
+      if (s.told === text) return;
+      s.told = text;
+      ctx.log(text);
+    }
+
     function scan() {
-      if (!s.table || onAddListing(ctx.win?.location)) return;
-      let count = 0;
+      if (!s.table) return;
+      if (onAddListing(ctx.win?.location)) {
+        note('shop highlighter: the add-listing form, nothing is listed here');
+        return;
+      }
+      const n = { images: 0, rows: 0, prices: 0, unknown: 0, below: 0, marked: 0 };
       for (const img of doc.querySelectorAll("img[src*='/images/items/']")) {
         const id = itemIdOfImage(img);
         if (!id || isChrome(img)) continue;
+        n.images++;
         const row = findRow(img);
         if (!row) continue;
+        n.rows++;
         const found = findPrice(row);
         if (!found?.price) continue;
+        n.prices++;
+        const entry = s.table.get(id);
+        if (!entry) n.unknown++;
+        else if (found.price < entry.price) n.below++;
         const qty = parseQty(row.textContent.replace(found.el.textContent, ' '));
         const sig = `${id}:${found.price}:${qty}:${s.rev}`;
         if (row.dataset.ttcShopSig !== sig) {
           row.dataset.ttcShopSig = sig;
-          decorate(row, img, id, found, qty, s.table.get(id), ctx.settings);
+          decorate(row, img, id, found, qty, entry, ctx.settings);
         }
-        if (row.hasAttribute(ROW)) count++;
+        if (row.hasAttribute(ROW)) n.marked++;
       }
-      setProfitable(count);
+      setProfitable(n.marked);
+      note(scanLine(n, s.table, ctx.settings));
     }
 
     const later = () => {
