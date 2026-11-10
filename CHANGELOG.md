@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.25 — 2026-11-10
+
 ### Added
 
 - The achievement toast offers your card: "Save the card" opens your card image on
