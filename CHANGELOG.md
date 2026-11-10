@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.20 — 2026-11-10
+
 ### Added
 
 - When what is shared has been reworded since you agreed, the sidebar and the settings
