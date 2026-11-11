@@ -16,6 +16,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - Award countdown: on Torn's awards page, a note names the award you're closest to, from
   the dashboard read the companion already makes. When torn-tracker.com sends your pace, it
   names the next two and the day you'll reach the first ("At your pace: Thursday") (hq #785).
+- The dashboard inside Torn leads its awards card with the same lines, once torn-tracker.com
+  sends your pace (hq #785).
 
 ### Changed
 

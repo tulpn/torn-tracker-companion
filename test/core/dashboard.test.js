@@ -284,6 +284,22 @@ describe('hq #465 the page', () => {
     assert.match(root.querySelector('[data-card="education"]').textContent, /Studying Example course/);
   });
 
+  test('hq #785: the awards card leads with the next crossings at the member pace, when the site sends them', async () => {
+    const plain = await opened(siteRig().site);
+    assert.doesNotMatch(plain.root.querySelector('[data-card="awards"]').textContent, /your next award/, 'no next rows, no pace line');
+    const data = copy();
+    data.awards.next = [
+      { id: 7, kind: 'honor', name: 'Bar Breaker', remaining: 3, unit: 'busts', eta_days: 1, url: 'https://www.torn-tracker.com/awards/next/' },
+      { id: 8, kind: 'medal', name: 'Mile High', remaining: 17, unit: 'trips', eta_days: null, url: 'https://evil.example/' },
+    ];
+    const { root } = await opened(siteRig({ reply: () => ({ ok: true, status: 200, data }) }).site);
+    const lines = [...root.querySelectorAll('[data-card="awards"] p')].map((p) => p.textContent).slice(0, 2);
+    assert.deepEqual(lines, ['3 busts to your next award, Bar Breaker. At your pace: tomorrow.', '17 trips to the one after, Mile High.']);
+    const links = [...root.querySelectorAll('[data-card="awards"] p a')];
+    assert.equal(links.length, 1, 'a link off our site is dropped, the name stays');
+    assert.equal(links[0].href, 'https://www.torn-tracker.com/awards/next/');
+  });
+
   test('hq #491 part 2: a scheduled war says when it starts', async () => {
     const data = copy();
     data.war.state = 'scheduled';

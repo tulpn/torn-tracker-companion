@@ -13,46 +13,15 @@
 
 import { el, settler } from '../../core/dom.js';
 import { strip } from '../../core/ui.js';
+import { countdownNodes } from '../../core/awards.js';
+
+export { countdown, dayText } from '../../core/awards.js';
 
 const MARK = 'ttc-award-next';
 export const PANEL = "[role='tabpanel']";
 const SETTLE_MS = 300;
-const DAY_MS = 86_400_000;
 
 let state = null;
-
-/** "today", "tomorrow", a weekday within the week, else "on 21 Nov", in the player's local time. */
-export function dayText(etaDays, now = Date.now()) {
-  if (etaDays === 0) return 'today';
-  if (etaDays === 1) return 'tomorrow';
-  const day = new Date(now + etaDays * DAY_MS);
-  if (etaDays <= 6) return day.toLocaleDateString('en-GB', { weekday: 'long' });
-  return `on ${day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
-}
-
-const amountText = (n) => n.toLocaleString('en-US');
-
-/**
- * What the strip says, from the dashboard's checked `awards` card: the next crossings at
- * the player's pace when the site sends them, else the award nearest completion.
- * @returns {{lines: Array<{lead: string, name: string, tail: string, url: string|null}>}|null}
- */
-export function countdown(card, now = Date.now()) {
-  if (!card) return null;
-  if (card.next?.length) {
-    const lines = card.next.map((a, i) => {
-      const unit = a.unit ? ` ${a.unit}` : '';
-      const lead = `${amountText(a.remaining)}${unit} to ${i === 0 ? 'your next award' : 'the one after'}, `;
-      const tail = a.etaDays == null ? '.' : `. At your pace: ${dayText(a.etaDays, now)}.`;
-      return { lead, name: a.name, tail, url: a.url };
-    });
-    return { lines };
-  }
-  const a = card.nearest?.[0];
-  if (!a) return null;
-  const detail = a.detail ?? `${Math.floor(a.pct)}% done`;
-  return { lines: [{ lead: 'Closest to earning: ', name: a.name, tail: `, ${detail}.`, url: a.url }] };
-}
 
 export default {
   id: 'award-countdown',
@@ -75,14 +44,7 @@ export default {
     state = s;
     const alive = () => state === s;
 
-    function build(said) {
-      return strip(doc, { cls: MARK, tone: 'info' },
-        ...said.lines.map((line) => el('div', { ownerDocument: doc }, line.lead,
-          line.url
-            ? el('a', { href: line.url, target: '_blank', rel: 'noopener noreferrer', ownerDocument: doc }, line.name)
-            : el('strong', { ownerDocument: doc }, line.name),
-          line.tail)));
-    }
+    const make = (tag, attrs, ...children) => el(tag, { ...attrs, ownerDocument: doc }, ...children);
 
     // Torn redraws the panel when the tab changes, which can take the strip with it:
     // put it back above whichever panel shows.
@@ -93,7 +55,7 @@ export default {
       const box = doc.querySelector(`.${MARK}`);
       if (box && box.nextElementSibling === panel) return;
       box?.remove();
-      panel.before(build(s.said));
+      panel.before(strip(doc, { cls: MARK, tone: 'info' }, ...s.said));
     }
 
     const own = (n) => Boolean((n.nodeType === 1 ? n : n.parentElement)?.closest?.(`.${MARK}`));
@@ -104,8 +66,8 @@ export default {
       if (!ctx.site?.dashboard) return;
       const answer = await ctx.site.dashboard();
       if (!alive() || answer?.status !== 'ok') return;
-      s.said = countdown(answer.cards?.get('awards') ?? null, now());
-      if (!s.said) return;
+      s.said = countdownNodes(answer.cards?.get('awards') ?? null, now(), make, 'div');
+      if (!s.said.length) return;
       s.settle = settler(place, SETTLE_MS, { timers: win });
       s.stopWatching = ctx.dom.onMutation((records) => {
         if (!records.every(ours)) s.settle.poke();
