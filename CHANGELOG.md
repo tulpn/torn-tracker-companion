@@ -18,6 +18,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   Discord. Nothing is sent or posted unless you paste it. The buttons appear once
   torn-tracker.com sends the card with the achievements read (hq #786).
 
+### Changed
+
+- Every field the companion adds has autocomplete off, so the browser offers no saved
+  values or suggestions there, and the key fields ask not to be saved as a password (hq #850).
+
 ### Fixed
 
 - The shop price highlighter no longer reads a "$" followed only by commas as a price of

@@ -143,3 +143,14 @@ describe('ownChange: our own re-renders are ours', () => {
     assert.deepEqual(records.map((r) => ownChange(r, '.ttc-x')), [true, true, false]);
   });
 });
+
+describe('hq #850 the browser offers no suggestions on our fields', () => {
+  test('every input, textarea and form el() builds has autocomplete off; other tags none', () => {
+    const doc = page();
+    for (const tag of ['input', 'textarea', 'form', 'INPUT']) {
+      assert.equal(el(tag, { ownerDocument: doc }).getAttribute('autocomplete'), 'off', tag);
+    }
+    assert.equal(el('input', { type: 'password', ownerDocument: doc }).getAttribute('autocomplete'), 'off');
+    assert.equal(el('div', { ownerDocument: doc }).hasAttribute('autocomplete'), false);
+  });
+});

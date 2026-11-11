@@ -1030,3 +1030,22 @@ describe('hq #758 the header says when sharing is paused, and the way to agree',
     }
   });
 });
+
+describe('hq #850 no field on the settings page lets the browser suggest or save', () => {
+  test('every input, textarea and form in every section has autocomplete off', () => {
+    const t = mount();
+    t.open();
+    const slugs = [...t.panel.panel.querySelectorAll('nav a[data-tab]')].map((a) => a.getAttribute('href').split('/').pop());
+    let seen = 0;
+    for (const slug of slugs) {
+      t.open(slug);
+      for (const field of t.root.querySelectorAll('input, textarea, form')) {
+        seen += 1;
+        assert.equal(field.getAttribute('autocomplete'), 'off', `${slug}: ${field.outerHTML.slice(0, 80)}`);
+      }
+    }
+    assert.ok(seen > 10, `only ${seen} fields seen`);
+    t.open('keys');
+    assert.equal(t.root.querySelector('input[data-key=script]').type, 'password', 'key fields stay hidden');
+  });
+});
