@@ -238,6 +238,8 @@ describe('WP-UX-8 the unlock toast', () => {
   test('what’s stored is checked field by field, and "Forget me" clears it', async () => {
     assert.deepEqual(cleanState({ cursor: 'soon', readAt: T0 + 1, featured: [{ id: 'X Y', name: 'n', tier: null }, { id: 'ok', name: 'Fine', tier: 'gold' }] }, T0),
       { cursor: null, readAt: 0, featured: [{ id: 'ok', name: 'Fine', tier: 'gold' }], silenced: false });
+    // hq #846: a name of only spaces is no name, here as in the site's reply.
+    assert.deepEqual(cleanState({ featured: [{ id: 'blank', name: '   ', tier: null }] }, T0).featured, []);
     assert.deepEqual(cleanState('junk'), { cursor: null, readAt: 0, featured: [], silenced: false });
     const r = rig({ stored: { cursor: iso(T0), featured: [{ id: 'ok', name: 'Fine', tier: 'gold' }] } });
     await r.unlocks.load();

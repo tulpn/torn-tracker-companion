@@ -79,7 +79,7 @@ function addStyle(doc) {
 export const ACHIEVEMENT_DEFAULTS = Object.freeze({ toast: true, featured: true });
 
 const featuredOf = (list) => (Array.isArray(list) ? list : []).slice(0, 5)
-  .filter((a) => typeof a?.id === 'string' && ID.test(a.id) && typeof a.name === 'string' && a.name && a.name.length <= 64
+  .filter((a) => typeof a?.id === 'string' && ID.test(a.id) && typeof a.name === 'string' && a.name.trim() && a.name.length <= 64
     && (a.tier === null || TIERS.includes(a.tier)))
   .map((a) => ({ id: a.id, name: a.name, tier: a.tier }));
 
