@@ -144,6 +144,25 @@ describe('CMP-030 the lint catches what Torn forbids', () => {
   });
 });
 
+describe('hq #850 the lint keeps autocomplete off on every field', () => {
+  test('a field made with createElement, outside core/dom.js', async () => {
+    assert.deepEqual(await rulesFor("const i = document.createElement('input');"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("const t = doc.createElement('TEXTAREA');"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("const f = doc.createElement('form');"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("const i = document.createElement('input');", 'src/core/dom.js'), []);
+    assert.deepEqual(await rulesFor("const d = document.createElement('div');"), []);
+  });
+
+  test('autocomplete set to anything but "off"', async () => {
+    assert.deepEqual(await rulesFor("el('input', { autocomplete: 'on' });"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("el('input', { autocomplete: 'current-password' });"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor('el(\'input\', { autocomplete: mode });'), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("node.autocomplete = 'on';"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("node.setAttribute('autocomplete', 'email');"), ['autocomplete-off']);
+    assert.deepEqual(await rulesFor("el('input', { autocomplete: 'off' }); node.setAttribute('autocomplete', 'off');"), []);
+  });
+});
+
 describe('CMP-030 the lint leaves honest code alone', () => {
   test('the two allowed hosts pass', async () => {
     assert.deepEqual(await rulesFor("fetch('https://api.torn.com/user/?selections=profile');"), []);

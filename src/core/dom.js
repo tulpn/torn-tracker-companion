@@ -130,10 +130,18 @@ export function waitFor(selector, { root = globalThis.document, timeout = 10000 
   });
 }
 
+/**
+ * Fields the browser would offer saved values on. Every one we build has autocomplete off
+ * (hq #850): no suggestions while typing, and a key field never offered to the password
+ * manager as a Torn password. The rules lint keeps them all coming through here.
+ */
+const NO_AUTOCOMPLETE = new Set(['input', 'textarea', 'form']);
+
 /** Builds an element. Children are text nodes or elements, never parsed markup. */
 export function el(tag, attrs, ...children) {
   const doc = attrs?.ownerDocument || globalThis.document;
   const node = doc.createElement(tag);
+  if (NO_AUTOCOMPLETE.has(String(tag).toLowerCase())) node.setAttribute('autocomplete', 'off');
   for (const [key, value] of Object.entries(attrs || {})) {
     if (value == null || value === false || key === 'ownerDocument') continue;
     if (key === 'checked' || key === 'selected' || key === 'hidden' || key === 'disabled') node[key] = value;
