@@ -25,6 +25,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 - Short money figures round up into the next unit: $999,999 reads "$1m", not "$1000k", in
   the highlighter's labels, the sidebar and travel panel lines, and the auction value
   badges (hq #845).
+- A name, gym, crime or item that torn-tracker.com sends as blank space is treated as
+  missing, so a sidebar line never shows an empty name; ids too large to hold exactly are
+  refused (hq #846).
 
 ## 0.9.24 — 2026-11-10
 
