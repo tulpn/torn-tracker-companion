@@ -95,7 +95,8 @@ const RETRY_FAILED_MS = 60_000;
 const REST_MAX_MS = HOUR;
 const BAND = 40;
 
-const positiveInt = (v) => Number.isInteger(v) && v > 0;
+// A safe integer only (hq #846): past 2^53 two ids can read as one.
+const positiveInt = (v) => Number.isSafeInteger(v) && v > 0;
 /** An address without its query, for the console. */
 const pathOnly = (url) => String(url).split('?')[0];
 
@@ -145,8 +146,8 @@ export function validPrice(v) {
 
 const NAME = 64;
 
-/** Torn's player names are short; anything else is not a name. */
-const validName = (v) => typeof v === 'string' && v.length > 0 && v.length <= NAME;
+/** Torn's player names are short; anything else is not a name. Blank is no name (hq #846). */
+const validName = (v) => typeof v === 'string' && v.trim().length > 0 && v.length <= NAME;
 
 /**
  * One claim from CAPI-034, turned to the local clock.
@@ -193,7 +194,7 @@ export function readRun(r, skew = 0) {
   const lands = typeof r?.lands_at === 'string' ? Date.parse(r.lands_at) : NaN;
   const hours = typeof r?.hours === 'number' && Number.isFinite(r.hours) && r.hours > 0 && r.hours < 100 ? r.hours : null;
   const stops = Array.isArray(r?.stops) && r.stops.every((c) => typeof c === 'string' && /^[a-z-]{2,20}$/.test(c)) ? r.stops.slice(0, 3) : null;
-  if (!country || !positiveInt(r.item_id) || typeof r.item_name !== 'string' || !r.item_name || r.item_name.length > 60) return null;
+  if (!country || !positiveInt(r.item_id) || typeof r.item_name !== 'string' || !r.item_name.trim() || r.item_name.length > 60) return null;
   if (!positiveInt(r.quantity) || whole(r.profit_per_hour) === null || !Number.isFinite(lands) || hours === null) return null;
   return {
     country,
@@ -206,7 +207,7 @@ export function readRun(r, skew = 0) {
     profit_per_hour: r.profit_per_hour,
     hours,
     lands_at: lands - skew,
-    accuracy: typeof r.accuracy === 'string' && r.accuracy.length <= 20 ? r.accuracy : null,
+    accuracy: typeof r.accuracy === 'string' && r.accuracy.trim() && r.accuracy.length <= 20 ? r.accuracy : null,
     data_age_s: whole(r.data_age_s),
   };
 }
@@ -340,7 +341,7 @@ const SIDEBAR_READERS = {
     return rows.length ? rows : null;
   },
   oc(v, skew) {
-    if (!positiveInt(v?.crime_id) || typeof v.name !== 'string' || !v.name || v.name.length > OC_NAME) return null;
+    if (!positiveInt(v?.crime_id) || typeof v.name !== 'string' || !v.name.trim() || v.name.length > OC_NAME) return null;
     if (!OC_STATES.includes(v.state) || typeof v.needs_me !== 'boolean') return null;
     return {
       name: v.name, state: v.state, readyAt: v.ready_at == null ? null : time(v.ready_at, skew), needsMe: v.needs_me,
@@ -364,7 +365,7 @@ const SIDEBAR_READERS = {
   gym(v) {
     // At the last gym there is no next one: the site sends both as null.
     if (v?.next_gym === null && v.percent === null) return { nextGym: null, percent: null, energy: null };
-    if (typeof v?.next_gym !== 'string' || !v.next_gym || v.next_gym.length > 40 || !percent_(v.percent)) return null;
+    if (typeof v?.next_gym !== 'string' || !v.next_gym.trim() || v.next_gym.length > 40 || !percent_(v.percent)) return null;
     return { nextGym: v.next_gym, percent: v.percent, energy: count(v.energy_to_next, 1e7) ? v.energy_to_next : null };
   },
   routine: (v, skew) => readRoutine(v, skew),
