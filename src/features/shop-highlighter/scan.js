@@ -6,7 +6,8 @@
 // by its item image and the nearest "$1,234" text, and is decorated through attributes
 // only, so no node is ever inserted into Torn's listing markup.
 
-export const PRICE_RE = /\$\s?([\d,]+)/;
+// A price starts with a digit: "$," alone is no price, never $0 (hq #845).
+export const PRICE_RE = /\$\s?(\d[\d,]*)/;
 const IMG_ID_RE = /\/images\/items\/(\d+)\//;
 // "x 12", "12x", "qty 12", "quantity: 12": the digits must not be part of a price.
 const QTY_RE = /(?:^|[^\w$])x\s?(\d[\d,]*)|(?:^|[^$\d,])(\d[\d,]*)\s?x(?!\w)|\b(?:qty|quantity)\s*:?\s*(\d[\d,]*)/i;
@@ -105,11 +106,18 @@ export function judge(price, shopPrice, settings) {
 
 const trimZeros = (s) => (s.includes('.') ? s.replace(/\.?0+$/, '') : s);
 
-/** 12.5k, 1.25m, 3b. */
+/** Each unit with the decimals it is shown with, smallest first. */
+const UNITS = [[1e3, 'k', 1], [1e6, 'm', 2], [1e9, 'b', 2]];
+
+/**
+ * 12.5k, 1.25m, 3b. A number is shown in the smallest unit that keeps it under 1000 once
+ * rounded, so 999,999 reads "1m", never "1000k" (hq #845).
+ */
 export function short(n) {
-  const a = Math.abs(n);
-  if (a >= 1e9) return `${trimZeros((n / 1e9).toFixed(2))}b`;
-  if (a >= 1e6) return `${trimZeros((n / 1e6).toFixed(2))}m`;
-  if (a >= 1e3) return `${trimZeros((n / 1e3).toFixed(1))}k`;
+  if (Math.abs(Math.round(n)) < 1e3) return String(Math.round(n));
+  for (const [size, suffix, digits] of UNITS) {
+    const s = (n / size).toFixed(digits);
+    if (Math.abs(Number(s)) < 1e3 || suffix === 'b') return `${trimZeros(s)}${suffix}`;
+  }
   return String(Math.round(n));
 }

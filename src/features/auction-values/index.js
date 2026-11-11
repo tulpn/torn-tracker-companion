@@ -17,13 +17,21 @@ const SETTLE_MS = 600;
 
 let state = null;
 
-/** $27.4m, $950k, $1.2b, $800. */
+const UNITS = [[1e3, 'k'], [1e6, 'm'], [1e9, 'b']];
+
+/**
+ * $27.4m, $950k, $1.2b, $800. The smallest unit that keeps the rounded figure under 1000,
+ * so 999,999 reads "$1m", never "$1000k" (hq #845).
+ */
 export function short(n) {
-  const units = [[1e9, 'b'], [1e6, 'm'], [1e3, 'k']];
-  for (const [size, unit] of units) {
-    if (n >= size) return `$${(n / size).toFixed(n >= size * 100 ? 0 : 1).replace(/\.0$/, '')}${unit}`;
+  if (n < 1e3) return `$${n}`;
+  let out = '';
+  for (const [size, unit] of UNITS) {
+    const s = (n / size).toFixed(n >= size * 100 ? 0 : 1).replace(/\.0$/, '');
+    out = `$${s}${unit}`;
+    if (Number(s) < 1e3) break;
   }
-  return `$${n}`;
+  return out;
 }
 
 /** The badge's text and tooltip for one estimate. */
