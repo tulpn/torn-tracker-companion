@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.26 — 2026-11-11
+
 ### Changed
 
 - Every field the companion adds has autocomplete off, so the browser offers no saved
