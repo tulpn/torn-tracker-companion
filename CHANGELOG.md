@@ -9,6 +9,11 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Changed
+
+- A clean day shows in the sidebar: with every routine line done, the count turns into a
+  tick and the line reads "Clean day: all 5 done" (hq #793).
+
 ## 0.9.26 — 2026-11-11
 
 ### Changed

@@ -115,6 +115,7 @@ const STYLE = `
     min-width: 18px; padding: 0 5px; border-radius: 999px; text-align: center;
     background: var(--primary); color: var(--primary-foreground); font: 700 12px/18px var(--tt-font-sans);
   }
+  #${BLOCK_ID} .${P}-sb-clean { display: inline-block; background: color-mix(in srgb, var(--tt-success) 18%, transparent); color: var(--tt-success); }
   #${BLOCK_ID} .${P}-sb-list { margin: 2px 0 0; padding: 0 0 0 14px; }
   #${BLOCK_ID} .${P}-sb-list li { padding: 1px 0; }
   #${BLOCK_ID} .${P}-sb-switch {
@@ -435,7 +436,12 @@ export function mountSidebarBlock({
   function routineLine(r) {
     if (r.keyNeeded) return row(h('b', null, 'Routine'), ' ', link(r.url, 'add your API key on torn-tracker.com', true));
     if (!r.lines.length) return null;
-    if (r.undone === 0) return row(h('b', null, 'Routine'), h('span', { class: `${P}-sb-muted` }, ` all ${r.lines.length} done today`));
+    // A clean day (ENG-071, hq #793): every line done, so the count turns into a tick. The
+    // words carry it; the tick is only for the eye.
+    if (r.undone === 0) {
+      return row(h('b', null, 'Routine'), ' ', h('span', { class: `${P}-sb-badge ${P}-sb-clean`, 'aria-hidden': 'true' }, '✓'),
+        ` Clean day: all ${r.lines.length} done`);
+    }
     const resets = r.endsAt && r.endsAt > now() ? ` · resets in ${roughly(r.endsAt - now())}` : '';
     const button = h('button', {
       type: 'button', class: `${P}-sb-routine`, 'aria-expanded': String(routineOpen),
