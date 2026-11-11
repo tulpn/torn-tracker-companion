@@ -907,11 +907,25 @@ describe('hq #599 RDB-081 the routine badge', () => {
     assert.match(t.node().querySelector('.ttc-sb-list li').textContent, /^No bank investment · 2h old$/);
   });
 
-  test('all done says so; no key on the site links to where to add one', async () => {
+  test('all done is a clean day: the badge turns into a tick (hq #793, ENG-071)', async () => {
     const done = withRoutine({ ...ROUTINE, lines: ROUTINE.lines.map((l) => ({ ...l, done: true })) });
     await settle();
-    assert.equal(done.node().querySelector('.ttc-sb-badge'), null);
-    assert.ok([...done.node().querySelectorAll('.ttc-sb-row')].some((r) => /^Routine all 5 done today$/.test(r.textContent)));
+    const tick = done.node().querySelector('.ttc-sb-badge');
+    assert.equal(tick.textContent, '✓');
+    assert.ok(tick.classList.contains('ttc-sb-clean'));
+    assert.equal(tick.getAttribute('aria-hidden'), 'true', 'the words say it; a reader is not read a bare tick');
+    assert.equal(done.node().querySelector('.ttc-sb-routine'), null, 'nothing left to list, so no button');
+    assert.ok([...done.node().querySelectorAll('.ttc-sb-row')].some((r) => /^Routine ✓ Clean day: all 5 done$/.test(r.textContent)));
+  });
+
+  test('one line left is no clean day: the count stays', async () => {
+    const t = withRoutine({ ...ROUTINE, lines: ROUTINE.lines.map((l, i) => ({ ...l, done: i > 0 })) });
+    await settle();
+    assert.equal(t.node().querySelector('.ttc-sb-badge').textContent, '1');
+    assert.equal(t.node().querySelector('.ttc-sb-clean'), null);
+  });
+
+  test('no key on the site links to where to add one', async () => {
     const keyless = withRoutine({ key_needed: true, casino_off: false, url: 'https://torn-tracker.com/me/routine/' });
     await settle();
     const a = [...keyless.node().querySelectorAll('.ttc-sb-row a')].find((x) => /API key/.test(x.textContent));
