@@ -12,7 +12,6 @@
 // No open-source script reads these lists' markup, so applicants are found by their
 // profile links in the page's main content. A capture should confirm where badges land.
 
-import { ownIdFrom } from '../bazaar-capture/read.js';
 import { badge as uiBadge } from '../../core/ui.js';
 import { settler } from '../../core/dom.js';
 
@@ -23,6 +22,18 @@ const SETTLE_MS = 400;
 // hq #557 E35: green for a good fit, amber for a poor one, plain otherwise; never red or blue.
 const TONE = { good: 'good', fair: 'neutral', poor: 'warn' };
 const FIT = { good: 'good fit', fair: 'fair fit', poor: 'poor fit' };
+
+/** The logged-in player's id from the page's `uid` cookie, or null. */
+export function ownIdFrom(cookie) {
+  for (const part of String(cookie || '').split(';')) {
+    const [name, value] = part.trim().split('=');
+    if (name === 'uid') {
+      const id = Number(value);
+      return Number.isInteger(id) && id > 0 ? id : null;
+    }
+  }
+  return null;
+}
 
 let state = null;
 

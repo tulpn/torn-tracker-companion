@@ -6,6 +6,8 @@
 // previous one, both from the page's own answers). torn-tracker.com uses them only for
 // your own gym view and never publishes them. In Torn's welcome box, one line gives the
 // site's estimate of the energy still to the next gym, labelled as an estimate (hq #610).
+// A train that beats your best gain for its stat gets a line there too, with a Copy button;
+// the bests stay on this device (hq #800, best.js).
 //
 // Nothing is trained, switched or clicked: only what the page showed and answered.
 //
@@ -15,10 +17,13 @@
 
 import { answerShape, lineSpot, listShape, progressText, readActive, readInitial, readProgress, readStatuses, readTrain, whyNoProgress } from './read.js';
 import { gymStep } from './selectors.js';
-import { settler } from '../../core/dom.js';
+import { bestText, validateBest, withTrain } from './best.js';
+import { el, settler } from '../../core/dom.js';
+import { bar as uiBar, button as uiButton } from '../../core/ui.js';
 import { shownByOther } from '../../core/neighbours.js';
 
 const MARK = 'ttc-gym';
+const BEST = 'ttc-gym-best';
 const SETTLE_MS = 500;
 
 let state = null;
@@ -31,8 +36,12 @@ export default {
   guide: 'gym-progress',
   summary: 'About how much energy is left to your next gym, from your own progress.',
   routes: ['gym.php'],
-  defaults: { enabled: true },
+  defaults: { enabled: true, bestGain: true },
+  options: {
+    bestGain: { label: 'A line when a train beats your best gain for that stat (kept on this device only)' },
+  },
   shares: ['gym_progress', 'gym_train'],
+  data: { empty: { best: {} }, validate: validateBest },
   needs: { apiKey: false, scriptKey: true },
   credits: ['TornTools (GPLv3)', 'Auto gym switch (MIT)'],
 
@@ -92,6 +101,41 @@ export default {
       ctx.share('gym_progress', { gym_id: progress.gym_id, percent: progress.percent });
     }
 
+    // A new best: one line under the progress line, until the next train (hq #800).
+    async function noteBest(stat, gained) {
+      if (ctx.settings?.bestGain === false) return;
+      const at = (ctx.now || Date.now)();
+      let beaten = null;
+      const update = (fresh) => {
+        const result = withTrain(fresh, stat, gained, at);
+        beaten = result.beaten;
+        return result.data;
+      };
+      if (ctx.saveData) await ctx.saveData(update);
+      if (!alive()) return;
+      doc.querySelector(`.${BEST}`)?.remove();
+      const spot = lineSpot(doc);
+      if (!beaten || !spot) return;
+      const text = bestText(stat, beaten.gain, beaten.since);
+      const copy = uiButton(doc, { small: true }, 'Copy');
+      copy.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          await win.navigator.clipboard.writeText(text);
+          copy.textContent = 'Copied';
+        } catch {
+          // No clipboard (an old WebView, or permission refused): show it to copy by hand.
+          const area = el('textarea', { readonly: true, ownerDocument: doc });
+          area.value = text;
+          node.append(area);
+          area.select();
+        }
+      });
+      const node = uiBar(doc, { cls: BEST, attrs: { 'data-ttc-own': '' } }, el('strong', { ownerDocument: doc }, text), copy);
+      spot.parent.insertBefore(node, spot.before);
+    }
+
     async function refreshEstimate() {
       if (!ctx.site?.meGym) return;
       const answer = await ctx.site.meGym();
@@ -130,6 +174,8 @@ export default {
         // The gain from the answer's message; else the new value less the one before.
         const gained = train.gain ?? (before !== undefined && train.value > before ? train.value - before : null);
         const gymId = s.active || readActive(doc);
+        if (gained === null) doc.querySelector(`.${BEST}`)?.remove();
+        else noteBest(train.stat, Math.round(gained * 100) / 100).catch((err) => ctx.log('gym best', err));
         if (gained === null) {
           ctx.log(before === undefined
             ? `gym_train: not shared (the answer's message named no gain, and no ${train.stat} value from before this train)`
@@ -149,7 +195,7 @@ export default {
       }
     }, ctx.win);
 
-    const ours = (r) => ctx.dom.ownChange(r, `.${MARK}`);
+    const ours = (r) => ctx.dom.ownChange(r, `.${MARK}, .${BEST}`);
     // A page that never goes quiet (a clock, a chat, another script) still gets read (hq #466).
     s.settle = settler(look, SETTLE_MS, { timers: win });
     s.stopWatching = ctx.dom.onMutation((records) => {
@@ -167,6 +213,6 @@ export default {
     s.unsubscribe?.();
     s.stopWatching?.();
     s.settle?.cancel();
-    for (const node of s.doc.querySelectorAll(`.${MARK}`)) node.remove();
+    for (const node of s.doc.querySelectorAll(`.${MARK}, .${BEST}`)) node.remove();
   },
 };

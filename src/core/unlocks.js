@@ -2,7 +2,10 @@
 //
 // A small toast on the Torn page the player is on when torn-tracker.com says they earned
 // an achievement: its name, its tier and one sentence, with a link to the achievement on
-// the site, where Share is. Nothing is ever shared from here. Its switch is under
+// the site, where Share is. Nothing is ever shared from here. When the reply carries the
+// player's card, the toast offers "Save the card" (the image on torn-tracker.com, opened in
+// a new tab) and "Copy link" (onto the clipboard, for faction chat or Discord); nothing is
+// sent or posted unless the player pastes it (hq #786, ENG-064). Its switch is under
 // Settings → General. The featured achievements still come with the read and are kept,
 // but the settings header no longer shows them (hq #489): they live on the in-Torn
 // dashboard and the site.
@@ -51,7 +54,9 @@ const STYLE = `
   #${TOAST_ID} .${P}-unlock-name { display: block; margin: 2px 0; font-weight: 700; font-size: 14px; }
   #${TOAST_ID} .${P}-unlock-tier { margin-left: 6px; padding: 0 7px; border-radius: 999px; font: 600 12px/16px var(--tt-font-sans); background: color-mix(in srgb, var(--tt-warning) 18%, transparent); }
   #${TOAST_ID} .${P}-unlock-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
-  #${TOAST_ID} a { color: var(--ring); font-weight: 600; }
+  #${TOAST_ID} a, #${TOAST_ID} .${P}-unlock-copy { color: var(--ring); font-weight: 600; }
+  #${TOAST_ID} .${P}-unlock-copy { padding: 0; border: 0; background: transparent; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+  #${TOAST_ID} .${P}-unlock-copy:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   #${TOAST_ID} .${P}-unlock-x {
     position: absolute; top: 2px; right: 2px; width: 44px; height: 44px; border: 0; cursor: pointer;
     background: transparent; color: var(--muted-foreground); font-size: 16px;
@@ -74,7 +79,7 @@ function addStyle(doc) {
 export const ACHIEVEMENT_DEFAULTS = Object.freeze({ toast: true, featured: true });
 
 const featuredOf = (list) => (Array.isArray(list) ? list : []).slice(0, 5)
-  .filter((a) => typeof a?.id === 'string' && ID.test(a.id) && typeof a.name === 'string' && a.name && a.name.length <= 64
+  .filter((a) => typeof a?.id === 'string' && ID.test(a.id) && typeof a.name === 'string' && a.name.trim() && a.name.length <= 64
     && (a.tier === null || TIERS.includes(a.tier)))
   .map((a) => ({ id: a.id, name: a.name, tier: a.tier }));
 
@@ -116,7 +121,7 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
   }
 
   /** The toast: the first new achievement, and how many more came with it. */
-  function show(unlocked, url) {
+  function show(unlocked, url, card = null) {
     hide();
     addStyle(doc);
     const first = unlocked[0];
@@ -130,6 +135,7 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
       h('span', { class: `${P}-unlock-links` },
         h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, more > 0 ? `See all ${unlocked.length}` : 'See it and share'),
         more > 0 ? h('span', null, `and ${more} more`) : null),
+      card ? cardLinks(card) : null,
       close);
     close.addEventListener('click', hide);
     // It stays while the pointer or focus is on it, and goes on its own otherwise.
@@ -143,6 +149,27 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     toast.addEventListener('focusout', wait);
     showToast(doc, toast);
     wait();
+  }
+
+  /** "Save the card" and "Copy link": the player's own buttons, nothing sent by itself. */
+  function cardLinks(card) {
+    const copy = h('button', { type: 'button', class: `${P}-unlock-copy` }, 'Copy link');
+    const row = h('span', { class: `${P}-unlock-links ${P}-unlock-card` },
+      h('a', { href: card.image, target: '_blank', rel: 'noopener noreferrer', download: '' }, 'Save the card'),
+      copy);
+    copy.addEventListener('click', async () => {
+      try {
+        await doc.defaultView.navigator.clipboard.writeText(card.link);
+        copy.textContent = 'Copied';
+      } catch {
+        // No clipboard (an old WebView, or permission refused): show it to copy by hand.
+        const area = h('textarea', { readonly: true });
+        area.value = card.link;
+        row.append(area);
+        area.select();
+      }
+    });
+    return row;
   }
 
   async function ask(loc) {
@@ -162,7 +189,7 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     changed.forEach((fn) => fn());
     // The first read only marks where the next one starts.
     if (!first && !silenced && result.unlocked.length && switches().toast && !NEVER.some((route) => matchRoute(route, loc))) {
-      show(result.unlocked, result.url);
+      show(result.unlocked, result.url, result.card ?? null);
     }
   }
 

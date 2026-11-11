@@ -24,7 +24,7 @@
 
 import { ageCss, ageNode, repaintAges } from './age.js';
 import { brandMark } from './brand.js';
-import { el, ownChange, settler } from './dom.js';
+import { el, ownChange, settler, shortMoney } from './dom.js';
 import { log } from './log.js';
 import { SITE } from '../hosts.js';
 import { OURS, SIDEBAR } from './entry.js';
@@ -156,11 +156,7 @@ export function roughly(ms) {
 }
 
 const thousands = (n) => n.toLocaleString('en-US');
-const short = (n) => {
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1).replace(/\.0$/, '')}m`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(1).replace(/\.0$/, '')}k`;
-  return `$${n}`;
-};
+const short = shortMoney;
 
 /** The items the read is asked for: switched on, not the static quick links, not local. */
 export function askedItems(settings) {

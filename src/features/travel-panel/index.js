@@ -6,7 +6,7 @@
 // It takes no game action: nothing is booked, bought or clicked.
 
 import { SITE } from '../../hosts.js';
-import { el } from '../../core/dom.js';
+import { el, shortMoney } from '../../core/dom.js';
 import { strip } from '../../core/ui.js';
 
 const MARK = 'ttc-runs';
@@ -23,12 +23,8 @@ let state = null;
 
 const countryName = (key) => COUNTRY[key] || key;
 
-/** $13.5k, $950, $1.2m: short money for a line. */
-export function short(n) {
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1).replace(/\.0$/, '')}m`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(1).replace(/\.0$/, '')}k`;
-  return `$${n}`;
-}
+/** $13.5k, $950, $1.2m: short money for a line (one helper with the sidebar's). */
+export const short = shortMoney;
 
 /** 14:20 in Torn time (UTC). */
 export function tct(ms) {

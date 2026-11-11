@@ -9,6 +9,46 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.25 — 2026-11-10
+
+### Added
+
+- The achievement toast offers your card: "Save the card" opens your card image on
+  torn-tracker.com, and "Copy link" puts its link on your clipboard for faction chat or
+  Discord. Nothing is sent or posted unless you paste it. The buttons appear once
+  torn-tracker.com sends the card with the achievements read (hq #786).
+
+### Fixed
+
+- The shop price highlighter no longer reads a "$" followed only by commas as a price of
+  $0, which could mark a listing as a big bargain (hq #845).
+- Short money figures round up into the next unit: $999,999 reads "$1m", not "$1000k", in
+  the highlighter's labels, the sidebar and travel panel lines, and the auction value
+  badges (hq #845).
+- A name, gym, crime or item that torn-tracker.com sends as blank space is treated as
+  missing, so a sidebar line never shows an empty name; ids too large to hold exactly are
+  refused (hq #846).
+
+## 0.9.24 — 2026-11-10
+
+### Added
+
+- Best gain yet, on the gym page: when a train beats your best gain for that stat, one line
+  says so ("+1,204 Strength. Your best single train since 3 Nov."), with a Copy button for
+  chat. Your bests stay on this device and are never shared. The first train of a stat only
+  starts its record. Switch it off in the gym helper's options (hq #800).
+
+## 0.9.23 — 2026-11-10
+
+### Removed
+
+- Bazaar listings are no longer shared. After Torn's API change of 10 November 2026, the
+  script stopped reading other players' bazaars: the bazaar capture and its "Bazaar
+  listings" switch under Sharing are gone, and a switch you had turned on is dropped. What
+  else you share is unchanged, and you don't need to agree again. The price filler, the
+  undersell warning and the wallet reminder on your own bazaar's add and manage pages stay
+  (hq #829).
+
 ## 0.9.22 — 2026-11-10
 
 ### Fixed
