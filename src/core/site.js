@@ -762,6 +762,7 @@ const cardUrl = (v) => {
 const ALERT_KIND = /^[a-z][a-z0-9_.-]{0,59}$/;
 const ALERTS_MAX = 10;
 const AWARDS_MAX = 5;
+const AWARDS_NEXT_MAX = 2;
 const AWARD_KINDS = Object.freeze(['honor', 'medal']);
 const amount = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e15;
 
@@ -896,7 +897,18 @@ const DASHBOARD_READERS = {
         detail: textOrNull(a.detail, 40), url: cardUrl(a.url),
       };
     });
-    return nearest.length ? { nearest } : null;
+    // Optional (hq #785): the next crossings at the member's own pace, soonest first.
+    // `etaDays` null is "no pace yet"; a row that doesn't fit is dropped, never guessed.
+    const next = listOf(v?.next, AWARDS_NEXT_MAX, (a) => {
+      if (!positiveInt(a?.id) || !AWARD_KINDS.includes(a.kind) || !validName(a.name) || !positiveInt(a.remaining)) return null;
+      const eta = a.eta_days;
+      if (eta != null && !(Number.isInteger(eta) && eta >= 0 && eta <= 3650)) return null;
+      return {
+        id: a.id, kind: a.kind, name: a.name, remaining: a.remaining, unit: textOrNull(a.unit, 20),
+        etaDays: eta ?? null, url: cardUrl(a.url),
+      };
+    });
+    return nearest.length || next.length ? { nearest, next } : null;
   },
 };
 
