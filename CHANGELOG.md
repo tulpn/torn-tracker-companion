@@ -18,6 +18,14 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   Discord. Nothing is sent or posted unless you paste it. The buttons appear once
   torn-tracker.com sends the card with the achievements read (hq #786).
 
+### Fixed
+
+- The shop price highlighter no longer reads a "$" followed only by commas as a price of
+  $0, which could mark a listing as a big bargain (hq #845).
+- Short money figures round up into the next unit: $999,999 reads "$1m", not "$1000k", in
+  the highlighter's labels, the sidebar and travel panel lines, and the auction value
+  badges (hq #845).
+
 ## 0.9.24 — 2026-11-10
 
 ### Added

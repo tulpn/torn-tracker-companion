@@ -166,6 +166,21 @@ export function readMoney(text) {
   return Math.round(Number(m[1]) * scale);
 }
 
+const oneDecimal = (n) => n.toFixed(1).replace(/\.0$/, '');
+
+/**
+ * Short money for a line: $950, $13.5k, $1.2m, $2.5b. 999,999 reads "$1m", never
+ * "$1000k" (hq #845); readMoney reads it back.
+ */
+export function shortMoney(n) {
+  if (n < 1e3) return `$${n}`;
+  const k = oneDecimal(n / 1e3);
+  if (Number(k) < 1e3) return `$${k}k`;
+  const m = oneDecimal(n / 1e6);
+  if (Number(m) < 1e3) return `$${m}m`;
+  return `$${oneDecimal(n / 1e9)}b`;
+}
+
 /** '1h 23m', '23:45', '01:02:03' -> seconds; anything else -> null */
 export function readDuration(text) {
   const trimmed = String(text ?? '').trim().toLowerCase();
