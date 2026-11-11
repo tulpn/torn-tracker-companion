@@ -11,6 +11,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## 0.9.27 — 2026-11-11
 
+### Added
+
+- Award countdown: on Torn's awards page, a note names the award you're closest to, from
+  the dashboard read the companion already makes. When torn-tracker.com sends your pace, it
+  names the next two and the day you'll reach the first ("At your pace: Thursday") (hq #785).
+
 ### Changed
 
 - A clean day shows in the sidebar: with every routine line done, the count turns into a
