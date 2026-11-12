@@ -6,9 +6,10 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { labelFor, scanLine, stoppedAt, tooltipFor } from '../../src/features/shop-highlighter/index.js';
+import feature, { labelFor, migrate, scanLine, stoppedAt, tooltipFor } from '../../src/features/shop-highlighter/index.js';
 import { findRow, judge, parsePrice, parseQty, short } from '../../src/features/shop-highlighter/scan.js';
 import { BUILT_IN, onProfitable, profitableCount } from '../../src/core/shops.js';
+import { normalize } from '../../src/core/settings.js';
 import { page as capturedPage, runFeature } from '../feature-harness.js';
 
 const MARKET = 'https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=206';
@@ -33,9 +34,13 @@ function fakeSite(shops = { 206: BIG_AL }) {
   };
 }
 
+// The tests below the hq #976 block run with the grey tier at $1 (1%), the player's own
+// choice since the grey tier starts off: every listing below the shop price is marked.
+const GREY = Object.freeze({ ...feature.defaults, absBlue: 1, pctBlue: 1 });
+
 const running = [];
 const run = (opts) => {
-  const r = runFeature(feature, opts);
+  const r = runFeature(feature, { settings: GREY, ...opts });
   running.push(r);
   return r;
 };
@@ -69,7 +74,7 @@ describe('CMP-109 AC1 listings below the shop price', () => {
 
     const pct = run({
       html: page(listing(1, 40_000), listing(1, 60_000), listing(1, 80_000), listing(1, 99_000)),
-      url: MARKET, site: fakeSite(shops), settings: { ...feature.defaults, mode: 'pct' },
+      url: MARKET, site: fakeSite(shops), settings: { ...GREY, mode: 'pct' },
     });
     await wait();
     assert.deepEqual(rows(pct).map((row) => row.getAttribute('data-ttc-shop')), ['green', 'yellow', 'red', 'blue']);
@@ -78,7 +83,7 @@ describe('CMP-109 AC1 listings below the shop price', () => {
   test('the listing total, the label switched off, and hiding the rest', async () => {
     const r = run({
       html: page(listing(206, 900, 12), listing(206, 1200)), url: MARKET, site: fakeSite(),
-      settings: { ...feature.defaults, inlineLabel: false, hideUnprofitable: true },
+      settings: { ...GREY, inlineLabel: false, hideUnprofitable: true },
     });
     await wait();
     const [below, above] = rows(r);
@@ -155,7 +160,7 @@ describe('the readers', () => {
   });
 
   test('judging, labels and the tooltip', () => {
-    const settings = { ...feature.defaults };
+    const settings = { ...GREY };
     assert.deepEqual(judge(900, 1000, settings).tier, 'blue');
     assert.equal(judge(1000, 1000, settings).tier, null);
     assert.equal(judge(900, 0, settings).tier, null);
@@ -273,7 +278,7 @@ describe('hq #826 the scan says where it stopped', () => {
     assert.equal(stoppedAt({ ...n, images: 2, rows: 2 }), 'no price in the listing rows');
     assert.equal(stoppedAt({ ...n, images: 2, rows: 2, prices: 2 }), 'no listing below a shop price');
     assert.equal(stoppedAt({ ...n, images: 2, rows: 2, prices: 2, below: 1 }), 'no listing reaches the lowest tier');
-    const line = scanLine({ ...n, images: 2, rows: 2, prices: 2, below: 1 }, BUILT_IN, { ...feature.defaults, mode: 'pct', pctBlue: 5 });
+    const line = scanLine({ ...n, images: 2, rows: 2, prices: 2, below: 1 }, BUILT_IN, { ...GREY, mode: 'pct', pctBlue: 5 });
     assert.match(line, /^shop highlighter: no listing reaches the lowest tier; \d+ shop prices \(built-in\), .* by margin, lowest tier 5%$/);
   });
 
@@ -281,5 +286,73 @@ describe('hq #826 the scan says where it stopped', () => {
     const r = run({ html: page(listing(206, 900)), url: 'https://www.torn.com/page.php?sid=ItemMarket#/addListing', site: fakeSite() });
     await wait();
     assert.deepEqual(lines(r), ['shop highlighter: the add-listing form, nothing is listed here']);
+  });
+});
+
+describe('hq #976 the grey tier starts off', () => {
+  const AXE = { 400: { price: 3150, shop: 'Bits n Bobs', country: 'Torn' } };
+
+  test('AC1: with the defaults, an Axe at $3,000 against a $3,150 shop gets no outline and no label', async () => {
+    const r = run({ html: page(listing(400, 3000, 1, 'Axe'), listing(400, 3080, 1, 'Axe')), url: MARKET, site: fakeSite(AXE), settings: { ...feature.defaults } });
+    await wait();
+    for (const row of rows(r)) {
+      assert.equal(row.hasAttribute('data-ttc-shop'), false);
+      assert.equal(row.querySelector('[data-ttc-shop-label]'), null);
+    }
+    assert.equal(profitableCount(), 0);
+  });
+
+  test('AC2: with the defaults, $1k below is blue, $10k yellow, $50k green; less is nothing', () => {
+    const d = { ...feature.defaults };
+    assert.deepEqual([999, 1_000, 10_000, 50_000].map((p) => judge(100_000 - p, 100_000, d).tier), [null, 'red', 'yellow', 'green']);
+    const pct = { ...d, mode: 'pct' };
+    assert.deepEqual([19, 20, 50, 100].map((m) => judge(100, 100 + m, pct).tier), [null, 'red', 'yellow', 'green']);
+  });
+
+  test('AC3: grey at $1 or 1% marks every listing below the shop price, as before', () => {
+    assert.equal(judge(3000, 3150, { ...feature.defaults, absBlue: 1 }).tier, 'blue');
+    assert.equal(judge(3000, 3150, { ...feature.defaults, mode: 'pct', pctBlue: 1 }).tier, 'blue');
+    assert.equal(judge(3000, 3150, { ...feature.defaults, absBlue: 0, pctBlue: 0 }).tier, null);
+  });
+
+  test('AC4: saved settings from before keep the tiers the player changed; the grey default turns off', () => {
+    const registry = [feature];
+    const old = { features: { 'shop-highlighter': { ...feature.defaults, tiersVersion: undefined, absGreen: 80_000, absBlue: 1, pctBlue: 1 } } };
+    const out = normalize(old, registry).features['shop-highlighter'];
+    assert.equal(out.absGreen, 80_000);
+    assert.equal(out.absBlue, 0);
+    assert.equal(out.pctBlue, 0);
+    assert.equal(out.tiersVersion, 2);
+
+    const chosen = normalize({ features: { 'shop-highlighter': { absBlue: 500, pctBlue: 3 } } }, registry).features['shop-highlighter'];
+    assert.equal(chosen.absBlue, 500);
+    assert.equal(chosen.pctBlue, 3);
+  });
+
+  test('a grey tier set to $1 after the update stays at $1', () => {
+    const registry = [feature];
+    const once = normalize({ features: { 'shop-highlighter': { absBlue: 1 } } }, registry);
+    assert.equal(once.features['shop-highlighter'].absBlue, 0);
+    once.features['shop-highlighter'].absBlue = 1;
+    const twice = normalize(normalize(once, registry), registry);
+    assert.equal(twice.features['shop-highlighter'].absBlue, 1);
+  });
+
+  test('a fresh install has the grey tier off, and the debug line names the lowest tier that is on', () => {
+    const fresh = normalize({}, [feature]).features['shop-highlighter'];
+    assert.equal(fresh.absBlue, 0);
+    assert.equal(fresh.pctBlue, 0);
+    assert.equal(migrate({ tiersVersion: 2, absBlue: 1 }).absBlue, 1);
+    const n = { images: 1, rows: 1, prices: 1, unknown: 0, below: 1, marked: 0 };
+    assert.match(scanLine(n, BUILT_IN, { ...feature.defaults }), /by profit, lowest tier \$1,000$/);
+    const none = { ...feature.defaults, absGreen: 0, absYellow: 0, absRed: 0 };
+    assert.match(scanLine(n, BUILT_IN, none), /lowest tier none on$/);
+  });
+
+  test('the settings page lets only the grey tier be 0', () => {
+    assert.equal(feature.options.absBlue.min, 0);
+    assert.equal(feature.options.pctBlue.min, 0);
+    assert.equal(feature.options.absRed.min, 1);
+    assert.match(feature.options.absBlue.label, /0 for off/);
   });
 });

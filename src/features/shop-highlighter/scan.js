@@ -18,6 +18,12 @@ export const TIERS = Object.freeze(['green', 'yellow', 'red', 'blue']);
 /** The setting holding a tier's minimum: absGreen, pctBlue. */
 export const tierKey = (mode, tier) => `${mode}${tier[0].toUpperCase()}${tier.slice(1)}`;
 
+/** Whether a tier counts: a minimum of 0 switches it off (the grey tier's default, hq #976). */
+export const tierOn = (settings, mode, tier) => {
+  const min = settings?.[tierKey(mode, tier)];
+  return Number.isFinite(min) && min > 0;
+};
+
 export function parsePrice(text) {
   const m = PRICE_RE.exec(text);
   return m ? Number(m[1].replace(/,/g, '')) : null;
@@ -99,7 +105,7 @@ export function judge(price, shopPrice, settings) {
   const mode = settings.mode === 'pct' ? 'pct' : 'abs';
   const metric = mode === 'pct' ? margin : profit;
   const tier = shopPrice > 0 && profit > 0
-    ? TIERS.find((t) => Number.isFinite(settings[tierKey(mode, t)]) && metric >= settings[tierKey(mode, t)]) || null
+    ? TIERS.find((t) => tierOn(settings, mode, t) && metric >= settings[tierKey(mode, t)]) || null
     : null;
   return { profit, margin, tier };
 }

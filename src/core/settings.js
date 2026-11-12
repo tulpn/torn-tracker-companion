@@ -67,6 +67,22 @@ function featureDataOf(d, value) {
   }
 }
 
+/**
+ * A feature's saved values after its own `migrate`, when it has one (hq #976): a feature
+ * whose defaults changed moves values that were the old defaults to the new ones. Only
+ * saved values migrate; with none saved, the defaults apply as they are.
+ */
+function migrated(d, saved) {
+  if (!saved) return {};
+  if (typeof d.migrate !== 'function') return saved;
+  try {
+    const out = d.migrate({ ...saved });
+    return out && typeof out === 'object' ? out : saved;
+  } catch {
+    return saved;
+  }
+}
+
 /** Keeps only known fields whose type matches the default's. */
 export function normalize(raw, registry) {
   const base = defaults(registry);
@@ -91,7 +107,7 @@ export function normalize(raw, registry) {
   out.features = {};
   for (const d of registry) {
     const saved = givenFeatures[d.id];
-    const values = saved && typeof saved === 'object' ? saved : {};
+    const values = migrated(d, saved && typeof saved === 'object' ? saved : null);
     const feature = {};
     for (const [key, fallback] of Object.entries(d.defaults)) {
       const value = values[key];
