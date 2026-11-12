@@ -17,7 +17,7 @@ import { el, settler } from '../../core/dom.js';
 import { fromPage, fromResponse, itemIdOf } from '../foreign-stock/read.js';
 import { INFO_CAPACITY, INFO_MONEY, ITEM_IMAGE, ITEM_NAME, ROWS, isShopResponse } from '../foreign-stock/selectors.js';
 import { bestBuy, readCapacity, readMoney } from './best.js';
-import { badge } from '../../core/ui.js';
+import { badge, tapDetail } from '../../core/ui.js';
 
 const MARK = 'ttc-best';
 const SETTLE_MS = 250;
@@ -34,10 +34,18 @@ export function playerFrom(doc, responseMoney = null) {
   return { room: carried ? carried.capacity - carried.bought : null, money: cash };
 }
 
-/** The label's text: "Best buy: 19 (+$1,234 each, +$23,446)". */
+/**
+ * The label's text: "Best buy: 19". Short, so the item's name beside it stays whole
+ * (hq #975); the profit is in its detail.
+ */
 export function labelFor(pick, { room }) {
   const amount = room === null ? `up to ${pick.amount}` : String(pick.amount);
-  return `Best buy: ${amount} (+${money(pick.each)} each, +${money(pick.total)})`;
+  return `Best buy: ${amount}`;
+}
+
+/** The label's detail, on hover and on a tap: "+$1,234 each, +$23,446 in all. …". */
+export function detailFor(pick) {
+  return `+${money(pick.each)} each, +${money(pick.total)} in all. torn-tracker.com market value minus this shop's price.`;
 }
 
 export default {
@@ -78,11 +86,15 @@ export default {
           continue;
         }
         const text = labelFor(s.pick, player);
+        const detail = detailFor(s.pick);
         if (label) {
           if (label.textContent !== text) label.textContent = text;
+          tapDetail(label, detail);
           continue;
         }
-        const node = badge(doc, { cls: MARK, tone: 'good', attrs: { title: "torn-tracker.com market value minus this shop's price", 'data-tour': 'shop-best-buy' } }, text);
+        // Its own line under the name, never inside the name's text (hq #975).
+        const node = badge(doc, { cls: MARK, tone: 'good', compact: true, attrs: { 'data-tour': 'shop-best-buy' } }, text);
+        tapDetail(node, detail);
         (row.querySelector(ITEM_NAME) || row).append(node);
       }
     }

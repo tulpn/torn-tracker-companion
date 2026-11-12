@@ -25,8 +25,9 @@ Nothing is booked or bought for you.
 ## Best buy
 
 On a foreign shop, the item that makes you the most money for what you can still carry
-and afford is outlined, with a label like **Best buy: 24 (+$2,000 each, +$48,000)**. Profit
-is at torn-tracker.com's market value. Your money and capacity come from the message above
+and afford is outlined, with a label like **Best buy: 24** on a line under its name. Hover
+over the label, or tap it on a phone, for the profit: **+$2,000 each, +$48,000 in all**.
+Profit is at torn-tracker.com's market value. Your money and capacity come from the message above
 the shelves; without it, the label says "up to". It updates as you buy. You type the amount
 and press **Buy** yourself.
 

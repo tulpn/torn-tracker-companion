@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import feature, { labelFor, playerFrom } from '../../src/features/best-buy/index.js';
+import feature, { detailFor, labelFor, playerFrom } from '../../src/features/best-buy/index.js';
 import { bestBuy, readCapacity } from '../../src/features/best-buy/best.js';
 import { json, page, runFeature } from '../feature-harness.js';
 
@@ -71,8 +71,9 @@ describe('TRV-052 the pick', () => {
 
   test('labels say "up to" when the room is unknown', () => {
     const pick = { item_id: 1, amount: 24, each: 500, total: 12_000 };
-    assert.equal(labelFor(pick, { room: 24 }), 'Best buy: 24 (+$500 each, +$12,000)');
-    assert.equal(labelFor(pick, { room: null }), 'Best buy: up to 24 (+$500 each, +$12,000)');
+    assert.equal(labelFor(pick, { room: 24 }), 'Best buy: 24');
+    assert.equal(labelFor(pick, { room: null }), 'Best buy: up to 24');
+    assert.equal(detailFor(pick), "+$500 each, +$12,000 in all. torn-tracker.com market value minus this shop's price.");
   });
 });
 
@@ -84,7 +85,8 @@ describe('TRV-052 on the shop page', () => {
     await wait();
     assert.deepEqual(site.lookups, [[258, 260, 399]]);
     // 24 of room: plushies make $2,000 each = $48,000; the rifle loses money.
-    assert.deepEqual(labels(r).map((n) => n.textContent), ['Best buy: 24 (+$2,000 each, +$48,000)']);
+    assert.deepEqual(labels(r).map((n) => n.textContent), ['Best buy: 24']);
+    assert.match(labels(r)[0].title, /^\+\$2,000 each, \+\$48,000 in all\./);
     assert.match(labels(r)[0].closest('li').textContent, /Jaguar Plushie/);
     assert.deepEqual(r.violations, []);
   });
@@ -92,14 +94,15 @@ describe('TRV-052 on the shop page', () => {
   test('read off the page when the response was missed; cash from the message', async () => {
     const r = run({ html: info('$25,000', '0 / 29') + page('travel-shop.html'), site: fakeSite() });
     await wait();
-    assert.deepEqual(labels(r).map((n) => n.textContent), ['Best buy: 2 (+$2,000 each, +$4,000)']);
+    assert.deepEqual(labels(r).map((n) => n.textContent), ['Best buy: 2']);
+    assert.match(labels(r)[0].dataset.detail, /^\+\$2,000 each, \+\$4,000 in all\./);
   });
 
   test('no message: the amount is "up to" the stock', async () => {
     const r = run({ html: page('travel-shop.html'), site: fakeSite() });
     r.respond(SHOP_URL, { ...json('travel-shop.json'), money: undefined });
     await wait();
-    assert.match(labels(r)[0].textContent, /^Best buy: up to 1234 /);
+    assert.equal(labels(r)[0].textContent, 'Best buy: up to 1234');
   });
 
   test('the label moves when the room runs out; nothing is filled or pressed', async () => {
@@ -132,5 +135,54 @@ describe('TRV-052 on the shop page', () => {
     const r = run({ html: '', site: fakeSite() });
     assert.deepEqual(playerFrom(r.doc, 5_000), { room: null, money: 5_000 });
     assert.deepEqual(playerFrom(r.doc, -1), { room: null, money: null });
+  });
+});
+
+describe('hq #975 the label leaves the item name whole', () => {
+  const LONG = 'Tiger Plushie With A Long Name';
+  const longPage = () => page('travel-shop.html').replace('>Jaguar Plushie</div>', `>${LONG}</div>`);
+
+  test('AC1: the name keeps its whole text; the label is its own line after it, not inside the text', async () => {
+    const r = run({ html: info() + longPage(), site: fakeSite() });
+    r.respond(SHOP_URL, json('travel-shop.json'));
+    await wait();
+    const [label] = labels(r);
+    const cell = label.parentElement;
+    assert.match(cell.className, /itemName___/);
+    assert.equal(cell.firstChild.nodeType, 3);
+    assert.equal(cell.firstChild.textContent, LONG);
+    assert.equal(cell.lastElementChild, label);
+    assert.equal(label.textContent, 'Best buy: 24');
+    // The cell becomes a column and wraps: the name is never cut down to fit a long label.
+    const css = r.doc.getElementById('ttc-ui-style')?.textContent || [...r.doc.querySelectorAll('style')].map((n) => n.textContent).join('\n');
+    assert.match(css, /\[class\*='row___'\] :has\(> \.ttc-best\) \{\s*display: flex; flex-direction: column;/);
+    assert.match(css, /white-space: normal; overflow: visible; text-overflow: clip;/);
+  });
+
+  test('AC2: each and in-all profit are in the title and in the detail a tap opens', async () => {
+    const r = run({ html: info() + longPage(), site: fakeSite() });
+    r.respond(SHOP_URL, json('travel-shop.json'));
+    await wait();
+    const [label] = labels(r);
+    assert.equal(label.title, label.dataset.detail);
+    assert.match(label.title, /\+\$2,000 each, \+\$48,000 in all/);
+    assert.equal(label.dataset.open, 'false');
+    label.dispatchEvent(new r.doc.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    assert.equal(label.dataset.open, 'true');
+    assert.equal(label.getAttribute('aria-expanded'), 'true');
+    assert.deepEqual(r.violations, []);
+  });
+
+  test('AC3: the other rows are untouched', async () => {
+    const before = run({ html: info() + longPage(), site: fakeSite({}) });
+    await wait();
+    const plain = [...before.doc.querySelectorAll("[class*='row___']")].map((row) => row.outerHTML);
+    const r = run({ html: info() + longPage(), site: fakeSite() });
+    r.respond(SHOP_URL, json('travel-shop.json'));
+    await wait();
+    const rows = [...r.doc.querySelectorAll("[class*='row___']")];
+    const others = rows.filter((row) => !row.querySelector('.ttc-best')).map((row) => row.outerHTML);
+    assert.equal(others.length, rows.length - 1);
+    assert.deepEqual(others, plain.filter((html) => !html.includes(LONG)));
   });
 });
