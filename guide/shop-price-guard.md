@@ -33,7 +33,12 @@ The colour says how good the deal is:
 | Best | green | $50,000 | 100% |
 | Good | yellow | $10,000 | 50% |
 | Fair | blue | $1,000 | 20% |
-| Small | grey | $1 | 1% |
+| Small | grey | off | off |
+
+The grey tier is off at first, so a few dollars' profit on an expensive item doesn't mark
+the whole page. To mark every listing below a shop's price, set **Small (grey)** to $1 (or
+1%) on the settings page; set it to 0 to switch it off again. If you changed a tier
+yourself, the companion keeps your value.
 
 A listing at or above the shop's price gets nothing. The [sidebar block](sidebar.md) counts
 the listings on screen that are below a shop's price, in its **Below shop price** line.

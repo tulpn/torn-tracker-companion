@@ -21,6 +21,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   faction's week board ("#3 of 41 for chain hits this week"). It shows only when your
   faction's leaders switched the board on and you chose to be ranked (hq #791).
 
+### Changed
+
+- Shop price highlighter: the grey "Small" tier is off by default, so a few dollars' profit on
+  an expensive item no longer marks every listing on the page. Set it to $1 in the settings
+  to mark everything below a shop's price again; 0 switches it off. Tiers you changed
+  yourself keep your values (hq #976).
+
 ## 0.9.27 — 2026-11-11
 
 ### Added

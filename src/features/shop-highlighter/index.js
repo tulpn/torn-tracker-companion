@@ -15,7 +15,7 @@
 
 import { BUILT_IN, setProfitable } from '../../core/shops.js';
 import { ensureStyle } from '../../core/ui.js';
-import { TIERS, findPrice, findRow, isChrome, itemIdOfImage, judge, parseQty, short, tierKey } from './scan.js';
+import { TIERS, findPrice, findRow, isChrome, itemIdOfImage, judge, parseQty, short, tierKey, tierOn } from './scan.js';
 import { settler } from '../../core/dom.js';
 
 const SETTLE_MS = 150;
@@ -32,16 +32,36 @@ let state = null;
 
 const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 
-const ABS = { green: 50_000, yellow: 10_000, red: 1_000, blue: 1 };
-const PCT = { green: 100, yellow: 50, red: 20, blue: 1 };
+// The grey tier is off by default (0): at $1 it marked every listing below the shop price,
+// and a $70 profit on a $3,000 item is noise (hq #976).
+const ABS = { green: 50_000, yellow: 10_000, red: 1_000, blue: 0 };
+const PCT = { green: 100, yellow: 50, red: 20, blue: 0 };
+/** The defaults' version: 2 since the grey tier starts off (hq #976). */
+const TIERS_VERSION = 2;
 // The names the player sees, best first; drawn green, yellow, blue and grey (hq #557 E35).
 const NAMES = { green: 'Best (green)', yellow: 'Good (yellow)', red: 'Fair (blue)', blue: 'Small (grey)' };
 
 const tierDefaults = Object.fromEntries(TIERS.flatMap((t) => [[tierKey('abs', t), ABS[t]], [tierKey('pct', t), PCT[t]]]));
+// Only the grey tier can be 0, which switches it off.
+const OFF = (t) => (t === 'blue' ? ', 0 for off' : '');
 const tierOptions = Object.fromEntries(TIERS.flatMap((t) => [
-  [tierKey('abs', t), { label: `${NAMES[t]}: profit per item at least ($)`, min: 1, max: 1_000_000_000 }],
-  [tierKey('pct', t), { label: `${NAMES[t]}: margin at least (%)`, min: 1, max: 100_000 }],
+  [tierKey('abs', t), { label: `${NAMES[t]}: profit per item at least ($${OFF(t)})`, min: t === 'blue' ? 0 : 1, max: 1_000_000_000 }],
+  [tierKey('pct', t), { label: `${NAMES[t]}: margin at least (%${OFF(t)})`, min: t === 'blue' ? 0 : 1, max: 100_000 }],
 ]));
+
+/**
+ * Saved settings from before version 2 (hq #976): a grey tier still at the old default of 1
+ * was never the player's choice, so it takes the new default, off. Every other value the
+ * player saved stays as it was.
+ */
+export function migrate(saved) {
+  if (saved.tiersVersion === TIERS_VERSION) return saved;
+  const out = { ...saved, tiersVersion: TIERS_VERSION };
+  for (const mode of ['abs', 'pct']) {
+    if (out[tierKey(mode, 'blue')] === 1) out[tierKey(mode, 'blue')] = 0;
+  }
+  return out;
+}
 
 /** Whether the location is the Item Market's own add-listing form, where nothing is listed. */
 function onAddListing(loc) {
@@ -123,8 +143,10 @@ export function stoppedAt(n) {
  */
 export function scanLine(n, table, settings) {
   const pct = settings.mode === 'pct';
-  const lowest = settings[tierKey(pct ? 'pct' : 'abs', TIERS[TIERS.length - 1])];
-  const min = pct ? `${lowest}%` : money(lowest);
+  const mode = pct ? 'pct' : 'abs';
+  const on = TIERS.filter((t) => tierOn(settings, mode, t));
+  const lowest = on.length ? settings[tierKey(mode, on[on.length - 1])] : null;
+  const min = lowest === null ? 'none on' : pct ? `${lowest}%` : money(lowest);
   return [
     `shop highlighter: ${stoppedAt(n)};`,
     `${table.size} shop prices (${table === BUILT_IN ? 'built-in' : 'site'}),`,
@@ -144,7 +166,9 @@ export default {
   routes: ['page.php?sid=ItemMarket'],
   defaults: {
     enabled: true, mode: 'abs', ...tierDefaults, inlineLabel: true, showTotal: true, hideUnprofitable: false,
+    tiersVersion: TIERS_VERSION,
   },
+  migrate,
   options: {
     mode: { label: 'Colour listings by', choices: ['abs', 'pct'], labels: { abs: 'Profit per item ($)', pct: 'Margin (%)' } },
     ...tierOptions,
