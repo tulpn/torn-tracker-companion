@@ -131,7 +131,7 @@ describe('CMP-108 the sidebar block’s switches', () => {
   test('on by default, with the spec’s items on and off', () => {
     const { sidebar } = defaults(registry);
     assert.equal(sidebar.enabled, true);
-    assert.deepEqual(Object.entries(sidebar.items).filter(([, on]) => !on).map(([id]) => id), ['travel', 'loot', 'gym', 'stocks']);
+    assert.deepEqual(Object.entries(sidebar.items).filter(([, on]) => !on).map(([id]) => id), ['travel', 'loot', 'gym', 'stocks', 'faction_week']);
   });
 
   test('saved switches are kept; wrong types and unknown items fall back or go', () => {
