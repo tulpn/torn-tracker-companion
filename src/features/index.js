@@ -35,6 +35,7 @@ import stockAdvisor from './stock-advisor/index.js';
 import travelPanel from './travel-panel/index.js';
 import bustSafety from './bust-safety/index.js';
 import meritHints from './merit-hints/index.js';
+import awardCountdown from './award-countdown/index.js';
 
 export default [
   ffBadges,
@@ -68,4 +69,5 @@ export default [
   travelPanel,
   bustSafety,
   meritHints,
+  awardCountdown,
 ];

@@ -13,6 +13,7 @@
 
 import { barChart, CHART_STYLE, chartDeclarations } from './chart.js';
 import { ageCss, ageNode, tickAges } from './age.js';
+import { countdownNodes } from './awards.js';
 import { brandMark } from './brand.js';
 import { el } from './dom.js';
 import { ROLE_NAMES } from './rota.js';
@@ -20,6 +21,8 @@ import { DASHBOARD_CARDS } from './site.js';
 import { left, roughly } from './sidebar.js';
 import { declarations, lookTheme } from './tokens.js';
 import { buttonCss } from './ui.js';
+
+const TAB = { target: '_blank', rel: 'noopener noreferrer' };
 
 const P = 'ttc';
 export const DASH_ID = `${P}-dash`;
@@ -114,7 +117,7 @@ export function mountDashboard({
   // Not in the status line: a repaint isn't announced.
   const age = h('div');
   const grid = h('div', { class: `${P}-grid` });
-  const siteLink = h('a', { class: `${P}-btn ${P}-primary`, href: 'https://www.torn-tracker.com/dashboard/', target: '_blank', rel: 'noopener noreferrer' }, 'Open on torn-tracker.com');
+  const siteLink = h('a', { class: `${P}-btn ${P}-primary`, href: 'https://www.torn-tracker.com/dashboard/', ...TAB }, 'Open on torn-tracker.com');
   const element = h('div', { id: DASH_ID, role: 'region', 'aria-label': 'Torn Tracker dashboard', hidden: true },
     h('div', { class: `${P}-sheet` },
       h('div', { class: `${P}-head` },
@@ -129,7 +132,8 @@ export function mountDashboard({
   let stopTick = null;
 
   // hq #491: the card's own page, or no link at all; never the dashboard page.
-  const more = (url) => (url ? h('a', { class: `${P}-more`, href: url, target: '_blank', rel: 'noopener noreferrer' }, 'More on torn-tracker.com →') : null);
+  const more = (url) => (url ? h('a', { class: `${P}-more`, href: url, ...TAB }, 'More on torn-tracker.com →') : null);
+  const named = (url, text, tag = 'strong') => (url ? h('a', { href: url, ...TAB }, text) : h(tag, null, text));
   const meter = (value, max, label, over = false) => {
     const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((value / max) * 100))) : 0;
     const bar = h('span');
@@ -190,7 +194,7 @@ export function mountDashboard({
       h('ul', { class: `${P}-rows` }, ...v.steps.filter((s) => !s.done).slice(0, 3).map((s) => h('li', null, s.title))),
     ],
     alerts: (v) => [h('ul', { class: `${P}-rows` }, ...v.map((a) => h('li', { class: `${P}-row` },
-      a.url ? h('a', { href: a.url, target: '_blank', rel: 'noopener noreferrer' }, a.title) : h('span', null, a.title),
+      named(a.url, a.title, 'span'),
       a.at != null ? h('span', { class: `${P}-muted` }, ago(a.at)) : null)))],
     chain_watch: (v) => [
       v.mine.now ? h('p', null, h('span', { class: `${P}-tag` }, `You're on watch now: ${ROLE_NAMES[v.mine.now]}`)) : null,
@@ -200,9 +204,10 @@ export function mountDashboard({
       v.gaps ? h('p', { class: `${P}-muted` }, `${v.gaps} slot${v.gaps === 1 ? '' : 's'} in the next 24 h ${v.gaps === 1 ? 'has' : 'have'} no Lead.`) : null,
       ...(v.chain ? [h('p', { class: `${P}-sub` }, 'Chain'), ...chainBody(v.chain)] : []),
     ],
-    awards: (v) => [h('ul', { class: `${P}-rows` }, ...v.nearest.map((a) => h('li', null,
+    awards: (v) => [...(v.next.length ? countdownNodes(v, now(), h) : []),
+    h('ul', { class: `${P}-rows` }, ...v.nearest.map((a) => h('li', null,
       h('div', { class: `${P}-row` },
-        a.url ? h('a', { href: a.url, target: '_blank', rel: 'noopener noreferrer' }, a.name) : h('strong', null, a.name),
+        named(a.url, a.name),
         h('span', { class: `${P}-muted` }, a.detail ?? `${Math.floor(a.pct)}%`)),
       a.description ? h('p', { class: `${P}-muted` }, `${a.kind === 'medal' ? 'Medal' : 'Honor'} · ${a.description}`) : null,
       meter(a.pct, 100, `${a.name}: ${Math.floor(a.pct)}%`))))],

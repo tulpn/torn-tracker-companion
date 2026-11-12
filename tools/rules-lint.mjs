@@ -39,6 +39,9 @@ const ALLOWED_EVENTS = new Set(['input', 'change']);
 const HISTORY_OWNER = join('src', 'core', 'router.js');
 const INTERCEPT = join('src', 'core', 'intercept.js');
 const NET = join('src', 'core', 'net.js');
+/** Where el() lives: the one place a field may be made with createElement (hq #850). */
+const DOM = join('src', 'core', 'dom.js');
+const FIELD_TAGS = new Set(['input', 'textarea', 'form']);
 
 /** setTimeout/setInterval callbacks that are allowed to reach the network. */
 const TIMER_EXCEPTIONS = new Set(['flush', 'refreshDibs']);
@@ -98,6 +101,7 @@ function checkFile(relPath, source, report) {
 
   const isRouter = relPath === HISTORY_OWNER;
   const isIntercept = relPath === INTERCEPT;
+  const isDom = relPath === DOM;
 
   /** Every URL literal, wherever it is: a host we do not know has no business here. */
   const checkUrlLiteral = (node, text, { asRequestTarget = false } = {}) => {
@@ -152,6 +156,28 @@ function checkFile(relPath, source, report) {
     }
     if (node.type === 'CallExpression' && ['document.write', 'document.writeln'].includes(dotted(node.callee))) {
       add('no-innerhtml', node, 'document.write is never used');
+    }
+
+    // ---- autocomplete-off (hq #850): every field is built by el(), which switches the
+    // browser's suggestions off, and nothing switches them back on.
+    if (node.type === 'CallExpression' && propertyName(node.callee) === 'createElement' && !isDom) {
+      const tag = staticString(node.arguments[0]);
+      if (tag && FIELD_TAGS.has(tag.toLowerCase())) {
+        add('autocomplete-off', node, `build a <${tag}> with el() from core/dom.js, which sets autocomplete="off"`);
+      }
+    }
+    if (node.type === 'Property' && (node.key.name ?? node.key.value) === 'autocomplete'
+      && staticString(node.value) !== 'off') {
+      add('autocomplete-off', node, 'autocomplete is only ever "off"');
+    }
+    if (node.type === 'AssignmentExpression' && propertyName(node.left) === 'autocomplete'
+      && staticString(node.right) !== 'off') {
+      add('autocomplete-off', node, 'autocomplete is only ever "off"');
+    }
+    if (node.type === 'CallExpression' && propertyName(node.callee) === 'setAttribute'
+      && String(staticString(node.arguments[0]) ?? '').toLowerCase() === 'autocomplete'
+      && staticString(node.arguments[1]) !== 'off') {
+      add('autocomplete-off', node, 'autocomplete is only ever "off"');
     }
 
     if (node.type === 'CallExpression') {
