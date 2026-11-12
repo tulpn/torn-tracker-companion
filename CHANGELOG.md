@@ -9,12 +9,6 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
-### Added
-
-- This week in your faction: a sidebar line, off by default, with your place on your
-  faction's week board ("#3 of 41 for chain hits this week"). It shows only when your
-  faction's leaders switched the board on and you chose to be ranked (hq #791).
-
 ## 0.9.28 — 2026-11-12
 
 ### Added
@@ -23,6 +17,9 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   achievement toast says so, with the old record and a link to the record's page there,
   where Share is. It comes with the read the companion already makes; nothing is shared
   from Torn (hq #783).
+- This week in your faction: a sidebar line, off by default, with your place on your
+  faction's week board ("#3 of 41 for chain hits this week"). It shows only when your
+  faction's leaders switched the board on and you chose to be ranked (hq #791).
 
 ## 0.9.27 — 2026-11-11
 
