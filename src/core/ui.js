@@ -187,6 +187,14 @@ ${TONES.filter((t) => t !== 'neutral').map((t) => `  .${P}-ui-badge[data-tone="$
   /* Torn's own element: the tokens' values go in directly, so none of its variables change. */
   [class*='row___']:has(.${P}-best) { outline: 2px solid ${TOKENS.light['tt-success']}; outline-offset: -2px; border-radius: 6px; }
   body.dark-mode [class*='row___']:has(.${P}-best) { outline-color: ${TOKENS.dark['tt-success']}; }
+  /* Its label takes a line of its own under the item's name, and the name wraps rather than
+     being cut short, at any width (hq issue 975). The row grows to hold both. */
+  [class*='row___']:has(.${P}-best) { height: auto; }
+  [class*='row___'] :has(> .${P}-best) {
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
+    white-space: normal; overflow: visible; text-overflow: clip; height: auto;
+  }
+  [class*='row___'] :has(> .${P}-best) > .${P}-best.${P}-best { margin: 0; }
   /* Item Market listings below a shop's price (CMP-109): attributes on Torn's own nodes,
      an outline on the listing, a dot and the profit beside its price. */
 ${SHOP_TIERS.map(([tier, token]) => `  [data-${P}-shop="${tier}"], [data-${P}-shop-dot="${tier}"] { --${P}-shop-ink: ${TOKENS.light[token]}; }

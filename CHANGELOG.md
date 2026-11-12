@@ -28,6 +28,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
   to mark everything below a shop's price again; 0 switches it off. Tiers you changed
   yourself keep your values (hq #976).
 
+### Fixed
+
+- Best buy abroad: the label no longer covers the item's name. It reads "Best buy: 18" on a
+  line of its own under the name, and the profit each and in all is on hover or a tap
+  (hq #975).
+
 ## 0.9.27 — 2026-11-11
 
 ### Added
