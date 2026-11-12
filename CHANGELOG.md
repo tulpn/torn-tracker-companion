@@ -9,6 +9,8 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.28 — 2026-11-12
+
 ### Added
 
 - Record day: when torn-tracker.com says you beat your best day on a counter, the
