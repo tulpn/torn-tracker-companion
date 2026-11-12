@@ -9,6 +9,13 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Added
+
+- Record day: when torn-tracker.com says you beat your best day on a counter, the
+  achievement toast says so, with the old record and a link to the record's page there,
+  where Share is. It comes with the read the companion already makes; nothing is shared
+  from Torn (hq #783).
+
 ## 0.9.27 — 2026-11-11
 
 ### Added

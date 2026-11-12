@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
 import { READ_EVERY_MS, SHOW_MS, TOAST_ID, cleanState, createUnlocks } from '../../src/core/unlocks.js';
-import { ACHIEVEMENTS_URL, createSite, readAchievements, readCard } from '../../src/core/site.js';
+import { ACHIEVEMENTS_URL, createSite, readAchievements, readCard, readRecords } from '../../src/core/site.js';
 import { createCache } from '../../src/core/cache.js';
 import { createRegistry } from '../../src/core/registry.js';
 import { defaults, normalize } from '../../src/core/settings.js';
@@ -411,5 +411,70 @@ describe('hq #786 keep this one: the card from the unlock toast', () => {
     await r.visit();
     assert.equal(r.toast().querySelector('.ttc-unlock-card'), null);
     assert.equal(r.toast().querySelectorAll('a').length, 1);
+  });
+});
+
+describe('hq #783 record day: the toast links to the record, nothing is shared from Torn', () => {
+  const RECORD = { id: 42, counter: 'crimes.offenses.total', label: 'crime', unit: 'offences', value: 212, previous: 198, day: '2026-11-12', url: 'https://www.torn-tracker.com/me/records/42/' };
+
+  test('each row is read field by field, at most five, and only a link to its own page on our site', () => {
+    assert.deepEqual(readRecords([RECORD]), [{ id: 42, label: 'crime', unit: 'offences', value: 212, previous: 198, day: '2026-11-12', url: RECORD.url }]);
+    assert.deepEqual(readRecords(undefined), []);
+    assert.deepEqual(readRecords('nope'), []);
+    assert.equal(readRecords([{ ...RECORD, unit: '' }])[0].unit, '', 'a unit may be empty');
+    assert.equal(readRecords([{ ...RECORD, url: '/me/records/42/' }])[0].url, 'https://torn-tracker.com/me/records/42/');
+    const bad = [
+      { ...RECORD, id: 0 }, { ...RECORD, id: '42' }, { ...RECORD, label: '' }, { ...RECORD, label: 'x'.repeat(61) },
+      { ...RECORD, unit: 3 }, { ...RECORD, unit: 'x'.repeat(61) }, { ...RECORD, counter: 'x'.repeat(62) },
+      { ...RECORD, value: 198 }, { ...RECORD, value: 1.5 }, { ...RECORD, previous: -1 }, { ...RECORD, previous: '198' },
+      { ...RECORD, day: '12/11/2026' }, { ...RECORD, url: 'https://evil.example/me/records/42/' },
+      { ...RECORD, url: 'https://www.torn-tracker.com/me/records/43/' }, { ...RECORD, url: 'https://www.torn-tracker.com/me/achievements/' },
+      null,
+    ];
+    bad.forEach((row) => assert.deepEqual(readRecords([row]), [], JSON.stringify(row)));
+    assert.equal(readRecords(Array.from({ length: 8 }, (_, i) => ({ ...RECORD, id: i + 1, url: `https://www.torn-tracker.com/me/records/${i + 1}/` }))).length, 5);
+    assert.deepEqual(readAchievements({ records: [RECORD] }).records.map((r) => r.id), [42]);
+    assert.deepEqual(readAchievements({}).records, [], 'an older site sends none');
+  });
+
+  test('a record alone: its own toast, the newest one, with a link to its page', async () => {
+    const records = readRecords([RECORD, { ...RECORD, id: 7, label: 'gym', url: 'https://www.torn-tracker.com/me/records/7/' }]);
+    const r = rig({ stored: { cursor: iso(T0 - 1000), readAt: T0 - READ_EVERY_MS }, replies: [ok({ records })] });
+    await r.unlocks.load();
+    await r.visit();
+    const toast = r.toast();
+    assert.match(toast.textContent, /New record.*Your best crime day.*212 offences, old record 198\..*See it and share/s);
+    const links = toast.querySelectorAll('a');
+    assert.equal(links.length, 1);
+    assert.equal(links[0].getAttribute('href'), RECORD.url);
+    assert.equal(links[0].getAttribute('target'), '_blank');
+  });
+
+  test('with achievements too: the achievement toast, and one record line under it', async () => {
+    const unlocked = readAchievements({ unlocked: [CHAINS] }).unlocked;
+    const records = readRecords([{ ...RECORD, unit: '', value: 1500, previous: 1200 }]);
+    const r = rig({ stored: { cursor: iso(T0 - 1000), readAt: T0 - READ_EVERY_MS }, replies: [ok({ unlocked, records })] });
+    await r.unlocks.load();
+    await r.visit();
+    const toast = r.toast();
+    assert.match(toast.textContent, /Achievement unlocked.*Chain tracker.*New record: your best crime day, 1,500, old record 1,200/s);
+    assert.equal(toast.querySelector('.ttc-unlock-record a').getAttribute('href'), RECORD.url);
+  });
+
+  test('the same gates: no toast on the first read, while silenced, or with the toast off', async () => {
+    const records = readRecords([RECORD]);
+    const first = rig({ replies: [ok({ records })] });
+    await first.unlocks.load();
+    await first.visit();
+    assert.equal(first.toast(), null);
+    const silenced = rig({ stored: { cursor: iso(T0 - 1000) }, replies: [ok({ records, silenced: true })] });
+    await silenced.unlocks.load();
+    await silenced.visit();
+    assert.equal(silenced.toast(), null);
+    const settings = normalize({ ...defaults(createRegistry([])), achievements: { toast: false, featured: true } }, createRegistry([]));
+    const off = rig({ settings, stored: { cursor: iso(T0 - 1000) }, replies: [ok({ records })] });
+    await off.unlocks.load();
+    await off.visit();
+    assert.deepEqual(off.asked, [], 'with the toast off nothing is asked');
   });
 });

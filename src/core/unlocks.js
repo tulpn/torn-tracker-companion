@@ -5,7 +5,10 @@
 // the site, where Share is. Nothing is ever shared from here. When the reply carries the
 // player's card, the toast offers "Save the card" (the image on torn-tracker.com, opened in
 // a new tab) and "Copy link" (onto the clipboard, for faction chat or Discord); nothing is
-// sent or posted unless the player pastes it (hq #786, ENG-064). Its switch is under
+// sent or posted unless the player pastes it (hq #786, ENG-064). A record day comes the
+// same way (hq #783, ENG-061): when the read says the player beat a counter's best day, the
+// toast names it and links to the record's page on the site, where Share is; with
+// achievements in the same reply it adds one line under them. Its switch is under
 // Settings → General. The featured achievements still come with the read and are kept,
 // but the settings header no longer shows them (hq #489): they live on the in-Torn
 // dashboard and the site.
@@ -92,6 +95,9 @@ export function cleanState(raw, now = Date.now()) {
 }
 
 const tierName = (tier) => (tier ? tier[0].toUpperCase() + tier.slice(1) : null);
+const number = (n) => n.toLocaleString('en-US');
+/** "212 offences, old record 198": the unit is left out when the site sends none. */
+const recordLine = (r) => `${number(r.value)}${r.unit ? ` ${r.unit}` : ''}, old record ${number(r.previous)}`;
 
 /**
  * @param {object} opts
@@ -120,14 +126,30 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     doc.getElementById(TOAST_ID)?.remove();
   }
 
-  /** The toast: the first new achievement, and how many more came with it. */
-  function show(unlocked, url, card = null) {
+  /** The newest record: its own toast, or one line under the achievements. */
+  function recordBody(record, alone) {
+    const link = h('a', { href: record.url, target: '_blank', rel: 'noopener noreferrer' }, 'See it and share');
+    if (!alone) {
+      return h('span', { class: `${P}-unlock-links ${P}-unlock-record` },
+        h('span', null, `New record: your best ${record.label} day, ${recordLine(record)}`), link);
+    }
+    return [
+      h('span', { class: `${P}-unlock-eyebrow` }, 'New record'),
+      h('span', { class: `${P}-unlock-name` }, `Your best ${record.label} day`),
+      h('span', null, `${recordLine(record)}.`),
+      h('span', { class: `${P}-unlock-links ${P}-unlock-record` }, link),
+    ];
+  }
+
+  /** The toast: the first new achievement, and how many more came with it; or a record. */
+  function show(unlocked, url, card = null, records = []) {
     hide();
     addStyle(doc);
     const first = unlocked[0];
     const more = unlocked.length - 1;
+    const record = records[0] ?? null;
     const close = h('button', { type: 'button', class: `${P}-unlock-x`, 'aria-label': 'Close' }, '✕');
-    const toast = h('div', { id: TOAST_ID, role: 'status', 'aria-live': 'polite', 'data-ttc-own': '' },
+    const body = first ? [
       h('span', { class: `${P}-unlock-eyebrow` }, first.hidden ? 'Hidden achievement found' : 'Achievement unlocked'),
       h('span', { class: `${P}-unlock-name` }, first.name,
         first.tier ? h('span', { class: `${P}-unlock-tier` }, tierName(first.tier)) : null),
@@ -136,7 +158,9 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
         h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, more > 0 ? `See all ${unlocked.length}` : 'See it and share'),
         more > 0 ? h('span', null, `and ${more} more`) : null),
       card ? cardLinks(card) : null,
-      close);
+      record ? recordBody(record, false) : null,
+    ] : recordBody(record, true);
+    const toast = h('div', { id: TOAST_ID, role: 'status', 'aria-live': 'polite', 'data-ttc-own': '' }, ...body, close);
     close.addEventListener('click', hide);
     // It stays while the pointer or focus is on it, and goes on its own otherwise.
     const wait = () => {
@@ -188,8 +212,9 @@ export function createUnlocks({ doc, site, getSettings, store, timers = doc.defa
     save();
     changed.forEach((fn) => fn());
     // The first read only marks where the next one starts.
-    if (!first && !silenced && result.unlocked.length && switches().toast && !NEVER.some((route) => matchRoute(route, loc))) {
-      show(result.unlocked, result.url, result.card ?? null);
+    const records = Array.isArray(result.records) ? result.records : [];
+    if (!first && !silenced && (result.unlocked.length || records.length) && switches().toast && !NEVER.some((route) => matchRoute(route, loc))) {
+      show(result.unlocked, result.url, result.card ?? null, records);
     }
   }
 

@@ -26,6 +26,13 @@ how many more.
 The toast goes by itself after a few seconds. It stays while your pointer or focus is on
 it, and **✕** closes it. **See it and share** opens your achievements on torn-tracker.com.
 
+### A new record
+
+When torn-tracker.com says you beat your best day on a counter, the same toast says
+**New record**: "Your best crime day", today's count and the old record. **See it and
+share** opens that record's page on torn-tracker.com. If an achievement came at the same
+time, the record is one line under it. Records follow the same switch.
+
 ## Switch them off
 
 1. Open the [settings](settings-panel.md) and go to **General**.
@@ -41,12 +48,12 @@ next new achievement.
 
 ## Sharing is always your own press
 
-Nothing about your achievements is posted from the companion. **Share** is on
+Nothing about your achievements or records is posted from the companion. **Share** is on
 torn-tracker.com, and only ever happens when you press it there.
 
 > **What it reads and sends.** When you open a Torn page, and at most once every five
 > minutes, the companion asks torn-tracker.com, with your script key, for the achievements
-> you earned since it last asked. It sends nothing else. It never asks while you're on the
+> you earned, and the records you broke, since it last asked. It sends nothing else. It never asks while you're on the
 > attack page or the tab is in the background, and the very first time it only notes the
 > time, so a new install doesn't show old achievements. Each answer also says
 > whether your notification settings there pause the companion's toasts. It keeps your
