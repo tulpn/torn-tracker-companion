@@ -1142,6 +1142,7 @@ describe('hq #791 this week in your faction', () => {
 
   test('read field by field: a rank within 1..of..100, plain words, a link on our host', () => {
     assert.deepEqual(read(WEEK), { rank: 3, of: 41, label: 'chain hits', url: 'https://torn-tracker.com/faction/week/' });
+    assert.equal(read({ ...WEEK, url: 'https://www.torn-tracker.com/faction/week/' }).url, 'https://www.torn-tracker.com/faction/week/', 'as tc-targets#996 sends it');
     assert.equal(read(null), null, 'not opted in, both ways');
     for (const bad of [
       { ...WEEK, rank: 0 }, { ...WEEK, rank: 42 }, { ...WEEK, of: 101, rank: 3 }, { ...WEEK, rank: '3' },
