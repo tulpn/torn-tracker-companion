@@ -1,6 +1,6 @@
 {
   "name": "torn-tracker-companion",
-  "version": "0.9.27",
+  "version": "0.9.28",
   "private": true,
   "type": "module",
   "description": "The companion userscript of the torn-tracker.com suite",
