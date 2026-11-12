@@ -213,7 +213,7 @@ export function readRun(r, skew = 0) {
 }
 
 /** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
-export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks', 'routine']);
+export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks', 'routine', 'faction_week']);
 const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
 /** A ranked war the sidebar holds: matched (the start is set) or running (CAPI-039). */
 const WAR_STATES = Object.freeze(['matched', 'running']);
@@ -370,6 +370,14 @@ const SIDEBAR_READERS = {
   },
   routine: (v, skew) => readRoutine(v, skew),
   stocks: (v) => (count(v?.watched, 100) && count(v.crossed, 100) && v.watched > 0 ? { watched: v.watched, crossed: Math.min(v.crossed, v.watched) } : null),
+  // hq #791 (ENG-069, CAPI-039a): the player's rank on their own faction's week board, only
+  // when both opted in. The rank only: never a change against last week.
+  faction_week(v) {
+    if (!positiveInt(v?.rank) || !positiveInt(v.of) || v.rank > v.of || v.of > 100) return null;
+    if (typeof v.label !== 'string' || !/^[a-z0-9 ,'-]{1,40}$/i.test(v.label.trim())) return null;
+    const url = siteLink(v.url);
+    return url ? { rank: v.rank, of: v.of, label: v.label.trim(), url } : null;
+  },
 };
 
 /**

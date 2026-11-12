@@ -55,6 +55,7 @@ export const SIDEBAR_ITEMS = Object.freeze([
   { id: 'loot', title: 'NPC loot', summary: 'The NPC whose next loot level comes soonest, and when, with the source credited.', on: false },
   { id: 'gym', title: 'Gym', summary: 'How far you are towards your next gym.', on: false },
   { id: 'stocks', title: 'Stock watches', summary: 'How many of your watched stocks crossed their line.', on: false },
+  { id: 'faction_week', title: 'This week in your faction', summary: 'Your place on your faction’s week board, when it and you have opted in.', on: false },
   { id: 'shops', title: 'Below shop price', summary: 'On the Item Market: how many listings on screen sell below what a shop pays.', on: true, local: true },
   { id: 'links', title: 'Quick links', summary: 'Your dashboard, the war room and the guide on torn-tracker.com.', on: true },
 ]);
@@ -426,6 +427,7 @@ export function mountSidebarBlock({
     gym: (g) => row(h('b', null, 'Gym'), g.nextGym === null ? ' every gym unlocked' : ` ${Math.round(g.percent)}% to ${g.nextGym}`),
     routine: (r) => routineLine(r),
     stocks: (s) => row(link(STOCKS_URL, `${s.crossed} of ${s.watched} watched stocks crossed`, true)),
+    faction_week: (w) => row(link(w.url, `#${w.rank} of ${w.of} for ${w.label} this week`, true)),
   };
 
   /**

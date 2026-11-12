@@ -39,6 +39,7 @@ Each line is one thing you'd otherwise open the website or Discord for:
 | **NPC loot** | the NPC whose next loot level comes soonest, and when, with its source named | off |
 | **Gym** | how far you are towards your next gym | off |
 | **Stock watches** | how many of your watched stocks crossed their line | off |
+| **This week in your faction** | your place on your faction's week board, such as "#3 of 41 for chain hits this week". Only when your faction's leaders switched the board on and you chose to be ranked on torn-tracker.com; your own faction only, and never a change against last week | off |
 
 The countdowns tick every second from your own clock, between the block's reads once a
 minute, and rest while the tab is in the background. When one reaches zero the line says

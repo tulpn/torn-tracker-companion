@@ -9,6 +9,12 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+### Added
+
+- This week in your faction: a sidebar line, off by default, with your place on your
+  faction's week board ("#3 of 41 for chain hits this week"). It shows only when your
+  faction's leaders switched the board on and you chose to be ranked (hq #791).
+
 ## 0.9.28 — 2026-11-12
 
 ### Added
