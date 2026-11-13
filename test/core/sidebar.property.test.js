@@ -65,6 +65,7 @@ const reply = fc.record({
   source: field(fc.constantFrom('yata', 'loot rangers', 'x'), text),
   gym: rec({ next_gym: field(text, fc.constant(null)), percent: field(num, fc.constant(null)), energy_to_next: field(num) }),
   stocks: rec({ watched: field(num), crossed: field(num) }),
+  faction_week: rec({ metric: field(text), label: field(text), rank: field(num), of: field(num), week_start: field(iso), url: field(text) }),
   routine: rec({
     key_needed: field(fc.boolean()), casino_off: field(fc.boolean()), day_ends_at: field(iso, fc.constant(null)),
     lines: list({
@@ -126,6 +127,8 @@ describe('hq #846 the sidebar items hold only what they say', () => {
       if (guide) assert.ok(guide.total > 0 && count(guide.done, guide.total) && count(guide.bonuses, 100));
       const stocks = items.get('stocks');
       if (stocks) assert.ok(stocks.watched > 0 && count(stocks.crossed, stocks.watched));
+      const week = items.get('faction_week');
+      if (week) assert.ok(week.rank >= 1 && week.rank <= week.of && week.of <= 100 && week.label.length <= 40 && /^https:\/\/(www\.)?torn-tracker\.com\//.test(week.url));
       const gym = items.get('gym');
       if (gym && gym.percent !== null) assert.ok(gym.percent >= 0 && gym.percent <= 100);
       for (const key of ['dibs']) {

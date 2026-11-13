@@ -213,7 +213,7 @@ export function readRun(r, skew = 0) {
 }
 
 /** Every item the sidebar read can be asked for (companion-api §6.4, CMP-108). */
-export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks', 'routine']);
+export const SIDEBAR_KEYS = Object.freeze(['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'travel', 'loot', 'gym', 'stocks', 'routine', 'faction_week']);
 const OC_STATES = Object.freeze(['recruiting', 'planning', 'ready', 'running', 'done']);
 /** A ranked war the sidebar holds: matched (the start is set) or running (CAPI-039). */
 const WAR_STATES = Object.freeze(['matched', 'running']);
@@ -370,6 +370,14 @@ const SIDEBAR_READERS = {
   },
   routine: (v, skew) => readRoutine(v, skew),
   stocks: (v) => (count(v?.watched, 100) && count(v.crossed, 100) && v.watched > 0 ? { watched: v.watched, crossed: Math.min(v.crossed, v.watched) } : null),
+  // hq #791 (ENG-069, CAPI-039a): the player's rank on their own faction's week board, only
+  // when both opted in. The rank only: never a change against last week.
+  faction_week(v) {
+    if (!positiveInt(v?.rank) || !positiveInt(v.of) || v.rank > v.of || v.of > 100) return null;
+    if (typeof v.label !== 'string' || !/^[a-z0-9 ,'-]{1,40}$/i.test(v.label.trim())) return null;
+    const url = siteLink(v.url);
+    return url ? { rank: v.rank, of: v.of, label: v.label.trim(), url } : null;
+  },
 };
 
 /**
@@ -437,7 +445,7 @@ function readAchievement(a) {
  * `card` is the player's card image on our site and the link to send with it (hq #786,
  * ENG-064): `{ image, link }`, where `image` must be a `/u/<id>/card.png` on our host and
  * `link` falls back to it. Null when the reply has none (an older site).
- * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null, silenced: boolean|null, card: object|null}}
+ * @returns {{unlocked: object[], featured: object[], url: string, cursor: string|null, silenced: boolean|null, card: object|null, records: object[]}}
  */
 export function readAchievements(data) {
   const unlocked = (Array.isArray(data?.unlocked) ? data.unlocked : []).slice(0, UNLOCKED_MAX).map((a) => {
@@ -453,7 +461,35 @@ export function readAchievements(data) {
     ? data.server_time : null;
   const said = typeof data?.pause_all === 'boolean' || typeof data?.companion_toasts === 'boolean';
   const silenced = said ? data.pause_all === true || data.companion_toasts === false : null;
-  return { unlocked, featured, url, cursor, silenced, card: readCard(data?.card) };
+  return { unlocked, featured, url, cursor, silenced, card: readCard(data?.card), records: readRecords(data?.records) };
+}
+
+const RECORDS_MAX = 5;
+const RECORD_PATH = /^\/me\/records\/(\d{1,10})\/$/;
+
+/**
+ * The record-day rows (hq #783, ENG-061): a counter's best day, broken after `since`,
+ * newest first, at most five. Each is checked field by field and dropped when it doesn't
+ * fit; `url` must be that record's own page on our site. Empty when the reply has none.
+ * @returns {Array<{id: number, label: string, unit: string, value: number, previous: number, day: string, url: string}>}
+ */
+export function readRecords(list) {
+  return (Array.isArray(list) ? list : []).slice(0, RECORDS_MAX).map((r) => {
+    if (!positiveInt(r?.id) || !validName(r.label) || r.label.length > 60) return null;
+    if (typeof r.counter !== 'string' || r.counter.length > 61) return null;
+    if (typeof r.unit !== 'string' || r.unit.length > 60) return null;
+    if (!Number.isSafeInteger(r.value) || !Number.isSafeInteger(r.previous) || r.previous < 0 || r.value <= r.previous) return null;
+    if (typeof r.day !== 'string' || !DAY_KEY.test(r.day) || !Number.isFinite(Date.parse(r.day))) return null;
+    const url = siteLink(r.url);
+    let path = null;
+    try {
+      path = url && RECORD_PATH.exec(new URL(url).pathname);
+    } catch {
+      path = null;
+    }
+    if (!path || Number(path[1]) !== r.id) return null;
+    return { id: r.id, label: r.label.trim(), unit: r.unit.trim(), value: r.value, previous: r.previous, day: r.day, url };
+  }).filter(Boolean);
 }
 
 const CARD_PATH = /^\/u\/\d{1,10}\/card\.png$/;

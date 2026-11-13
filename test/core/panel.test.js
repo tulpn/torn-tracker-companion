@@ -718,7 +718,7 @@ describe('CMP-108 Settings \u2192 Sidebar', () => {
     const on = [...t.panel.panel.querySelectorAll('[data-sidebar]')]
       .filter((n) => n.dataset.sidebar !== 'enabled' && n.checked).map((n) => n.dataset.sidebar);
     assert.deepEqual(on, ['chain', 'watch', 'war', 'terms', 'partner', 'dibs', 'oc', 'guide', 'routine', 'shops', 'links']);
-    for (const off of ['travel', 'loot', 'gym', 'stocks']) assert.equal(t.$(`#ttc-sidebar-${off}`).checked, false, off);
+    for (const off of ['travel', 'loot', 'gym', 'stocks', 'faction_week']) assert.equal(t.$(`#ttc-sidebar-${off}`).checked, false, off);
     assert.match(t.text(), /Core \(free\)/);
   });
 

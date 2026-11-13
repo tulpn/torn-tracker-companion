@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
-  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, SHARING_PAGE, WAR_PAGE, POSITIONS, READ_EVERY_MS, askedItems, mountSidebarBlock, nextLoot, placementOf, readLine,
+  BLOCK_ID, CRIMES_PAGE, DEFAULT_POSITION, SHARING_PAGE, WAR_PAGE, POSITIONS, READ_EVERY_MS, SIDEBAR_ITEMS, askedItems, mountSidebarBlock, nextLoot, placementOf, readLine,
 } from '../../src/core/sidebar.js';
 import { readRoutine, readSidebar, tornPath } from '../../src/core/site.js';
 import { setProfitable } from '../../src/core/shops.js';
@@ -1133,5 +1133,36 @@ describe('hq #758 the block says when sharing is paused by a changed wording', (
     const t = mount();
     await settle();
     assert.equal(t.node().querySelector('[data-ttc-sharing-paused]'), null);
+  });
+});
+
+describe('hq #791 this week in your faction', () => {
+  const WEEK = { metric: 'chain_hits', label: 'chain hits', rank: 3, of: 41, week_start: '2026-11-09T00:00:00Z', url: '/faction/week/' };
+  const read = (v) => readSidebar({ faction_week: v }, ['faction_week'], 0).items.get('faction_week');
+
+  test('read field by field: a rank within 1..of..100, plain words, a link on our host', () => {
+    assert.deepEqual(read(WEEK), { rank: 3, of: 41, label: 'chain hits', url: 'https://torn-tracker.com/faction/week/' });
+    assert.equal(read({ ...WEEK, url: 'https://www.torn-tracker.com/faction/week/' }).url, 'https://www.torn-tracker.com/faction/week/', 'as tc-targets#996 sends it');
+    assert.equal(read(null), null, 'not opted in, both ways');
+    for (const bad of [
+      { ...WEEK, rank: 0 }, { ...WEEK, rank: 42 }, { ...WEEK, of: 101, rank: 3 }, { ...WEEK, rank: '3' },
+      { ...WEEK, label: '' }, { ...WEEK, label: 'x'.repeat(41) }, { ...WEEK, label: '<b>hits</b>' },
+      { ...WEEK, url: 'https://evil.example/faction/week/' }, { ...WEEK, url: '//evil.example/' },
+    ]) assert.equal(read(bad), null, JSON.stringify(bad));
+  });
+
+  test('off by default; switched on, one line with the rank only, linking to the board', async () => {
+    assert.equal(SIDEBAR_ITEMS.find((i) => i.id === 'faction_week').on, false);
+    const data = { ...FULL, faction_week: WEEK };
+    const t = mount({
+      change: (s) => { s.sidebar.items.faction_week = true; },
+      answer: { status: 'ok', ...readSidebar(data, Object.keys(data), 0) },
+    });
+    await settle();
+    const row = [...t.node().querySelectorAll('.ttc-sb-row')].find((r) => /this week/.test(r.textContent));
+    assert.ok(row);
+    assert.match(row.textContent, /^#3 of 41 for chain hits this week/);
+    assert.doesNotMatch(row.textContent, /dropped|down|up from|last week/i);
+    assert.equal(row.querySelector('a').getAttribute('href'), 'https://torn-tracker.com/faction/week/');
   });
 });

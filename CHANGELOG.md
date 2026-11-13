@@ -9,6 +9,31 @@ built script and uses the section below for its notes. `## Unreleased` collects 
 
 ## Unreleased
 
+## 0.9.28 — 2026-11-12
+
+### Added
+
+- Record day: when torn-tracker.com says you beat your best day on a counter, the
+  achievement toast says so, with the old record and a link to the record's page there,
+  where Share is. It comes with the read the companion already makes; nothing is shared
+  from Torn (hq #783).
+- This week in your faction: a sidebar line, off by default, with your place on your
+  faction's week board ("#3 of 41 for chain hits this week"). It shows only when your
+  faction's leaders switched the board on and you chose to be ranked (hq #791).
+
+### Changed
+
+- Shop price highlighter: the grey "Small" tier is off by default, so a few dollars' profit on
+  an expensive item no longer marks every listing on the page. Set it to $1 in the settings
+  to mark everything below a shop's price again; 0 switches it off. Tiers you changed
+  yourself keep your values (hq #976).
+
+### Fixed
+
+- Best buy abroad: the label no longer covers the item's name. It reads "Best buy: 18" on a
+  line of its own under the name, and the profit each and in all is on hover or a tap
+  (hq #975).
+
 ## 0.9.27 — 2026-11-11
 
 ### Added
